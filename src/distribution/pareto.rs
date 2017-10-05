@@ -190,6 +190,7 @@ impl Mean<f64> for Pareto {
     ///
     /// # Formula
     ///
+    /// ```
     /// if α <= 1 {
     ///     INF
     /// } else {
