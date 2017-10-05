@@ -5,6 +5,7 @@ HEAD
  - implemented infinite sequence generator for triangle sequence
  - implemented infinite sequence generator for sawtooth sequence
  - deprecate old non-infinite iterators in favor of new infinite iterators with `take`
+ - Implemented `Pareto` distribution
 
 v0.8.0
  - `cdf(x)`, `pdf(x)` and `pmf(x)` now return the correct value instead of panicking when `x` is outside the range of values that the distribution can attain.
