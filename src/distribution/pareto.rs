@@ -16,10 +16,9 @@ use std::f64;
 /// use statrs::statistics::Mean;
 /// use statrs::prec;
 ///
-/// let n = Pareto::new(1.0, 2.0).unwrap();
-/// assert_eq!(n.mean(), 2.0);
-/// assert!(prec::almost_eq(n.pdf(0.0), 0.353553390593274, 1e-15)); // TODO:
-/// Adjust values
+/// let p = Pareto::new(1.0, 2.0).unwrap();
+/// assert_eq!(p.mean(), 2.0);
+/// assert!(prec::almost_eq(p.pdf(2.0), 0.25, 1e-15));
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Pareto {
@@ -190,7 +189,7 @@ impl Mean<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```
+    /// ```ignore
     /// if α <= 1 {
     ///     INF
     /// } else {
