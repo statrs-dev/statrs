@@ -87,7 +87,6 @@ impl Pareto {
     }
 }
 
-// TODO: CHECK
 impl Sample<f64> for Pareto {
     /// Generate a random sample from a Pareto distribution
     /// distribution using `r` as the source of randomness.
@@ -97,7 +96,6 @@ impl Sample<f64> for Pareto {
     }
 }
 
-// TODO: CHECK
 impl IndependentSample<f64> for Pareto {
     /// Generate a random independent sample from a Pareto distribution
     /// distribution using `r` as the source of randomness.
@@ -150,7 +148,11 @@ impl Univariate<f64, f64> for Pareto {
     ///
     /// where `x_m` is the scale and `α` is the shape
     fn cdf(&self, x: f64) -> f64 {
-        1.0 - (self.scale / x).powf(self.shape)
+        if x < self.scale {
+            0.0
+        } else {
+            1.0 - (self.scale / x).powf(self.shape)
+        }
     }
 }
 
@@ -232,30 +234,23 @@ impl Variance<f64> for Pareto {
 
     /// Returns the standard deviation of the Pareto distribution
     ///
-    /// # Panics
-    ///
-    /// If `shape <= 1.0`
-    ///
     /// # Formula
     ///
     /// ```ignore
-    /// let variance = if v == INF {
-    ///     σ^2
-    /// } else if shape > 2.0 {
-    ///     v * σ^2 / (v - 2)
-    /// } else {
+    /// let variance = if α <= 2 {
     ///     INF
-    /// }
+    /// } else {
+    ///     (x_m/(α - 1))^2 * (α/(α - 2))
+    /// };
     /// sqrt(variance)
     /// ```
     ///
-    /// where `σ` is the scale and `v` is the shape
+    /// where `x_m` is the scale and `α` is the shape
     fn std_dev(&self) -> f64 {
         self.variance().sqrt()
     }
 }
 
-// TODO: Check
 impl Entropy<f64> for Pareto {
     /// Returns the entropy for the Pareto distribution
     ///
