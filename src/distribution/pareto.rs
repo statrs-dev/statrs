@@ -467,15 +467,13 @@ mod test {
         test_case(f64::INFINITY, 1.0, f64::INFINITY, |x| x.mode());
     }
 
-    // TODO
     #[test]
     fn test_median() {
-        test_case(-0.0, 1.0, 0.0, |x| x.median());
-        test_case(0.0, 1.0, 0.0, |x| x.median());
-        test_case(0.1, 1.0, 0.1, |x| x.median());
-        test_case(1.0, 1.0, 1.0, |x| x.median());
-        test_case(-0.0, 1.0, -0.0, |x| x.median());
-        test_case(f64::INFINITY, 1.0, f64::INFINITY, |x| x.median());
+        test_case(0.1, 0.1, 102.4, |x| x.median());
+        test_case(1.0, 1.0, 2.0, |x| x.median());
+        test_case(10.0, 10.0, 10.0*2.0_f64.powf(0.1), |x| x.median());
+        test_case(3.0, 0.5, 12.0, |x| x.median());
+        test_case(10.0, f64::INFINITY, 10.0, |x| x.median());
     }
 
     #[test]
