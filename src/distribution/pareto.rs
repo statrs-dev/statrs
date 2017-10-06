@@ -437,13 +437,13 @@ mod test {
         test_almost(10.0, 10.0, 125.0/81.0, 1e-13, |x| x.variance());
     }
 
-    // TODO
     #[test]
     fn test_entropy() {
-        test_almost(0.0, 0.1, -0.8836465597893729422377, 1e-15, |x| x.entropy());
-        test_case(0.0, 1.0, 1.41893853320467274178, |x| x.entropy());
-        test_case(0.0, 10.0, 3.721523626198718425798, |x| x.entropy());
-        test_case(0.0, f64::INFINITY, f64::INFINITY, |x| x.entropy());
+        test_case(0.1, 0.1, -11.0, |x| x.entropy());
+        test_case(1.0, 1.0, -2.0, |x| x.entropy());
+        test_case(10.0, 10.0, -1.1, |x| x.entropy());
+        test_case(3.0, 1.0, -2.0 - 3.0_f64.ln(), |x| x.entropy());
+        test_case(1.0, 3.0, -4.0/3.0 + 3.0_f64.ln(), |x| x.entropy());
     }
 
     #[test]
