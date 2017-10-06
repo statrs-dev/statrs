@@ -499,6 +499,7 @@ mod test {
         test_case(3.0, 2.0, 18.0/125.0, |x| x.pdf(5.0));
         test_almost(25.0, 100.0, 1.5777218104420236e-30, 1e-50, |x| x.pdf(50.0));
         test_almost(100.0, 25.0, 6.6003546737276816e-6, 1e-16, |x| x.pdf(150.0));
+        test_case(1.0, 2.0, 0.0, |x| x.pdf(f64::INFINITY));
     }
 
     #[test]
@@ -515,6 +516,7 @@ mod test {
         test_almost(3.0, 2.0, 18.0_f64.ln() - 125.0_f64.ln(), 1e-14, |x| x.ln_pdf(5.0));
         test_almost(25.0, 100.0, 1.5777218104420236e-30_f64.ln(), 1e-12, |x| x.ln_pdf(50.0));
         test_almost(100.0, 25.0, 6.6003546737276816e-6_f64.ln(), 1e-12, |x| x.ln_pdf(150.0));
+        test_case(1.0, 2.0, f64::NEG_INFINITY, |x| x.ln_pdf(f64::INFINITY));
     }
 
     #[test]
