@@ -446,13 +446,17 @@ mod test {
         test_case(0.0, f64::INFINITY, f64::INFINITY, |x| x.entropy());
     }
 
-    // TODO
     #[test]
     fn test_skewness() {
-        test_case(0.0, 0.1, 0.0, |x| x.skewness());
-        test_case(4.0, 1.0, 0.0, |x| x.skewness());
-        test_case(0.3, 10.0, 0.0, |x| x.skewness());
-        test_case(0.0, f64::INFINITY, 0.0, |x| x.skewness());
+        test_case(1.0, 4.0, 5.0*2.0_f64.sqrt(), |x| x.skewness());
+        test_case(1.0, 100.0, (707.0/485.0)*2.0_f64.sqrt(), |x| x.skewness());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_skewness_invalid_shape() {
+        let _ = try_create(1.0, 1.0).skewness();
+        let _ = try_create(1.0, 3.0).skewness();
     }
 
     #[test]
