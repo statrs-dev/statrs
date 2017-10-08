@@ -302,7 +302,7 @@ impl Median<f64> for Pareto {
     ///
     /// where `x_m` is the scale and `α` is the shape
     fn median(&self) -> f64 {
-        self.scale * (2.0_f64.powf(1.0 / self.shape))
+        self.scale * (2f64.powf(1.0 / self.shape))
     }
 }
 
@@ -442,14 +442,14 @@ mod test {
         test_case(0.1, 0.1, -11.0, |x| x.entropy());
         test_case(1.0, 1.0, -2.0, |x| x.entropy());
         test_case(10.0, 10.0, -1.1, |x| x.entropy());
-        test_case(3.0, 1.0, -2.0 - 3.0_f64.ln(), |x| x.entropy());
-        test_case(1.0, 3.0, -4.0/3.0 + 3.0_f64.ln(), |x| x.entropy());
+        test_case(3.0, 1.0, -2.0 - 3f64.ln(), |x| x.entropy());
+        test_case(1.0, 3.0, -4.0/3.0 + 3f64.ln(), |x| x.entropy());
     }
 
     #[test]
     fn test_skewness() {
-        test_case(1.0, 4.0, 5.0*2.0_f64.sqrt(), |x| x.skewness());
-        test_case(1.0, 100.0, (707.0/485.0)*2.0_f64.sqrt(), |x| x.skewness());
+        test_case(1.0, 4.0, 5.0*2f64.sqrt(), |x| x.skewness());
+        test_case(1.0, 100.0, (707.0/485.0)*2f64.sqrt(), |x| x.skewness());
     }
 
     #[test]
@@ -471,7 +471,7 @@ mod test {
     fn test_median() {
         test_case(0.1, 0.1, 102.4, |x| x.median());
         test_case(1.0, 1.0, 2.0, |x| x.median());
-        test_case(10.0, 10.0, 10.0*2.0_f64.powf(0.1), |x| x.median());
+        test_case(10.0, 10.0, 10.0*2f64.powf(0.1), |x| x.median());
         test_case(3.0, 0.5, 12.0, |x| x.median());
         test_case(10.0, f64::INFINITY, 10.0, |x| x.median());
     }
@@ -506,16 +506,16 @@ mod test {
     fn test_ln_pdf() {
         test_case(1.0, 1.0, f64::NEG_INFINITY, |x| x.ln_pdf(0.1));
         test_case(1.0, 1.0, 0.0, |x| x.ln_pdf(1.0));
-        test_almost(1.0, 1.0, 4.0_f64.ln() - 9.0_f64.ln(), 1e-14, |x| x.ln_pdf(1.5));
-        test_almost(1.0, 1.0, -25.0_f64.ln(), 1e-14, |x| x.ln_pdf(5.0));
-        test_almost(1.0, 1.0, -2500.0_f64.ln(), 1e-14, |x| x.ln_pdf(50.0));
-        test_almost(1.0, 4.0, 4.0_f64.ln(), 1e-14, |x| x.ln_pdf(1.0));
-        test_almost(1.0, 4.0, 128.0_f64.ln() - 243.0_f64.ln(), 1e-14, |x| x.ln_pdf(1.5));
-        test_almost(1.0, 4.0, -78125000.0_f64.ln(), 1e-14, |x| x.ln_pdf(50.0));
-        test_almost(3.0, 2.0, 2.0_f64.ln() - 3.0_f64.ln(), 1e-14, |x| x.ln_pdf(3.0));
-        test_almost(3.0, 2.0, 18.0_f64.ln() - 125.0_f64.ln(), 1e-14, |x| x.ln_pdf(5.0));
-        test_almost(25.0, 100.0, 1.5777218104420236e-30_f64.ln(), 1e-12, |x| x.ln_pdf(50.0));
-        test_almost(100.0, 25.0, 6.6003546737276816e-6_f64.ln(), 1e-12, |x| x.ln_pdf(150.0));
+        test_almost(1.0, 1.0, 4f64.ln() - 9f64.ln(), 1e-14, |x| x.ln_pdf(1.5));
+        test_almost(1.0, 1.0, -25f64.ln(), 1e-14, |x| x.ln_pdf(5.0));
+        test_almost(1.0, 1.0, -2500f64.ln(), 1e-14, |x| x.ln_pdf(50.0));
+        test_almost(1.0, 4.0, 4f64.ln(), 1e-14, |x| x.ln_pdf(1.0));
+        test_almost(1.0, 4.0, 128f64.ln() - 243f64.ln(), 1e-14, |x| x.ln_pdf(1.5));
+        test_almost(1.0, 4.0, -78125000f64.ln(), 1e-14, |x| x.ln_pdf(50.0));
+        test_almost(3.0, 2.0, 2f64.ln() - 3f64.ln(), 1e-14, |x| x.ln_pdf(3.0));
+        test_almost(3.0, 2.0, 18f64.ln() - 125f64.ln(), 1e-14, |x| x.ln_pdf(5.0));
+        test_almost(25.0, 100.0, 1.5777218104420236e-30f64.ln(), 1e-12, |x| x.ln_pdf(50.0));
+        test_almost(100.0, 25.0, 6.6003546737276816e-6f64.ln(), 1e-12, |x| x.ln_pdf(150.0));
         test_case(1.0, 2.0, f64::NEG_INFINITY, |x| x.ln_pdf(f64::INFINITY));
     }
 
