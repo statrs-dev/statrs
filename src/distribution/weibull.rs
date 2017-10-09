@@ -1,6 +1,6 @@
 use {Result, StatsError, consts};
 use distribution::{Continuous, Distribution, Univariate};
-use function::{gamma, stable};
+use function::gamma;
 use rand::Rng;
 use rand::distributions::{IndependentSample, Sample};
 use statistics::*;
@@ -149,7 +149,7 @@ impl Univariate<f64, f64> for Weibull {
         if x < 0.0 {
             0.0
         } else {
-            -stable::exp_minus_one(-x.powf(self.shape) * self.scale_pow_shape_inv)
+            -(-x.powf(self.shape) * self.scale_pow_shape_inv).exp_m1()
         }
     }
 }

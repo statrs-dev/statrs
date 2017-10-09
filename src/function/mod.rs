@@ -9,6 +9,3 @@ pub mod factorial;
 pub mod gamma;
 pub mod harmonic;
 pub mod logistic;
-pub mod stable;
-
-mod internal;
