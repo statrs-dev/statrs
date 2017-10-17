@@ -47,5 +47,5 @@ after_success: >
         kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file";
       fi;
     done &&
-    kcov --coveralls-id=$TRAVIS_JOB_ID --merge target/cov target/cov/*;
+    bash <(curl -s https://codecov.io/bash);
   fi
