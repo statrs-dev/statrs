@@ -289,12 +289,12 @@ impl Mode<f64> for ChiSquared {
     /// # Formula
     ///
     /// ```ignore
-    /// k - 2
+    /// max(k - 2, 0)
     /// ```
     ///
     /// where `k` is the degrees of freedom
     fn mode(&self) -> f64 {
-        self.g.mode()
+        self.g.mode().max(0.0)
     }
 }
 
@@ -330,8 +330,8 @@ impl Continuous<f64, f64> for ChiSquared {
 #[cfg(test)]
 mod test {
     use std::f64;
-    use statistics::Median;
     use distribution::ChiSquared;
+    use statistics::{Median, Mode};
     use distribution::internal::*;
 
     fn try_create(freedom: f64) -> ChiSquared {
