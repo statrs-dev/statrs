@@ -421,6 +421,16 @@ mod test {
     }
 
     #[test]
+    fn test_entropy() {
+        test_almost(0.1, -15.760926360123200, 1e-13, |x| x.entropy());
+        test_almost(1.0, 0.783757110473934, 1e-15, |x| x.entropy());
+        test_almost(2.0, 1.693147180559945, 1e-15, |x| x.entropy());
+        test_almost(4.0, 2.270362845461478, 1e-13, |x| x.entropy());
+        test_almost(16.0, 3.108818195936093, 1e-13, |x| x.entropy());
+        test_almost(100.0, 4.061397128938097, 1e-13, |x| x.entropy());
+    }
+
+    #[test]
     fn test_pdf() {
         test_case(1.0, 0.0, |x| x.pdf(0.0));
         test_almost(1.0, 1.2000389484301359798, 1e-15, |x| x.pdf(0.1));
