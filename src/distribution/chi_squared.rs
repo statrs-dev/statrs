@@ -339,7 +339,7 @@ impl Continuous<f64, f64> for ChiSquared {
 mod test {
     use std::f64;
     use statistics::*;
-    use distribution::{ChiSquared, Continuous};
+    use distribution::{ChiSquared, Univariate, Continuous};
     use distribution::internal::*;
 
     fn try_create(freedom: f64) -> ChiSquared {
@@ -428,6 +428,36 @@ mod test {
         test_almost(4.0, 2.270362845461478, 1e-13, |x| x.entropy());
         test_almost(16.0, 3.108818195936093, 1e-13, |x| x.entropy());
         test_almost(100.0, 4.061397128938097, 1e-13, |x| x.entropy());
+    }
+
+    #[test]
+    fn test_cdf() {
+        test_case(0.5, 0.0, |x| x.cdf(0.0));
+        test_almost(0.5, 5.165553208304657e-01, 1e-15, |x| x.cdf(0.1));
+        test_almost(0.5, 8.464864041916774e-01, 1e-15, |x| x.cdf(1.0));
+        test_almost(0.5, 9.995079748755537e-01, 1e-15, |x| x.cdf(10.0));
+        test_case(0.5, 1.0, |x| x.cdf(100.0));
+
+        test_case(1.0, 0.0, |x| x.cdf(0.0));
+        test_almost(1.0, 2.481703659541508e-01, 1e-15, |x| x.cdf(0.1));
+        test_almost(1.0, 6.826894921370859e-01, 1e-15, |x| x.cdf(1.0));
+        test_almost(1.0, 9.984345977419975e-01, 1e-15, |x| x.cdf(10.0));
+        test_case(1.0, 1.0, |x| x.cdf(100.0));
+
+        test_case(3.5, 0.0, |x| x.cdf(0.0));
+        test_almost(3.5, 3.184413836670893e-03, 1e-16, |x| x.cdf(0.1));
+        test_almost(3.5, 1.355315036184170e-01, 1e-15, |x| x.cdf(1.0));
+        test_almost(3.5, 9.719601382856896e-01, 1e-15, |x| x.cdf(10.0));
+        test_case(3.5, 1.0, |x| x.cdf(100.0));
+
+        test_case(100.0, 0.0, |x| x.cdf(0.0));
+        test_almost(100.0, 2.181059214078525e-32, 1e-42, |x| x.cdf(10.0));
+        test_almost(100.0, 6.953305247616201e-06, 1e-18, |x| x.cdf(50.0));
+        test_almost(100.0, 5.188083154720433e-01, 1e-13, |x| x.cdf(100.0));
+
+        test_almost(400.0, 2.024759014847327e-57, 1e-72, |x| x.cdf(100.0));
+        test_almost(400.0, 9.995177872404065e-01, 1e-15, |x| x.cdf(500.0));
+        test_case(400.0, 1.0, |x| x.cdf(1000.0));
     }
 
     #[test]
