@@ -338,7 +338,7 @@ impl Continuous<f64, f64> for ChiSquared {
 #[cfg(test)]
 mod test {
     use std::f64;
-    use statistics::{Median, Mode};
+    use statistics::*;
     use distribution::{ChiSquared, Continuous};
     use distribution::internal::*;
 
@@ -365,12 +365,35 @@ mod test {
     }
 
     #[test]
-    fn test_median() {
-        test_almost(0.5, 0.0857338820301783264746, 1e-16, |x| x.median());
-        test_case(1.0, 1.0 - 2.0 / 3.0, |x| x.median());
-        test_case(2.0, 2.0 - 2.0 / 3.0, |x| x.median());
-        test_case(2.5, 2.5 - 2.0 / 3.0, |x| x.median());
-        test_case(3.0, 3.0 - 2.0 / 3.0, |x| x.median());
+    fn test_mean() {
+        test_case(1.0, 1.0, |x| x.mean());
+        test_case(2.1, 2.1, |x| x.mean());
+        test_case(3.0, 3.0, |x| x.mean());
+        test_case(4.5, 4.5, |x| x.mean());
+    }
+
+    #[test]
+    fn test_variance() {
+        test_case(1.0, 2.0, |x| x.variance());
+        test_case(2.1, 4.2, |x| x.variance());
+        test_case(3.0, 6.0, |x| x.variance());
+        test_case(4.5, 9.0, |x| x.variance());
+    }
+
+    #[test]
+    fn test_std_dev() {
+        test_case(1.0, 2f64.sqrt(), |x| x.std_dev());
+        test_case(2.1, 4.2f64.sqrt(), |x| x.std_dev());
+        test_case(3.0, 6f64.sqrt(), |x| x.std_dev());
+        test_case(4.5, 3.0, |x| x.std_dev());
+    }
+
+    #[test]
+    fn test_skewness() {
+        test_almost(1.0, 8f64.sqrt(), 1e-15, |x| x.skewness());
+        test_almost(2.1, (8f64/2.1).sqrt(), 1e-15, |x| x.skewness());
+        test_almost(3.0, (8f64/3.0).sqrt(),  1e-15, |x| x.skewness());
+        test_almost(4.5, (8f64/4.5).sqrt(),  1e-15, |x| x.skewness());
     }
 
     #[test]
@@ -380,6 +403,21 @@ mod test {
         test_case(3.0, 1.0, |x| x.mode());
         test_case(4.5, 2.5, |x| x.mode());
         test_case(10.0, 8.0, |x| x.mode());
+    }
+
+    #[test]
+    fn test_median() {
+        test_almost(0.5, 0.0857338820301783264746, 1e-16, |x| x.median());
+        test_case(1.0, 1.0 - 2.0 / 3.0, |x| x.median());
+        test_case(2.0, 2.0 - 2.0 / 3.0, |x| x.median());
+        test_case(2.5, 2.5 - 2.0 / 3.0, |x| x.median());
+        test_case(3.0, 3.0 - 2.0 / 3.0, |x| x.median());
+    }
+
+    #[test]
+    fn test_min_max() {
+        test_case(1.0, 0.0, |x| x.min());
+        test_case(1.0, f64::INFINITY, |x| x.max());
     }
 
     #[test]
