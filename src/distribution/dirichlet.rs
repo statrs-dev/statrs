@@ -78,6 +78,12 @@ impl Dirichlet {
     pub fn new_with_param(alpha: f64, n: usize) -> Result<Dirichlet> {
         Self::new(&vec![alpha; n])
     }
+    
+    pub fn new_unsafe(alpha: &[f64]) -> Result<Dirichlet> {
+        Ok(Dirichlet {
+            alpha: alpha.to_vec(),
+        })
+    }
 
     /// Returns the concentration parameters of
     /// the dirichlet distribution as a slice

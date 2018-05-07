@@ -51,12 +51,10 @@ impl Gamma {
         match (shape, rate, is_nan) {
             (_, _, true) => Err(StatsError::BadParams),
             (_, _, false) if shape <= 0.0 || rate <= 0.0 => Err(StatsError::BadParams),
-            (_, _, false) => {
-                Ok(Gamma {
-                    shape: shape,
-                    rate: rate,
-                })
-            }
+            (_, _, false) => Ok(Gamma {
+                shape: shape,
+                rate: rate,
+            }),
         }
     }
 
@@ -272,7 +270,8 @@ impl Entropy<f64> for Gamma {
         if self.rate == f64::INFINITY {
             0.0
         } else {
-            self.shape - self.rate.ln() + gamma::ln_gamma(self.shape) + (1.0 - self.shape) * gamma::digamma(self.shape)
+            self.shape - self.rate.ln() + gamma::ln_gamma(self.shape)
+                + (1.0 - self.shape) * gamma::digamma(self.shape)
         }
     }
 }
@@ -342,7 +341,8 @@ impl Continuous<f64, f64> for Gamma {
         } else if x == f64::INFINITY {
             0.0
         } else {
-            self.rate.powf(self.shape) * x.powf(self.shape - 1.0) * (-self.rate * x).exp() / gamma::gamma(self.shape)
+            self.rate.powf(self.shape) * x.powf(self.shape - 1.0) * (-self.rate * x).exp()
+                / gamma::gamma(self.shape)
         }
     }
 
@@ -370,7 +370,8 @@ impl Continuous<f64, f64> for Gamma {
         } else if x == f64::INFINITY {
             f64::NEG_INFINITY
         } else {
-            self.shape * self.rate.ln() + (self.shape - 1.0) * x.ln() - self.rate * x - gamma::ln_gamma(self.shape)
+            self.shape * self.rate.ln() + (self.shape - 1.0) * x.ln() - self.rate * x
+                - gamma::ln_gamma(self.shape)
         }
     }
 }
@@ -411,10 +412,10 @@ pub fn sample_unchecked<R: Rng>(r: &mut R, shape: f64, rate: f64) -> f64 {
         x *= x;
         let u = r.next_f64();
         if u < 1.0 - 0.0331 * x * x {
-            return afix * d * v / rate;
+            return afix * d * v * rate;
         }
         if u.ln() < 0.5 * x + d * (1.0 - v - v.ln()) {
-            return afix * d * v / rate;
+            return afix * d * v * rate;
         }
     }
 }
