@@ -255,7 +255,7 @@ pub trait Statistics<T> {
     ///
     /// ```
     /// use std::f64;
-    /// use statrs::statistics::Variance;
+    /// use statrs::statistics::Statistics;
     ///
     /// let x = [];
     /// assert!(x.std_dev().is_nan());
