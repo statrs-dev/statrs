@@ -254,7 +254,8 @@ impl Skewness<f64> for Weibull {
         let sigma3 = sigma2 * sigma;
         (self.scale * self.scale * self.scale * gamma::gamma(1.0 + 3.0 / self.shape)
             - 3.0 * sigma2 * mu
-            - (mu * mu * mu)) / sigma3
+            - (mu * mu * mu))
+            / sigma3
     }
 }
 
@@ -317,7 +318,8 @@ impl Continuous<f64, f64> for Weibull {
         } else {
             self.shape
                 * (x / self.scale).powf(self.shape - 1.0)
-                * (-(x.powf(self.shape)) * self.scale_pow_shape_inv).exp() / self.scale
+                * (-(x.powf(self.shape)) * self.scale_pow_shape_inv).exp()
+                / self.scale
         }
     }
 

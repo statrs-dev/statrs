@@ -498,8 +498,10 @@ impl Continuous<f64, f64> for StudentsT {
         } else {
             let d = (x - self.location) / self.scale;
             (gamma::ln_gamma((self.freedom + 1.0) / 2.0) - gamma::ln_gamma(self.freedom / 2.0))
-                .exp() * (1.0 + d * d / self.freedom).powf(-0.5 * (self.freedom + 1.0))
-                / (self.freedom * f64::consts::PI).sqrt() / self.scale
+                .exp()
+                * (1.0 + d * d / self.freedom).powf(-0.5 * (self.freedom + 1.0))
+                / (self.freedom * f64::consts::PI).sqrt()
+                / self.scale
         }
     }
 

@@ -77,8 +77,7 @@ impl RandDistribution<f64> for Chi {
         (0..self.freedom as i64)
             .fold(0.0, |acc, _| {
                 acc + super::normal::sample_unchecked(r, 0.0, 1.0).powf(2.0)
-            })
-            .sqrt()
+            }).sqrt()
     }
 }
 
@@ -234,7 +233,8 @@ impl Entropy<f64> for Chi {
         gamma::ln_gamma(self.freedom / 2.0)
             + (self.freedom
                 - (2.0f64).ln()
-                - (self.freedom - 1.0) * gamma::digamma(self.freedom / 2.0)) / 2.0
+                - (self.freedom - 1.0) * gamma::digamma(self.freedom / 2.0))
+                / 2.0
     }
 }
 
@@ -319,7 +319,8 @@ impl Continuous<f64, f64> for Chi {
         } else {
             (2.0f64).powf(1.0 - self.freedom / 2.0)
                 * x.powf(self.freedom - 1.0)
-                * (-x * x / 2.0).exp() / gamma::gamma(self.freedom / 2.0)
+                * (-x * x / 2.0).exp()
+                / gamma::gamma(self.freedom / 2.0)
         }
     }
 

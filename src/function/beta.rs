@@ -122,8 +122,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64> {
         } else {
             (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
                 + a * x.ln()
-                + b * (1.0 - x).ln())
-                .exp()
+                + b * (1.0 - x).ln()).exp()
         };
         let symm_transform = x >= (a + 1.0) / (a + b + 2.0);
         let eps = prec::F64_PREC;
