@@ -313,7 +313,10 @@ mod test {
 
     #[test]
     fn test_mean_variance_stability() {
-        let seed: &[_] = &[1,2,3,4];
+        let seed = [
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+            19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
+        ];
         let mut rng: StdRng = SeedableRng::from_seed(seed);
         let normal = Normal::new(1e9, 2.0).unwrap();
         let samples = (0..10000).map(|_| normal.sample::<StdRng>(&mut rng)).collect::<Vec<f64>>();

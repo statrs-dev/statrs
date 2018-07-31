@@ -2,7 +2,8 @@
 //! and provides
 //! concrete implementations for a variety of distributions.
 
-use rand::{weak_rng, Rng, XorShiftRng};
+use rand::{Rng, FromEntropy};
+use rand::rngs::SmallRng;
 
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::Beta;
@@ -83,7 +84,7 @@ pub trait Distribution<T> {
     ///
     /// impl Distribution<f64> for Foo {
     ///     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-    ///         r.next_f64()
+    ///         r.gen()
     ///     }
     /// }
     ///
@@ -94,9 +95,9 @@ pub trait Distribution<T> {
 
 /// The `WeakRngDistribution` trait is used to specify an interface
 /// for sampling statistical distributions using a supplied default RNG
-/// (`weak_rng` from the `rand` crate)
+/// (`SmallRng` from the `rand` crate)
 pub trait WeakRngDistribution<T>: Distribution<T> {
-    /// Draws a random sample using a default RNG (`weak_rng` from `rand`)
+    /// Draws a random sample using a default RNG (`SmallRng` from `rand`)
     ///
     /// # Examples
     ///
@@ -112,8 +113,8 @@ pub trait WeakRngDistribution<T>: Distribution<T> {
     /// }
     /// ```
     fn weak_sample(&self) -> T {
-        let mut r = weak_rng();
-        self.sample::<XorShiftRng>(&mut r)
+        let mut r = SmallRng::from_entropy();
+        self.sample(&mut r)
     }
 }
 

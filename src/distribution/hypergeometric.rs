@@ -1,6 +1,6 @@
 use distribution::{Discrete, Distribution, Univariate, WeakRngDistribution};
 use function::factorial;
-use rand::distributions::{IndependentSample, Sample};
+use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
 use std::cmp;
@@ -111,21 +111,29 @@ impl Hypergeometric {
     }
 }
 
-impl Sample<f64> for Hypergeometric {
+impl RandDistribution<f64> for Hypergeometric {
     /// Generate a random sample from a hypergeometric
     /// distribution using `r` as the source of randomness.
     /// Refer [here](#method.sample-1) for implementation details
-    fn sample<R: Rng>(&mut self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
-    }
-}
-
-impl IndependentSample<f64> for Hypergeometric {
-    /// Generate a random independent sample from a hypergeometric
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
-    fn ind_sample<R: Rng>(&self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        let mut population = self.population as f64;
+        let mut successes = self.successes as f64;
+        let mut draws = self.draws;
+        let mut x = 0.0;
+        loop {
+            let p = successes / population;
+            let next: f64 = r.gen();
+            if next < p {
+                x += 1.0;
+                successes -= 1.0;
+            }
+            population -= 1.0;
+            draws -= 1;
+            if draws == 0 {
+                break;
+            }
+        }
+        x
     }
 }
 
@@ -138,34 +146,16 @@ impl Distribution<f64> for Hypergeometric {
     /// ```
     /// # extern crate rand;
     /// # extern crate statrs;
-    /// use rand::StdRng;
     /// use statrs::distribution::{Hypergeometric, Distribution};
     ///
     /// # fn main() {
-    /// let mut r = rand::StdRng::new().unwrap();
+    /// let mut r = rand::thread_rng();
     /// let n = Hypergeometric::new(10, 5, 3).unwrap();
-    /// print!("{}", n.sample::<StdRng>(&mut r));
+    /// print!("{}", n.sample(&mut r));
     /// # }
     /// ```
     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        let mut population = self.population as f64;
-        let mut successes = self.successes as f64;
-        let mut draws = self.draws;
-        let mut x = 0.0;
-        loop {
-            let p = successes / population;
-            let next = r.next_f64();
-            if next < p {
-                x += 1.0;
-                successes -= 1.0;
-            }
-            population -= 1.0;
-            draws -= 1;
-            if draws == 0 {
-                break;
-            }
-        }
-        x
+        RandDistribution::sample(self, r)
     }
 }
 

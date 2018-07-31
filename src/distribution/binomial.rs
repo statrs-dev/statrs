@@ -1,6 +1,6 @@
 use distribution::{Discrete, Distribution, Univariate, WeakRngDistribution};
 use function::{beta, factorial};
-use rand::distributions::{IndependentSample, Sample};
+use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -87,21 +87,19 @@ impl Binomial {
     }
 }
 
-impl Sample<f64> for Binomial {
+impl RandDistribution<f64> for Binomial {
     /// Generate a random sample from a binomial
     /// distribution using `r` as the source of randomness.
     /// Refer [here](#method.sample-1) for implementation details
-    fn sample<R: Rng>(&mut self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
-    }
-}
-
-/// Generate a random independent sample from a binomial
-/// distribution using `r` as the source of randomness.
-/// Refer [here](#method.sample-1) for implementation details
-impl IndependentSample<f64> for Binomial {
-    fn ind_sample<R: Rng>(&self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        (0..self.n).fold(0.0, |acc, _| {
+            let n: f64 = r.gen();
+            if n < self.p {
+                acc + 1.0
+            } else {
+                acc
+            }
+        })
     }
 }
 
@@ -115,24 +113,16 @@ impl Distribution<f64> for Binomial {
     /// ```
     /// # extern crate rand;
     /// # extern crate statrs;
-    /// use rand::StdRng;
     /// use statrs::distribution::{Binomial, Distribution};
     ///
     /// # fn main() {
-    /// let mut r = rand::StdRng::new().unwrap();
+    /// let mut r = rand::thread_rng();
     /// let n = Binomial::new(0.5, 5).unwrap();
-    /// print!("{}", n.sample::<StdRng>(&mut r));
+    /// print!("{}", n.sample(&mut r));
     /// # }
     /// ```
     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        (0..self.n).fold(0.0, |acc, _| {
-            let n = r.next_f64();
-            if n < self.p {
-                acc + 1.0
-            } else {
-                acc
-            }
-        })
+        RandDistribution::sample(self, r)
     }
 }
 

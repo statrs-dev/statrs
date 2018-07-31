@@ -1,7 +1,7 @@
 use distribution::{
     CheckedInverseCDF, Discrete, Distribution, InverseCDF, Univariate, WeakRngDistribution,
 };
-use rand::distributions::{IndependentSample, Sample};
+use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -82,21 +82,12 @@ impl Categorical {
     }
 }
 
-impl Sample<f64> for Categorical {
+impl RandDistribution<f64> for Categorical {
     /// Generate a random sample from a categorical
     /// distribution using `r` as the source of randomness.
     /// Refer [here](#method.sample-1) for implementation details
-    fn sample<R: Rng>(&mut self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
-    }
-}
-
-impl IndependentSample<f64> for Categorical {
-    /// Generate a random independent sample from a categorical
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
-    fn ind_sample<R: Rng>(&self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        sample_unchecked(r, &self.cdf)
     }
 }
 
@@ -109,17 +100,16 @@ impl Distribution<f64> for Categorical {
     /// ```
     /// # extern crate rand;
     /// # extern crate statrs;
-    /// use rand::StdRng;
     /// use statrs::distribution::{Categorical, Distribution};
     ///
     /// # fn main() {
-    /// let mut r = rand::StdRng::new().unwrap();
+    /// let mut r = rand::thread_rng();
     /// let n = Categorical::new(&[1.0, 2.0, 3.0]).unwrap();
-    /// print!("{}", n.sample::<StdRng>(&mut r));
+    /// print!("{}", n.sample(&mut r));
     /// # }
     /// ```
     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        sample_unchecked(r, &self.cdf)
+        RandDistribution::sample(self, r)
     }
 }
 
@@ -348,8 +338,8 @@ impl Discrete<u64, f64> for Categorical {
 
 /// Draws a sample from the categorical distribution described by `cdf`
 /// without doing any bounds checking
-pub fn sample_unchecked<R: Rng>(r: &mut R, cdf: &[f64]) -> f64 {
-    let draw = r.next_f64() * unsafe { cdf.get_unchecked(cdf.len() - 1) };
+pub fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, cdf: &[f64]) -> f64 {
+    let draw = r.gen::<f64>() * unsafe { cdf.get_unchecked(cdf.len() - 1) };
     let mut idx = 0;
 
     if draw == 0.0 {

@@ -1,5 +1,5 @@
 use distribution::{Continuous, Distribution, Univariate, WeakRngDistribution};
-use rand::distributions::{IndependentSample, Sample};
+use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -67,21 +67,12 @@ impl Triangular {
     }
 }
 
-impl Sample<f64> for Triangular {
+impl RandDistribution<f64> for Triangular {
     /// Generate a random sample from a triangular distribution
     /// distribution using `r` as the source of randomness.
     /// Refer [here](#method.sample-1) for implementation details
-    fn sample<R: Rng>(&mut self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
-    }
-}
-
-impl IndependentSample<f64> for Triangular {
-    /// Generate a random independent sample from a triangular distribution
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
-    fn ind_sample<R: Rng>(&self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        sample_unchecked(r, self.min, self.max, self.mode)
     }
 }
 
@@ -94,17 +85,16 @@ impl Distribution<f64> for Triangular {
     /// ```
     /// # extern crate rand;
     /// # extern crate statrs;
-    /// use rand::StdRng;
     /// use statrs::distribution::{Triangular, Distribution};
     ///
     /// # fn main() {
-    /// let mut r = rand::StdRng::new().unwrap();
+    /// let mut r = rand::thread_rng();
     /// let n = Triangular::new(0.0, 5.0, 2.5).unwrap();
-    /// print!("{}", n.sample::<StdRng>(&mut r));
+    /// print!("{}", n.sample(&mut r));
     /// # }
     /// ```
     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        sample_unchecked(r, self.min, self.max, self.mode)
+        RandDistribution::sample(self, r)
     }
 }
 
@@ -333,8 +323,8 @@ impl Continuous<f64, f64> for Triangular {
     }
 }
 
-fn sample_unchecked<R: Rng>(r: &mut R, min: f64, max: f64, mode: f64) -> f64 {
-    let f = r.next_f64();
+fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, min: f64, max: f64, mode: f64) -> f64 {
+    let f: f64 = r.gen();
     if f < (mode - min) / (max - min) {
         min + (f * (max - min) * (mode - min)).sqrt()
     } else {

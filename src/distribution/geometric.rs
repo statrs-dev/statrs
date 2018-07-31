@@ -1,5 +1,6 @@
 use distribution::{Discrete, Distribution, Univariate, WeakRngDistribution};
-use rand::distributions::{IndependentSample, Sample};
+use rand::distributions::OpenClosed01;
+use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
 use std::{f64, u64};
@@ -68,21 +69,17 @@ impl Geometric {
     }
 }
 
-impl Sample<f64> for Geometric {
+impl RandDistribution<f64> for Geometric {
     /// Generate a random sample from a geometric
     /// distribution using `r` as the source of randomness.
     /// Refer [here](#method.sample-1) for implementation details
-    fn sample<R: Rng>(&mut self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
-    }
-}
-
-impl IndependentSample<f64> for Geometric {
-    /// Generate a random independent sample from a geometric
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
-    fn ind_sample<R: Rng>(&self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        if self.p == 1.0 {
+            1.0
+        } else {
+            let x: f64 = r.sample(OpenClosed01);
+            x.log(1.0 - self.p).ceil()
+        }
     }
 }
 
@@ -95,21 +92,16 @@ impl Distribution<f64> for Geometric {
     /// ```
     /// # extern crate rand;
     /// # extern crate statrs;
-    /// use rand::StdRng;
     /// use statrs::distribution::{Geometric, Distribution};
     ///
     /// # fn main() {
-    /// let mut r = rand::StdRng::new().unwrap();
+    /// let mut r = rand::thread_rng();
     /// let n = Geometric::new(0.5).unwrap();
-    /// print!("{}", n.sample::<StdRng>(&mut r));
+    /// print!("{}", n.sample(&mut r));
     /// # }
     /// ```
     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        if self.p == 1.0 {
-            1.0
-        } else {
-            (1.0 - r.next_f64()).log(1.0 - self.p).ceil()
-        }
+        RandDistribution::sample(self, r)
     }
 }
 

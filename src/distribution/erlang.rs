@@ -1,5 +1,5 @@
 use distribution::{Continuous, Distribution, Gamma, Univariate, WeakRngDistribution};
-use rand::distributions::{IndependentSample, Sample};
+use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
 use Result;
@@ -79,21 +79,12 @@ impl Erlang {
     }
 }
 
-impl Sample<f64> for Erlang {
+impl RandDistribution<f64> for Erlang {
     /// Generate a random sample from a erlang
     /// distribution using `r` as the source of randomness.
     /// Refer [here](#method.sample-1) for implementation details
-    fn sample<R: Rng>(&mut self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
-    }
-}
-
-impl IndependentSample<f64> for Erlang {
-    /// Generate a random independent sample from a erlang
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
-    fn ind_sample<R: Rng>(&self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        RandDistribution::sample(&self.g, r)
     }
 }
 
@@ -106,17 +97,16 @@ impl Distribution<f64> for Erlang {
     /// ```
     /// # extern crate rand;
     /// # extern crate statrs;
-    /// use rand::StdRng;
     /// use statrs::distribution::{Erlang, Distribution};
     ///
     /// # fn main() {
-    /// let mut r = rand::StdRng::new().unwrap();
+    /// let mut r = rand::thread_rng();
     /// let n = Erlang::new(3, 1.0).unwrap();
-    /// print!("{}", n.sample::<StdRng>(&mut r));
+    /// print!("{}", n.sample(&mut r));
     /// # }
     /// ```
     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        self.g.sample(r)
+        RandDistribution::sample(self, r)
     }
 }
 

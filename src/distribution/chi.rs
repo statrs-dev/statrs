@@ -1,6 +1,6 @@
 use distribution::{Continuous, Distribution, Univariate, WeakRngDistribution};
 use function::gamma;
-use rand::distributions::{IndependentSample, Sample};
+use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -69,21 +69,16 @@ impl Chi {
     }
 }
 
-impl Sample<f64> for Chi {
+impl RandDistribution<f64> for Chi {
     /// Generate a random sample from a chi
     /// distribution using `r` as the source of randomness.
     /// Refer [here](#method.sample-1) for implementation details
-    fn sample<R: Rng>(&mut self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
-    }
-}
-
-impl IndependentSample<f64> for Chi {
-    /// Generate a random independent sample from a chi
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
-    fn ind_sample<R: Rng>(&self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        (0..self.freedom as i64)
+            .fold(0.0, |acc, _| {
+                acc + super::normal::sample_unchecked(r, 0.0, 1.0).powf(2.0)
+            })
+            .sqrt()
     }
 }
 
@@ -96,21 +91,16 @@ impl Distribution<f64> for Chi {
     /// ```
     /// # extern crate rand;
     /// # extern crate statrs;
-    /// use rand::StdRng;
     /// use statrs::distribution::{Chi, Distribution};
     ///
     /// # fn main() {
-    /// let mut r = rand::StdRng::new().unwrap();
+    /// let mut r = rand::thread_rng();
     /// let n = Chi::new(2.0).unwrap();
-    /// print!("{}", n.sample::<StdRng>(&mut r));
+    /// print!("{}", n.sample(&mut r));
     /// # }
     /// ```
     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        (0..self.freedom as i64)
-            .fold(0.0, |acc, _| {
-                acc + super::normal::sample_unchecked(r, 0.0, 1.0).powf(2.0)
-            })
-            .sqrt()
+        RandDistribution::sample(self, r)
     }
 }
 

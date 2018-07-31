@@ -1,6 +1,6 @@
 use distribution::{Continuous, Distribution, Univariate, WeakRngDistribution};
 use function::gamma;
-use rand::distributions::{IndependentSample, Sample};
+use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -90,21 +90,13 @@ impl Weibull {
     }
 }
 
-impl Sample<f64> for Weibull {
+impl RandDistribution<f64> for Weibull {
     /// Generate a random sample from a weibull
     /// distribution using `r` as the source of randomness.
     /// Refer [here](#method.sample-1) for implementation details
-    fn sample<R: Rng>(&mut self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
-    }
-}
-
-impl IndependentSample<f64> for Weibull {
-    /// Generate a random sample from a weibull
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
-    fn ind_sample<R: Rng>(&self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        let x: f64 = r.gen();
+        self.scale * (-x.ln()).powf(1.0 / self.shape)
     }
 }
 
@@ -121,14 +113,13 @@ impl Distribution<f64> for Weibull {
     /// use statrs::distribution::{Weibull, Distribution};
     ///
     /// # fn main() {
-    /// let mut r = rand::StdRng::new().unwrap();
+    /// let mut r = rand::thread_rng();
     /// let n = Weibull::new(10.0, 1.0).unwrap();
-    /// print!("{}", n.sample::<StdRng>(&mut r));
+    /// print!("{}", n.sample(&mut r));
     /// # }
     /// ```
     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        let x = r.next_f64();
-        self.scale * (-x.ln()).powf(1.0 / self.shape)
+        RandDistribution::sample(self, r)
     }
 }
 

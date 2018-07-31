@@ -1,6 +1,6 @@
 use distribution::{Discrete, Distribution, Univariate, WeakRngDistribution};
 use function::{factorial, gamma};
-use rand::distributions::{IndependentSample, Sample};
+use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -68,21 +68,12 @@ impl Poisson {
     }
 }
 
-impl Sample<f64> for Poisson {
+impl RandDistribution<f64> for Poisson {
     /// Generate a random sample from a poisson
     /// distribution using `r` as the source of randomness.
     /// Refer [here](#method.sample-1) for implementation details
-    fn sample<R: Rng>(&mut self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
-    }
-}
-
-impl IndependentSample<f64> for Poisson {
-    /// Generate a random independent sample from a poisson
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
-    fn ind_sample<R: Rng>(&self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        sample_unchecked(r, self.lambda)
     }
 }
 
@@ -98,17 +89,16 @@ impl Distribution<f64> for Poisson {
     /// ```
     /// # extern crate rand;
     /// # extern crate statrs;
-    /// use rand::StdRng;
     /// use statrs::distribution::{Poisson, Distribution};
     ///
     /// # fn main() {
-    /// let mut r = rand::StdRng::new().unwrap();
+    /// let mut r = rand::thread_rng();
     /// let n = Poisson::new(1.0).unwrap();
-    /// print!("{}", n.sample::<StdRng>(&mut r));
+    /// print!("{}", n.sample(&mut r));
     /// # }
     /// ```
     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        sample_unchecked(r, self.lambda)
+        RandDistribution::sample(self, r)
     }
 }
 
@@ -306,14 +296,14 @@ impl Discrete<u64, f64> for Poisson {
 /// A. C. Atkinson from the Journal of the Royal Statistical Society
 /// Series C (Applied Statistics) Vol. 28 No. 1. (1979) pp. 29 - 35
 /// otherwise
-fn sample_unchecked<R: Rng>(r: &mut R, lambda: f64) -> f64 {
+fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, lambda: f64) -> f64 {
     if lambda < 30.0 {
         let limit = (-lambda).exp();
         let mut count = 0.0;
-        let mut product = r.next_f64();
+        let mut product: f64 = r.gen();
         while product >= limit {
             count += 1.0;
-            product *= r.next_f64();
+            product *= r.gen::<f64>();
         }
         count
     } else {
@@ -323,14 +313,14 @@ fn sample_unchecked<R: Rng>(r: &mut R, lambda: f64) -> f64 {
         let k = c.ln() - lambda - beta.ln();
 
         loop {
-            let u = r.next_f64();
+            let u: f64 = r.gen();
             let x = (alpha - ((1.0 - u) / u).ln()) / beta;
             let n = (x + 0.5).floor();
             if n < 0.0 {
                 continue;
             }
 
-            let v = r.next_f64();
+            let v: f64 = r.gen();
             let y = alpha - beta * x;
             let temp = 1.0 + y.exp();
             let lhs = y + (v / (temp * temp)).ln();

@@ -17,4 +17,4 @@ name = "statrs"
 path = "src/lib.rs"
 
 [dependencies]
-rand = "0.3"
+rand = "0.5"

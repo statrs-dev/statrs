@@ -1,5 +1,5 @@
 use distribution::{Continuous, Distribution, Univariate, WeakRngDistribution};
-use rand::distributions::{IndependentSample, Sample};
+use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -83,21 +83,12 @@ impl Cauchy {
     }
 }
 
-impl Sample<f64> for Cauchy {
+impl RandDistribution<f64> for Cauchy {
     /// Generate a random sample from a cauchy
     /// distribution using `r` as the source of randomness.
     /// Refer [here](#method.sample-1) for implementation details
-    fn sample<R: Rng>(&mut self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
-    }
-}
-
-impl IndependentSample<f64> for Cauchy {
-    /// Generate a random independent sample from a cauchy
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
-    fn ind_sample<R: Rng>(&self, r: &mut R) -> f64 {
-        super::Distribution::sample(self, r)
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        self.location + self.scale * (f64::consts::PI * (r.gen::<f64>() - 0.5)).tan()
     }
 }
 
@@ -110,17 +101,16 @@ impl Distribution<f64> for Cauchy {
     /// ```
     /// # extern crate rand;
     /// # extern crate statrs;
-    /// use rand::StdRng;
     /// use statrs::distribution::{Cauchy, Distribution};
     ///
     /// # fn main() {
-    /// let mut r = rand::StdRng::new().unwrap();
+    /// let mut r = rand::thread_rng();
     /// let n = Cauchy::new(0.0, 1.0).unwrap();
-    /// print!("{}", n.sample::<StdRng>(&mut r));
+    /// print!("{}", n.sample(&mut r));
     /// # }
     /// ```
     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        self.location + self.scale * (f64::consts::PI * (r.next_f64() - 0.5)).tan()
+        RandDistribution::sample(self, r)
     }
 }
 
