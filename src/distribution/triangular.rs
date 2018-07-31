@@ -1,4 +1,4 @@
-use distribution::{Continuous, Distribution, Univariate, WeakRngDistribution};
+use distribution::{Continuous, Univariate};
 use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
@@ -68,37 +68,10 @@ impl Triangular {
 }
 
 impl RandDistribution<f64> for Triangular {
-    /// Generate a random sample from a triangular distribution
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         sample_unchecked(r, self.min, self.max, self.mode)
     }
 }
-
-impl Distribution<f64> for Triangular {
-    /// Generate a random sample from a triangular distribution using
-    /// `r` as the source of randomness.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    /// use statrs::distribution::{Triangular, Distribution};
-    ///
-    /// # fn main() {
-    /// let mut r = rand::thread_rng();
-    /// let n = Triangular::new(0.0, 5.0, 2.5).unwrap();
-    /// print!("{}", n.sample(&mut r));
-    /// # }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        RandDistribution::sample(self, r)
-    }
-}
-
-impl WeakRngDistribution<f64> for Triangular {}
 
 impl Univariate<f64, f64> for Triangular {
     /// Calculates the cumulative distribution function for the triangular

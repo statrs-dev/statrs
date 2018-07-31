@@ -1,4 +1,4 @@
-use distribution::{Continuous, Distribution, Univariate, WeakRngDistribution};
+use distribution::{Continuous, Univariate};
 use function::gamma;
 use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
@@ -88,48 +88,10 @@ impl Gamma {
 }
 
 impl RandDistribution<f64> for Gamma {
-    /// Generate a random sample from a gamma
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         sample_unchecked(r, self.shape, self.rate)
     }
 }
-
-impl Distribution<f64> for Gamma {
-    /// Generate a random sample from a gamma distribution using
-    /// `r` as the source of randomness. The implementation is based
-    /// on:
-    /// <br />
-    /// <div>
-    /// <i>"A Simple Method for Generating Gamma Variables"</i> - Marsaglia &
-    /// Tsang
-    /// </div>
-    /// <div>
-    /// ACM Transactions on Mathematical Software, Vol. 26, No. 3, September
-    /// 2000, Pages 363-372
-    /// </div>
-    /// <br />
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    /// use statrs::distribution::{Gamma, Distribution};
-    ///
-    /// # fn main() {
-    /// let mut r = rand::thread_rng();
-    /// let n = Gamma::new(3.0, 1.0).unwrap();
-    /// print!("{}", n.sample(&mut r));
-    /// # }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        RandDistribution::sample(self, r)
-    }
-}
-
-impl WeakRngDistribution<f64> for Gamma {}
 
 impl Univariate<f64, f64> for Gamma {
     /// Calculates the cumulative distribution function for the gamma

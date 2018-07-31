@@ -1,4 +1,4 @@
-use distribution::{Discrete, Distribution, Univariate, WeakRngDistribution};
+use distribution::{Discrete, Univariate};
 use function::factorial;
 use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
@@ -112,9 +112,6 @@ impl Hypergeometric {
 }
 
 impl RandDistribution<f64> for Hypergeometric {
-    /// Generate a random sample from a hypergeometric
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         let mut population = self.population as f64;
         let mut successes = self.successes as f64;
@@ -136,30 +133,6 @@ impl RandDistribution<f64> for Hypergeometric {
         x
     }
 }
-
-impl Distribution<f64> for Hypergeometric {
-    /// Generates a random sample from the hypergeometric distribution
-    /// using `r` as the source of randomness
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    /// use statrs::distribution::{Hypergeometric, Distribution};
-    ///
-    /// # fn main() {
-    /// let mut r = rand::thread_rng();
-    /// let n = Hypergeometric::new(10, 5, 3).unwrap();
-    /// print!("{}", n.sample(&mut r));
-    /// # }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        RandDistribution::sample(self, r)
-    }
-}
-
-impl WeakRngDistribution<f64> for Hypergeometric {}
 
 impl Univariate<u64, f64> for Hypergeometric {
     /// Calculates the cumulative distribution function for the hypergeometric

@@ -1,4 +1,4 @@
-use distribution::{CheckedContinuous, Continuous, Distribution, WeakRngDistribution};
+use distribution::{CheckedContinuous, Continuous};
 use function::gamma;
 use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
@@ -102,9 +102,6 @@ impl Dirichlet {
 }
 
 impl RandDistribution<Vec<f64>> for Dirichlet {
-    /// Generate random samples from a dirichlet
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> Vec<f64> {
         let n = self.alpha.len();
         let mut samples = vec![0.0; n];
@@ -119,30 +116,6 @@ impl RandDistribution<Vec<f64>> for Dirichlet {
         samples
     }
 }
-
-impl Distribution<Vec<f64>> for Dirichlet {
-    /// Generate random samples from the dirichlet distribution
-    /// using `r` as the source of randomness
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    /// use statrs::distribution::{Dirichlet, Distribution};
-    ///
-    /// # fn main() {
-    /// let mut r = rand::thread_rng();
-    /// let n = Dirichlet::new(&[1.0, 2.0, 3.0]).unwrap();
-    /// print!("{:?}", n.sample(&mut r));
-    /// # }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> Vec<f64> {
-        RandDistribution::sample(self, r)
-    }
-}
-
-impl WeakRngDistribution<Vec<f64>> for Dirichlet {}
 
 impl Mean<Vec<f64>> for Dirichlet {
     /// Returns the means of the dirichlet distribution

@@ -1,6 +1,4 @@
-use distribution::{
-    CheckedInverseCDF, Discrete, Distribution, InverseCDF, Univariate, WeakRngDistribution,
-};
+use distribution::{CheckedInverseCDF, Discrete, InverseCDF, Univariate};
 use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
@@ -83,37 +81,10 @@ impl Categorical {
 }
 
 impl RandDistribution<f64> for Categorical {
-    /// Generate a random sample from a categorical
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         sample_unchecked(r, &self.cdf)
     }
 }
-
-impl Distribution<f64> for Categorical {
-    /// Generate a random sample from the categorical distribution
-    /// using `r` as the source of randomness
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    /// use statrs::distribution::{Categorical, Distribution};
-    ///
-    /// # fn main() {
-    /// let mut r = rand::thread_rng();
-    /// let n = Categorical::new(&[1.0, 2.0, 3.0]).unwrap();
-    /// print!("{}", n.sample(&mut r));
-    /// # }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        RandDistribution::sample(self, r)
-    }
-}
-
-impl WeakRngDistribution<f64> for Categorical {}
 
 impl Univariate<u64, f64> for Categorical {
     /// Calculates the cumulative distribution function for the categorical

@@ -1,4 +1,4 @@
-use distribution::{CheckedDiscrete, Discrete, Distribution, WeakRngDistribution};
+use distribution::{CheckedDiscrete, Discrete};
 use function::factorial;
 use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
@@ -93,9 +93,6 @@ impl Multinomial {
 }
 
 impl RandDistribution<Vec<f64>> for Multinomial {
-    /// Generate random samples from a multinomial
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> Vec<f64> {
         let p_cdf = super::categorical::prob_mass_to_cdf(self.p());
         let mut res = vec![0.0; self.p.len()];
@@ -107,30 +104,6 @@ impl RandDistribution<Vec<f64>> for Multinomial {
         res
     }
 }
-
-impl Distribution<Vec<f64>> for Multinomial {
-    /// Generate random samples from the multinomial distribution
-    /// using `r` as the source of randomness
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    /// use statrs::distribution::{Multinomial, Distribution};
-    ///
-    /// # fn main() {
-    /// let mut r = rand::thread_rng();
-    /// let n = Multinomial::new(&[0.0, 1.0, 2.0], 4).unwrap();
-    /// print!("{:?}", n.sample(&mut r));
-    /// # }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> Vec<f64> {
-        RandDistribution::sample(self, r)
-    }
-}
-
-impl WeakRngDistribution<Vec<f64>> for Multinomial {}
 
 impl Mean<Vec<f64>> for Multinomial {
     /// Returns the mean of the multinomial distribution

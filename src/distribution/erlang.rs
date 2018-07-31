@@ -1,4 +1,4 @@
-use distribution::{Continuous, Distribution, Gamma, Univariate, WeakRngDistribution};
+use distribution::{Continuous, Gamma, Univariate};
 use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
 use statistics::*;
@@ -80,37 +80,10 @@ impl Erlang {
 }
 
 impl RandDistribution<f64> for Erlang {
-    /// Generate a random sample from a erlang
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         RandDistribution::sample(&self.g, r)
     }
 }
-
-impl Distribution<f64> for Erlang {
-    /// Generate a random sample from a erlang distribution using
-    /// `r` as the source of randomness.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    /// use statrs::distribution::{Erlang, Distribution};
-    ///
-    /// # fn main() {
-    /// let mut r = rand::thread_rng();
-    /// let n = Erlang::new(3, 1.0).unwrap();
-    /// print!("{}", n.sample(&mut r));
-    /// # }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        RandDistribution::sample(self, r)
-    }
-}
-
-impl WeakRngDistribution<f64> for Erlang {}
 
 impl Univariate<f64, f64> for Erlang {
     /// Calculates the cumulative distribution function for the erlang

@@ -1,4 +1,4 @@
-use distribution::{Discrete, Distribution, Univariate, WeakRngDistribution};
+use distribution::{Discrete, Univariate};
 use rand::distributions::Distribution as RandDistribution;
 use rand::distributions::OpenClosed01;
 use rand::Rng;
@@ -70,9 +70,6 @@ impl Geometric {
 }
 
 impl RandDistribution<f64> for Geometric {
-    /// Generate a random sample from a geometric
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         if self.p == 1.0 {
             1.0
@@ -82,30 +79,6 @@ impl RandDistribution<f64> for Geometric {
         }
     }
 }
-
-impl Distribution<f64> for Geometric {
-    /// Generates a random sample from the geometric distribution
-    /// using `r` as the source of randomness
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    /// use statrs::distribution::{Geometric, Distribution};
-    ///
-    /// # fn main() {
-    /// let mut r = rand::thread_rng();
-    /// let n = Geometric::new(0.5).unwrap();
-    /// print!("{}", n.sample(&mut r));
-    /// # }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        RandDistribution::sample(self, r)
-    }
-}
-
-impl WeakRngDistribution<f64> for Geometric {}
 
 impl Univariate<u64, f64> for Geometric {
     /// Calculates the cumulative distribution function for the geometric

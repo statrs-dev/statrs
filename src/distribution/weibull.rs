@@ -1,4 +1,4 @@
-use distribution::{Continuous, Distribution, Univariate, WeakRngDistribution};
+use distribution::{Continuous, Univariate};
 use function::gamma;
 use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
@@ -91,39 +91,11 @@ impl Weibull {
 }
 
 impl RandDistribution<f64> for Weibull {
-    /// Generate a random sample from a weibull
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         let x: f64 = r.gen();
         self.scale * (-x.ln()).powf(1.0 / self.shape)
     }
 }
-
-impl Distribution<f64> for Weibull {
-    /// Generate a random sample from the weibull distribution
-    /// using `r` as the source of randomness
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    /// use rand::StdRng;
-    /// use statrs::distribution::{Weibull, Distribution};
-    ///
-    /// # fn main() {
-    /// let mut r = rand::thread_rng();
-    /// let n = Weibull::new(10.0, 1.0).unwrap();
-    /// print!("{}", n.sample(&mut r));
-    /// # }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        RandDistribution::sample(self, r)
-    }
-}
-
-impl WeakRngDistribution<f64> for Weibull {}
 
 impl Univariate<f64, f64> for Weibull {
     /// Calculates the cumulative distribution function for the weibull

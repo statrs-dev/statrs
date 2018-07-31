@@ -1,4 +1,4 @@
-use distribution::{Discrete, Distribution, Univariate, WeakRngDistribution};
+use distribution::{Discrete, Univariate};
 use function::{beta, factorial};
 use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
@@ -88,9 +88,6 @@ impl Binomial {
 }
 
 impl RandDistribution<f64> for Binomial {
-    /// Generate a random sample from a binomial
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         (0..self.n).fold(0.0, |acc, _| {
             let n: f64 = r.gen();
@@ -102,31 +99,6 @@ impl RandDistribution<f64> for Binomial {
         })
     }
 }
-
-impl Distribution<f64> for Binomial {
-    /// Generate a random sample from the binomial distribution
-    /// using `r` as the source of randomness  where the range of
-    /// values is `[0.0, n]`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    /// use statrs::distribution::{Binomial, Distribution};
-    ///
-    /// # fn main() {
-    /// let mut r = rand::thread_rng();
-    /// let n = Binomial::new(0.5, 5).unwrap();
-    /// print!("{}", n.sample(&mut r));
-    /// # }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        RandDistribution::sample(self, r)
-    }
-}
-
-impl WeakRngDistribution<f64> for Binomial {}
 
 impl Univariate<u64, f64> for Binomial {
     /// Calulcates the cumulative distribution function for the

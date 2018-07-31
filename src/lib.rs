@@ -11,7 +11,8 @@
 //! ```
 //! # extern crate rand;
 //! # extern crate statrs;
-//! use statrs::distribution::{Distribution, Normal};
+//! use rand::distributions::Distribution;
+//! use statrs::distribution::Normal;
 //!
 //! # fn main() {
 //! let mut r = rand::thread_rng();

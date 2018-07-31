@@ -245,7 +245,8 @@ where
 mod test {
     use std::f64::consts;
     use rand::{SeedableRng, StdRng};
-    use distribution::{Distribution, Normal};
+    use rand::distributions::Distribution;
+    use distribution::Normal;
     use statistics::Statistics;
     use generate::{InfinitePeriodic, InfiniteSinusoidal};
     use testing;

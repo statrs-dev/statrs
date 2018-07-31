@@ -2,9 +2,6 @@
 //! and provides
 //! concrete implementations for a variety of distributions.
 
-use rand::rngs::SmallRng;
-use rand::{FromEntropy, Rng};
-
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::Beta;
 pub use self::binomial::Binomial;
@@ -63,66 +60,11 @@ mod ziggurat_tables;
 
 use Result;
 
-/// The `Distribution` trait is used to specify an interface
-/// for sampling statistical distributions
-pub trait Distribution<T> {
-    /// Draws a random sample using the supplied random number generator
-    ///
-    /// # Examples
-    ///
-    /// A trivial implementation that just samples from the supplied
-    /// random number generator
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    ///
-    /// use rand::Rng;
-    /// use statrs::distribution::Distribution;
-    ///
-    /// struct Foo;
-    ///
-    /// impl Distribution<f64> for Foo {
-    ///     fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-    ///         r.gen()
-    ///     }
-    /// }
-    ///
-    /// # fn main() { }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> T;
-}
-
-/// The `WeakRngDistribution` trait is used to specify an interface
-/// for sampling statistical distributions using a supplied default RNG
-/// (`SmallRng` from the `rand` crate)
-pub trait WeakRngDistribution<T>: Distribution<T> {
-    /// Draws a random sample using a default RNG (`SmallRng` from `rand`)
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate statrs;
-    ///
-    /// use statrs::distribution::{Bernoulli, WeakRngDistribution};
-    ///
-    ///
-    /// # fn main() {
-    /// let n = Bernoulli::new(0.5).unwrap();
-    /// print!("{}", n.weak_sample());
-    /// }
-    /// ```
-    fn weak_sample(&self) -> T {
-        let mut r = SmallRng::from_entropy();
-        self.sample(&mut r)
-    }
-}
-
 /// The `Univariate` trait is used to specify an interface for univariate
 /// distributions e.g. distributions that have a closed form cumulative
 /// distribution
 /// function
-pub trait Univariate<T, K>: Distribution<K> + Min<T> + Max<T> {
+pub trait Univariate<T, K>: Min<T> + Max<T> {
     /// Returns the cumulative distribution function calculated
     /// at `x` for a given distribution. May panic depending
     /// on the implementor.

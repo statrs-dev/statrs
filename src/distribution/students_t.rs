@@ -1,4 +1,4 @@
-use distribution::{Continuous, Distribution, Univariate, WeakRngDistribution};
+use distribution::{Continuous, Univariate};
 use function::{beta, gamma};
 use rand::distributions::Distribution as RandDistribution;
 use rand::Rng;
@@ -105,9 +105,6 @@ impl StudentsT {
 }
 
 impl RandDistribution<f64> for StudentsT {
-    /// Generate a random sample from a student's t-distribution
-    /// distribution using `r` as the source of randomness.
-    /// Refer [here](#method.sample-1) for implementation details
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         let gamma = super::gamma::sample_unchecked(r, 0.5 * self.freedom, 0.5);
         super::normal::sample_unchecked(
@@ -117,32 +114,6 @@ impl RandDistribution<f64> for StudentsT {
         )
     }
 }
-
-impl Distribution<f64> for StudentsT {
-    /// Generate a random sample from a student's t-distribution using
-    /// `r` as the source of randomness. The implementation is based
-    /// on method 2, section 5 in chapter 9 of L. Devroye's
-    /// <i>"Non-Uniform Random Variate Generation"</i>
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate rand;
-    /// # extern crate statrs;
-    /// use statrs::distribution::{StudentsT, Distribution};
-    ///
-    /// # fn main() {
-    /// let mut r = rand::thread_rng();
-    /// let n = StudentsT::new(0.0, 1.0, 2.0).unwrap();
-    /// print!("{}", n.sample(&mut r));
-    /// # }
-    /// ```
-    fn sample<R: Rng>(&self, r: &mut R) -> f64 {
-        RandDistribution::sample(self, r)
-    }
-}
-
-impl WeakRngDistribution<f64> for StudentsT {}
 
 impl Univariate<f64, f64> for StudentsT {
     /// Calculates the cumulative distribution function for the student's
