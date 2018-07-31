@@ -1,6 +1,6 @@
 use distribution::{Discrete, Distribution, Univariate, WeakRngDistribution};
-use rand::distributions::OpenClosed01;
 use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::OpenClosed01;
 use rand::Rng;
 use statistics::*;
 use std::{f64, u64};

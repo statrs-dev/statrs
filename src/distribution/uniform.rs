@@ -1,6 +1,6 @@
 use distribution::{Continuous, Distribution, Univariate, WeakRngDistribution};
-use rand::distributions::Uniform as RandUniform;
 use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Uniform as RandUniform;
 use rand::Rng;
 use statistics::*;
 use std::f64;

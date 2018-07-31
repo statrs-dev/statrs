@@ -2,8 +2,8 @@
 //! and provides
 //! concrete implementations for a variety of distributions.
 
-use rand::{Rng, FromEntropy};
 use rand::rngs::SmallRng;
+use rand::{FromEntropy, Rng};
 
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::Beta;

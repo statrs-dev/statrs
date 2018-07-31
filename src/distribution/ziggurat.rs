@@ -1,6 +1,6 @@
 use super::ziggurat_tables;
-use rand::Rng;
 use rand::distributions::Open01;
+use rand::Rng;
 
 pub fn sample_std_normal<R: Rng + ?Sized>(r: &mut R) -> f64 {
     #[inline]

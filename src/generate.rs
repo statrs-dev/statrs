@@ -113,7 +113,10 @@ impl Periodic {
     /// let x = Periodic::new(10, 8.0, 2.0, 10.0, 1.0, 2).collect::<Vec<f64>>();
     /// assert_eq!(x, [6.0, 8.5, 1.0, 3.5, 6.0, 8.5, 1.0, 3.5, 6.0, 8.5]);
     /// ```
-    #[deprecated(since = "0.9.0", note = "please use `InfinitePeriodic::new` and `take` instead")]
+    #[deprecated(
+        since = "0.9.0",
+        note = "please use `InfinitePeriodic::new` and `take` instead"
+    )]
     pub fn new(
         length: usize,
         sampling_rate: f64,
@@ -139,7 +142,8 @@ impl Periodic {
     /// assert_eq!(x, [0.0, 0.25, 0.5, 0.75, 0.0, 0.25, 0.5, 0.75, 0.0, 0.25]);
     /// ```
     #[deprecated(
-        since = "0.9.0", note = "please use `InfinitePeriodic::default` and `take` instead"
+        since = "0.9.0",
+        note = "please use `InfinitePeriodic::default` and `take` instead"
     )]
     pub fn default(length: usize, sampling_rate: f64, frequency: f64) -> Periodic {
         Periodic {
@@ -255,7 +259,10 @@ impl Sinusoidal {
     ///     4.583853163452858, 4.090702573174318, 5.416146836547142,
     ///     5.909297426825682]);
     /// ```
-    #[deprecated(since = "0.9.0", note = "please use `InfiniteSinusoidal::new` and `take` instead")]
+    #[deprecated(
+        since = "0.9.0",
+        note = "please use `InfiniteSinusoidal::new` and `take` instead"
+    )]
     pub fn new(
         length: usize,
         sampling_rate: f64,
@@ -292,7 +299,8 @@ impl Sinusoidal {
     ///     -0.0000000000000004898587196589413, 1.0]);
     /// ```
     #[deprecated(
-        since = "0.9.0", note = "please use `InfiniteSinusoidal::default` and `take` instead"
+        since = "0.9.0",
+        note = "please use `InfiniteSinusoidal::default` and `take` instead"
     )]
     pub fn default(
         length: usize,
@@ -385,7 +393,10 @@ impl Square {
     /// assert_eq!(x, [-1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
     /// -1.0, 1.0])
     /// ```
-    #[deprecated(since = "0.9.0", note = "please use `InfiniteSquare::new` and `take` instead")]
+    #[deprecated(
+        since = "0.9.0",
+        note = "please use `InfiniteSquare::new` and `take` instead"
+    )]
     pub fn new(
         length: usize,
         high_duration: i64,
@@ -506,7 +517,10 @@ impl Triangle {
     /// }
     /// # }
     /// ```
-    #[deprecated(since = "0.9.0", note = "please use `InfiniteTriangle::new` and `take` instead")]
+    #[deprecated(
+        since = "0.9.0",
+        note = "please use `InfiniteTriangle::new` and `take` instead"
+    )]
     pub fn new(
         length: usize,
         raise_duration: i64,
@@ -597,7 +611,10 @@ impl Sawtooth {
     /// assert_eq!(x, [1.0, -1.0, -0.5, 0.0, 0.5, 1.0, -1.0, -0.5, 0.0, 0.5,
     /// 1.0, -1.0]);
     /// ```
-    #[deprecated(since = "0.9.0", note = "please use `InfiniteSawtooth::new` and `take` instead")]
+    #[deprecated(
+        since = "0.9.0",
+        note = "please use `InfiniteSawtooth::new` and `take` instead"
+    )]
     pub fn new(
         length: usize,
         period: i64,
