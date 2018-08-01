@@ -89,6 +89,7 @@ impl Pareto {
 
 impl Distribution<f64> for Pareto {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        // Inverse transform sampling
         let u: f64 = r.sample(OpenClosed01);
         self.scale * u.powf(-1.0 / self.shape)
     }

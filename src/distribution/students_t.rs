@@ -106,6 +106,8 @@ impl StudentsT {
 
 impl Distribution<f64> for StudentsT {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        // based on method 2, section 5 in chapter 9 of L. Devroye's
+        // "Non-Uniform Random Variate Generation"
         let gamma = super::gamma::sample_unchecked(r, 0.5 * self.freedom, 0.5);
         super::normal::sample_unchecked(
             r,

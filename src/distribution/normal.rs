@@ -253,7 +253,7 @@ pub fn ln_pdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
     (-0.5 * d * d) - consts::LN_SQRT_2PI - std_dev.ln()
 }
 
-/// `sample_unchecked` draws a sample from a normal distribution
+/// draws a sample from a normal distribution using the Box-Muller algorithm
 pub fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, mean: f64, std_dev: f64) -> f64 {
     mean + std_dev * ziggurat::sample_std_normal(r)
 }
