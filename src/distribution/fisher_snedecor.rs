@@ -1,6 +1,6 @@
 use distribution::{Continuous, Univariate};
 use function::beta;
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -93,7 +93,7 @@ impl FisherSnedecor {
     }
 }
 
-impl RandDistribution<f64> for FisherSnedecor {
+impl Distribution<f64> for FisherSnedecor {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         (super::gamma::sample_unchecked(r, self.freedom_1 / 2.0, 0.5) * self.freedom_2)
             / (super::gamma::sample_unchecked(r, self.freedom_2 / 2.0, 0.5) * self.freedom_1)

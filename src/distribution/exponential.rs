@@ -1,5 +1,5 @@
 use distribution::{ziggurat, Continuous, Univariate};
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -68,7 +68,7 @@ impl Exponential {
     }
 }
 
-impl RandDistribution<f64> for Exponential {
+impl Distribution<f64> for Exponential {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         ziggurat::sample_exp_1(r) / self.rate
     }

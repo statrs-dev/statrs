@@ -1,5 +1,5 @@
 use distribution::{Continuous, Gamma, Univariate};
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::Rng;
 use statistics::*;
 use Result;
@@ -79,9 +79,9 @@ impl Erlang {
     }
 }
 
-impl RandDistribution<f64> for Erlang {
+impl Distribution<f64> for Erlang {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
-        RandDistribution::sample(&self.g, r)
+        Distribution::sample(&self.g, r)
     }
 }
 

@@ -1,5 +1,5 @@
 use distribution::{Continuous, Univariate};
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::distributions::Uniform as RandUniform;
 use rand::Rng;
 use statistics::*;
@@ -55,7 +55,7 @@ impl Uniform {
     }
 }
 
-impl RandDistribution<f64> for Uniform {
+impl Distribution<f64> for Uniform {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         let d = RandUniform::new_inclusive(self.min, self.max);
         r.sample(d)

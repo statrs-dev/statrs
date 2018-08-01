@@ -1,6 +1,6 @@
 use distribution::{Discrete, Univariate};
 use function::factorial;
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::Rng;
 use statistics::*;
 use std::cmp;
@@ -111,7 +111,7 @@ impl Hypergeometric {
     }
 }
 
-impl RandDistribution<f64> for Hypergeometric {
+impl Distribution<f64> for Hypergeometric {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         let mut population = self.population as f64;
         let mut successes = self.successes as f64;

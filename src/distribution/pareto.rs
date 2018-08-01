@@ -1,5 +1,5 @@
 use distribution::{Continuous, Univariate};
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::distributions::OpenClosed01;
 use rand::Rng;
 use statistics::*;
@@ -87,7 +87,7 @@ impl Pareto {
     }
 }
 
-impl RandDistribution<f64> for Pareto {
+impl Distribution<f64> for Pareto {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         let u: f64 = r.sample(OpenClosed01);
         self.scale * u.powf(-1.0 / self.shape)

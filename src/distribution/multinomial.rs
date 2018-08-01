@@ -1,6 +1,6 @@
 use distribution::{CheckedDiscrete, Discrete};
 use function::factorial;
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::Rng;
 use statistics::*;
 use {Result, StatsError};
@@ -92,7 +92,7 @@ impl Multinomial {
     }
 }
 
-impl RandDistribution<Vec<f64>> for Multinomial {
+impl Distribution<Vec<f64>> for Multinomial {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> Vec<f64> {
         let p_cdf = super::categorical::prob_mass_to_cdf(self.p());
         let mut res = vec![0.0; self.p.len()];

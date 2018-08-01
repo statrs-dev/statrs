@@ -1,5 +1,5 @@
 use distribution::{Continuous, Univariate};
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -67,7 +67,7 @@ impl Triangular {
     }
 }
 
-impl RandDistribution<f64> for Triangular {
+impl Distribution<f64> for Triangular {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         sample_unchecked(r, self.min, self.max, self.mode)
     }

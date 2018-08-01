@@ -1,5 +1,5 @@
 use distribution::{Discrete, Univariate};
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::distributions::OpenClosed01;
 use rand::Rng;
 use statistics::*;
@@ -69,7 +69,7 @@ impl Geometric {
     }
 }
 
-impl RandDistribution<f64> for Geometric {
+impl Distribution<f64> for Geometric {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         if self.p == 1.0 {
             1.0

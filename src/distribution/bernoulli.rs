@@ -1,5 +1,5 @@
 use distribution::{Binomial, Discrete, Univariate};
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::Rng;
 use statistics::*;
 use Result;
@@ -81,7 +81,7 @@ impl Bernoulli {
     }
 }
 
-impl RandDistribution<f64> for Bernoulli {
+impl Distribution<f64> for Bernoulli {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         r.gen_bool(self.p()) as u8 as f64
     }

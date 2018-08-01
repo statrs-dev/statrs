@@ -1,5 +1,5 @@
 use distribution::{Continuous, Univariate};
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -83,7 +83,7 @@ impl Cauchy {
     }
 }
 
-impl RandDistribution<f64> for Cauchy {
+impl Distribution<f64> for Cauchy {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         self.location + self.scale * (f64::consts::PI * (r.gen::<f64>() - 0.5)).tan()
     }

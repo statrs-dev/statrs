@@ -1,6 +1,6 @@
 use distribution::{Continuous, Univariate};
 use function::gamma;
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -69,7 +69,7 @@ impl Chi {
     }
 }
 
-impl RandDistribution<f64> for Chi {
+impl Distribution<f64> for Chi {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         (0..self.freedom as i64)
             .fold(0.0, |acc, _| {

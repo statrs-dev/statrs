@@ -1,6 +1,6 @@
 use distribution::{Continuous, Univariate};
 use function::erf;
-use rand::distributions::Distribution as RandDistribution;
+use rand::distributions::Distribution;
 use rand::Rng;
 use statistics::*;
 use std::f64;
@@ -59,7 +59,7 @@ impl LogNormal {
     }
 }
 
-impl RandDistribution<f64> for LogNormal {
+impl Distribution<f64> for LogNormal {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
         super::normal::sample_unchecked(r, self.location, self.scale).exp()
     }
