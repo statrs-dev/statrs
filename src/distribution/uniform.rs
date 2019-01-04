@@ -435,7 +435,8 @@ mod test {
 
     #[test]
     fn test_samples_in_range() {
-        use rand::{StdRng, SeedableRng};
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
         use rand::distributions::Distribution;
 
         let seed = [

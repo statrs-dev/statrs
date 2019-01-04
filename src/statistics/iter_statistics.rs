@@ -244,7 +244,8 @@ where
 #[cfg(test)]
 mod test {
     use std::f64::consts;
-    use rand::{SeedableRng, StdRng};
+    use rand::rngs::StdRng;
+    use rand::{SeedableRng};
     use rand::distributions::Distribution;
     use distribution::Normal;
     use statistics::Statistics;

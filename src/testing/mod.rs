@@ -16,7 +16,7 @@ pub fn load_data(path: &str) -> Vec<f64> {
     // if reading the data file fails, we want to panic immediately
 
     let path_prefix = "./data/".to_string();
-    let true_path = path_prefix + path.trim().trim_left_matches('/');
+    let true_path = path_prefix + path.trim().trim_start_matches('/');
 
     let f = File::open(true_path).unwrap();
     let mut reader = BufReader::new(f);

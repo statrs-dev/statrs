@@ -13,3 +13,4 @@
 
 #editor specific
 /.vscode/
+.idea/
