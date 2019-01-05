@@ -249,11 +249,12 @@ impl<'a> CheckedDiscrete<&'a [u64], f64> for Multinomial {
             return Err(StatsError::ContainerExpectedSumVar("x", "n"));
         }
         let coeff = factorial::multinomial(self.n, x);
-        let val = coeff * self
-            .p
-            .iter()
-            .zip(x.iter())
-            .fold(1.0, |acc, (pi, xi)| acc * pi.powf(*xi as f64));
+        let val = coeff
+            * self
+                .p
+                .iter()
+                .zip(x.iter())
+                .fold(1.0, |acc, (pi, xi)| acc * pi.powf(*xi as f64));
         Ok(val)
     }
 
@@ -284,12 +285,13 @@ impl<'a> CheckedDiscrete<&'a [u64], f64> for Multinomial {
             return Err(StatsError::ContainerExpectedSumVar("x", "n"));
         }
         let coeff = factorial::multinomial(self.n, x).ln();
-        let val = coeff + self
-            .p
-            .iter()
-            .zip(x.iter())
-            .map(|(pi, xi)| *xi as f64 * pi.ln())
-            .fold(0.0, |acc, x| acc + x);
+        let val = coeff
+            + self
+                .p
+                .iter()
+                .zip(x.iter())
+                .map(|(pi, xi)| *xi as f64 * pi.ln())
+                .fold(0.0, |acc, x| acc + x);
         Ok(val)
     }
 }
