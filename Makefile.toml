@@ -1,0 +1,6 @@
+[tasks.all]
+dependencies = [
+    "test",
+    "check-format",
+    "clippy",
+]

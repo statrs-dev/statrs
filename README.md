@@ -89,6 +89,8 @@ assert!(n.checked_variance().is_err());
 
 Want to contribute? Check out some of the issues marked [help wanted](https://github.com/boxtown/statrs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
+This project uses [`cargo-make`](https://sagiegurari.github.io/cargo-make/) to automate its build process. To build `statrs`, run `cargo make all`.
+
 ### How to contribute
 
 Clone the repo:
