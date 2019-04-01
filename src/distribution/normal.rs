@@ -1,4 +1,4 @@
-use distribution::{ziggurat, Continuous, Univariate};
+use distribution::{ziggurat, CheckedInverseCDF, Continuous, InverseCDF, Univariate};
 use function::erf;
 use rand::distributions::Distribution;
 use rand::Rng;
@@ -233,6 +233,52 @@ impl Continuous<f64, f64> for Normal {
     }
 }
 
+impl InverseCDF<f64> for Normal {
+    /// Calculates the inverse cumulative distribution function for the
+    /// normal distribution at `x`
+    ///
+    /// # Panics
+    ///
+    /// If `x < 0.0` or `x > 1.0`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// μ - sqrt(2) * σ * erfc_inv(2x)
+    /// ```
+    ///
+    /// where `μ` is the mean, `σ` is the standard deviation and `erfc_inv` is
+    /// the inverse of the complementary error function
+    fn inverse_cdf(&self, x: f64) -> f64 {
+        self.checked_inverse_cdf(x).unwrap()
+    }
+}
+
+impl CheckedInverseCDF<f64> for Normal {
+    /// Calculates the inverse cumulative distribution function for the
+    /// normal distribution at `x`
+    ///
+    /// # Errors
+    ///
+    /// If `x < 0.0` or `x > 1.0`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// μ - sqrt(2) * σ * erfc_inv(2x)
+    /// ```
+    ///
+    /// where `μ` is the mean, `σ` is the standard deviation and `erfc_inv` is
+    /// the inverse of the complementary error function
+    fn checked_inverse_cdf(&self, x: f64) -> Result<f64> {
+        if x < 0.0 || x > 1.0 {
+            Err(StatsError::ArgIntervalIncl("x", 0.0, 1.0))
+        } else {
+            Ok(self.mean - (self.std_dev * f64::consts::SQRT_2 * erf::erfc_inv(2.0 * x)))
+        }
+    }
+}
+
 /// performs an unchecked cdf calculation for a normal distribution
 /// with the given mean and standard deviation at x
 pub fn cdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
@@ -263,7 +309,7 @@ pub fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, mean: f64, std_dev: f64) -> 
 mod test {
     use std::f64;
     use statistics::*;
-    use distribution::{Univariate, Continuous, Normal};
+    use distribution::{Univariate, Continuous, Normal, InverseCDF, CheckedInverseCDF};
     use distribution::internal::*;
 
     fn try_create(mean: f64, std_dev: f64) -> Normal {
@@ -439,5 +485,31 @@ mod test {
     fn test_continuous() {
         test::check_continuous_distribution(&try_create(0.0, 1.0), -10.0, 10.0);
         test::check_continuous_distribution(&try_create(20.0, 0.5), 10.0, 30.0);
+    }
+
+    #[test]
+    fn test_checked_inverse_cdf_input_low() {
+        let n = try_create(5.0, 2.0);
+        assert!(n.checked_inverse_cdf(-0.1).is_err());
+    }
+
+    #[test]
+    fn test_checked_inverse_cdf_input_high() {
+        let n = try_create(5.0, 2.0);
+        assert!(n.checked_inverse_cdf(1.1).is_err());
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        test_case(5.0, 2.0, f64::NEG_INFINITY, |x| x.inverse_cdf( 0.0));
+        test_almost(5.0, 2.0, -5.0, 1e-14, |x| x.inverse_cdf(0.00000028665157187919391167375233287464535385442301361187883));
+        test_almost(5.0, 2.0, -2.0, 1e-14, |x| x.inverse_cdf(0.0002326290790355250363499258867279847735487493358890356));
+        test_almost(5.0, 2.0, -0.0, 1e-14, |x| x.inverse_cdf(0.0062096653257761351669781045741922211278977469230927036));
+        test_almost(5.0, 2.0, 0.0, 1e-14, |x| x.inverse_cdf(0.0062096653257761351669781045741922211278977469230927036));
+        test_almost(5.0, 2.0, 4.0, 1e-14, |x| x.inverse_cdf(0.30853753872598689636229538939166226011639782444542207));
+        test_almost(5.0, 2.0, 5.0, 1e-14, |x| x.inverse_cdf(0.5));
+        test_almost(5.0, 2.0, 6.0, 1e-14, |x| x.inverse_cdf(0.69146246127401310363770461060833773988360217555457859));
+        test_almost(5.0, 2.0, 10.0, 1e-14, |x| x.inverse_cdf(0.9937903346742238648330218954258077788721022530769078));
+        test_case(5.0, 2.0, f64::INFINITY, |x| x.inverse_cdf(1.0));
     }
 }
