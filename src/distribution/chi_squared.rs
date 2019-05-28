@@ -253,12 +253,12 @@ impl Mode<f64> for ChiSquared {
     /// # Formula
     ///
     /// ```ignore
-    /// k - 2
+    /// max(k - 2, 0)
     /// ```
     ///
     /// where `k` is the degrees of freedom
     fn mode(&self) -> f64 {
-        self.g.mode()
+        self.g.mode().max(0.0)
     }
 }
 
@@ -274,7 +274,11 @@ impl Continuous<f64, f64> for ChiSquared {
     ///
     /// where `k` is the degrees of freedom and `Γ` is the gamma function
     fn pdf(&self, x: f64) -> f64 {
-        self.g.pdf(x)
+        if x > 0.0 {
+            self.g.pdf(x)
+        } else {
+            0.0
+        }
     }
 
     /// Calculates the log probability density function for the chi-squared
@@ -286,7 +290,11 @@ impl Continuous<f64, f64> for ChiSquared {
     /// ln(1 / (2^(k / 2) * Γ(k / 2)) * x^((k / 2) - 1) * e^(-x / 2))
     /// ```
     fn ln_pdf(&self, x: f64) -> f64 {
-        self.g.ln_pdf(x)
+        if x > 0.0 {
+            self.g.ln_pdf(x)
+        } else {
+            f64::NEG_INFINITY
+        }
     }
 }
 
@@ -294,8 +302,8 @@ impl Continuous<f64, f64> for ChiSquared {
 #[cfg(test)]
 mod test {
     use std::f64;
-    use statistics::Median;
-    use distribution::ChiSquared;
+    use statistics::*;
+    use distribution::{ChiSquared, Univariate, Continuous};
     use distribution::internal::*;
 
     fn try_create(freedom: f64) -> ChiSquared {
@@ -321,6 +329,47 @@ mod test {
     }
 
     #[test]
+    fn test_mean() {
+        test_case(1.0, 1.0, |x| x.mean());
+        test_case(2.1, 2.1, |x| x.mean());
+        test_case(3.0, 3.0, |x| x.mean());
+        test_case(4.5, 4.5, |x| x.mean());
+    }
+
+    #[test]
+    fn test_variance() {
+        test_case(1.0, 2.0, |x| x.variance());
+        test_case(2.1, 4.2, |x| x.variance());
+        test_case(3.0, 6.0, |x| x.variance());
+        test_case(4.5, 9.0, |x| x.variance());
+    }
+
+    #[test]
+    fn test_std_dev() {
+        test_case(1.0, 2f64.sqrt(), |x| x.std_dev());
+        test_case(2.1, 4.2f64.sqrt(), |x| x.std_dev());
+        test_case(3.0, 6f64.sqrt(), |x| x.std_dev());
+        test_case(4.5, 3.0, |x| x.std_dev());
+    }
+
+    #[test]
+    fn test_skewness() {
+        test_almost(1.0, 8f64.sqrt(), 1e-15, |x| x.skewness());
+        test_almost(2.1, (8f64/2.1).sqrt(), 1e-15, |x| x.skewness());
+        test_almost(3.0, (8f64/3.0).sqrt(),  1e-15, |x| x.skewness());
+        test_almost(4.5, (8f64/4.5).sqrt(),  1e-15, |x| x.skewness());
+    }
+
+    #[test]
+    fn test_mode() {
+        test_case(1.0, 0.0, |x| x.mode());
+        test_case(2.0, 0.0, |x| x.mode());
+        test_case(3.0, 1.0, |x| x.mode());
+        test_case(4.5, 2.5, |x| x.mode());
+        test_case(10.0, 8.0, |x| x.mode());
+    }
+
+    #[test]
     fn test_median() {
         test_almost(0.5, 0.0857338820301783264746, 1e-16, |x| x.median());
         test_case(1.0, 1.0 - 2.0 / 3.0, |x| x.median());
@@ -330,9 +379,112 @@ mod test {
     }
 
     #[test]
+    fn test_min_max() {
+        test_case(1.0, 0.0, |x| x.min());
+        test_case(1.0, f64::INFINITY, |x| x.max());
+    }
+
+    #[test]
+    fn test_entropy() {
+        test_almost(0.1, -15.760926360123200, 1e-13, |x| x.entropy());
+        test_almost(1.0, 0.783757110473934, 1e-15, |x| x.entropy());
+        test_almost(2.0, 1.693147180559945, 1e-15, |x| x.entropy());
+        test_almost(4.0, 2.270362845461478, 1e-13, |x| x.entropy());
+        test_almost(16.0, 3.108818195936093, 1e-13, |x| x.entropy());
+        test_almost(100.0, 4.061397128938097, 1e-13, |x| x.entropy());
+    }
+
+    #[test]
+    fn test_cdf() {
+        test_case(0.5, 0.0, |x| x.cdf(0.0));
+        test_almost(0.5, 5.165553208304657e-01, 1e-15, |x| x.cdf(0.1));
+        test_almost(0.5, 8.464864041916774e-01, 1e-15, |x| x.cdf(1.0));
+        test_almost(0.5, 9.995079748755537e-01, 1e-15, |x| x.cdf(10.0));
+        test_case(0.5, 1.0, |x| x.cdf(100.0));
+
+        test_case(1.0, 0.0, |x| x.cdf(0.0));
+        test_almost(1.0, 2.481703659541508e-01, 1e-15, |x| x.cdf(0.1));
+        test_almost(1.0, 6.826894921370859e-01, 1e-15, |x| x.cdf(1.0));
+        test_almost(1.0, 9.984345977419975e-01, 1e-15, |x| x.cdf(10.0));
+        test_case(1.0, 1.0, |x| x.cdf(100.0));
+
+        test_case(3.5, 0.0, |x| x.cdf(0.0));
+        test_almost(3.5, 3.184413836670893e-03, 1e-16, |x| x.cdf(0.1));
+        test_almost(3.5, 1.355315036184170e-01, 1e-15, |x| x.cdf(1.0));
+        test_almost(3.5, 9.719601382856896e-01, 1e-15, |x| x.cdf(10.0));
+        test_case(3.5, 1.0, |x| x.cdf(100.0));
+
+        test_case(100.0, 0.0, |x| x.cdf(0.0));
+        test_almost(100.0, 2.181059214078525e-32, 1e-42, |x| x.cdf(10.0));
+        test_almost(100.0, 6.953305247616201e-06, 1e-18, |x| x.cdf(50.0));
+        test_almost(100.0, 5.188083154720433e-01, 1e-13, |x| x.cdf(100.0));
+
+        test_almost(400.0, 2.024759014847327e-57, 1e-72, |x| x.cdf(100.0));
+        test_almost(400.0, 9.995177872404065e-01, 1e-15, |x| x.cdf(500.0));
+        test_case(400.0, 1.0, |x| x.cdf(1000.0));
+    }
+
+    #[test]
+    fn test_pdf() {
+        test_case(1.0, 0.0, |x| x.pdf(0.0));
+        test_almost(1.0, 1.2000389484301359798, 1e-15, |x| x.pdf(0.1));
+        test_almost(1.0, 0.24197072451914334980, 1e-15, |x| x.pdf(1.0));
+        test_almost(1.0, 0.010874740337283141714, 1e-15, |x| x.pdf(5.5));
+        test_almost(1.0, 4.7000792147504127122e-26, 1e-38, |x| x.pdf(110.1));
+        test_case(1.0, 0.0, |x| x.pdf(f64::INFINITY));
+        test_case(2.0, 0.0, |x| x.pdf(0.0));
+        test_almost(2.0, 0.47561471225035700455, 1e-15, |x| x.pdf(0.1));
+        test_almost(2.0, 0.30326532985631671180, 1e-15, |x| x.pdf(1.0));
+        test_almost(2.0, 0.031963930603353786351, 1e-15, |x| x.pdf(5.5));
+        test_almost(2.0, 6.1810004550085248492e-25, 1e-37, |x| x.pdf(110.1));
+        test_case(2.0, 0.0, |x| x.pdf(f64::INFINITY));
+        test_case(2.5, 0.0, |x| x.pdf(0.0));
+        test_almost(2.5, 0.24812852712543073541, 1e-15, |x| x.pdf(0.1));
+        test_almost(2.5, 0.28134822576318228131, 1e-15, |x| x.pdf(1.0));
+        test_almost(2.5, 0.045412171451573920401, 1e-15, |x| x.pdf(5.5));
+        test_almost(2.5, 1.8574923023527248767e-24, 1e-36, |x| x.pdf(110.1));
+        test_case(2.5, 0.0, |x| x.pdf(f64::INFINITY));
+        // test_case(f64::INFINITY, 0.0, |x| x.pdf(0.0));
+        // test_case(f64::INFINITY, 0.0, |x| x.pdf(0.1));
+        // test_case(f64::INFINITY, 0.0, |x| x.pdf(1.0));
+        // test_case(f64::INFINITY, 0.0, |x| x.pdf(5.5));
+        // test_case(f64::INFINITY, 0.0, |x| x.pdf(110.1));
+        // test_case(f64::INFINITY, 0.0, |x| x.pdf(f64::INFINITY));
+    }
+
+    #[test]
+    fn test_ln_pdf() {
+        test_case(1.0, f64::NEG_INFINITY, |x| x.ln_pdf(0.0));
+        test_almost(1.0, 0.18235401329235010023, 1e-15, |x| x.ln_pdf(0.1));
+        test_almost(1.0, -1.4189385332046727418, 1e-15, |x| x.ln_pdf(1.0));
+        test_almost(1.0, -4.5213125793238853591, 1e-15, |x| x.ln_pdf(5.5));
+        test_almost(1.0, -58.319633055068989881, 1e-13, |x| x.ln_pdf(110.1));
+        test_case(1.0, f64::NEG_INFINITY, |x| x.ln_pdf(f64::INFINITY));
+        test_case(2.0, f64::NEG_INFINITY, |x| x.ln_pdf(0.0));
+        test_almost(2.0, -0.74314718055994530942, 1e-15, |x| x.ln_pdf(0.1));
+        test_almost(2.0, -1.1931471805599453094, 1e-15, |x| x.ln_pdf(1.0));
+        test_almost(2.0, -3.4431471805599453094, 1e-15, |x| x.ln_pdf(5.5));
+        test_almost(2.0, -55.743147180559945309, 1e-13, |x| x.ln_pdf(110.1));
+        test_case(2.0, f64::NEG_INFINITY, |x| x.ln_pdf(f64::INFINITY));
+        test_case(2.5, f64::NEG_INFINITY, |x| x.ln_pdf(0.0));
+        test_almost(2.5, -1.3938084125266298963, 1e-15, |x| x.ln_pdf(0.1));
+        test_almost(2.5, -1.2681621392781184753, 1e-15, |x| x.ln_pdf(1.0));
+        test_almost(2.5, -3.0919751162185121666, 1e-15, |x| x.ln_pdf(5.5));
+        test_almost(2.5, -54.642814878345959906, 1e-13, |x| x.ln_pdf(110.1));
+        test_case(2.5, f64::NEG_INFINITY, |x| x.ln_pdf(f64::INFINITY));
+        // test_case(f64::INFINITY, f64::NEG_INFINITY, |x| x.ln_pdf(0.0));
+        // test_case(f64::INFINITY, f64::NEG_INFINITY, |x| x.ln_pdf(0.1));
+        // test_case(f64::INFINITY, f64::NEG_INFINITY, |x| x.ln_pdf(1.0));
+        // test_case(f64::INFINITY, f64::NEG_INFINITY, |x| x.ln_pdf(5.5));
+        // test_case(f64::INFINITY, f64::NEG_INFINITY, |x| x.ln_pdf(110.1));
+        // test_case(f64::INFINITY, f64::NEG_INFINITY, |x| x.ln_pdf(f64::INFINITY));
+    }
+
+    #[test]
     fn test_continuous() {
-        // TODO: figure out why this test fails:
-        //test::check_continuous_distribution(&try_create(1.0), 0.0, 10.0);
+        // Cannot test for `freedom == 1.0`. The pdf is very steep near 0.0,
+        // leading to problems with numerical integration
+        test::check_continuous_distribution(&try_create(1.5), 0.0, 10.0);
         test::check_continuous_distribution(&try_create(2.0), 0.0, 10.0);
         test::check_continuous_distribution(&try_create(5.0), 0.0, 50.0);
     }
