@@ -104,6 +104,10 @@ pub trait Variance<T>: Mean<T> {
     fn std_dev(&self) -> T;
 }
 
+pub trait Covariance<T> {
+    fn variance(&self) -> T;
+}
+
 pub trait CheckedVariance<T>: CheckedMean<T> {
     /// Returns the variance.
     /// # Examples
