@@ -31,7 +31,7 @@ use rand::Rng;
 pub struct MultivariateNormal<Real, N>
 where
     Real: RealField,
-    N: Dim + DimMin<N, Output = N>,
+    N: Dim + DimMin<N, Output = N> + DimName,
     DefaultAllocator: Allocator<Real, N>,
     DefaultAllocator: Allocator<Real, N, N>,
     DefaultAllocator: Allocator<Real, U1, N>,
@@ -44,7 +44,7 @@ where
 impl<Real, N> MultivariateNormal<Real, N>
 where
     Real: RealField,
-    N: Dim + DimMin<N, Output = N> + DimSub<Dynamic>,
+    N: Dim + DimMin<N, Output = N> + DimName,
     DefaultAllocator: Allocator<Real, N>,
     DefaultAllocator: Allocator<Real, N, N>,
     DefaultAllocator: Allocator<Real, U1, N>,
