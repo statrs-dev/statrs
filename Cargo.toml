@@ -18,7 +18,7 @@ name = "statrs"
 path = "src/lib.rs"
 
 [dependencies]
-rand = "0.7.2"
-nalgebra = "0.19.0"
+rand = "0.7"
+nalgebra = "0.19"
 nalgebra-mvn = { path = "../nalgebra-mvn" }
 num-traits = "0.2.10"
