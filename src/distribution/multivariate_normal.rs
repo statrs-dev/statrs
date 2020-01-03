@@ -8,6 +8,7 @@ use nalgebra::{
     Cholesky, DefaultAllocator, Dim, DimMin, Dynamic, RealField, LU, U1,
 };
 use num_traits::bounds::Bounded;
+use num_traits::real::Real;
 use rand::distributions::Distribution;
 use rand::Rng;
 
@@ -37,8 +38,11 @@ where
     DefaultAllocator: Allocator<Real, U1, N>,
     DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
 {
-    mvn: nalgebra_mvn::MultivariateNormal<Real, N>,
     cov_chol_decomp: MatrixN<Real, N>,
+    mu: VectorN<Real, N>,
+    cov: MatrixN<Real, N>,
+    precision: MatrixN<Real, N>,
+    pdf_const: Real,
 }
 
 impl<Real, N> MultivariateNormal<Real, N>
@@ -62,19 +66,23 @@ where
         if (cov.lower_triangle() != cov.upper_triangle().transpose()) {
             return Err(StatsError::BadParams);
         }
-        match nalgebra_mvn::MultivariateNormal::from_mean_and_covariance(&mean, &cov.clone()) {
-            Ok(mvn) => {
-                // Store the Cholesky decomposition of the covariance matrix
-                // for sampling
-                match Cholesky::new(cov.clone()) {
-                    None => Err(StatsError::BadParams),
-                    Some(cholesky_decomp) => Ok(MultivariateNormal {
-                        mvn: mvn,
-                        cov_chol_decomp: cholesky_decomp.unpack(),
-                    }),
-                }
-            }
-            Err(_) => Err(StatsError::BadParams),
+        let cov_det = LU::new(cov.clone()).determinant();
+        let pdf_const = (Real::two_pi()
+            .powi(mean.nrows() as i32)
+            .recip()
+            .mul(cov_det.abs()))
+        .sqrt();
+        // Store the Cholesky decomposition of the covariance matrix
+        // for sampling
+        match Cholesky::new(cov.clone()) {
+            None => Err(StatsError::BadParams),
+            Some(cholesky_decomp) => Ok(MultivariateNormal {
+                cov_chol_decomp: cholesky_decomp.clone().unpack(),
+                mu: mean.clone(),
+                cov: cov.clone(),
+                precision: cholesky_decomp.inverse(),
+                pdf_const: pdf_const,
+            }),
         }
     }
 }
@@ -99,7 +107,7 @@ where
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> VectorN<f64, N> {
         let d = Normal::new(0., 1.).unwrap();
         let z = VectorN::<f64, N>::from_distribution(&d, rng);
-        (self.cov_chol_decomp.clone() * z) + self.mvn.mean()
+        (self.cov_chol_decomp.clone() * z) + self.mu.clone()
     }
 }
 
@@ -150,7 +158,7 @@ where
     ///
     /// This is the same mean used to construct the distribution
     fn mean(&self) -> VectorN<Real, N> {
-        self.mvn.mean()
+        self.mu.clone()
     }
 }
 
@@ -165,9 +173,7 @@ where
 {
     /// Returns the covariance matrix of the multivariate normal distribution
     fn variance(&self) -> MatrixN<Real, N> {
-        Cholesky::new(self.mvn.precision().clone())
-            .unwrap()
-            .inverse()
+        self.cov.clone()
     }
 }
 
@@ -215,7 +221,7 @@ where
     ///
     /// where `μ` is the mean
     fn mode(&self) -> VectorN<Real, N> {
-        self.mvn.mean()
+        self.mu.clone()
     }
 }
 
@@ -240,7 +246,12 @@ where
     /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
     /// of the covariance matrix, and `k` is the dimension of the distribution
     fn pdf(&self, x: VectorN<Real, N>) -> Real {
-        *self.mvn.pdf::<U1>(&x.transpose()).get((0, 0)).unwrap()
+        let dv = x - &self.mu;
+        let exp_term = nalgebra::convert::<f64, Real>(-0.5)
+            * *(&dv.transpose() * &self.precision * &dv)
+                .get((0, 0))
+                .unwrap();
+        self.pdf_const * exp_term.exp()
     }
     /// Calculates the log probability density function for the multivariate
     /// normal distribution at `x`
@@ -254,6 +265,11 @@ where
     /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
     /// of the covariance matrix, and `k` is the dimension of the distribution
     fn ln_pdf(&self, x: VectorN<Real, N>) -> Real {
-        *self.mvn.logpdf::<U1>(&x.transpose()).get((0, 0)).unwrap()
+        let dv = x - &self.mu;
+        let exp_term = nalgebra::convert::<f64, Real>(-0.5)
+            * *(&dv.transpose() * &self.precision * &dv)
+                .get((0, 0))
+                .unwrap();
+        self.pdf_const.ln() + exp_term
     }
 }
