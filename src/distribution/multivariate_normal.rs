@@ -4,11 +4,10 @@ use crate::statistics::{Covariance, Entropy, Max, Mean, Min, Mode};
 use crate::{Result, StatsError};
 use nalgebra::{
     base::allocator::Allocator,
-    base::{dimension::DimName, dimension::DimSub, MatrixN, VectorN},
-    Cholesky, DefaultAllocator, Dim, DimMin, Dynamic, RealField, LU, U1,
+    base::{dimension::DimName, MatrixN, VectorN},
+    Cholesky, DefaultAllocator, Dim, DimMin, RealField, LU, U1,
 };
 use num_traits::bounds::Bounded;
-use num_traits::real::Real;
 use rand::distributions::Distribution;
 use rand::Rng;
 
@@ -63,7 +62,7 @@ where
     /// symmetric or positive-definite
     pub fn new(mean: &VectorN<Real, N>, cov: &MatrixN<Real, N>) -> Result<Self> {
         // Check that the provided covariance matrix is symmetric
-        if (cov.lower_triangle() != cov.upper_triangle().transpose()) {
+        if cov.lower_triangle() != cov.upper_triangle().transpose() {
             return Err(StatsError::BadParams);
         }
         let cov_det = LU::new(cov.clone()).determinant();
