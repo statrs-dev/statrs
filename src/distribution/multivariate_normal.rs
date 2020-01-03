@@ -59,21 +59,20 @@ where
     /// symmetric or positive-definite
     pub fn new(mean: &VectorN<Real, N>, cov: &MatrixN<Real, N>) -> Result<Self> {
         // Check that the provided covariance matrix is symmetric
-        if (cov.lower_triangle() != cov.upper_triangle().transpose()) { return Err(StatsError::BadParams); }
+        if (cov.lower_triangle() != cov.upper_triangle().transpose()) {
+            return Err(StatsError::BadParams);
+        }
         match nalgebra_mvn::MultivariateNormal::from_mean_and_covariance(&mean, &cov.clone()) {
             Ok(mvn) => {
                 // Store the Cholesky decomposition of the covariance matrix
                 // for sampling
                 match Cholesky::new(cov.clone()) {
-                  None => Err(StatsError::BadParams),
-                  Some(cholesky_decomp) => {
-                    Ok(MultivariateNormal {
-                      mvn: mvn,
-                      cov_chol_decomp: cholesky_decomp.unpack(),
-                    })
-                  },
+                    None => Err(StatsError::BadParams),
+                    Some(cholesky_decomp) => Ok(MultivariateNormal {
+                        mvn: mvn,
+                        cov_chol_decomp: cholesky_decomp.unpack(),
+                    }),
                 }
-
             }
             Err(_) => Err(StatsError::BadParams),
         }
