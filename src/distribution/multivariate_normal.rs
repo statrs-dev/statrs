@@ -10,7 +10,7 @@ use nalgebra::{
 use num_traits::bounds::Bounded;
 use rand::distributions::Distribution;
 use rand::Rng;
-use std::f64::consts::{PI, E};
+use std::f64::consts::{E, PI};
 
 /// Implements the [Multivariate Normal](https://en.wikipedia.org/wiki/Multivariate_normal_distribution)
 /// distribution using the "nalgebra" crate for matrix operations
@@ -65,11 +65,7 @@ where
             return Err(StatsError::BadParams);
         }
         let cov_det = LU::new(cov.clone()).determinant();
-        let pdf_const = ((2. * PI)
-            .powi(mean.nrows() as i32)
-            .recip()
-            * cov_det.abs())
-        .sqrt();
+        let pdf_const = ((2. * PI).powi(mean.nrows() as i32).recip() * cov_det.abs()).sqrt();
         // Store the Cholesky decomposition of the covariance matrix
         // for sampling
         match Cholesky::new(cov.clone()) {
@@ -238,7 +234,8 @@ where
     /// of the covariance matrix, and `k` is the dimension of the distribution
     fn pdf(&self, x: VectorN<f64, N>) -> f64 {
         let dv = x - &self.mu;
-        let exp_term = -0.5 * *(&dv.transpose() * &self.precision * &dv)
+        let exp_term = -0.5
+            * *(&dv.transpose() * &self.precision * &dv)
                 .get((0, 0))
                 .unwrap();
         self.pdf_const * exp_term.exp()
@@ -247,7 +244,8 @@ where
     /// normal distribution at `x`. Equivalent to pdf(x).ln().
     fn ln_pdf(&self, x: VectorN<f64, N>) -> f64 {
         let dv = x - &self.mu;
-        let exp_term = -0.5 * *(&dv.transpose() * &self.precision * &dv)
+        let exp_term = -0.5
+            * *(&dv.transpose() * &self.precision * &dv)
                 .get((0, 0))
                 .unwrap();
         self.pdf_const.ln() + exp_term
