@@ -244,16 +244,7 @@ where
         self.pdf_const * exp_term.exp()
     }
     /// Calculates the log probability density function for the multivariate
-    /// normal distribution at `x`
-    ///
-    /// # Formula
-    ///
-    /// ```ignore
-    /// ln((2 * π) ^ (-k / 2) * det(Σ) ^ (1 / 2) * e ^ ( -(1 / 2) * transpose(x - μ) * inv(Σ) * (x - μ)))
-    /// ```
-    ///
-    /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
-    /// of the covariance matrix, and `k` is the dimension of the distribution
+    /// normal distribution at `x`. Equivalent to pdf(x).ln().
     fn ln_pdf(&self, x: VectorN<f64, N>) -> f64 {
         let dv = x - &self.mu;
         let exp_term = -0.5 * *(&dv.transpose() * &self.precision * &dv)
