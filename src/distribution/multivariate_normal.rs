@@ -10,6 +10,7 @@ use nalgebra::{
 use num_traits::bounds::Bounded;
 use rand::distributions::Distribution;
 use rand::Rng;
+use std::f64::consts::{PI, E};
 
 /// Implements the [Multivariate Normal](https://en.wikipedia.org/wiki/Multivariate_normal_distribution)
 /// distribution using the "nalgebra" crate for matrix operations
@@ -22,35 +23,33 @@ use rand::Rng;
 /// use nalgebra::{Vector2, Matrix2};
 /// use statrs::statistics::{Mean, Covariance};
 ///
-/// let mvn = MultivariateNormal::<f64, U2>::new(&Vector2::<f64>::zeros(), &Matrix2::<f64>::identity()).unwrap();
-/// assert_eq!(mvn.mean(), Vector2::<f64>::new(0., 0.));
-/// assert_eq!(mvn.variance(), Matrix2::<f64>::new(1., 0., 0., 1.));
-/// assert_eq!(mvn.pdf(Vector2::<f64>::new(1., 1.)), 0.05854983152431917);
+/// let mvn = MultivariateNormal::<U2>::new(&Vector2::zeros(), &Matrix2::identity()).unwrap();
+/// assert_eq!(mvn.mean(), Vector2::new(0., 0.));
+/// assert_eq!(mvn.variance(), Matrix2::new(1., 0., 0., 1.));
+/// assert_eq!(mvn.pdf(Vector2::new(1., 1.)), 0.05854983152431917);
 /// ```
 #[derive(Debug, Clone)]
-pub struct MultivariateNormal<Real, N>
+pub struct MultivariateNormal<N>
 where
-    Real: RealField,
     N: Dim + DimMin<N, Output = N> + DimName,
-    DefaultAllocator: Allocator<Real, N>,
-    DefaultAllocator: Allocator<Real, N, N>,
-    DefaultAllocator: Allocator<Real, U1, N>,
+    DefaultAllocator: Allocator<f64, N>,
+    DefaultAllocator: Allocator<f64, N, N>,
+    DefaultAllocator: Allocator<f64, U1, N>,
     DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
 {
-    cov_chol_decomp: MatrixN<Real, N>,
-    mu: VectorN<Real, N>,
-    cov: MatrixN<Real, N>,
-    precision: MatrixN<Real, N>,
-    pdf_const: Real,
+    cov_chol_decomp: MatrixN<f64, N>,
+    mu: VectorN<f64, N>,
+    cov: MatrixN<f64, N>,
+    precision: MatrixN<f64, N>,
+    pdf_const: f64,
 }
 
-impl<Real, N> MultivariateNormal<Real, N>
+impl<N> MultivariateNormal<N>
 where
-    Real: RealField,
     N: Dim + DimMin<N, Output = N> + DimName,
-    DefaultAllocator: Allocator<Real, N>,
-    DefaultAllocator: Allocator<Real, N, N>,
-    DefaultAllocator: Allocator<Real, U1, N>,
+    DefaultAllocator: Allocator<f64, N>,
+    DefaultAllocator: Allocator<f64, N, N>,
+    DefaultAllocator: Allocator<f64, U1, N>,
     DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
 {
     ///  Constructs a new multivariate normal distribution with a mean of `mean`
@@ -60,16 +59,16 @@ where
     ///
     /// Returns an error if the given covariance matrix is not
     /// symmetric or positive-definite
-    pub fn new(mean: &VectorN<Real, N>, cov: &MatrixN<Real, N>) -> Result<Self> {
+    pub fn new(mean: &VectorN<f64, N>, cov: &MatrixN<f64, N>) -> Result<Self> {
         // Check that the provided covariance matrix is symmetric
         if cov.lower_triangle() != cov.upper_triangle().transpose() {
             return Err(StatsError::BadParams);
         }
         let cov_det = LU::new(cov.clone()).determinant();
-        let pdf_const = (Real::two_pi()
+        let pdf_const = ((2. * PI)
             .powi(mean.nrows() as i32)
             .recip()
-            .mul(cov_det.abs()))
+            * cov_det.abs())
         .sqrt();
         // Store the Cholesky decomposition of the covariance matrix
         // for sampling
@@ -86,7 +85,7 @@ where
     }
 }
 
-impl<N> Distribution<VectorN<f64, N>> for MultivariateNormal<f64, N>
+impl<N> Distribution<VectorN<f64, N>> for MultivariateNormal<N>
 where
     N: Dim + DimMin<N, Output = N> + DimName,
     DefaultAllocator: Allocator<f64, N>,
@@ -110,45 +109,42 @@ where
     }
 }
 
-impl<Real, N> Min<VectorN<Real, N>> for MultivariateNormal<Real, N>
+impl<N> Min<VectorN<f64, N>> for MultivariateNormal<N>
 where
-    Real: RealField,
     N: Dim + DimMin<N, Output = N> + DimName,
-    DefaultAllocator: Allocator<Real, N>,
-    DefaultAllocator: Allocator<Real, N, N>,
-    DefaultAllocator: Allocator<Real, U1, N>,
+    DefaultAllocator: Allocator<f64, N>,
+    DefaultAllocator: Allocator<f64, N, N>,
+    DefaultAllocator: Allocator<f64, U1, N>,
     DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
 {
     /// Returns the minimum value in the domain of the
     /// multivariate normal distribution represented by a real vector
-    fn min(&self) -> VectorN<Real, N> {
+    fn min(&self) -> VectorN<f64, N> {
         VectorN::min_value()
     }
 }
 
-impl<Real, N> Max<VectorN<Real, N>> for MultivariateNormal<Real, N>
+impl<N> Max<VectorN<f64, N>> for MultivariateNormal<N>
 where
-    Real: RealField,
     N: Dim + DimMin<N, Output = N> + DimName,
-    DefaultAllocator: Allocator<Real, N>,
-    DefaultAllocator: Allocator<Real, N, N>,
-    DefaultAllocator: Allocator<Real, U1, N>,
+    DefaultAllocator: Allocator<f64, N>,
+    DefaultAllocator: Allocator<f64, N, N>,
+    DefaultAllocator: Allocator<f64, U1, N>,
     DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
 {
     /// Returns the maximum value in the domain of the
     /// multivariate normal distribution represented by a real vector
-    fn max(&self) -> VectorN<Real, N> {
+    fn max(&self) -> VectorN<f64, N> {
         VectorN::max_value()
     }
 }
 
-impl<Real, N> Mean<VectorN<Real, N>> for MultivariateNormal<Real, N>
+impl<N> Mean<VectorN<f64, N>> for MultivariateNormal<N>
 where
-    Real: RealField,
     N: Dim + DimMin<N, Output = N> + DimName,
-    DefaultAllocator: Allocator<Real, N>,
-    DefaultAllocator: Allocator<Real, N, N>,
-    DefaultAllocator: Allocator<Real, U1, N>,
+    DefaultAllocator: Allocator<f64, N>,
+    DefaultAllocator: Allocator<f64, N, N>,
+    DefaultAllocator: Allocator<f64, U1, N>,
     DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
 {
     /// Returns the mean of the normal distribution
@@ -156,33 +152,31 @@ where
     /// # Remarks
     ///
     /// This is the same mean used to construct the distribution
-    fn mean(&self) -> VectorN<Real, N> {
+    fn mean(&self) -> VectorN<f64, N> {
         self.mu.clone()
     }
 }
 
-impl<Real, N> Covariance<MatrixN<Real, N>> for MultivariateNormal<Real, N>
+impl<N> Covariance<MatrixN<f64, N>> for MultivariateNormal<N>
 where
-    Real: RealField,
     N: Dim + DimMin<N, Output = N> + DimName,
-    DefaultAllocator: Allocator<Real, N>,
-    DefaultAllocator: Allocator<Real, N, N>,
-    DefaultAllocator: Allocator<Real, U1, N>,
+    DefaultAllocator: Allocator<f64, N>,
+    DefaultAllocator: Allocator<f64, N, N>,
+    DefaultAllocator: Allocator<f64, U1, N>,
     DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
 {
     /// Returns the covariance matrix of the multivariate normal distribution
-    fn variance(&self) -> MatrixN<Real, N> {
+    fn variance(&self) -> MatrixN<f64, N> {
         self.cov.clone()
     }
 }
 
-impl<Real, N> Entropy<Real> for MultivariateNormal<Real, N>
+impl<N> Entropy<f64> for MultivariateNormal<N>
 where
-    Real: RealField,
     N: Dim + DimMin<N, Output = N> + DimName,
-    DefaultAllocator: Allocator<Real, N>,
-    DefaultAllocator: Allocator<Real, N, N>,
-    DefaultAllocator: Allocator<Real, U1, N>,
+    DefaultAllocator: Allocator<f64, N>,
+    DefaultAllocator: Allocator<f64, N, N>,
+    DefaultAllocator: Allocator<f64, U1, N>,
     DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
 {
     /// Returns the entropy of the multivariate normal distribution
@@ -194,20 +188,19 @@ where
     /// ```
     ///
     /// where `Σ` is the covariance matrix and `det` is the determinant
-    fn entropy(&self) -> Real {
-        LU::new(self.variance().clone().scale(Real::two_pi() * Real::e()))
+    fn entropy(&self) -> f64 {
+        LU::new(self.variance().clone().scale(2. * PI * E))
             .determinant()
             .ln()
     }
 }
 
-impl<Real, N> Mode<VectorN<Real, N>> for MultivariateNormal<Real, N>
+impl<N> Mode<VectorN<f64, N>> for MultivariateNormal<N>
 where
-    Real: RealField,
     N: Dim + DimMin<N, Output = N> + DimName,
-    DefaultAllocator: Allocator<Real, N>,
-    DefaultAllocator: Allocator<Real, N, N>,
-    DefaultAllocator: Allocator<Real, U1, N>,
+    DefaultAllocator: Allocator<f64, N>,
+    DefaultAllocator: Allocator<f64, N, N>,
+    DefaultAllocator: Allocator<f64, U1, N>,
     DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
 {
     /// Returns the mode of the multivariate normal distribution
@@ -219,18 +212,17 @@ where
     /// ```
     ///
     /// where `μ` is the mean
-    fn mode(&self) -> VectorN<Real, N> {
+    fn mode(&self) -> VectorN<f64, N> {
         self.mu.clone()
     }
 }
 
-impl<Real, N> Continuous<VectorN<Real, N>, Real> for MultivariateNormal<Real, N>
+impl<N> Continuous<VectorN<f64, N>, f64> for MultivariateNormal<N>
 where
-    Real: RealField,
     N: Dim + DimMin<N, Output = N> + DimName,
-    DefaultAllocator: Allocator<Real, N>,
-    DefaultAllocator: Allocator<Real, N, N>,
-    DefaultAllocator: Allocator<Real, U1, N>,
+    DefaultAllocator: Allocator<f64, N>,
+    DefaultAllocator: Allocator<f64, N, N>,
+    DefaultAllocator: Allocator<f64, U1, N>,
     DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
 {
     /// Calculates the probability density function for the multivariate
@@ -244,10 +236,9 @@ where
     ///
     /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
     /// of the covariance matrix, and `k` is the dimension of the distribution
-    fn pdf(&self, x: VectorN<Real, N>) -> Real {
+    fn pdf(&self, x: VectorN<f64, N>) -> f64 {
         let dv = x - &self.mu;
-        let exp_term = nalgebra::convert::<f64, Real>(-0.5)
-            * *(&dv.transpose() * &self.precision * &dv)
+        let exp_term = -0.5 * *(&dv.transpose() * &self.precision * &dv)
                 .get((0, 0))
                 .unwrap();
         self.pdf_const * exp_term.exp()
@@ -263,10 +254,9 @@ where
     ///
     /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
     /// of the covariance matrix, and `k` is the dimension of the distribution
-    fn ln_pdf(&self, x: VectorN<Real, N>) -> Real {
+    fn ln_pdf(&self, x: VectorN<f64, N>) -> f64 {
         let dv = x - &self.mu;
-        let exp_term = nalgebra::convert::<f64, Real>(-0.5)
-            * *(&dv.transpose() * &self.precision * &dv)
+        let exp_term = -0.5 * *(&dv.transpose() * &self.precision * &dv)
                 .get((0, 0))
                 .unwrap();
         self.pdf_const.ln() + exp_term
