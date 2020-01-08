@@ -119,7 +119,7 @@ where
     /// Returns the minimum value in the domain of the
     /// multivariate normal distribution represented by a real vector
     fn min(&self) -> VectorN<f64, N> {
-        VectorN::min_value()
+        VectorN::<f64, N>::repeat(f64::NEG_INFINITY)
     }
 }
 
@@ -134,7 +134,7 @@ where
     /// Returns the maximum value in the domain of the
     /// multivariate normal distribution represented by a real vector
     fn max(&self) -> VectorN<f64, N> {
-        VectorN::max_value()
+        VectorN::<f64, N>::repeat(f64::INFINITY)
     }
 }
 
