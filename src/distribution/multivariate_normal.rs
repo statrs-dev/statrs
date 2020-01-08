@@ -9,8 +9,8 @@ use nalgebra::{
 };
 use rand::distributions::Distribution;
 use rand::Rng;
-use std::f64::consts::{E, PI};
 use std::f64;
+use std::f64::consts::{E, PI};
 
 /// Implements the [Multivariate Normal](https://en.wikipedia.org/wiki/Multivariate_normal_distribution)
 /// distribution using the "nalgebra" crate for matrix operations
@@ -63,11 +63,15 @@ where
         // Check that the provided covariance matrix is symmetric
         // Check that mean and covariance do not contain NaN
         if cov.lower_triangle() != cov.upper_triangle().transpose()
-         || mean.iter().any(|f| f.is_nan()) || cov.iter().any(|f| f.is_nan()) {
+            || mean.iter().any(|f| f.is_nan())
+            || cov.iter().any(|f| f.is_nan())
+        {
             return Err(StatsError::BadParams);
         }
         let cov_det = LU::new(cov.clone()).determinant();
-        let pdf_const = ((2. * PI).powi(mean.nrows() as i32) * cov_det.abs()).recip().sqrt();
+        let pdf_const = ((2. * PI).powi(mean.nrows() as i32) * cov_det.abs())
+            .recip()
+            .sqrt();
         // Store the Cholesky decomposition of the covariance matrix
         // for sampling
         match Cholesky::new(cov.clone()) {
