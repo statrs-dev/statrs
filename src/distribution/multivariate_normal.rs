@@ -7,7 +7,6 @@ use nalgebra::{
     base::{dimension::DimName, MatrixN, VectorN},
     Cholesky, DefaultAllocator, Dim, DimMin, LU, U1,
 };
-use num_traits::bounds::Bounded;
 use rand::distributions::Distribution;
 use rand::Rng;
 use std::f64::consts::{E, PI};
@@ -261,13 +260,10 @@ mod test {
     use std::f64;
     use crate::statistics::*;
     use crate::distribution::{MultivariateNormal, Continuous};
-    use crate::distribution::internal::*;
-    use nalgebra::base::dimension::U2;
     use nalgebra::{Matrix2, Vector2, Matrix3, Vector3, VectorN, MatrixN, Dim, DimMin, DimName, DefaultAllocator, U1};
     use nalgebra::base::allocator::Allocator;
     use num_traits::real::Real;
     use core::fmt::Debug;
-    use num_traits::bounds::Bounded;
 
     fn try_create<N>(mean: VectorN<f64, N>, covariance: MatrixN<f64, N>) -> MultivariateNormal<N>
         where
