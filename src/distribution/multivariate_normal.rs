@@ -266,7 +266,6 @@ mod test {
     use crate::distribution::{MultivariateNormal, Continuous};
     use nalgebra::{Matrix2, Vector2, Matrix3, Vector3, VectorN, MatrixN, Dim, DimMin, DimName, DefaultAllocator, U1};
     use nalgebra::base::allocator::Allocator;
-    use num_traits::real::Real;
     use core::fmt::Debug;
 
     fn try_create<N>(mean: VectorN<f64, N>, covariance: MatrixN<f64, N>) -> MultivariateNormal<N>
@@ -399,7 +398,7 @@ mod test {
 
     #[test]
     fn test_ln_pdf() {
-        test_case(Vector2::zeros(), Matrix2::identity(), (0.05854983152431917).ln(), |x| x.ln_pdf(Vector2::new(1., 1.)));
+        test_case(Vector2::zeros(), Matrix2::identity(), (0.05854983152431917f64).ln(), |x| x.ln_pdf(Vector2::new(1., 1.)));
         test_almost(Vector2::zeros(), Matrix2::identity(), (0.013064233284684921f64).ln(), 1e-15, |x| x.ln_pdf(Vector2::new(1., 2.)));
         test_almost(Vector2::zeros(), Matrix2::identity(), (1.8618676045881531e-23f64).ln(), 1e-15, |x| x.ln_pdf(Vector2::new(1., 10.)));
         test_almost(Vector2::zeros(), Matrix2::identity(), (5.920684802611216e-45f64).ln(), 1e-15, |x| x.ln_pdf(Vector2::new(10., 10.)));
