@@ -353,7 +353,7 @@ mod test {
         bad_create_case(Vector2::zeros(), Matrix2::new(1., 2., 2., 1.));
         // NaN in mean
         bad_create_case(Vector2::new(0., f64::NAN), Matrix2::identity());
-        // NaN in mean
+        // NaN in Covariance Matrix
         bad_create_case(Vector2::zeros(), Matrix2::new(1., 0., 0., f64::NAN));
     }
 
