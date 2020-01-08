@@ -254,3 +254,159 @@ where
         self.pdf_const.ln() + exp_term
     }
 }
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+#[cfg(test)]
+mod test {
+    use std::f64;
+    use crate::statistics::*;
+    use crate::distribution::{MultivariateNormal, Continuous};
+    use crate::distribution::internal::*;
+    use nalgebra::base::dimension::U2;
+    use nalgebra::{Matrix2, Vector2, Matrix3, Vector3, VectorN, MatrixN, Dim, DimMin, DimName, DefaultAllocator, U1};
+    use nalgebra::base::allocator::Allocator;
+    use num_traits::real::Real;
+    use core::fmt::Debug;
+    use num_traits::bounds::Bounded;
+
+    fn try_create<N>(mean: VectorN<f64, N>, covariance: MatrixN<f64, N>) -> MultivariateNormal<N>
+        where
+          N: Dim + DimMin<N, Output = N> + DimName,
+          DefaultAllocator: Allocator<f64, N>,
+          DefaultAllocator: Allocator<f64, N, N>,
+          DefaultAllocator: Allocator<f64, U1, N>,
+          DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
+    {
+        let mvn = MultivariateNormal::new(&mean, &covariance);
+        assert!(mvn.is_ok());
+        mvn.unwrap()
+    }
+
+    fn create_case<N>(mean: VectorN<f64, N>, covariance: MatrixN<f64, N>)
+        where
+          N: Dim + DimMin<N, Output = N> + DimName,
+          DefaultAllocator: Allocator<f64, N>,
+          DefaultAllocator: Allocator<f64, N, N>,
+          DefaultAllocator: Allocator<f64, U1, N>,
+          DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
+    {
+        let mvn = try_create(mean.clone(), covariance.clone());
+        assert_eq!(mean, mvn.mean());
+        assert_eq!(covariance, mvn.variance());
+    }
+
+    fn bad_create_case<N>(mean: VectorN<f64, N>, covariance: MatrixN<f64, N>)
+        where
+          N: Dim + DimMin<N, Output = N> + DimName,
+          DefaultAllocator: Allocator<f64, N>,
+          DefaultAllocator: Allocator<f64, N, N>,
+          DefaultAllocator: Allocator<f64, U1, N>,
+          DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
+    {
+        let mvn = MultivariateNormal::new(&mean, &covariance);
+        assert!(mvn.is_err());
+    }
+
+    fn test_case<T, F, N>(mean: VectorN<f64, N>, covariance: MatrixN<f64, N>, expected: T, eval: F)
+        where
+            T: Debug + PartialEq,
+            F: Fn(MultivariateNormal<N>) -> T,
+            N: Dim + DimMin<N, Output = N> + DimName,
+            DefaultAllocator: Allocator<f64, N>,
+            DefaultAllocator: Allocator<f64, N, N>,
+            DefaultAllocator: Allocator<f64, U1, N>,
+            DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
+    {
+        let mvn = try_create(mean, covariance);
+        let x = eval(mvn);
+        assert_eq!(expected, x);
+    }
+
+    fn test_almost<F, N>(mean: VectorN<f64, N>, covariance: MatrixN<f64, N>, expected: f64, acc: f64, eval: F)
+        where
+          F: Fn(MultivariateNormal<N>) -> f64,
+          N: Dim + DimMin<N, Output = N> + DimName,
+          DefaultAllocator: Allocator<f64, N>,
+          DefaultAllocator: Allocator<f64, N, N>,
+          DefaultAllocator: Allocator<f64, U1, N>,
+          DefaultAllocator: Allocator<(usize, usize), <N as DimMin<N>>::Output>,
+    {
+        let mvn = try_create(mean, covariance);
+        let x = eval(mvn);
+        assert_almost_eq!(expected, x, acc);
+    }
+
+    #[test]
+    fn test_create() {
+        create_case(Vector2::new(0., 0.), Matrix2::new(1., 0., 0., 1.));
+        create_case(Vector2::new(10., 5.), Matrix2::new(2., 1., 1., 2.));
+        create_case(Vector3::new(4., 5., 6.), Matrix3::new(2., 1., 0., 1., 2., 1., 0., 1., 2.));
+        create_case(Vector2::new(0., f64::INFINITY), Matrix2::identity());
+        create_case(Vector2::zeros(), Matrix2::new(f64::INFINITY, 0., 0., f64::INFINITY));
+    }
+
+    #[test]
+    fn test_bad_create() {
+        // Covariance not symmetric
+        bad_create_case(Vector2::zeros(), Matrix2::new(1., 1., 0., 1.));
+        // Covariance not positive-definite
+        bad_create_case(Vector2::zeros(), Matrix2::new(1., 2., 2., 1.));
+        // NaN in mean
+        bad_create_case(Vector2::new(0., f64::NAN), Matrix2::identity());
+        // NaN in mean
+        bad_create_case(Vector2::zeros(), Matrix2::new(1., 0., 0., f64::NAN));
+    }
+
+    #[test]
+    fn test_variance() {
+        test_case(Vector2::zeros(), Matrix2::identity(), Matrix2::new(1., 0., 0., 1.), |x| x.variance());
+        test_case(Vector2::zeros(), Matrix2::new(f64::INFINITY, 0., 0., f64::INFINITY), Matrix2::new(f64::INFINITY, 0., 0., f64::INFINITY), |x| x.variance());
+    }
+
+    #[test]
+    fn test_entropy() {
+        test_case(Vector2::zeros(), Matrix2::identity(), 2.8378770664093453, |x| x.entropy());
+        test_case(Vector2::zeros(), Matrix2::new(1., 0.5, 0.5, 1.), 2.694036030183455, |x| x.entropy());
+        test_case(Vector2::zeros(), Matrix2::new(f64::INFINITY, 0., 0., f64::INFINITY), f64::INFINITY, |x| x.entropy());
+    }
+
+    #[test]
+    fn test_mode() {
+        test_case(Vector2::zeros(), Matrix2::identity(), Vector2::new(0., 0.), |x| x.mode());
+        test_case(Vector2::<f64>::repeat(f64::INFINITY), Matrix2::identity(), Vector2::new(f64::INFINITY, f64::INFINITY), |x| x.mode());
+    }
+
+    #[test]
+    fn test_min_max() {
+        test_case(Vector2::zeros(), Matrix2::identity(), Vector2::new(f64::NEG_INFINITY, f64::NEG_INFINITY), |x| x.min());
+        test_case(Vector2::zeros(), Matrix2::identity(), Vector2::new(f64::INFINITY, f64::INFINITY), |x| x.max());
+        test_case(Vector2::new(10., 1.), Matrix2::identity(), Vector2::new(f64::NEG_INFINITY, f64::NEG_INFINITY), |x| x.min());
+        test_case(Vector2::new(-3., 5.), Matrix2::identity(), Vector2::new(f64::INFINITY, f64::INFINITY), |x| x.max());
+    }
+
+    #[test]
+    fn test_pdf() {
+        test_case(Vector2::zeros(), Matrix2::identity(), 0.05854983152431917, |x| x.pdf(Vector2::new(1., 1.)));
+        test_almost(Vector2::zeros(), Matrix2::identity(), 0.013064233284684921, 1e-15, |x| x.pdf(Vector2::new(1., 2.)));
+        test_almost(Vector2::zeros(), Matrix2::identity(), 1.8618676045881531e-23, 1e-35, |x| x.pdf(Vector2::new(1., 10.)));
+        test_almost(Vector2::zeros(), Matrix2::identity(), 5.920684802611216e-45, 1e-58, |x| x.pdf(Vector2::new(10., 10.)));
+        test_almost(Vector2::zeros(), Matrix2::new(1., 0.9, 0.9, 1.), 1.6576716577547003e-05, 1e-18, |x| x.pdf(Vector2::new(1., -1.)));
+        test_almost(Vector2::zeros(), Matrix2::new(1., 0.99, 0.99, 1.), 4.1970621773477824e-44, 1e-54, |x| x.pdf(Vector2::new(1., -1.)));
+        test_almost(Vector2::new(0.5, -0.2), Matrix2::new(2.0, 0.3, 0.3, 0.5), 0.0013075203140666656, 1e-15, |x| x.pdf(Vector2::new(2., 2.)));
+        test_case(Vector2::zeros(), Matrix2::new(f64::INFINITY, 0., 0., f64::INFINITY), 0.0, |x| x.pdf(Vector2::new(10., 10.)));
+        test_case(Vector2::zeros(), Matrix2::new(f64::INFINITY, 0., 0., f64::INFINITY), 0.0, |x| x.pdf(Vector2::new(100., 100.)));
+    }
+
+    #[test]
+    fn test_ln_pdf() {
+        test_case(Vector2::zeros(), Matrix2::identity(), (0.05854983152431917).ln(), |x| x.ln_pdf(Vector2::new(1., 1.)));
+        test_almost(Vector2::zeros(), Matrix2::identity(), (0.013064233284684921f64).ln(), 1e-15, |x| x.ln_pdf(Vector2::new(1., 2.)));
+        test_almost(Vector2::zeros(), Matrix2::identity(), (1.8618676045881531e-23f64).ln(), 1e-15, |x| x.ln_pdf(Vector2::new(1., 10.)));
+        test_almost(Vector2::zeros(), Matrix2::identity(), (5.920684802611216e-45f64).ln(), 1e-15, |x| x.ln_pdf(Vector2::new(10., 10.)));
+        test_almost(Vector2::zeros(), Matrix2::new(1., 0.9, 0.9, 1.), (1.6576716577547003e-05f64).ln(), 1e-14, |x| x.ln_pdf(Vector2::new(1., -1.)));
+        test_almost(Vector2::zeros(), Matrix2::new(1., 0.99, 0.99, 1.), (4.1970621773477824e-44f64).ln(), 1e-12, |x| x.ln_pdf(Vector2::new(1., -1.)));
+        test_almost(Vector2::new(0.5, -0.2), Matrix2::new(2.0, 0.3, 0.3, 0.5), (0.0013075203140666656f64).ln(), 1e-15, |x| x.ln_pdf(Vector2::new(2., 2.)));
+        test_case(Vector2::zeros(), Matrix2::new(f64::INFINITY, 0., 0., f64::INFINITY), f64::NEG_INFINITY, |x| x.ln_pdf(Vector2::new(10., 10.)));
+        test_case(Vector2::zeros(), Matrix2::new(f64::INFINITY, 0., 0., f64::INFINITY), f64::NEG_INFINITY, |x| x.ln_pdf(Vector2::new(100., 100.)));
+    }
+}
