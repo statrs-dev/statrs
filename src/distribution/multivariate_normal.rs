@@ -5,12 +5,13 @@ use crate::{Result, StatsError};
 use nalgebra::{
     base::allocator::Allocator,
     base::{dimension::DimName, MatrixN, VectorN},
-    Cholesky, DefaultAllocator, Dim, DimMin, RealField, LU, U1,
+    Cholesky, DefaultAllocator, Dim, DimMin, LU, U1,
 };
 use num_traits::bounds::Bounded;
 use rand::distributions::Distribution;
 use rand::Rng;
 use std::f64::consts::{E, PI};
+use std::f64;
 
 /// Implements the [Multivariate Normal](https://en.wikipedia.org/wiki/Multivariate_normal_distribution)
 /// distribution using the "nalgebra" crate for matrix operations
@@ -61,7 +62,9 @@ where
     /// symmetric or positive-definite
     pub fn new(mean: &VectorN<f64, N>, cov: &MatrixN<f64, N>) -> Result<Self> {
         // Check that the provided covariance matrix is symmetric
-        if cov.lower_triangle() != cov.upper_triangle().transpose() {
+        // Check that mean and covariance do not contain NaN
+        if cov.lower_triangle() != cov.upper_triangle().transpose()
+         || mean.iter().any(|f| f.is_nan()) || cov.iter().any(|f| f.is_nan()) {
             return Err(StatsError::BadParams);
         }
         let cov_det = LU::new(cov.clone()).determinant();
