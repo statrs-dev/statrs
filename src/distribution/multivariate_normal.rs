@@ -68,7 +68,7 @@ where
             return Err(StatsError::BadParams);
         }
         let cov_det = LU::new(cov.clone()).determinant();
-        let pdf_const = ((2. * PI).powi(mean.nrows() as i32).recip() * cov_det.abs()).sqrt();
+        let pdf_const = ((2. * PI).powi(mean.nrows() as i32) * cov_det.abs()).recip().sqrt();
         // Store the Cholesky decomposition of the covariance matrix
         // for sampling
         match Cholesky::new(cov.clone()) {
