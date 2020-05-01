@@ -47,14 +47,15 @@ impl Beta {
     /// assert!(result.is_err());
     /// ```
     pub fn new(shape_a: f64, shape_b: f64) -> Result<Beta> {
-        let is_nan = shape_a.is_nan() || shape_b.is_nan();
-        match (shape_a, shape_b, is_nan) {
-            (_, _, true) => Err(StatsError::BadParams),
-            (_, _, false) if shape_a <= 0.0 || shape_b <= 0.0 => Err(StatsError::BadParams),
-            (_, _, false) => Ok(Beta {
+        if shape_a <= 0.0 || shape_a.is_nan() {
+            Err(StatsError::BadParams)
+        } else if shape_b <= 0.0 || shape_b.is_nan() {
+            Err(StatsError::BadParams)
+        } else {
+            Ok(Beta {
                 shape_a: shape_a,
                 shape_b: shape_b,
-            }),
+            })
         }
     }
 

@@ -48,17 +48,15 @@ impl InverseGamma {
     /// assert!(result.is_err());
     /// ```
     pub fn new(shape: f64, rate: f64) -> Result<InverseGamma> {
-        let is_nan = shape.is_nan() || rate.is_nan();
-        match (shape, rate, is_nan) {
-            (_, _, true) => Err(StatsError::BadParams),
-            (_, _, false) if shape <= 0.0 || rate <= 0.0 => Err(StatsError::BadParams),
-            (_, _, false) if shape == f64::INFINITY || rate == f64::INFINITY => {
-                Err(StatsError::BadParams)
-            }
-            (_, _, false) => Ok(InverseGamma {
+        if shape <= 0.0 || shape == f64::INFINITY || shape.is_nan() {
+            Err(StatsError::BadParams)
+        } else if rate <= 0.0 || rate == f64::INFINITY || rate.is_nan() {
+            Err(StatsError::BadParams)
+        } else {
+            Ok(InverseGamma {
                 shape: shape,
                 rate: rate,
-            }),
+            })
         }
     }
 

@@ -35,7 +35,7 @@ impl Weibull {
     /// # Errors
     ///
     /// Returns an error if `shape` or `scale` are `NaN`.
-    /// Returns an error if `shape <= 0.0` or `scale <= 0.0`
+    /// Returns an error if `shape <= 0.0` or `scale <= 0.0` or either is `INFINITY`.
     ///
     /// # Examples
     ///
@@ -49,15 +49,16 @@ impl Weibull {
     /// assert!(result.is_err());
     /// ```
     pub fn new(shape: f64, scale: f64) -> Result<Weibull> {
-        let is_nan = shape.is_nan() || scale.is_nan();
-        match (shape, scale, is_nan) {
-            (_, _, true) => Err(StatsError::BadParams),
-            (_, _, false) if shape <= 0.0 || scale <= 0.0 => Err(StatsError::BadParams),
-            (_, _, false) => Ok(Weibull {
+        if shape <= 0.0 || shape == f64::INFINITY || shape.is_nan() {
+            Err(StatsError::BadParams)
+        } else if scale <= 0.0 || scale == f64::INFINITY || scale.is_nan() {
+            Err(StatsError::BadParams)
+        } else {
+            Ok(Weibull {
                 shape: shape,
                 scale: scale,
                 scale_pow_shape_inv: scale.powf(-shape),
-            }),
+            })
         }
     }
 
@@ -308,14 +309,10 @@ impl Continuous<f64, f64> for Weibull {
     fn ln_pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             f64::NEG_INFINITY
-        } else if x == 0.0 && self.shape == 1.0 {
-            0.0 - self.scale.ln()
         } else if x == f64::INFINITY {
             f64::NEG_INFINITY
         } else {
-            self.shape.ln() + (self.shape - 1.0) * (x / self.scale).ln()
-                - x.powf(self.shape) * self.scale_pow_shape_inv
-                - self.scale.ln()
+            self.pdf(x).ln()
         }
     }
 }
@@ -371,11 +368,11 @@ mod test {
         create_case(1.0, 0.1);
         create_case(10.0, 1.0);
         create_case(11.0, 10.0);
-        create_case(12.0, f64::INFINITY);
     }
 
     #[test]
     fn test_bad_create() {
+        bad_create_case(12.0, f64::INFINITY);
         bad_create_case(f64::NAN, 1.0);
         bad_create_case(1.0, f64::NAN);
         bad_create_case(f64::NAN, f64::NAN);
@@ -478,7 +475,7 @@ mod test {
         test_case(10.0, 10.0, -1.0, |x| x.ln_pdf(10.0));
         test_case(10.0, 1.0, f64::NEG_INFINITY, |x| x.ln_pdf(0.0));
         test_almost(10.0, 1.0, 1.3025850929940456840179914546843642076011014886288, 1e-15, |x| x.ln_pdf(1.0));
-        test_case(10.0, 1.0, -9.999999976974149070059543159820085453156357923988985113712e9, |x| x.ln_pdf(10.0));
+        test_case(10.0, 1.0, f64::NEG_INFINITY, |x| x.ln_pdf(10.0));
     }
 
     #[test]
