@@ -13,7 +13,7 @@ pub enum RankTieBreaker {
 }
 
 /// The `Statistics` trait provides a host of statistical utilities for
-/// analzying
+/// analyzing
 /// data sets
 pub trait Statistics<T> {
     /// Returns the minimum value in the data

@@ -33,7 +33,11 @@ impl Gamma {
     /// # Errors
     ///
     /// Returns an error if `shape` or `rate` are `NaN`.
-    /// Also returns an error if `shape <= 0.0` or `rate <= 0.0`
+    /// Also returns an error if `shape <= 0.0` or `rate <= 0.0` or either is
+    /// `INFINITY`.
+    /// Those cases degenerate in some form or another: Either the limit isn't
+    /// a continuous distribution, the limit isn't a distribution or the limit
+    /// doesn't exist at all.
     ///
     /// # Examples
     ///
@@ -47,14 +51,15 @@ impl Gamma {
     /// assert!(result.is_err());
     /// ```
     pub fn new(shape: f64, rate: f64) -> Result<Gamma> {
-        let is_nan = shape.is_nan() || rate.is_nan();
-        match (shape, rate, is_nan) {
-            (_, _, true) => Err(StatsError::BadParams),
-            (_, _, false) if shape <= 0.0 || rate <= 0.0 => Err(StatsError::BadParams),
-            (_, _, false) => Ok(Gamma {
+        if shape <= 0.0 || shape == f64::INFINITY || shape.is_nan() {
+            Err(StatsError::BadParams)
+        } else if rate <= 0.0 || rate == f64::INFINITY || rate.is_nan() {
+            Err(StatsError::BadParams)
+        } else {
+            Ok(Gamma {
                 shape: shape,
                 rate: rate,
-            }),
+            })
         }
     }
 
@@ -109,10 +114,6 @@ impl Univariate<f64, f64> for Gamma {
     fn cdf(&self, x: f64) -> f64 {
         if x <= 0.0 {
             0.0
-        } else if x == self.shape && self.rate == f64::INFINITY {
-            1.0
-        } else if self.rate == f64::INFINITY {
-            0.0
         } else if x == f64::INFINITY {
             1.0
         } else {
@@ -154,11 +155,6 @@ impl Max<f64> for Gamma {
 impl Mean<f64> for Gamma {
     /// Returns the mean of the gamma distribution
     ///
-    /// # Remarks
-    ///
-    /// Returns `shape` if `rate == f64::INFINITY`. This behavior
-    /// is borrowed from the Math.NET implementation
-    ///
     /// # Formula
     ///
     /// ```ignore
@@ -167,11 +163,7 @@ impl Mean<f64> for Gamma {
     ///
     /// where `α` is the shape and `β` is the rate
     fn mean(&self) -> f64 {
-        if self.rate == f64::INFINITY {
-            self.shape
-        } else {
-            self.shape / self.rate
-        }
+        self.shape / self.rate
     }
 }
 
@@ -186,11 +178,7 @@ impl Variance<f64> for Gamma {
     ///
     /// where `α` is the shape and `β` is the rate
     fn variance(&self) -> f64 {
-        if self.rate == f64::INFINITY {
-            0.0
-        } else {
-            self.shape / (self.rate * self.rate)
-        }
+        self.shape / (self.rate * self.rate)
     }
 
     /// Returns the standard deviation of the gamma distribution
@@ -219,13 +207,9 @@ impl Entropy<f64> for Gamma {
     /// where `α` is the shape, `β` is the rate, `Γ` is the gamma function,
     /// and `ψ` is the digamma function
     fn entropy(&self) -> f64 {
-        if self.rate == f64::INFINITY {
-            0.0
-        } else {
-            self.shape - self.rate.ln()
-                + gamma::ln_gamma(self.shape)
-                + (1.0 - self.shape) * gamma::digamma(self.shape)
-        }
+        self.shape - self.rate.ln()
+            + gamma::ln_gamma(self.shape)
+            + (1.0 - self.shape) * gamma::digamma(self.shape)
     }
 }
 
@@ -247,11 +231,6 @@ impl Skewness<f64> for Gamma {
 impl Mode<f64> for Gamma {
     /// Returns the mode for the gamma distribution
     ///
-    /// # Remarks
-    ///
-    /// Returns `shape` if `rate ==f64::INFINITY`. This behavior
-    /// is borrowed from the Math.NET implementation
-    ///
     /// # Formula
     ///
     /// ```ignore
@@ -260,11 +239,7 @@ impl Mode<f64> for Gamma {
     ///
     /// where `α` is the shape and `β` is the rate
     fn mode(&self) -> f64 {
-        if self.rate == f64::INFINITY {
-            self.shape
-        } else {
-            (self.shape - 1.0) / self.rate
-        }
+        (self.shape - 1.0) / self.rate
     }
 }
 
@@ -287,10 +262,6 @@ impl Continuous<f64, f64> for Gamma {
     fn pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if self.shape == 1.0 {
-            self.rate * (-self.rate * x).exp()
-        } else if self.shape > 160.0 {
-            self.ln_pdf(x).exp()
         } else if x == f64::INFINITY {
             0.0
         } else {
@@ -316,17 +287,7 @@ impl Continuous<f64, f64> for Gamma {
     ///
     /// where `α` is the shape, `β` is the rate, and `Γ` is the gamma function
     fn ln_pdf(&self, x: f64) -> f64 {
-        if x < 0.0 {
-            f64::NEG_INFINITY
-        } else if self.shape == 1.0 {
-            self.rate.ln() - self.rate * x
-        } else if x == f64::INFINITY {
-            f64::NEG_INFINITY
-        } else {
-            self.shape * self.rate.ln() + (self.shape - 1.0) * x.ln()
-                - self.rate * x
-                - gamma::ln_gamma(self.shape)
-        }
+        self.pdf(x).ln()
     }
 }
 
@@ -433,7 +394,6 @@ mod test {
         create_case(1.0, 1.0);
         create_case(10.0, 10.0);
         create_case(10.0, 1.0);
-        create_case(10.0, f64::INFINITY);
     }
 
     #[test]
@@ -452,7 +412,6 @@ mod test {
         test_case(1.0, 1.0, 1.0, |x| x.mean());
         test_case(10.0, 10.0, 1.0, |x| x.mean());
         test_case(10.0, 1.0, 10.0, |x| x.mean());
-        test_case(10.0, f64::INFINITY, 10.0, |x| x.mean());
     }
 
     #[test]
@@ -461,7 +420,6 @@ mod test {
         test_case(1.0, 1.0, 1.0, |x| x.variance());
         test_case(10.0, 10.0, 0.1, |x| x.variance());
         test_case(10.0, 1.0, 10.0, |x| x.variance());
-        test_case(10.0, f64::INFINITY, 0.0, |x| x.variance());
     }
 
     #[test]
@@ -470,7 +428,6 @@ mod test {
         test_case(1.0, 1.0, 1.0, |x| x.std_dev());
         test_case(10.0, 10.0, 0.31622776601683794197697302588502426416723164097476643, |x| x.std_dev());
         test_case(10.0, 1.0, 3.1622776601683793319988935444327185337195551393252168, |x| x.std_dev());
-        test_case(10.0, f64::INFINITY, 0.0, |x| x.std_dev());
     }
 
     #[test]
@@ -479,7 +436,6 @@ mod test {
         test_almost(1.0, 1.0, 1.0, 1e-15, |x| x.entropy());
         test_almost(10.0, 10.0, 0.23346908548693395836262094490967812177376750477943892, 1e-13, |x| x.entropy());
         test_almost(10.0, 1.0, 2.5360541784809796423806123995940423293748689934081866, 1e-13, |x| x.entropy());
-        test_case(10.0, f64::INFINITY, 0.0, |x| x.entropy());
     }
 
     #[test]
@@ -488,7 +444,6 @@ mod test {
         test_case(1.0, 1.0, 2.0, |x| x.skewness());
         test_case(10.0, 10.0, 0.63245553203367586639977870888654370674391102786504337, |x| x.skewness());
         test_case(10.0, 1.0, 0.63245553203367586639977870888654370674391102786504337, |x| x.skewness());
-        test_case(10.0, f64::INFINITY, 0.63245553203367586639977870888654370674391102786504337, |x| x.skewness());
     }
 
     #[test]
@@ -497,7 +452,6 @@ mod test {
         test_case(1.0, 1.0, 0.0, |x| x.mode());
         test_case(10.0, 10.0, 0.9, |x| x.mode());
         test_case(10.0, 1.0, 9.0, |x| x.mode());
-        test_case(10.0, f64::INFINITY, 10.0, |x| x.mode());
     }
 
     #[test]
@@ -506,26 +460,22 @@ mod test {
         test_case(1.0, 1.0, 0.0, |x| x.min());
         test_case(10.0, 10.0, 0.0, |x| x.min());
         test_case(10.0, 1.0, 0.0, |x| x.min());
-        test_case(10.0, f64::INFINITY, 0.0, |x| x.min());
         test_case(1.0, 0.1, f64::INFINITY, |x| x.max());
         test_case(1.0, 1.0, f64::INFINITY, |x| x.max());
         test_case(10.0, 10.0, f64::INFINITY, |x| x.max());
         test_case(10.0, 1.0, f64::INFINITY, |x| x.max());
-        test_case(10.0, f64::INFINITY, f64::INFINITY, |x| x.max());
     }
 
     #[test]
     fn test_pdf() {
-        test_case(1.0, 0.1, 0.090483741803595961836995913651194571475319347018875963, |x| x.pdf(1.0));
-        test_case(1.0, 0.1, 0.036787944117144234201693506390001264039984687455876246, |x| x.pdf(10.0));
-        test_case(1.0, 1.0, 0.36787944117144232159552377016146086744581113103176804, |x| x.pdf(1.0));
-        test_case(1.0, 1.0, 0.000045399929762484851535591515560550610237918088866564953, |x| x.pdf(10.0));
+        test_almost(1.0, 0.1, 0.090483741803595961836995913651194571475319347018875963, 1e-10, |x| x.pdf(1.0));
+        test_almost(1.0, 0.1, 0.036787944117144234201693506390001264039984687455876246,  1e-10, |x| x.pdf(10.0));
+        test_almost(1.0, 1.0, 0.36787944117144232159552377016146086744581113103176804, 1e-10,  |x| x.pdf(1.0));
+        test_almost(1.0, 1.0, 0.000045399929762484851535591515560550610237918088866564953, 1e-10,  |x| x.pdf(10.0));
         test_almost(10.0, 10.0, 1.2511003572113329898476497894772544708420990097708588, 1e-14, |x| x.pdf(1.0));
         test_almost(10.0, 10.0, 1.0251532120868705806216092933926141802686541811003037e-30, 1e-44, |x| x.pdf(10.0));
         test_almost(10.0, 1.0, 0.0000010137771196302974029859010421116095333052555418644397, 1e-20, |x| x.pdf(1.0));
         test_almost(10.0, 1.0, 0.12511003572113329898476497894772544708420990097708601, 1e-15, |x| x.pdf(10.0));
-        test_is_nan(10.0, f64::INFINITY, |x| x.pdf(1.0)); // is this really the behavior we want?
-        test_case(10.0, f64::INFINITY, 0.0, |x| x.pdf(f64::INFINITY));
     }
 
     #[test]
@@ -536,16 +486,14 @@ mod test {
 
     #[test]
     fn test_ln_pdf() {
-        test_case(1.0, 0.1, -2.402585092994045634057955346552321429281631934330484, |x| x.ln_pdf(1.0));
-        test_case(1.0, 0.1, -3.3025850929940456285068402234265387271634735938763824, |x| x.ln_pdf(10.0));
-        test_case(1.0, 1.0, -1.0, |x| x.ln_pdf(1.0));
-        test_case(1.0, 1.0, -10.0, |x| x.ln_pdf(10.0));
-        test_almost(10.0, 10.0, 0.22402344985898722897219667227693591172986563062456522, 1e-15, |x| x.ln_pdf(1.0));
-        test_case(10.0, 10.0, -69.052710713194601614865880235563786219860220971716511, |x| x.ln_pdf(10.0));
+        test_almost(1.0, 0.1, -2.402585092994045634057955346552321429281631934330484, 1e-10, |x| x.ln_pdf(1.0));
+        test_almost(1.0, 0.1, -3.3025850929940456285068402234265387271634735938763824, 1e-10, |x| x.ln_pdf(10.0));
+        test_almost(1.0, 1.0, -1.0, 1e-10, |x| x.ln_pdf(1.0));
+        test_almost(1.0, 1.0, -10.0, 1e-10,|x| x.ln_pdf(10.0));
+        test_almost(10.0, 10.0, 0.22402344985898722897219667227693591172986563062456522, 1e-10, |x| x.ln_pdf(1.0));
+        test_almost(10.0, 10.0, -69.052710713194601614865880235563786219860220971716511, 1e-10, |x| x.ln_pdf(10.0));
         test_almost(10.0, 1.0, -13.801827480081469611207717874566706164281149255663166, 1e-14, |x| x.ln_pdf(1.0));
         test_almost(10.0, 1.0,  -2.0785616431350584550457947824074282958712358580042068, 1e-14, |x| x.ln_pdf(10.0));
-        test_is_nan(10.0, f64::INFINITY, |x| x.ln_pdf(1.0)); // is this really the behavior we want?
-        test_case(10.0, f64::INFINITY, f64::NEG_INFINITY, |x| x.ln_pdf(f64::INFINITY));
     }
 
     #[test]
@@ -558,8 +506,6 @@ mod test {
         test_case(10.0, 10.0, 0.99999999999999999999999999999988746526039157266114706, |x| x.cdf(10.0));
         test_almost(10.0, 1.0, 0.00000011142547833872067735305068724025236288094949815466035, 1e-21, |x| x.cdf(1.0));
         test_almost(10.0, 1.0, 0.54207028552814779168583514294066541824736464003242184, 1e-15, |x| x.cdf(10.0));
-        test_case(10.0, f64::INFINITY, 0.0, |x| x.cdf(1.0));
-        test_case(10.0, f64::INFINITY, 1.0, |x| x.cdf(10.0));
     }
 
     #[test]
