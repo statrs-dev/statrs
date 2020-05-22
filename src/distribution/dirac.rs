@@ -99,7 +99,7 @@ impl Mean<f64> for Dirac {
 }
 
 impl Variance<f64> for Dirac {
-    /// Returns the variance of the normal distribution
+    /// Returns the variance of the dirac distribution
     ///
     /// # Formula
     ///
@@ -110,7 +110,7 @@ impl Variance<f64> for Dirac {
     /// Since only one value can be produced there is no variance.
     fn variance(&self) -> f64 { 0.0 }
 
-    /// Returns the standard deviation of the normal distribution
+    /// Returns the standard deviation of the dirac distribution
     ///
     /// # Remarks
     ///
@@ -159,7 +159,7 @@ impl Median<f64> for Dirac {
 }
 
 impl Mode<f64> for Dirac {
-    /// Returns the mode of the normal distribution
+    /// Returns the mode of the dirac distribution
     ///
     /// # Formula
     ///
@@ -188,7 +188,7 @@ impl Continuous<f64, f64> for Dirac {
       if x == self.0 { 1.0 } else { 0.0 }
     }
 
-    /// Calculates the log probability density function for the normal
+    /// Calculates the log probability density function for the dirac
     /// distribution
     /// at `x`
     ///
