@@ -30,7 +30,7 @@ pub struct NegativeBinomial {
 
 impl NegativeBinomial {
     /// Constructs a new negative binomial distribution
-    /// with a given `p` probability of the number of success to stop the experiment `r`
+    /// with a given `p` probability of the number of successes `r`
     ///
     /// # Errors
     ///
@@ -71,8 +71,8 @@ impl NegativeBinomial {
         self.p
     }
 
-    /// Returns the number of trials `r` of success
-    /// to stop the experiment
+    /// Returns the number `r` of success of this negative
+    /// binomial distribution
     ///
     /// # Examples
     ///
