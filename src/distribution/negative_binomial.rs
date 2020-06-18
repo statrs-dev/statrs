@@ -275,6 +275,7 @@ use std::fmt::Debug;
 use std::f64;
 use crate::statistics::*;
 use crate::distribution::{Univariate, Discrete, NegativeBinomial};
+use crate::distribution::internal::*;
 
 fn try_create(r: f64, p: f64) -> NegativeBinomial {
     let r = NegativeBinomial::new(r, p);
@@ -456,19 +457,16 @@ fn test_cdf() {
     test_almost(1.0, 0.3, 0.3481950594, 1e-08, |x| x.cdf(0.2));
     test_almost(1.0, 0.3, 0.3481950594, 1e-08, |x| x.cdf(0.2));
     test_almost(3.0, 0.3, 0.03611085389, 1e-08, |x| x.cdf(0.2));
-    test_case(0.3, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(0.3, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(0.3, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(0.3, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(0.3, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(1.0, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(1.0, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(3.0, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(3.0, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(3.0, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(10.0, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(10.0, 1.0, 1.0, |x| x.cdf(0.2));
-    test_case(10.0, 1.0, 1.0, |x| x.cdf(0.2));
+    test_almost(1.0, 0.3, 0.3, 1e-08, |x| x.cdf(0.0));
+    test_almost(1.0, 0.3, 0.3481950594, 1e-08, |x| x.cdf(0.2));
+    test_almost(1.0, 0.3, 0.51, 1e-08, |x| x.cdf(1.0));
+    test_almost(1.0, 0.3, 0.83193, 1e-08, |x| x.cdf(4.0));
+    test_almost(1.0, 0.3, 0.9802267326, 1e-08, |x| x.cdf(10.0));
+    test_case(1.0, 1.0, 1.0, |x| x.cdf(0.0));
+    test_case(1.0, 1.0, 1.0, |x| x.cdf(1.0));
+    test_almost(10.0, 0.75, 0.05631351471, 1e-08, |x| x.cdf(0.0));
+    test_almost(10.0, 0.75, 0.1970973015, 1e-08, |x| x.cdf(1.0));
+    test_almost(10.0, 0.75, 0.9960578583, 1e-08, |x| x.cdf(10.0));
 }
 
 #[test]
