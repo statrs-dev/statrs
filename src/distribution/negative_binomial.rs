@@ -1,4 +1,4 @@
-use crate::distribution::{Gamma, Discrete, Univariate };
+use crate::distribution::{Discrete, Gamma, Univariate};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
 use crate::{Result, StatsError};
@@ -97,7 +97,7 @@ impl Distribution<u64> for NegativeBinomial {
         let mut k = 0;
         loop {
             k = k + 1;
-            let sample : f64 = r.gen();
+            let sample: f64 = r.gen();
             p1 = p1 * sample;
 
             if p1 < c {
@@ -128,12 +128,10 @@ impl Univariate<u64, f64> for NegativeBinomial {
 
         if x < 0.0 {
             0.0
-        }
-        else if x == f64::INFINITY {
+        } else if x == f64::INFINITY {
             1.0
-        }
-        else {
-        1.0 - beta::beta_reg(x + 1.0, self.r, 1.0 - self.p)
+        } else {
+            1.0 - beta::beta_reg(x + 1.0, self.r, 1.0 - self.p)
         }
     }
 }
