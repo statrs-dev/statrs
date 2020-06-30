@@ -266,7 +266,7 @@ impl Discrete<u64, f64> for Poisson {
 /// A. C. Atkinson from the Journal of the Royal Statistical Society
 /// Series C (Applied Statistics) Vol. 28 No. 1. (1979) pp. 29 - 35
 /// otherwise
-fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, lambda: f64) -> f64 {
+pub fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, lambda: f64) -> f64 {
     if lambda < 30.0 {
         let limit = (-lambda).exp();
         let mut count = 0.0;
