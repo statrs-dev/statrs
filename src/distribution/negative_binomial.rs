@@ -111,7 +111,7 @@ impl Univariate<u64, f64> for NegativeBinomial {
         } else if x == f64::INFINITY {
             1.0
         } else {
-            1.0 - beta::beta_reg(x + 1.0, self.r, 1.0 - self.p)
+            1.0 - beta::beta_reg(x.floor() + 1.0, self.r, 1.0 - self.p)
         }
     }
 }
@@ -459,9 +459,9 @@ mod test {
         test_case(3.0, 0.5, 1.0, |x| x.cdf(100.0));
     }
 
-    // #[test]
-    // fn test_discrete() {
-    //     test::check_discrete_distribution(&try_create(5.0, 0.3), 35);
-    //     test::check_discrete_distribution(&try_create(10.0, 0.7), 21);
-    // }
+    #[test]
+    fn test_discrete() {
+        test::check_discrete_distribution(&try_create(5.0, 0.3), 35);
+        test::check_discrete_distribution(&try_create(10.0, 0.7), 21);
+    }
 }
