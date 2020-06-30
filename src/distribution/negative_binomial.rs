@@ -1,4 +1,4 @@
-use crate::distribution::{Discrete, Gamma, Univariate};
+use crate::distribution::{Discrete, poisson, Univariate};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
 use crate::{Result, StatsError};
@@ -90,7 +90,7 @@ impl NegativeBinomial {
 impl Distribution<u64> for NegativeBinomial {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> u64 {
         let lambda = crate::distribution::gamma::sample_unchecked(r, self.r, (1.0 - self.p) / self.p);
-        crate::distribution::poisson::sample_unchecked(r, lambda).floor() as u64
+        poisson::sample_unchecked(r, lambda).floor() as u64
     }
 }
 
