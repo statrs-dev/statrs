@@ -284,11 +284,13 @@ pub trait Soliton<T, K> {
     ///  # Examples
     ///
     ///  ```
-    ///  use statrs::distribution::{Soliton, Uniform};
+    ///  use statrs::distribution::{IdealSoliton, Soliton};
     ///  use statrs::prec;
     ///
-    ///  let n = Uniform::new(1, 5).unwrap();
-    ///  assert_eq!(n.soliton(1), 1/5);
+    ///  let n = IdealSoliton::new(5).unwrap();
+    ///  assert_eq!(n.soliton(1), 0.2);
     ///  ```
     fn soliton(&self, x: T) -> K;
+    fn normalization_factor(&self) -> K;
+    fn additive_probability(&self, x: T) -> K;
 }

@@ -1,4 +1,4 @@
-use crate::distribution::{Discrete, Univariate, Soliton};
+use crate::distribution::Soliton;
 use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::distributions::Distribution;
@@ -56,34 +56,7 @@ impl IdealSoliton {
 
 impl Distribution<f64> for IdealSoliton {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
-        r.gen_range(self.min, self.max + 1) as f64
-    }
-}
-
-impl Univariate<i64, f64> for IdealSoliton {
-    /// Calculates the cumulative distribution function for the
-    /// discrete uniform distribution at `x`
-    ///
-    /// # Formula
-    ///
-    /// ```ignore
-    /// (floor(x) - min + 1) / (max - min + 1)
-    /// ```
-    fn cdf(&self, x: f64) -> f64 {
-        if x < self.min as f64 {
-            0.0
-        } else if x >= self.max as f64 {
-            1.0
-        } else {
-            let lower = self.min as f64;
-            let upper = self.max as f64;
-            let ans = (x.floor() - lower + 1.0) / (upper - lower + 1.0);
-            if ans > 1.0 {
-                1.0
-            } else {
-                ans
-            }
-        }
+        r.gen_range(0, 1) as f64
     }
 }
 
@@ -149,106 +122,6 @@ impl Variance<f64> for IdealSoliton {
     }
 }
 
-impl Entropy<f64> for IdealSoliton {
-    /// Returns the entropy of the discrete uniform distribution
-    ///
-    /// # Formula
-    ///
-    /// ```ignore
-    /// ln(max - min + 1)
-    /// ```
-    fn entropy(&self) -> f64 {
-        let diff = (self.max - self.min) as f64;
-        (diff + 1.0).ln()
-    }
-}
-
-impl Skewness<f64> for IdealSoliton {
-    /// Returns the skewness of the discrete uniform distribution
-    ///
-    /// # Formula
-    ///
-    /// ```ignore
-    /// 0
-    /// ```
-    fn skewness(&self) -> f64 {
-        0.0
-    }
-}
-
-impl Median<f64> for IdealSoliton {
-    /// Returns the median of the discrete uniform distribution
-    ///
-    /// # Formula
-    ///
-    /// ```ignore
-    /// (max + min) / 2
-    /// ```
-    fn median(&self) -> f64 {
-        (self.min + self.max) as f64 / 2.0
-    }
-}
-
-impl Mode<i64> for IdealSoliton {
-    /// Returns the mode for the discrete uniform distribution
-    ///
-    /// # Remarks
-    ///
-    /// Since every element has an equal probability, mode simply
-    /// returns the middle element
-    ///
-    /// # Formula
-    ///
-    /// ```ignore
-    /// N/A // (max + min) / 2 for the middle element
-    /// ```
-    fn mode(&self) -> i64 {
-        ((self.min + self.max) as f64 / 2.0).floor() as i64
-    }
-}
-
-impl Discrete<i64, f64> for IdealSoliton {
-    /// Calculates the probability mass function for the discrete uniform
-    /// distribution at `x`
-    ///
-    /// # Remarks
-    ///
-    /// Returns `0.0` if `x` is not in `[min, max]`
-    ///
-    /// # Formula
-    ///
-    /// ```ignore
-    /// 1 / (max - min + 1)
-    /// ```
-    fn pmf(&self, x: i64) -> f64 {
-        if x >= self.min && x <= self.max {
-            1.0 / (self.max - self.min + 1) as f64
-        } else {
-            0.0
-        }
-    }
-
-    /// Calculates the log probability mass function for the discrete uniform
-    /// distribution at `x`
-    ///
-    /// # Remarks
-    ///
-    /// Returns `f64::NEG_INFINITY` if `x` is not in `[min, max]`
-    ///
-    /// # Formula
-    ///
-    /// ```ignore
-    /// ln(1 / (max - min + 1))
-    /// ```
-    fn ln_pmf(&self, x: i64) -> f64 {
-        if x >= self.min && x <= self.max {
-            -((self.max - self.min + 1) as f64).ln()
-        } else {
-            f64::NEG_INFINITY
-        }
-    }
-}
-
 impl Soliton<i64, f64> for IdealSoliton {
     /// Calculates the ideal soliton for the
     /// discrete uniform distribution at `x`
@@ -264,7 +137,7 @@ impl Soliton<i64, f64> for IdealSoliton {
     /// p(x) = 1/(x(x-1))
     /// ```
     fn soliton(&self, x: i64) -> f64 {
-        if x > 1 && x <= self.max {
+        if x > 1 && x < self.max {
             1.0 / ((x as f64) * (x as f64 - 1.0))
         } else if x == 1 {
             1.0 / self.max as f64
@@ -272,6 +145,14 @@ impl Soliton<i64, f64> for IdealSoliton {
             // Point must be in range (0, limit]
             0.0
         }
+    }
+
+    fn normalization_factor(&self) -> f64 {
+        0.0
+    }
+
+    fn additive_probability(&self, _x: i64) -> f64 {
+        0.0
     }
 }
 
@@ -281,144 +162,76 @@ mod test {
     use std::fmt::Debug;
     use std::f64;
     use crate::statistics::*;
-    use crate::distribution::{Univariate, Discrete, DiscreteUniform};
+    use crate::distribution::IdealSoliton;
 
-    fn try_create(min: i64, max: i64) -> DiscreteUniform {
-        let n = DiscreteUniform::new(min, max);
+    fn try_create(max: i64) -> IdealSoliton {
+        let n = IdealSoliton::new(max);
         assert!(n.is_ok());
         n.unwrap()
     }
 
-    fn create_case(min: i64, max: i64) {
-        let n = try_create(min, max);
-        assert_eq!(min, n.min());
+    fn create_case(max: i64) {
+        let n = try_create(max);
+        assert_eq!(1, n.min());
         assert_eq!(max, n.max());
     }
 
-    fn bad_create_case(min: i64, max: i64) {
-        let n = DiscreteUniform::new(min, max);
+    fn bad_create_case(max: i64) {
+        let n = IdealSoliton::new(max);
         assert!(n.is_err());
     }
 
-    fn get_value<T, F>(min: i64, max: i64, eval: F) -> T
+    fn get_value<T, F>(max: i64, eval: F) -> T
         where T: PartialEq + Debug,
-              F: Fn(DiscreteUniform) -> T
+              F: Fn(IdealSoliton) -> T
     {
-        let n = try_create(min, max);
+        let n = try_create(max);
         eval(n)
     }
 
-    fn test_case<T, F>(min: i64, max: i64, expected: T, eval: F)
+    fn test_case<T, F>(max: i64, expected: T, eval: F)
         where T: PartialEq + Debug,
-              F: Fn(DiscreteUniform) -> T
+              F: Fn(IdealSoliton) -> T
     {
-        let x = get_value(min, max, eval);
+        let x = get_value(max, eval);
         assert_eq!(expected, x);
+    }
+
+    fn test_case_greater<T, F>(max: i64, expected: T, eval: F)
+        where T: PartialEq + Debug + Into<f64>,
+              F: Fn(IdealSoliton) -> T
+    {
+        let sol = get_value(max, eval);
+        let a: f64 = sol.into();
+        let b = expected.into();
+        assert!(a > b, "{} greater than {}", a, b);
     }
 
     #[test]
     fn test_create() {
-        create_case(-10, 10);
-        create_case(0, 4);
-        create_case(10, 20);
-        create_case(20, 20);
+        create_case(10);
+        create_case(4);
+        create_case(20);
     }
 
     #[test]
     fn test_bad_create() {
-        bad_create_case(-1, -2);
-        bad_create_case(6, 5);
+        bad_create_case(-2);
+        bad_create_case(0);
     }
 
     #[test]
     fn test_mean() {
-        test_case(-10, 10, 0.0, |x| x.mean());
-        test_case(0, 4, 2.0, |x| x.mean());
-        test_case(10, 20, 15.0, |x| x.mean());
-        test_case(20, 20, 20.0, |x| x.mean());
+        test_case_greater(10, 0.9, |x| x.mean());
     }
 
     #[test]
     fn test_variance() {
-        test_case(-10, 10, 36.66666666666666666667, |x| x.variance());
-        test_case(0, 4, 2.0, |x| x.variance());
-        test_case(10, 20, 10.0, |x| x.variance());
-        test_case(20, 20, 0.0, |x| x.variance());
+        test_case(10, 8.25, |x| x.variance());
     }
 
     #[test]
     fn test_std_dev() {
-        test_case(-10, 10, (36.66666666666666666667f64).sqrt(), |x| x.std_dev());
-        test_case(0, 4, (2.0f64).sqrt(), |x| x.std_dev());
-        test_case(10, 20, (10.0f64).sqrt(), |x| x.std_dev());
-        test_case(20, 20, 0.0, |x| x.std_dev());
-    }
-
-    #[test]
-    fn test_entropy() {
-        test_case(-10, 10, 3.0445224377234229965005979803657054342845752874046093, |x| x.entropy());
-        test_case(0, 4, 1.6094379124341003746007593332261876395256013542685181, |x| x.entropy());
-        test_case(10, 20, 2.3978952727983705440619435779651292998217068539374197, |x| x.entropy());
-        test_case(20, 20, 0.0, |x| x.entropy());
-    }
-
-    #[test]
-    fn test_skewness() {
-        test_case(-10, 10, 0.0, |x| x.skewness());
-        test_case(0, 4, 0.0, |x| x.skewness());
-        test_case(10, 20, 0.0, |x| x.skewness());
-        test_case(20, 20, 0.0, |x| x.skewness());
-    }
-
-    #[test]
-    fn test_median() {
-        test_case(-10, 10, 0.0, |x| x.median());
-        test_case(0, 4, 2.0, |x| x.median());
-        test_case(10, 20, 15.0, |x| x.median());
-        test_case(20, 20, 20.0, |x| x.median());
-    }
-
-    #[test]
-    fn test_mode() {
-        test_case(-10, 10, 0, |x| x.mode());
-        test_case(0, 4, 2, |x| x.mode());
-        test_case(10, 20, 15, |x| x.mode());
-        test_case(20, 20, 20, |x| x.mode());
-    }
-
-    #[test]
-    fn test_pmf() {
-        test_case(-10, 10, 0.04761904761904761904762, |x| x.pmf(-5));
-        test_case(-10, 10, 0.04761904761904761904762, |x| x.pmf(1));
-        test_case(-10, 10, 0.04761904761904761904762, |x| x.pmf(10));
-        test_case(-10, -10, 0.0, |x| x.pmf(0));
-        test_case(-10, -10, 1.0, |x| x.pmf(-10));
-    }
-
-    #[test]
-    fn test_ln_pmf() {
-        test_case(-10, 10, -3.0445224377234229965005979803657054342845752874046093, |x| x.ln_pmf(-5));
-        test_case(-10, 10, -3.0445224377234229965005979803657054342845752874046093, |x| x.ln_pmf(1));
-        test_case(-10, 10, -3.0445224377234229965005979803657054342845752874046093, |x| x.ln_pmf(10));
-        test_case(-10, -10, f64::NEG_INFINITY, |x| x.ln_pmf(0));
-        test_case(-10, -10, 0.0, |x| x.ln_pmf(-10));
-    }
-
-    #[test]
-    fn test_cdf() {
-        test_case(-10, 10, 0.2857142857142857142857, |x| x.cdf(-5.0));
-        test_case(-10, 10, 0.5714285714285714285714, |x| x.cdf(1.0));
-        test_case(-10, 10, 1.0, |x| x.cdf(10.0));
-        test_case(-10, -10, 1.0, |x| x.cdf(-10.0));
-    }
-
-    #[test]
-    fn test_cdf_lower_bound() {
-        test_case(0, 3, 0.0, |x| x.cdf(-1.0));
-    }
-
-    #[test]
-    fn test_cdf_upper_bound() {
-        test_case(0, 3, 1.0, |x| x.cdf(5.0));
+        test_case(10, (8.25f64).sqrt(), |x| x.std_dev());
     }
 }
