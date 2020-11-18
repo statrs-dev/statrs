@@ -7,17 +7,20 @@ use std::f64;
 
 /// Implements the [Discrete
 /// Uniform](https://en.wikipedia.org/wiki/Discrete_uniform_distribution)
-/// distribution
+/// distribution and an related ideal soliton of the discrete uniform distribuiton
 ///
 /// # Examples
 ///
 /// ```
 /// use statrs::distribution::{DiscreteUniform, Discrete};
 /// use statrs::statistics::Mean;
+/// use statrs::distribution::IdealSoliton;
 ///
+/// let sol = IdealSoliton::new(5).unwrap();
 /// let n = DiscreteUniform::new(0, 5).unwrap();
 /// assert_eq!(n.mean(), 2.5);
 /// assert_eq!(n.pmf(3), 1.0 / 6.0);
+/// assert_eq!(sol.soliton(1), 1.0/5.0);
 /// ```
 
 #[derive(Debug, Clone, PartialEq)]
@@ -30,6 +33,9 @@ impl IdealSoliton {
     /// Constructs a new discrete uniform distribution with a minimum value
     /// of `min` and a maximum value of `max`.
     ///
+    /// Additionally construct the ideal soliton of the same max value of `max`
+    /// falling between (1, max)
+    ///
     /// # Errors
     ///
     /// Returns an error if `max < min`
@@ -38,12 +44,17 @@ impl IdealSoliton {
     ///
     /// ```
     /// use statrs::distribution::DiscreteUniform;
+    /// use statrs::distribution::IdealSoliton;
     ///
+    /// let mut sol = IdealSoliton::new(5);
     /// let mut result = DiscreteUniform::new(0, 5);
     /// assert!(result.is_ok());
+    /// assert!(sol.is_ok());
     ///
     /// result = DiscreteUniform::new(5, 0);
+    /// sol = IdealSoliton::new(-1);
     /// assert!(result.is_err());
+    /// assert!(sol.is_err());
     /// ```
     pub fn new(max: i64) -> Result<IdealSoliton> {
         if max < 1 {

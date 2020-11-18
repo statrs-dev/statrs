@@ -5,19 +5,16 @@ use rand::distributions::Distribution;
 use rand::Rng;
 use std::f64;
 
-/// Implements the [Discrete
-/// Uniform](https://en.wikipedia.org/wiki/Discrete_uniform_distribution)
+/// Implements the [Robust Soliton]
+/// (https://en.wikipedia.org/wiki/Soliton_distribution)
 /// distribution
 ///
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{DiscreteUniform, Discrete};
-/// use statrs::statistics::Mean;
-///
-/// let n = DiscreteUniform::new(0, 5).unwrap();
-/// assert_eq!(n.mean(), 2.5);
-/// assert_eq!(n.pmf(3), 1.0 / 6.0);
+/// use statrs::distribution::{Soliton, IdealSoliton};
+/// let n = RobustSoliton::new(10, true, 0.1, 0.1).unwrap();
+/// assert_eq!(n.soliton(5), 0.05879983550709325);
 /// ```
 
 #[derive(Debug, Clone, PartialEq)]
@@ -37,22 +34,21 @@ pub struct RobustSolitonDistribution {
 }
 
 impl RobustSoliton {
-    /// Constructs a new discrete uniform distribution with a minimum value
-    /// of `min` and a maximum value of `max`.
+    /// Constructs a new robust soliton distribution with a maximum value of `max`.
     ///
     /// # Errors
     ///
-    /// Returns an error if `max < min`
+    /// Returns an error if `max < 0`
     ///
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::DiscreteUniform;
+    /// use statrs::distribution::RobustSoliton;
     ///
-    /// let mut result = DiscreteUniform::new(0, 5);
+    /// let mut result = RobustSoliton::new(10, true, 0.1, 0.1);
     /// assert!(result.is_ok());
     ///
-    /// result = DiscreteUniform::new(5, 0);
+    /// result = RobustSoliton::new(-1, true, 0.1, 0.1);
     /// assert!(result.is_err());
     /// ```
     pub fn new(max: i64, heuristic: bool, ripple: f64, fail_probability: f64) -> Result<RobustSoliton> {
