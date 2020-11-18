@@ -49,7 +49,7 @@ impl Exponential {
         if rate.is_nan() || rate <= 0.0 {
             Err(StatsError::BadParams)
         } else {
-            Ok(Exponential { rate: rate })
+            Ok(Exponential { rate })
         }
     }
 
@@ -259,7 +259,7 @@ impl Continuous<f64, f64> for Exponential {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

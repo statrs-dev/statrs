@@ -191,7 +191,7 @@ where
     ///
     /// where `Σ` is the covariance matrix and `det` is the determinant
     fn entropy(&self) -> f64 {
-        0.5 * LU::new(self.variance().clone().scale(2. * PI * E))
+        0.5 * LU::new(self.variance().scale(2. * PI * E))
             .determinant()
             .ln()
     }
@@ -258,7 +258,7 @@ where
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

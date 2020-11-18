@@ -47,7 +47,7 @@ impl Bernoulli {
     /// assert!(result.is_err());
     /// ```
     pub fn new(p: f64) -> Result<Bernoulli> {
-        Binomial::new(p, 1).map(|b| Bernoulli { b: b })
+        Binomial::new(p, 1).map(|b| Bernoulli { b })
     }
 
     /// Returns the probability of success `p` of the

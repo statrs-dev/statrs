@@ -25,8 +25,11 @@
 
 #![crate_type = "lib"]
 #![crate_name = "statrs"]
+#![allow(clippy::excessive_precision)]
+#![allow(clippy::many_single_char_names)]
 
-extern crate rand;
+#[macro_use]
+extern crate approx;
 
 #[macro_export]
 macro_rules! assert_almost_eq {
@@ -49,6 +52,12 @@ pub mod prec;
 pub mod statistics;
 
 mod error;
+
+// function to silence clippy on the special case when comparing to zero.
+#[inline(always)]
+pub(crate) fn is_zero(x: f64) -> bool {
+    ulps_eq!(x, 0.0, max_ulps = 0)
+}
 
 #[cfg(test)]
 mod testing;

@@ -293,7 +293,7 @@ impl<'a> CheckedDiscrete<&'a [u64], f64> for Multinomial {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use crate::statistics::*;

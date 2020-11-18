@@ -50,7 +50,7 @@ impl Uniform {
         if min > max || min.is_nan() || max.is_nan() {
             Err(StatsError::BadParams)
         } else {
-            Ok(Uniform { min: min, max: max })
+            Ok(Uniform { min, max })
         }
     }
 }
@@ -232,7 +232,7 @@ impl Continuous<f64, f64> for Uniform {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

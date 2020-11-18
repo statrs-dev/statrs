@@ -1,5 +1,6 @@
 use crate::distribution::{Continuous, Univariate};
 use crate::function::gamma;
+use crate::is_zero;
 use crate::statistics::*;
 use crate::{consts, Result, StatsError};
 use rand::distributions::Distribution;
@@ -261,7 +262,7 @@ impl Mode<f64> for Weibull {
     ///
     /// where `k` is the shape and `λ` is the scale
     fn mode(&self) -> f64 {
-        if self.shape == 1.0 {
+        if ulps_eq!(self.shape, 1.0) {
             0.0
         } else {
             self.scale * ((self.shape - 1.0) / self.shape).powf(1.0 / self.shape)
@@ -283,9 +284,9 @@ impl Continuous<f64, f64> for Weibull {
     fn pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if x == 0.0 && self.shape == 1.0 {
+        } else if is_zero(x) && ulps_eq!(self.shape, 1.0) {
             1.0 / self.scale
-        } else if x == f64::INFINITY {
+        } else if x.is_infinite() {
             0.0
         } else {
             self.shape
@@ -308,9 +309,9 @@ impl Continuous<f64, f64> for Weibull {
     fn ln_pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             f64::NEG_INFINITY
-        } else if x == 0.0 && self.shape == 1.0 {
+        } else if is_zero(x) && ulps_eq!(self.shape, 1.0) {
             0.0 - self.scale.ln()
-        } else if x == f64::INFINITY {
+        } else if x.is_infinite() {
             f64::NEG_INFINITY
         } else {
             self.shape.ln() + (self.shape - 1.0) * (x / self.scale).ln()
@@ -320,7 +321,7 @@ impl Continuous<f64, f64> for Weibull {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

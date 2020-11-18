@@ -112,14 +112,14 @@ impl Hypergeometric {
 }
 
 impl Distribution<f64> for Hypergeometric {
-    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         let mut population = self.population as f64;
         let mut successes = self.successes as f64;
         let mut draws = self.draws;
         let mut x = 0.0;
         loop {
             let p = successes / population;
-            let next: f64 = r.gen();
+            let next: f64 = rng.gen();
             if next < p {
                 x += 1.0;
                 successes -= 1.0;
@@ -425,7 +425,7 @@ impl Discrete<u64, f64> for Hypergeometric {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

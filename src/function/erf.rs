@@ -2,17 +2,18 @@
 //! related functions
 
 use crate::function::evaluate;
+use crate::is_zero;
 use std::f64;
 
 /// `erf` calculates the error function at `x`.
 pub fn erf(x: f64) -> f64 {
     if x.is_nan() {
         f64::NAN
-    } else if x == f64::INFINITY {
+    } else if x >= 0.0 && x.is_infinite() {
         1.0
-    } else if x == f64::NEG_INFINITY {
+    } else if x <= 0.0 && x.is_infinite() {
         -1.0
-    } else if x == 0.0 {
+    } else if is_zero(x) {
         0.0
     } else {
         erf_impl(x, false)
@@ -69,7 +70,7 @@ pub fn erfc_inv(x: f64) -> f64 {
 
 /// Polynomial coefficients for a numerator of `erf_impl`
 /// in the interval [1e-10, 0.5].
-const ERF_IMPL_AN: &'static [f64] = &[
+const ERF_IMPL_AN: &[f64] = &[
     0.00337916709551257388990745,
     -0.00073695653048167948530905,
     -0.374732337392919607868241,
@@ -82,7 +83,7 @@ const ERF_IMPL_AN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator of `erf_impl`
 /// in the interval [1e-10, 0.5]
-const ERF_IMPL_AD: &'static [f64] = &[
+const ERF_IMPL_AD: &[f64] = &[
     1.0,
     -0.218088218087924645390535,
     0.412542972725442099083918,
@@ -95,7 +96,7 @@ const ERF_IMPL_AD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [0.5, 0.75].
-const ERF_IMPL_BN: &'static [f64] = &[
+const ERF_IMPL_BN: &[f64] = &[
     -0.0361790390718262471360258,
     0.292251883444882683221149,
     0.281447041797604512774415,
@@ -106,7 +107,7 @@ const ERF_IMPL_BN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [0.5, 0.75].
-const ERF_IMPL_BD: &'static [f64] = &[
+const ERF_IMPL_BD: &[f64] = &[
     1.0,
     1.8545005897903486499845,
     1.43575803037831418074962,
@@ -117,7 +118,7 @@ const ERF_IMPL_BD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [0.75, 1.25].
-const ERF_IMPL_CN: &'static [f64] = &[
+const ERF_IMPL_CN: &[f64] = &[
     -0.0397876892611136856954425,
     0.153165212467878293257683,
     0.191260295600936245503129,
@@ -129,7 +130,7 @@ const ERF_IMPL_CN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [0.75, 1.25].
-const ERF_IMPL_CD: &'static [f64] = &[
+const ERF_IMPL_CD: &[f64] = &[
     1.0,
     1.95520072987627704987886,
     1.64762317199384860109595,
@@ -141,7 +142,7 @@ const ERF_IMPL_CD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [1.25, 2.25].
-const ERF_IMPL_DN: &'static [f64] = &[
+const ERF_IMPL_DN: &[f64] = &[
     -0.0300838560557949717328341,
     0.0538578829844454508530552,
     0.0726211541651914182692959,
@@ -153,7 +154,7 @@ const ERF_IMPL_DN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [1.25, 2.25].
-const ERF_IMPL_DD: &'static [f64] = &[
+const ERF_IMPL_DD: &[f64] = &[
     1.0,
     1.75967098147167528287343,
     1.32883571437961120556307,
@@ -166,7 +167,7 @@ const ERF_IMPL_DD: &'static [f64] = &[
 
 ///  Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [2.25, 3.5].
-const ERF_IMPL_EN: &'static [f64] = &[
+const ERF_IMPL_EN: &[f64] = &[
     -0.0117907570137227847827732,
     0.014262132090538809896674,
     0.0202234435902960820020765,
@@ -178,7 +179,7 @@ const ERF_IMPL_EN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [2.25, 3.5].
-const ERF_IMPL_ED: &'static [f64] = &[
+const ERF_IMPL_ED: &[f64] = &[
     1.0,
     1.50376225203620482047419,
     0.965397786204462896346934,
@@ -190,7 +191,7 @@ const ERF_IMPL_ED: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [3.5, 5.25].
-const ERF_IMPL_FN: &'static [f64] = &[
+const ERF_IMPL_FN: &[f64] = &[
     -0.00546954795538729307482955,
     0.00404190278731707110245394,
     0.0054963369553161170521356,
@@ -202,7 +203,7 @@ const ERF_IMPL_FN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [3.5, 5.25].
-const ERF_IMPL_FD: &'static [f64] = &[
+const ERF_IMPL_FD: &[f64] = &[
     1.0,
     1.21019697773630784832251,
     0.620914668221143886601045,
@@ -215,7 +216,7 @@ const ERF_IMPL_FD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [5.25, 8].
-const ERF_IMPL_GN: &'static [f64] = &[
+const ERF_IMPL_GN: &[f64] = &[
     -0.00270722535905778347999196,
     0.0013187563425029400461378,
     0.00119925933261002333923989,
@@ -226,7 +227,7 @@ const ERF_IMPL_GN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [5.25, 8].
-const ERF_IMPL_GD: &'static [f64] = &[
+const ERF_IMPL_GD: &[f64] = &[
     1.0,
     0.814632808543141591118279,
     0.268901665856299542168425,
@@ -238,7 +239,7 @@ const ERF_IMPL_GD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [8, 11.5].
-const ERF_IMPL_HN: &'static [f64] = &[
+const ERF_IMPL_HN: &[f64] = &[
     -0.00109946720691742196814323,
     0.000406425442750422675169153,
     0.000274499489416900707787024,
@@ -249,7 +250,7 @@ const ERF_IMPL_HN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [8, 11.5].
-const ERF_IMPL_HD: &'static [f64] = &[
+const ERF_IMPL_HD: &[f64] = &[
     1.0,
     0.588173710611846046373373,
     0.139363331289409746077541,
@@ -260,7 +261,7 @@ const ERF_IMPL_HD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [11.5, 17].
-const ERF_IMPL_IN: &'static [f64] = &[
+const ERF_IMPL_IN: &[f64] = &[
     -0.00056907993601094962855594,
     0.000169498540373762264416984,
     0.518472354581100890120501e-4,
@@ -270,7 +271,7 @@ const ERF_IMPL_IN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [11.5, 17].
-const ERF_IMPL_ID: &'static [f64] = &[
+const ERF_IMPL_ID: &[f64] = &[
     1.0,
     0.339637250051139347430323,
     0.043472647870310663055044,
@@ -281,7 +282,7 @@ const ERF_IMPL_ID: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [17, 24].
-const ERF_IMPL_JN: &'static [f64] = &[
+const ERF_IMPL_JN: &[f64] = &[
     -0.000241313599483991337479091,
     0.574224975202501512365975e-4,
     0.115998962927383778460557e-4,
@@ -291,7 +292,7 @@ const ERF_IMPL_JN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [17, 24].
-const ERF_IMPL_JD: &'static [f64] = &[
+const ERF_IMPL_JD: &[f64] = &[
     1.0,
     0.233044138299687841018015,
     0.0204186940546440312625597,
@@ -301,7 +302,7 @@ const ERF_IMPL_JD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [24, 38].
-const ERF_IMPL_KN: &'static [f64] = &[
+const ERF_IMPL_KN: &[f64] = &[
     -0.000146674699277760365803642,
     0.162666552112280519955647e-4,
     0.269116248509165239294897e-5,
@@ -311,7 +312,7 @@ const ERF_IMPL_KN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [24, 38].
-const ERF_IMPL_KD: &'static [f64] = &[
+const ERF_IMPL_KD: &[f64] = &[
     1.0,
     0.165907812944847226546036,
     0.0103361716191505884359634,
@@ -321,7 +322,7 @@ const ERF_IMPL_KD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [38, 60].
-const ERF_IMPL_LN: &'static [f64] = &[
+const ERF_IMPL_LN: &[f64] = &[
     -0.583905797629771786720406e-4,
     0.412510325105496173512992e-5,
     0.431790922420250949096906e-6,
@@ -331,7 +332,7 @@ const ERF_IMPL_LN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [38, 60].
-const ERF_IMPL_LD: &'static [f64] = &[
+const ERF_IMPL_LD: &[f64] = &[
     1.0,
     0.105077086072039915406159,
     0.00414278428675475620830226,
@@ -341,7 +342,7 @@ const ERF_IMPL_LD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [60, 85].
-const ERF_IMPL_MN: &'static [f64] = &[
+const ERF_IMPL_MN: &[f64] = &[
     -0.196457797609229579459841e-4,
     0.157243887666800692441195e-5,
     0.543902511192700878690335e-7,
@@ -350,7 +351,7 @@ const ERF_IMPL_MN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [60, 85].
-const ERF_IMPL_MD: &'static [f64] = &[
+const ERF_IMPL_MD: &[f64] = &[
     1.0,
     0.052803989240957632204885,
     0.000926876069151753290378112,
@@ -360,7 +361,7 @@ const ERF_IMPL_MD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator in `erf_impl`
 /// in the interval [85, 110].
-const ERF_IMPL_NN: &'static [f64] = &[
+const ERF_IMPL_NN: &[f64] = &[
     -0.789224703978722689089794e-5,
     0.622088451660986955124162e-6,
     0.145728445676882396797184e-7,
@@ -369,7 +370,7 @@ const ERF_IMPL_NN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator in `erf_impl`
 /// in the interval [85, 110].
-const ERF_IMPL_ND: &'static [f64] = &[
+const ERF_IMPL_ND: &[f64] = &[
     1.0,
     0.0375328846356293715248719,
     0.000467919535974625308126054,
@@ -382,7 +383,7 @@ const ERF_IMPL_ND: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator of `erf_inv_impl`
 /// in the interval [0, 0.5].
-const ERF_INV_IMPL_AN: &'static [f64] = &[
+const ERF_INV_IMPL_AN: &[f64] = &[
     -0.000508781949658280665617,
     -0.00836874819741736770379,
     0.0334806625409744615033,
@@ -395,7 +396,7 @@ const ERF_INV_IMPL_AN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator of `erf_inv_impl`
 /// in the interval [0, 0.5].
-const ERF_INV_IMPL_AD: &'static [f64] = &[
+const ERF_INV_IMPL_AD: &[f64] = &[
     1.0,
     -0.970005043303290640362,
     -1.56574558234175846809,
@@ -410,7 +411,7 @@ const ERF_INV_IMPL_AD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator of `erf_inv_impl`
 /// in the interval [0.5, 0.75].
-const ERF_INV_IMPL_BN: &'static [f64] = &[
+const ERF_INV_IMPL_BN: &[f64] = &[
     -0.202433508355938759655,
     0.105264680699391713268,
     8.37050328343119927838,
@@ -424,7 +425,7 @@ const ERF_INV_IMPL_BN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator of `erf_inv_impl`
 /// in the interval [0.5, 0.75].
-const ERF_INV_IMPL_BD: &'static [f64] = &[
+const ERF_INV_IMPL_BD: &[f64] = &[
     1.0,
     6.24264124854247537712,
     3.9713437953343869095,
@@ -438,7 +439,7 @@ const ERF_INV_IMPL_BD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator of `erf_inv_impl`
 /// in the interval [0.75, 1] with x less than 3.
-const ERF_INV_IMPL_CN: &'static [f64] = &[
+const ERF_INV_IMPL_CN: &[f64] = &[
     -0.131102781679951906451,
     -0.163794047193317060787,
     0.117030156341995252019,
@@ -454,7 +455,7 @@ const ERF_INV_IMPL_CN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator of `erf_inv_impl`
 /// in the interval [0.75, 1] with x less than 3.
-const ERF_INV_IMPL_CD: &'static [f64] = &[
+const ERF_INV_IMPL_CD: &[f64] = &[
     1.0,
     3.46625407242567245975,
     5.38168345707006855425,
@@ -467,7 +468,7 @@ const ERF_INV_IMPL_CD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator of `erf_inv_impl`
 /// in the interval [0.75, 1] with x between 3 and 6.
-const ERF_INV_IMPL_DN: &'static [f64] = &[
+const ERF_INV_IMPL_DN: &[f64] = &[
     -0.0350353787183177984712,
     -0.00222426529213447927281,
     0.0185573306514231072324,
@@ -481,7 +482,7 @@ const ERF_INV_IMPL_DN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator of `erf_inv_impl`
 /// in the interval [0.75, 1] with x between 3 and 6.
-const ERF_INV_IMPL_DD: &'static [f64] = &[
+const ERF_INV_IMPL_DD: &[f64] = &[
     1.0,
     1.3653349817554063097,
     0.762059164553623404043,
@@ -493,7 +494,7 @@ const ERF_INV_IMPL_DD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator of `erf_inv_impl`
 /// in the interval [0.75, 1] with x between 6 and 18.
-const ERF_INV_IMPL_EN: &'static [f64] = &[
+const ERF_INV_IMPL_EN: &[f64] = &[
     -0.0167431005076633737133,
     -0.00112951438745580278863,
     0.00105628862152492910091,
@@ -507,7 +508,7 @@ const ERF_INV_IMPL_EN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator of `erf_inv_impl`
 /// in the interval [0.75, 1] with x between 6 and 18.
-const ERF_INV_IMPL_ED: &'static [f64] = &[
+const ERF_INV_IMPL_ED: &[f64] = &[
     1.0,
     0.591429344886417493481,
     0.138151865749083321638,
@@ -519,7 +520,7 @@ const ERF_INV_IMPL_ED: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator of `erf_inv_impl`
 /// in the interval [0.75, 1] with x between 18 and 44.
-const ERF_INV_IMPL_FN: &'static [f64] = &[
+const ERF_INV_IMPL_FN: &[f64] = &[
     -0.0024978212791898131227,
     -0.779190719229053954292e-5,
     0.254723037413027451751e-4,
@@ -532,7 +533,7 @@ const ERF_INV_IMPL_FN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator of `erf_inv_impl`
 /// in the interval [0.75, 1] with x between 18 and 44.
-const ERF_INV_IMPL_FD: &'static [f64] = &[
+const ERF_INV_IMPL_FD: &[f64] = &[
     1.0,
     0.207123112214422517181,
     0.0169410838120975906478,
@@ -544,7 +545,7 @@ const ERF_INV_IMPL_FD: &'static [f64] = &[
 
 /// Polynomial coefficients for a numerator of `erf_inv_impl`
 /// in the interval [0.75, 1] with x greater than 44.
-const ERF_INV_IMPL_GN: &'static [f64] = &[
+const ERF_INV_IMPL_GN: &[f64] = &[
     -0.000539042911019078575891,
     -0.28398759004727721098e-6,
     0.899465114892291446442e-6,
@@ -557,7 +558,7 @@ const ERF_INV_IMPL_GN: &'static [f64] = &[
 
 /// Polynomial coefficients for a denominator of `erf_inv_impl`
 /// in the interval [0.75, 1] with x greater than 44.
-const ERF_INV_IMPL_GD: &'static [f64] = &[
+const ERF_INV_IMPL_GD: &[f64] = &[
     1.0,
     0.0845746234001899436914,
     0.00282092984726264681981,
@@ -675,9 +676,7 @@ fn erf_impl(z: f64, inv: bool) -> f64 {
 
     if inv && z >= 0.5 {
         result
-    } else if z >= 0.5 {
-        1.0 - result
-    } else if inv {
+    } else if z >= 0.5 || inv {
         1.0 - result
     } else {
         result
@@ -737,7 +736,7 @@ fn erf_inv_impl(p: f64, q: f64, s: f64) -> f64 {
     s * result
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

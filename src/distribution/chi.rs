@@ -49,7 +49,7 @@ impl Chi {
         if freedom.is_nan() || freedom <= 0.0 {
             Err(StatsError::BadParams)
         } else {
-            Ok(Chi { freedom: freedom })
+            Ok(Chi { freedom })
         }
     }
 
@@ -70,10 +70,10 @@ impl Chi {
 }
 
 impl Distribution<f64> for Chi {
-    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         (0..self.freedom as i64)
             .fold(0.0, |acc, _| {
-                acc + super::normal::sample_unchecked(r, 0.0, 1.0).powf(2.0)
+                acc + super::normal::sample_unchecked(rng, 0.0, 1.0).powf(2.0)
             })
             .sqrt()
     }
@@ -317,13 +317,13 @@ impl Continuous<f64, f64> for Chi {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
-    use std::f64;
-    use crate::statistics::*;
-    use crate::distribution::{Univariate, Continuous, Chi};
     use crate::distribution::internal::*;
+    use crate::distribution::{Chi, Continuous, Univariate};
+    use crate::statistics::*;
+    use std::f64;
 
     fn try_create(freedom: f64) -> Chi {
         let n = Chi::new(freedom);
@@ -342,28 +342,32 @@ mod test {
     }
 
     fn get_value<F>(freedom: f64, eval: F) -> f64
-        where F: Fn(Chi) -> f64
+    where
+        F: Fn(Chi) -> f64,
     {
         let n = try_create(freedom);
         eval(n)
     }
 
     fn test_case<F>(freedom: f64, expected: f64, eval: F)
-        where F: Fn(Chi) -> f64
+    where
+        F: Fn(Chi) -> f64,
     {
         let x = get_value(freedom, eval);
         assert_eq!(expected, x);
     }
 
     fn test_almost<F>(freedom: f64, expected: f64, acc: f64, eval: F)
-        where F: Fn(Chi) -> f64
+    where
+        F: Fn(Chi) -> f64,
     {
         let x = get_value(freedom, eval);
         assert_almost_eq!(expected, x, acc);
     }
 
     fn test_is_nan<F>(freedom: f64, eval: F)
-        where F : Fn(Chi) -> f64
+    where
+        F: Fn(Chi) -> f64,
     {
         let x = get_value(freedom, eval);
         assert!(x.is_nan());
@@ -532,21 +536,21 @@ mod test {
         test_almost(1.0, 0.68268949213708589717, 1e-15, |x| x.cdf(1.0));
         test_case(1.0, 0.99999996202087506822, |x| x.cdf(5.5));
         test_case(1.0, 1.0, |x| x.cdf(f64::INFINITY));
-// test_case(2.0, 0.0, |x| x.cdf(0.0));
-// test_almost(2.0, 0.0049875208073176866474, 1e-17, |x| x.cdf(0.1));
-// test_almost(2.0, 0.39346934028736657640, 1e-15, |x| x.cdf(1.0));
-// test_case(2.0, 0.99999973004214966370, |x| x.cdf(5.5));
-// test_case(2.0, 1.0, |x| x.cdf(f64::INFINITY));
-// test_case(2.5, 0.0, |x| x.cdf(0.0));
-// test_almost(2.5, 0.0011702413714030096290, 1e-18, |x| x.cdf(0.1));
-// test_almost(2.5, 0.28378995266531297417, 1e-16, |x| x.cdf(1.0));
-// test_case(2.5, 0.99999940337322804750, |x| x.cdf(5.5));
-// test_case(2.5, 1.0, |x| x.cdf(f64::INFINITY));
-// test_case(f64::INFINITY, 0.0, |x| x.cdf(0.0));
-// test_case(f64::INFINITY, 0.0, |x| x.cdf(0.1));
-// test_case(f64::INFINITY, 0.0, |x| x.cdf(1.0));
-// test_case(f64::INFINITY, 0.0, |x| x.cdf(5.5));
-// test_case(f64::INFINITY, 1.0, |x| x.cdf(f64::INFINITY));
+        test_case(2.0, 0.0, |x| x.cdf(0.0));
+        test_almost(2.0, 0.0049875208073176866474, 1e-17, |x| x.cdf(0.1));
+        test_almost(2.0, 0.39346934028736657640, 1e-15, |x| x.cdf(1.0));
+        test_case(2.0, 0.99999973004214966370, |x| x.cdf(5.5));
+        test_case(2.0, 1.0, |x| x.cdf(f64::INFINITY));
+        test_case(2.5, 0.0, |x| x.cdf(0.0));
+        test_almost(2.5, 0.0011702413714030096290, 1e-18, |x| x.cdf(0.1));
+        test_almost(2.5, 0.28378995266531297417, 1e-16, |x| x.cdf(1.0));
+        test_case(2.5, 0.99999940337322804750, |x| x.cdf(5.5));
+        test_case(2.5, 1.0, |x| x.cdf(f64::INFINITY));
+        test_case(f64::INFINITY, 1.0, |x| x.cdf(0.0));
+        test_case(f64::INFINITY, 1.0, |x| x.cdf(0.1));
+        test_case(f64::INFINITY, 1.0, |x| x.cdf(1.0));
+        test_case(f64::INFINITY, 1.0, |x| x.cdf(5.5));
+        test_case(f64::INFINITY, 1.0, |x| x.cdf(f64::INFINITY));
     }
 
     #[test]

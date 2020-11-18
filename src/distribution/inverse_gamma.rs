@@ -52,7 +52,7 @@ impl InverseGamma {
         match (shape, rate, is_nan) {
             (_, _, true) => Err(StatsError::BadParams),
             (_, _, false) if shape <= 0.0 || rate <= 0.0 => Err(StatsError::BadParams),
-            (_, _, false) if shape == f64::INFINITY || rate == f64::INFINITY => {
+            (_, _, false) if shape.is_infinite() || rate.is_infinite() => {
                 Err(StatsError::BadParams)
             }
             (_, _, false) => Ok(InverseGamma { shape, rate }),
@@ -110,7 +110,7 @@ impl Univariate<f64, f64> for InverseGamma {
     fn cdf(&self, x: f64) -> f64 {
         if x <= 0.0 {
             0.0
-        } else if x == f64::INFINITY {
+        } else if x.is_infinite() {
             1.0
         } else {
             gamma::gamma_ur(self.shape, self.rate / x)
@@ -354,11 +354,9 @@ impl Continuous<f64, f64> for InverseGamma {
     ///
     /// where `α` is the shape, `β` is the rate, and `Γ` is the gamma function
     fn pdf(&self, x: f64) -> f64 {
-        if x <= 0.0 {
+        if x <= 0.0 || x.is_infinite() {
             0.0
-        } else if x == f64::INFINITY {
-            0.0
-        } else if self.shape == 1.0 {
+        } else if ulps_eq!(self.shape, 1.0) {
             self.rate / (x * x) * (-self.rate / x).exp()
         } else {
             self.rate.powf(self.shape) * x.powf(-self.shape - 1.0) * (-self.rate / x).exp()
@@ -381,7 +379,7 @@ impl Continuous<f64, f64> for InverseGamma {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

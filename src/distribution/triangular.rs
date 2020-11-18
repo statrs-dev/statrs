@@ -47,16 +47,13 @@ impl Triangular {
     /// assert!(result.is_err());
     /// ```
     pub fn new(min: f64, max: f64, mode: f64) -> Result<Triangular> {
-        if min.is_infinite() || max.is_infinite() || mode.is_infinite() {
-            return Err(StatsError::BadParams);
-        }
-        if min.is_nan() || max.is_nan() || mode.is_nan() {
+        if !min.is_finite() || !max.is_finite() || !mode.is_finite() {
             return Err(StatsError::BadParams);
         }
         if max < mode || mode < min {
             return Err(StatsError::BadParams);
         }
-        if max == min {
+        if ulps_eq!(max, min, max_ulps = 0) {
             return Err(StatsError::BadParams);
         }
         Ok(Triangular { min, max, mode })
@@ -64,8 +61,8 @@ impl Triangular {
 }
 
 impl Distribution<f64> for Triangular {
-    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
-        sample_unchecked(r, self.min, self.max, self.mode)
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+        sample_unchecked(rng, self.min, self.max, self.mode)
     }
 }
 
@@ -292,8 +289,8 @@ impl Continuous<f64, f64> for Triangular {
     }
 }
 
-fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, min: f64, max: f64, mode: f64) -> f64 {
-    let f: f64 = r.gen();
+fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, min: f64, max: f64, mode: f64) -> f64 {
+    let f: f64 = rng.gen();
     if f < (mode - min) / (max - min) {
         min + (f * (max - min) * (mode - min)).sqrt()
     } else {
@@ -301,7 +298,7 @@ fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, min: f64, max: f64, mode: f64) -
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::fmt::Debug;

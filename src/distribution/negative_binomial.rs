@@ -114,7 +114,7 @@ impl Univariate<u64, f64> for NegativeBinomial {
     fn cdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if x == f64::INFINITY {
+        } else if x.is_infinite() {
             1.0
         } else {
             1.0 - beta::beta_reg(x + 1.0, self.r, 1.0 - self.p)
@@ -251,7 +251,7 @@ impl Discrete<u64, f64> for NegativeBinomial {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::fmt::Debug;

@@ -3,6 +3,7 @@
 
 use crate::consts;
 use crate::error::StatsError;
+use crate::is_zero;
 use crate::prec;
 use crate::Result;
 use std::f64;
@@ -11,7 +12,7 @@ use std::f64;
 const GAMMA_R: f64 = 10.900511;
 
 /// Polynomial coefficients for approximating the `gamma_ln` function
-const GAMMA_DK: &'static [f64] = &[
+const GAMMA_DK: &[f64] = &[
     2.48574089138753565546e-5,
     1.05142378581721974210,
     -3.45687097222016235469,
@@ -215,7 +216,7 @@ pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64> {
             qkm1 *= big_inv;
         }
 
-        if qk != 0.0 {
+        if !is_zero(qk) {
             let r = pk / qk;
             let t = ((ans - r) / r).abs();
             ans = r;
@@ -363,7 +364,7 @@ pub fn digamma(x: f64) -> f64 {
     if x == f64::NEG_INFINITY || x.is_nan() {
         return f64::NAN;
     }
-    if x <= 0.0 && x.floor() == x {
+    if x <= 0.0 && ulps_eq!(x.floor(), x) {
         return f64::NEG_INFINITY;
     }
     if x < 0.0 {
@@ -420,7 +421,7 @@ fn signum(x: f64) -> f64 {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64::{self, consts};

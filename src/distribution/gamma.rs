@@ -106,11 +106,11 @@ impl Univariate<f64, f64> for Gamma {
     fn cdf(&self, x: f64) -> f64 {
         if x <= 0.0 {
             0.0
-        } else if x == self.shape && self.rate == f64::INFINITY {
+        } else if ulps_eq!(x, self.shape) && self.rate.is_infinite() {
             1.0
-        } else if self.rate == f64::INFINITY {
+        } else if self.rate.is_infinite() {
             0.0
-        } else if x == f64::INFINITY {
+        } else if x.is_infinite() {
             1.0
         } else {
             gamma::gamma_lr(self.shape, x * self.rate)
@@ -164,11 +164,7 @@ impl Mean<f64> for Gamma {
     ///
     /// where `α` is the shape and `β` is the rate
     fn mean(&self) -> f64 {
-        if self.rate == f64::INFINITY {
-            self.shape
-        } else {
-            self.shape / self.rate
-        }
+        self.shape / self.rate
     }
 }
 
@@ -183,11 +179,7 @@ impl Variance<f64> for Gamma {
     ///
     /// where `α` is the shape and `β` is the rate
     fn variance(&self) -> f64 {
-        if self.rate == f64::INFINITY {
-            0.0
-        } else {
-            self.shape / (self.rate * self.rate)
-        }
+        self.shape / (self.rate * self.rate)
     }
 
     /// Returns the standard deviation of the gamma distribution
@@ -216,13 +208,9 @@ impl Entropy<f64> for Gamma {
     /// where `α` is the shape, `β` is the rate, `Γ` is the gamma function,
     /// and `ψ` is the digamma function
     fn entropy(&self) -> f64 {
-        if self.rate == f64::INFINITY {
-            0.0
-        } else {
-            self.shape - self.rate.ln()
-                + gamma::ln_gamma(self.shape)
-                + (1.0 - self.shape) * gamma::digamma(self.shape)
-        }
+        self.shape - self.rate.ln()
+            + gamma::ln_gamma(self.shape)
+            + (1.0 - self.shape) * gamma::digamma(self.shape)
     }
 }
 
@@ -246,7 +234,7 @@ impl Mode<f64> for Gamma {
     ///
     /// # Remarks
     ///
-    /// Returns `shape` if `rate ==f64::INFINITY`. This behavior
+    /// Returns `shape` if `rate == f64::INFINITY`. This behavior
     /// is borrowed from the Math.NET implementation
     ///
     /// # Formula
@@ -257,11 +245,7 @@ impl Mode<f64> for Gamma {
     ///
     /// where `α` is the shape and `β` is the rate
     fn mode(&self) -> f64 {
-        if self.rate == f64::INFINITY {
-            self.shape
-        } else {
-            (self.shape - 1.0) / self.rate
-        }
+        (self.shape - 1.0) / self.rate
     }
 }
 
@@ -284,11 +268,11 @@ impl Continuous<f64, f64> for Gamma {
     fn pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if self.shape == 1.0 {
+        } else if ulps_eq!(self.shape, 1.0) {
             self.rate * (-self.rate * x).exp()
         } else if self.shape > 160.0 {
             self.ln_pdf(x).exp()
-        } else if x == f64::INFINITY {
+        } else if x.is_infinite() {
             0.0
         } else {
             self.rate.powf(self.shape) * x.powf(self.shape - 1.0) * (-self.rate * x).exp()
@@ -315,9 +299,9 @@ impl Continuous<f64, f64> for Gamma {
     fn ln_pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             f64::NEG_INFINITY
-        } else if self.shape == 1.0 {
+        } else if ulps_eq!(self.shape, 1.0) {
             self.rate.ln() - self.rate * x
-        } else if x == f64::INFINITY {
+        } else if x.is_infinite() {
             f64::NEG_INFINITY
         } else {
             self.shape * self.rate.ln() + (self.shape - 1.0) * x.ln()
@@ -338,40 +322,37 @@ impl Continuous<f64, f64> for Gamma {
 /// Pages 363-372
 /// </div>
 /// <br />
-pub fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, shape: f64, rate: f64) -> f64 {
-    if rate == f64::INFINITY {
-        return shape;
+pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, shape: f64, rate: f64) -> f64 {
+    let mut a = shape;
+    let mut afix = 1.0;
+    if shape < 1.0 {
+        a = shape + 1.0;
+        afix = rng.gen::<f64>().powf(1.0 / shape);
     }
 
-    let a = if shape < 1.0 { shape + 1.0 } else { shape };
-    let afix = if shape < 1.0 {
-        r.gen::<f64>().powf(1.0 / shape)
-    } else {
-        1.0
-    };
     let d = a - 1.0 / 3.0;
     let c = 1.0 / (9.0 * d).sqrt();
     loop {
-        let mut x = super::normal::sample_unchecked(r, 0.0, 1.0);
-        let mut v = 1.0 + c * x;
-        while v <= 0.0 {
-            x = super::normal::sample_unchecked(r, 0.0, 1.0);
+        let mut x;
+        let mut v;
+        loop {
+            x = super::normal::sample_unchecked(rng, 0.0, 1.0);
             v = 1.0 + c * x;
+            if v > 0.0 {
+                break;
+            };
         }
 
         v *= v * v;
         x *= x;
-        let u: f64 = r.gen();
-        if u < 1.0 - 0.0331 * x * x {
-            return afix * d * v / rate;
-        }
-        if u.ln() < 0.5 * x + d * (1.0 - v - v.ln()) {
+        let u: f64 = rng.gen();
+        if u < 1.0 - 0.0331 * x * x || u.ln() < 0.5 * x + d * (1.0 - v - v.ln()) {
             return afix * d * v / rate;
         }
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;
@@ -449,7 +430,7 @@ mod test {
         test_case(1.0, 1.0, 1.0, |x| x.mean());
         test_case(10.0, 10.0, 1.0, |x| x.mean());
         test_case(10.0, 1.0, 10.0, |x| x.mean());
-        test_case(10.0, f64::INFINITY, 10.0, |x| x.mean());
+        test_case(10.0, f64::INFINITY, 0.0, |x| x.mean());
     }
 
     #[test]
@@ -476,7 +457,7 @@ mod test {
         test_almost(1.0, 1.0, 1.0, 1e-15, |x| x.entropy());
         test_almost(10.0, 10.0, 0.23346908548693395836262094490967812177376750477943892, 1e-13, |x| x.entropy());
         test_almost(10.0, 1.0, 2.5360541784809796423806123995940423293748689934081866, 1e-13, |x| x.entropy());
-        test_case(10.0, f64::INFINITY, 0.0, |x| x.entropy());
+        test_case(10.0, f64::INFINITY, f64::NEG_INFINITY, |x| x.entropy());
     }
 
     #[test]
@@ -494,7 +475,7 @@ mod test {
         test_case(1.0, 1.0, 0.0, |x| x.mode());
         test_case(10.0, 10.0, 0.9, |x| x.mode());
         test_case(10.0, 1.0, 9.0, |x| x.mode());
-        test_case(10.0, f64::INFINITY, 10.0, |x| x.mode());
+        test_case(10.0, f64::INFINITY, 0.0, |x| x.mode());
     }
 
     #[test]

@@ -32,7 +32,7 @@ impl OrderStatistics<f64> for [f64] {
         if hf <= 0 || tau == 0.0 {
             return self.min();
         }
-        if hf >= self.len() as i64 || tau == 1.0 {
+        if hf >= self.len() as i64 || ulps_eq!(tau, 1.0) {
             return self.max();
         }
 
@@ -355,7 +355,7 @@ fn select_inplace(arr: &mut [f64], rank: usize) -> f64 {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

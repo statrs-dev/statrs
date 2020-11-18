@@ -1,5 +1,6 @@
 use crate::distribution::{Continuous, Univariate};
 use crate::function::{beta, gamma};
+use crate::is_zero;
 use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::distributions::Distribution;
@@ -137,7 +138,7 @@ impl Univariate<f64, f64> for StudentsT {
     /// incomplete
     /// beta function
     fn cdf(&self, x: f64) -> f64 {
-        if self.freedom == f64::INFINITY {
+        if self.freedom.is_infinite() {
             super::normal::cdf_unchecked(x, self.location, self.scale)
         } else {
             let k = (x - self.location) / self.scale;
@@ -294,7 +295,7 @@ impl CheckedVariance<f64> for StudentsT {
     fn checked_variance(&self) -> Result<f64> {
         if self.freedom <= 1.0 {
             Err(StatsError::ArgGt("freedom", 1.0))
-        } else if self.freedom == f64::INFINITY {
+        } else if self.freedom.is_infinite() {
             Ok(self.scale * self.scale)
         } else if self.freedom > 2.0 {
             Ok(self.freedom * self.scale * self.scale / (self.freedom - 2.0))
@@ -367,7 +368,7 @@ impl CheckedEntropy<f64> for StudentsT {
     /// beta function
     fn checked_entropy(&self) -> Result<f64> {
         // TODO: investigate using prec::almost_eq for comparisons here
-        if self.location != 0.0 || self.scale != 1.0 {
+        if !is_zero(self.location) || !ulps_eq!(self.scale, 1.0) {
             Err(StatsError::SpecialCase(
                 "Cannot calculate entropy for StudentsT distribution where location is not 0 and scale is not 1",
             ))
@@ -464,7 +465,7 @@ impl Continuous<f64, f64> for StudentsT {
     /// the freedom,
     /// and `Γ` is the gamma function
     fn pdf(&self, x: f64) -> f64 {
-        if x == f64::NEG_INFINITY || x == f64::INFINITY {
+        if x.is_infinite() {
             0.0
         } else if self.freedom >= 1e8 {
             super::normal::pdf_unchecked(x, self.location, self.scale)
@@ -493,7 +494,7 @@ impl Continuous<f64, f64> for StudentsT {
     /// the freedom,
     /// and `Γ` is the gamma function
     fn ln_pdf(&self, x: f64) -> f64 {
-        if x == f64::NEG_INFINITY || x == f64::INFINITY {
+        if x.is_infinite() {
             f64::NEG_INFINITY
         } else if self.freedom >= 1e8 {
             super::normal::ln_pdf_unchecked(x, self.location, self.scale)
@@ -508,7 +509,7 @@ impl Continuous<f64, f64> for StudentsT {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

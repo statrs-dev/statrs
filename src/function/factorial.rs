@@ -100,10 +100,10 @@ pub fn checked_multinomial(n: u64, ni: &[u64]) -> Result<f64> {
 // values 0!...170!
 const CACHE_SIZE: usize = 171;
 
-static mut FCACHE: &'static mut [f64; CACHE_SIZE] = &mut [1.0; CACHE_SIZE];
+static mut FCACHE: [f64; CACHE_SIZE] = [1.0; CACHE_SIZE];
 static START: Once = Once::new();
 
-fn get_fcache() -> &'static [f64; CACHE_SIZE] {
+fn get_fcache() -> [f64; CACHE_SIZE] {
     unsafe {
         START.call_once(|| {
             (1..CACHE_SIZE).fold(FCACHE[0], |acc, i| {
@@ -116,7 +116,7 @@ fn get_fcache() -> &'static [f64; CACHE_SIZE] {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::{f64, u64};

@@ -4,11 +4,7 @@
 pub fn is_valid_multinomial(arr: &[f64], incl_zero: bool) -> bool {
     let mut sum = 0.0;
     for &elt in arr {
-        if incl_zero && elt < 0.0 {
-            return false;
-        } else if !incl_zero && elt <= 0.0 {
-            return false;
-        } else if elt.is_nan() {
+        if incl_zero && elt < 0.0 || !incl_zero && elt <= 0.0 || elt.is_nan() {
             return false;
         }
         sum += elt;
@@ -51,7 +47,7 @@ pub mod test {
                 println!("Integral of pdf doesn't equal cdf!");
                 println!("Integration from {} by {} to {} = {}", x_min, step, x, sum);
                 println!("cdf = {}", cdf);
-                assert!(false);
+                panic!();
             }
 
             if x >= x_max {

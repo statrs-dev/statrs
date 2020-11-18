@@ -71,7 +71,7 @@ impl Geometric {
 
 impl Distribution<f64> for Geometric {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
-        if self.p == 1.0 {
+        if ulps_eq!(self.p, 1.0) {
             1.0
         } else {
             let x: f64 = r.sample(OpenClosed01);
@@ -92,7 +92,7 @@ impl Univariate<u64, f64> for Geometric {
     fn cdf(&self, x: f64) -> f64 {
         if x < 1.0 {
             0.0
-        } else if x == f64::INFINITY {
+        } else if x.is_infinite() {
             1.0
         } else {
             1.0 - (1.0 - self.p).powf(x.floor())
@@ -223,7 +223,7 @@ impl Median<f64> for Geometric {
     /// ceil(-1 / log_2(1 - p))
     /// ```
     fn median(&self) -> f64 {
-        if self.p == 1.0 {
+        if ulps_eq!(self.p, 1.0) {
             1.0
         } else {
             (-f64::consts::LN_2 / (1.0 - self.p).ln()).ceil()
@@ -259,9 +259,9 @@ impl Discrete<u64, f64> for Geometric {
     fn ln_pmf(&self, x: u64) -> f64 {
         if x == 0 {
             f64::NEG_INFINITY
-        } else if self.p == 1.0 && x == 1 {
+        } else if ulps_eq!(self.p, 1.0) && x == 1 {
             0.0
-        } else if self.p == 1.0 {
+        } else if ulps_eq!(self.p, 1.0) {
             f64::NEG_INFINITY
         } else {
             ((x - 1) as f64 * (1.0 - self.p).ln()) + self.p.ln()
@@ -269,7 +269,7 @@ impl Discrete<u64, f64> for Geometric {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::fmt::Debug;

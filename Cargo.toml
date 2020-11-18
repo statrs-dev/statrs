@@ -18,11 +18,12 @@ name = "statrs"
 path = "src/lib.rs"
 
 [dependencies]
-rand = "0.7"
-nalgebra = "0.19"
+rand = "0.7.3"
+nalgebra = "0.23.0"
+approx = "0.4.0"
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = "0.3.3"
 
 [[bench]]
 name = "order_statistics"

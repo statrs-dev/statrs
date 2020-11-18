@@ -2,19 +2,19 @@ use super::ziggurat_tables;
 use rand::distributions::Open01;
 use rand::Rng;
 
-pub fn sample_std_normal<R: Rng + ?Sized>(r: &mut R) -> f64 {
+pub fn sample_std_normal<R: Rng + ?Sized>(rng: &mut R) -> f64 {
     #[inline]
     fn pdf(x: f64) -> f64 {
         (-x * x / 2.0).exp()
     }
 
     #[inline]
-    fn zero_case<R: Rng + ?Sized>(r: &mut R, u: f64) -> f64 {
+    fn zero_case<R: Rng + ?Sized>(rng: &mut R, u: f64) -> f64 {
         let mut x = 1.0f64;
         let mut y = 0.0f64;
         while -2.0 * y < x * x {
-            let x_: f64 = r.sample(Open01);
-            let y_: f64 = r.sample(Open01);
+            let x_: f64 = rng.sample(Open01);
+            let y_: f64 = rng.sample(Open01);
 
             x = x_.ln() / ziggurat_tables::ZIG_NORM_R;
             y = y_.ln();
@@ -27,7 +27,7 @@ pub fn sample_std_normal<R: Rng + ?Sized>(r: &mut R) -> f64 {
     }
 
     ziggurat(
-        r,
+        rng,
         true,
         &ziggurat_tables::ZIG_NORM_X,
         &ziggurat_tables::ZIG_NORM_F,
@@ -36,19 +36,19 @@ pub fn sample_std_normal<R: Rng + ?Sized>(r: &mut R) -> f64 {
     )
 }
 
-pub fn sample_exp_1<R: Rng + ?Sized>(r: &mut R) -> f64 {
+pub fn sample_exp_1<R: Rng + ?Sized>(rng: &mut R) -> f64 {
     #[inline]
     fn pdf(x: f64) -> f64 {
         (-x).exp()
     }
 
     #[inline]
-    fn zero_case<R: Rng + ?Sized>(r: &mut R, _u: f64) -> f64 {
-        ziggurat_tables::ZIG_EXP_R - r.gen::<f64>().ln()
+    fn zero_case<R: Rng + ?Sized>(rng: &mut R, _u: f64) -> f64 {
+        ziggurat_tables::ZIG_EXP_R - rng.gen::<f64>().ln()
     }
 
     ziggurat(
-        r,
+        rng,
         false,
         &ziggurat_tables::ZIG_EXP_X,
         &ziggurat_tables::ZIG_EXP_F,

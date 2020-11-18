@@ -92,7 +92,7 @@ pub fn integral(x: f64, n: u64) -> Result<f64> {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     #[test]

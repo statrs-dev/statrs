@@ -78,7 +78,7 @@ impl Univariate<f64, f64> for LogNormal {
     fn cdf(&self, x: f64) -> f64 {
         if x <= 0.0 {
             0.0
-        } else if x == f64::INFINITY {
+        } else if x.is_infinite() {
             1.0
         } else {
             0.5 * erf::erfc((self.location - x.ln()) / (self.scale * f64::consts::SQRT_2))
@@ -231,9 +231,7 @@ impl Continuous<f64, f64> for LogNormal {
     ///
     /// where `μ` is the location and `σ` is the scale
     fn pdf(&self, x: f64) -> f64 {
-        if x <= 0.0 {
-            0.0
-        } else if x == f64::INFINITY {
+        if x <= 0.0 || x.is_infinite() {
             0.0
         } else {
             let d = (x.ln() - self.location) / self.scale;
@@ -252,9 +250,7 @@ impl Continuous<f64, f64> for LogNormal {
     ///
     /// where `μ` is the location and `σ` is the scale
     fn ln_pdf(&self, x: f64) -> f64 {
-        if x <= 0.0 {
-            f64::NEG_INFINITY
-        } else if x == f64::INFINITY {
+        if x <= 0.0 || x.is_infinite() {
             f64::NEG_INFINITY
         } else {
             let d = (x.ln() - self.location) / self.scale;
@@ -263,7 +259,7 @@ impl Continuous<f64, f64> for LogNormal {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

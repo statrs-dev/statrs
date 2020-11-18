@@ -59,7 +59,7 @@ impl Dirichlet {
     }
 
     /// Constructs a new dirichlet distribution with the given
-    /// concenctration parameter (alpha) repeated `n` times
+    /// concentration parameter (alpha) repeated `n` times
     ///
     /// # Errors
     ///
@@ -102,17 +102,18 @@ impl Dirichlet {
 }
 
 impl Distribution<Vec<f64>> for Dirichlet {
-    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> Vec<f64> {
-        let n = self.alpha.len();
-        let mut samples = vec![0.0; n];
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Vec<f64> {
         let mut sum = 0.0;
-        for i in 0..n {
-            samples[i] = super::gamma::sample_unchecked(r, self.alpha[i], 1.0);
-            sum += samples[i];
-        }
-        for i in 0..n {
-            samples[i] /= sum
-        }
+        let mut samples: Vec<f64> = self
+            .alpha
+            .iter()
+            .map(|&a| {
+                let sample = super::gamma::sample_unchecked(rng, a, 1.0);
+                sum += sample;
+                sample
+            })
+            .collect();
+        for _ in samples.iter_mut().map(|x| *x /= sum) {}
         samples
     }
 }
@@ -373,7 +374,7 @@ fn test_is_valid_alpha() {
     assert!(!is_valid_alpha(&invalid));
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

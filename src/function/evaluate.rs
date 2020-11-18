@@ -23,7 +23,7 @@ pub fn polynomial(z: f64, coeff: &[f64]) -> f64 {
     sum
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

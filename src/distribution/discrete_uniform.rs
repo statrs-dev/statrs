@@ -48,7 +48,7 @@ impl DiscreteUniform {
         if max < min {
             Err(StatsError::BadParams)
         } else {
-            Ok(DiscreteUniform { min: min, max: max })
+            Ok(DiscreteUniform { min, max })
         }
     }
 }
@@ -248,7 +248,7 @@ impl Discrete<i64, f64> for DiscreteUniform {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::fmt::Debug;

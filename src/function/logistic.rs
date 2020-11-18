@@ -31,7 +31,7 @@ pub fn checked_logit(p: f64) -> Result<f64> {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

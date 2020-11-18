@@ -47,7 +47,7 @@ impl Erlang {
     /// assert!(result.is_err());
     /// ```
     pub fn new(shape: u64, rate: f64) -> Result<Erlang> {
-        Gamma::new(shape as f64, rate).map(|g| Erlang { g: g })
+        Gamma::new(shape as f64, rate).map(|g| Erlang { g })
     }
 
     /// Returns the shape (k) of the erlang distribution
@@ -273,7 +273,7 @@ impl Continuous<f64, f64> for Erlang {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

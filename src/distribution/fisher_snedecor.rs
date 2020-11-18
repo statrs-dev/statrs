@@ -48,16 +48,13 @@ impl FisherSnedecor {
     /// assert!(result.is_err());
     /// ```
     pub fn new(freedom_1: f64, freedom_2: f64) -> Result<FisherSnedecor> {
-        if freedom_1.is_nan() || freedom_2.is_nan() {
-            Err(StatsError::BadParams)
-        } else if freedom_1 == f64::INFINITY || freedom_2 == f64::INFINITY {
-            Err(StatsError::BadParams)
-        } else if freedom_1 <= 0.0 || freedom_2 <= 0.0 {
+        if !freedom_1.is_finite() || freedom_1 <= 0.0 || !freedom_2.is_finite() || freedom_2 <= 0.0
+        {
             Err(StatsError::BadParams)
         } else {
             Ok(FisherSnedecor {
-                freedom_1: freedom_1,
-                freedom_2: freedom_2,
+                freedom_1,
+                freedom_2,
             })
         }
     }
@@ -117,7 +114,7 @@ impl Univariate<f64, f64> for FisherSnedecor {
     fn cdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if x == f64::INFINITY {
+        } else if x.is_infinite() {
             1.0
         } else {
             beta::beta_reg(
@@ -443,9 +440,7 @@ impl Continuous<f64, f64> for FisherSnedecor {
     /// where `d1` is the first degree of freedom, `d2` is
     /// the second degree of freedom, and `β` is the beta function
     fn pdf(&self, x: f64) -> f64 {
-        if x == f64::NEG_INFINITY || x == f64::INFINITY {
-            0.0
-        } else if x <= 0.0 {
+        if x.is_infinite() || x <= 0.0 {
             0.0
         } else {
             ((self.freedom_1 * x).powf(self.freedom_1) * self.freedom_2.powf(self.freedom_2)
@@ -478,7 +473,7 @@ impl Continuous<f64, f64> for FisherSnedecor {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;

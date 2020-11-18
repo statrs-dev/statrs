@@ -88,7 +88,7 @@ impl Univariate<u64, f64> for Poisson {
     fn cdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if x == f64::INFINITY {
+        } else if x.is_infinite() {
             1.0
         } else {
             1.0 - gamma::gamma_lr(x.floor() + 1.0, self.lambda)
@@ -266,14 +266,14 @@ impl Discrete<u64, f64> for Poisson {
 /// A. C. Atkinson from the Journal of the Royal Statistical Society
 /// Series C (Applied Statistics) Vol. 28 No. 1. (1979) pp. 29 - 35
 /// otherwise
-pub fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, lambda: f64) -> f64 {
+pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, lambda: f64) -> f64 {
     if lambda < 30.0 {
         let limit = (-lambda).exp();
         let mut count = 0.0;
-        let mut product: f64 = r.gen();
+        let mut product: f64 = rng.gen();
         while product >= limit {
             count += 1.0;
-            product *= r.gen::<f64>();
+            product *= rng.gen::<f64>();
         }
         count
     } else {
@@ -283,14 +283,14 @@ pub fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, lambda: f64) -> f64 {
         let k = c.ln() - lambda - beta.ln();
 
         loop {
-            let u: f64 = r.gen();
+            let u: f64 = rng.gen();
             let x = (alpha - ((1.0 - u) / u).ln()) / beta;
             let n = (x + 0.5).floor();
             if n < 0.0 {
                 continue;
             }
 
-            let v: f64 = r.gen();
+            let v: f64 = rng.gen();
             let y = alpha - beta * x;
             let temp = 1.0 + y.exp();
             let lhs = y + (v / (temp * temp)).ln();
@@ -302,7 +302,7 @@ pub fn sample_unchecked<R: Rng + ?Sized>(r: &mut R, lambda: f64) -> f64 {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::fmt::Debug;

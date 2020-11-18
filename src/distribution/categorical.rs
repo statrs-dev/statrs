@@ -361,7 +361,7 @@ fn test_binary_index() {
     assert_eq!(5, binary_index(&arr, 10.1));
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod test {
     use std::f64;
