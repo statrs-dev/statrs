@@ -30,6 +30,8 @@ pub use self::students_t::StudentsT;
 pub use self::triangular::Triangular;
 pub use self::uniform::Uniform;
 pub use self::weibull::Weibull;
+pub use self::robust_soliton::RobustSoliton;
+pub use self::ideal_soliton::IdealSoliton;
 use crate::statistics::{Max, Min};
 
 mod bernoulli;
@@ -48,6 +50,7 @@ mod fisher_snedecor;
 mod gamma;
 mod geometric;
 mod hypergeometric;
+mod ideal_soliton;
 mod internal;
 mod inverse_gamma;
 mod log_normal;
@@ -57,6 +60,7 @@ mod negative_binomial;
 mod normal;
 mod pareto;
 mod poisson;
+mod robust_soliton;
 mod students_t;
 mod triangular;
 mod uniform;
@@ -268,4 +272,25 @@ pub trait CheckedDiscrete<T, K> {
     /// assert!(n.checked_ln_pmf(&[1]).is_err());
     /// ```
     fn checked_ln_pmf(&self, x: T) -> Result<K>;
+}
+
+/// The 'IdealSoliton' trait provides an interface for interacting
+/// with discrete statistical distributions from integers 1..N with
+/// N as the single parameter for the distribution
+pub trait Soliton<T, K> {
+    /// Returns the probability mass function calculated at `x` for
+    /// a given distribution
+    ///
+    ///  # Examples
+    ///
+    ///  ```
+    ///  use statrs::distribution::{IdealSoliton, Soliton};
+    ///  use statrs::prec;
+    ///
+    ///  let n = IdealSoliton::new(5).unwrap();
+    ///  assert_eq!(n.soliton(1), 0.2);
+    ///  ```
+    fn soliton(&self, x: T) -> K;
+    fn normalization_factor(&self) -> K;
+    fn additive_probability(&self, x: T) -> K;
 }
