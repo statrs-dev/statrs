@@ -83,6 +83,33 @@ impl ContinuousCDF<f64, f64> for LogNormal {
             0.5 * erf::erfc((self.location - x.ln()) / (self.scale * f64::consts::SQRT_2))
         }
     }
+
+    /// Calculates the inverse cumulative distribution function for the
+    /// log-normal distribution at `p`
+    ///
+    /// # Panics
+    ///
+    /// If `p < 0.0` or `p > 1.0`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// μ - σ * sqrt(2) * erfc_inv(2p)
+    /// ```
+    ///
+    /// where `μ` is the location, `σ` is the scale and `erfc_inv` is
+    /// the inverse of the complementary error function
+    fn inverse_cdf(&self, p: f64) -> f64 {
+       if p == 0.0 {
+           0.0
+       } else if p < 1.0 {
+           (self.location - (self.scale * f64::consts::SQRT_2 * erf::erfc_inv(2.0 * p))).exp()
+       } else if p == 1.0 {
+           f64::INFINITY
+       } else {
+           panic!("p must be within [0.0, 1.0]");
+       }
+    }
 }
 
 impl Min<f64> for LogNormal {
@@ -560,34 +587,94 @@ mod tests {
 
     #[test]
     fn test_cdf() {
-        let cdf = |arg: f64| move |x: LogNormal| x.cdf(arg);
-        test_almost(-0.1, 0.1, 0.0, 1e-107, cdf(0.1));
-        test_almost(-0.1, 0.1, 0.0000000015011556178148777579869633555518882664666520593658, 1e-19, cdf(0.5));
-        test_almost(-0.1, 0.1, 0.10908001076375810900224507908874442583171381706127, 1e-11, cdf(0.8));
-        test_almost(-0.1, 1.5, 0.070999149762464508991968731574953594549291668468349, 1e-11, cdf(0.1));
-        test_case(-0.1, 1.5, 0.34626224992888089297789445771047690175505847991946, cdf(0.5));
-        test_case(-0.1, 1.5, 0.46728530589487698517090261668589508746353129242404, cdf(0.8));
-        test_almost(-0.1, 2.5, 0.18914969879695093477606645992572208111152994999076, 1e-10, cdf(0.1));
-        test_case(-0.1, 2.5, 0.40622798321378106125020505907901206714868922279347, cdf(0.5));
-        test_case(-0.1, 2.5, 0.48035707589956665425068652807400957345208517749893, cdf(0.8));
-        test_almost(1.5, 0.1, 0.0, 1e-315, cdf(0.1));
-        test_almost(1.5, 0.1, 0.0, 1e-106, cdf(0.5));
-        test_almost(1.5, 0.1, 0.0, 1e-66, cdf(0.8));
-        test_almost(1.5, 1.5, 0.005621455876973168709588070988239748831823850202953, 1e-12, cdf(0.1));
-        test_almost(1.5, 1.5, 0.07185716187918271235246980951571040808235628115265, 1e-11, cdf(0.5));
-        test_almost(1.5, 1.5, 0.12532699044614938400496547188720940854423187977236, 1e-11, cdf(0.8));
-        test_almost(1.5, 2.5, 0.064125647996943514411570834861724406903677144126117, 1e-11, cdf(0.1));
-        test_almost(1.5, 2.5, 0.19017302281590810871719754032332631806011441356498, 1e-10, cdf(0.5));
-        test_almost(1.5, 2.5, 0.24533064397555500690927047163085419096928289095201, 1e-16, cdf(0.8));
-        test_case(2.5, 0.1, 0.0, cdf(0.1));
-        test_almost(2.5, 0.1, 0.0, 1e-223, cdf(0.5));
-        test_almost(2.5, 0.1, 0.0, 1e-162, cdf(0.8));
-        test_almost(2.5, 1.5, 0.00068304052220788502001572635016579586444611070077399, 1e-13, cdf(0.1));
-        test_almost(2.5, 1.5, 0.016636862816580533038130583128179878924863968664206, 1e-12, cdf(0.5));
-        test_almost(2.5, 1.5, 0.034729001282904174941366974418836262996834852343018, 1e-11, cdf(0.8));
-        test_almost(2.5, 2.5, 0.027363708266690978870139978537188410215717307180775, 1e-11, cdf(0.1));
-        test_almost(2.5, 2.5, 0.10075543423327634536450625420610429181921642201567, 1e-11, cdf(0.5));
-        test_almost(2.5, 2.5, 0.13802019192453118732001307556787218421918336849121, 1e-11, cdf(0.8));
+        cdf_tests(false);
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        cdf_tests(true)
+    }
+
+    // we can reuse the (input, output) pairs from the CDF unit test
+    // and verify that passing an 'output' to .inverse_cdf gives 'input',
+    // except in cases where output would be 0.0 (the inverse_cdf is defined to
+    // always give 0.0 in this case).
+    fn cdf_tests(inverse: bool) {
+        let f = |arg: f64| move |x: LogNormal| if inverse {
+            x.inverse_cdf(arg)
+        } else {
+            x.cdf(arg)
+        };
+
+        // given some cdf_input and cdf_output, returns a tuple (input, output) where
+        // input is what we will provide to cdf/inverse_cdf, and output is expected return
+        // value
+        let arrange_input_output = |cdf_input: f64, cdf_output: f64| {
+            if inverse {
+                (cdf_output, cdf_input)
+            } else {
+                (cdf_input, cdf_output)
+            }
+        };
+
+        // calls test_almost after re-arranging the input/output arguments and calling f with input
+        let almost = |mean: f64, std_dev: f64, cdf_input: f64, cdf_output: f64, acc: f64| {
+            let (input, output) = arrange_input_output(cdf_input, cdf_output);
+            test_almost(mean, std_dev, output, acc, f(input));
+        };
+
+        // calls test_case after re-arranging the input/output arguments and calling f with input
+        let case = |mean: f64, std_dev: f64, cdf_input: f64, cdf_output: f64| {
+            let (input, output) = arrange_input_output(cdf_input, cdf_output);
+            test_case(mean, std_dev, output, f(input));
+        };
+
+        // we skip cases where the CDF outputs 0.0 when testing the inverse CDF because
+        // there are multiple inputs to the CDF which give an answer of 0.0, therefore testing whether
+        // inputting 0.0 to the inverse cdf will give the same answer is not a valid test
+        // the inverse cdf for log-normal is defined to give answer 0.0 for input 0.0
+        if inverse {
+            case(-0.1, 0.1, 0.0, 0.0);
+        }
+
+        if !inverse {
+            almost(-0.1, 0.1, 0.1, 0.0, 1e-107);
+        }
+        almost(-0.1, 0.1, 0.5, 0.0000000015011556178148777579869633555518882664666520593658, 1e-16);
+        almost(-0.1, 0.1, 0.8, 0.10908001076375810900224507908874442583171381706127, 1e-11);
+        almost(-0.1, 1.5, 0.1, 0.070999149762464508991968731574953594549291668468349, 1e-11);
+        case(-0.1, 1.5, 0.5, 0.34626224992888089297789445771047690175505847991946);
+        case(-0.1, 1.5, 0.8, 0.46728530589487698517090261668589508746353129242404);
+        almost(-0.1, 2.5, 0.1, 0.18914969879695093477606645992572208111152994999076, 1e-10);
+        case(-0.1, 2.5, 0.5, 0.40622798321378106125020505907901206714868922279347);
+        case(-0.1, 2.5, 0.8, 0.48035707589956665425068652807400957345208517749893);
+
+        // input to inverse would be 0.0
+        if !inverse {
+            almost(1.5, 0.1, 0.1, 0.0, 1e-315);
+            almost(1.5, 0.1, 0.5, 0.0, 1e-106);
+            almost(1.5, 0.1, 0.8, 0.0, 1e-66);
+        }
+
+        almost(1.5, 1.5, 0.1, 0.005621455876973168709588070988239748831823850202953, 1e-12);
+        almost(1.5, 1.5, 0.8, 0.12532699044614938400496547188720940854423187977236, 1e-11);
+        almost(1.5, 2.5, 0.1, 0.064125647996943514411570834861724406903677144126117, 1e-11);
+        almost(1.5, 2.5, 0.5, 0.19017302281590810871719754032332631806011441356498, 1e-10);
+        almost(1.5, 2.5, 0.8, 0.24533064397555500690927047163085419096928289095201, 1e-16);
+
+        // input to inverse would be 0.0
+        if !inverse {
+            case(2.5, 0.1, 0.1, 0.0);
+            almost(2.5, 0.1, 0.5, 0.0, 1e-223);
+            almost(2.5, 0.1, 0.8, 0.0, 1e-162);
+        }
+
+        almost(2.5, 1.5, 0.1, 0.00068304052220788502001572635016579586444611070077399, 1e-13);
+        almost(2.5, 1.5, 0.5, 0.016636862816580533038130583128179878924863968664206, 1e-12);
+        almost(2.5, 1.5, 0.8, 0.034729001282904174941366974418836262996834852343018, 1e-11);
+        almost(2.5, 2.5, 0.1, 0.027363708266690978870139978537188410215717307180775, 1e-11);
+        almost(2.5, 2.5, 0.5, 0.10075543423327634536450625420610429181921642201567, 1e-11);
+        almost(2.5, 2.5, 0.8, 0.13802019192453118732001307556787218421918336849121, 1e-11);
     }
 
     #[test]
