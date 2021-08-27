@@ -1,6 +1,9 @@
 //! Defines mathematical expressions commonly used when computing distribution
 //! values as constants
 
+/// Constant value for `pi^2`
+pub const PI_SQ: f64 = 9.8696044010893586188344909998761511353136994072407906264133493762;
+
 /// Constant value for `sqrt(2 * pi)`
 pub const SQRT_2PI: f64 = 2.5066282746310005024157652848110452530069867406099;
 
