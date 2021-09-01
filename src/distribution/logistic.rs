@@ -254,9 +254,10 @@ impl Continuous<f64, f64> for Logistic {
     ///
     /// where `μ` is the location and `b` is the scale
     fn ln_pdf(&self, x: f64) -> f64 {
-        -(x - self.location) / self.scale
-            - self.scale.ln()
-            - 2.0 * (1.0 + (-(x - self.location) / self.scale).exp()).ln()
+        ((-(x - self.location) / self.scale).exp()
+            / (1.0 + (-(x - self.location) / self.scale).exp()).powi(2)
+            / self.scale)
+            .ln()
     }
 }
 
