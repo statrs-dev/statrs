@@ -75,14 +75,14 @@ assert!(n.variance().is_none());
 
 ## Contributing
 
-Want to contribute? Check out some of the issues marked [help wanted](https://github.com/boxtown/statrs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+Want to contribute? Check out some of the issues marked [help wanted](https://github.com/statrs-dev/statrs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 ### How to contribute
 
 Clone the repo:
 
 ```
-git clone https://github.com/boxtown/statrs
+git clone https://github.com/statrs-dev/statrs
 ```
 
 Create a feature branch:
