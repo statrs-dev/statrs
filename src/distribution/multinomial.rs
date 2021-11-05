@@ -90,14 +90,25 @@ impl Multinomial {
     }
 }
 
+impl ::rand::distributions::Distribution<Vec<u64>> for Multinomial {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Vec<u64> {
+        let p_cdf = super::categorical::prob_mass_to_cdf(self.p());
+        let mut res = vec![0; self.p.len()];
+        for _ in 0..self.n {
+            let i = super::categorical::sample_unchecked(rng, &p_cdf);
+            res[i] += 1;
+        }
+        res
+    }
+}
+
 impl ::rand::distributions::Distribution<Vec<f64>> for Multinomial {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Vec<f64> {
         let p_cdf = super::categorical::prob_mass_to_cdf(self.p());
         let mut res = vec![0.0; self.p.len()];
         for _ in 0..self.n {
             let i = super::categorical::sample_unchecked(rng, &p_cdf);
-            let el = res.get_mut(i as usize).unwrap();
-            *el += 1.0;
+            res[i] += 1.0;
         }
         res
     }

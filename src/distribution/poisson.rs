@@ -67,6 +67,17 @@ impl Poisson {
     }
 }
 
+impl ::rand::distributions::Distribution<u64> for Poisson {
+    /// Generates one sample from the Poisson distribution either by
+    /// Knuth's method if lambda < 30.0 or Rejection method PA by
+    /// A. C. Atkinson from the Journal of the Royal Statistical Society
+    /// Series C (Applied Statistics) Vol. 28 No. 1. (1979) pp. 29 - 35
+    /// otherwise
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> u64 {
+        sample_unchecked(rng, self.lambda)
+    }
+}
+
 impl ::rand::distributions::Distribution<f64> for Poisson {
     /// Generates one sample from the Poisson distribution either by
     /// Knuth's method if lambda < 30.0 or Rejection method PA by
@@ -74,7 +85,7 @@ impl ::rand::distributions::Distribution<f64> for Poisson {
     /// Series C (Applied Statistics) Vol. 28 No. 1. (1979) pp. 29 - 35
     /// otherwise
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        sample_unchecked(rng, self.lambda)
+        sample_unchecked(rng, self.lambda) as f64
     }
 }
 
@@ -238,18 +249,19 @@ impl Discrete<u64, f64> for Poisson {
         -self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x as u64)
     }
 }
+
 /// Generates one sample from the Poisson distribution either by
 /// Knuth's method if lambda < 30.0 or Rejection method PA by
 /// A. C. Atkinson from the Journal of the Royal Statistical Society
 /// Series C (Applied Statistics) Vol. 28 No. 1. (1979) pp. 29 - 35
 /// otherwise
-pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, lambda: f64) -> f64 {
+pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, lambda: f64) -> u64 {
     if lambda < 30.0 {
         let limit = (-lambda).exp();
-        let mut count = 0.0;
+        let mut count = 0;
         let mut product: f64 = rng.gen();
         while product >= limit {
-            count += 1.0;
+            count += 1;
             product *= rng.gen::<f64>();
         }
         count
@@ -273,7 +285,7 @@ pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, lambda: f64) -> f64 {
             let lhs = y + (v / (temp * temp)).ln();
             let rhs = k + n * lambda.ln() - factorial::ln_factorial(n as u64);
             if lhs <= rhs {
-                return n;
+                return n as u64;
             }
         }
     }
