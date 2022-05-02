@@ -80,6 +80,19 @@ impl ContinuousCDF<f64, f64> for Uniform {
             (x - self.min) / (self.max - self.min)
         }
     }
+
+    /// Finds the value of `x` where `F(p) = x`
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        if !(0.0..=1.0).contains(&p) {
+            panic!("p must be in [0, 1], was {}", p);
+        } else if p == 0.0 {
+            self.min
+        } else if p == 1.0 {
+            self.max
+        } else {
+            (self.max - self.min) * p + self.min
+        }
+    }
 }
 
 impl Min<f64> for Uniform {
@@ -393,6 +406,21 @@ mod tests {
         test_case(-5.0, 100.0, 0.04761904761904761904762, cdf(0.0));
         test_case(0.0, f64::INFINITY, 0.0, cdf(10.0));
         test_case(0.0, f64::INFINITY, 1.0, cdf(f64::INFINITY));
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let inverse_cdf = |arg: f64| move |x: Uniform| x.inverse_cdf(arg);
+        test_case(0.0, 0.0, 0.0, inverse_cdf(0.0));
+        test_case(0.0, 0.0, 0.0, inverse_cdf(1.0));
+        test_case(0.0, 0.1, 0.05, inverse_cdf(0.5));
+        test_case(0.0, 10.0, 5.0, inverse_cdf(0.5));
+        test_case(1.0, 10.0, 1.0, inverse_cdf(0.0));
+        test_case(1.0, 10.0, 4.0, inverse_cdf(1.0 / 3.0));
+        test_case(1.0, 10.0, 10.0, inverse_cdf(1.0));
+        test_case(f64::NEG_INFINITY, f64::INFINITY, f64::NEG_INFINITY, inverse_cdf(0.0));
+        test_case(0.0, f64::INFINITY, 0.0, inverse_cdf(0.0));
+        test_case(0.0, f64::INFINITY, f64::INFINITY, inverse_cdf(1.0));
     }
 
     #[test]
