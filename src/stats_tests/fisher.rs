@@ -1,10 +1,7 @@
-// Perform a Fisher exact test on a 2x2 contingency table.
-// Based on scipy's fisher test: https://github.com/scipy/scipy/blob/v1.7.0/scipy/stats/stats.py#L40757
-
 use crate::distribution::{Discrete, DiscreteCDF, Hypergeometric};
 use crate::StatsError;
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone)]
 pub enum Alternative {
     TwoSided,
     Less,
@@ -13,6 +10,7 @@ pub enum Alternative {
 
 const EPSILON: f64 = 1.0 - 1e-4;
 
+/// Binary search in two-sided test with starting bound as argument
 fn binary_search(
     n: u64,
     n1: u64,
@@ -22,7 +20,6 @@ fn binary_search(
     epsilon: f64,
     upper: bool,
 ) -> u64 {
-    // Binary search in two-sided test with starting bound as argument
     let (mut min_val, mut max_val) = {
         if upper {
             (mode, n)
@@ -106,6 +103,17 @@ fn binary_search(
     guess
 }
 
+/// Perform a Fisher exact test on a 2x2 contingency table.
+/// Based on scipy's fisher test: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fisher_exact.html#scipy-stats-fisher-exact
+/// Returns the odds ratio and p_value
+/// # Examples
+///
+/// ```
+/// use statrs::statis_tests::fishers_exact;
+/// use statrs::statis_tests::Alternative;
+/// let table = [3, 5, 4, 50];
+/// let (odds_ratio, p_value) = fishers_exact_with_odds_ratio(&table, Alternative::Less).unwrap();
+/// ```
 pub fn fishers_exact_with_odds_ratio(
     table: &[u64; 4],
     alternative: Alternative,
@@ -128,11 +136,19 @@ pub fn fishers_exact_with_odds_ratio(
     Ok((odds_ratio, p_value))
 }
 
+/// Perform a Fisher exact test on a 2x2 contingency table.
+/// Based on scipy's fisher test: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fisher_exact.html#scipy-stats-fisher-exact
+/// Returns only the p_value
+/// # Examples
+///
+/// ```
+/// use statrs::statis_tests::fishers_exact;
+/// use statrs::statis_tests::Alternative;
+/// let table = [3, 5, 4, 50];
+/// let p_value = fishers_exact(&table, Alternative::Less).unwrap();
+/// ```
 pub fn fishers_exact(table: &[u64; 4], alternative: Alternative) -> Result<f64, StatsError> {
-    // Rewrite of the scipy's Fisher exact test
-
-    // If both values in a row or column are zero, the p-value is 1 and
-    // the odds ratio is NaN.
+    // If both values in a row or column are zero, the p-value is 1 and the odds ratio is NaN.
     if (table[0] == 0 && table[2] == 0) || (table[1] == 0 && table[3] == 0) {
         return Ok(1.0);
     }
@@ -161,7 +177,7 @@ pub fn fishers_exact(table: &[u64; 4], alternative: Alternative) -> Result<f64, 
                 let dist = Hypergeometric::new(population, successes, draws)?;
 
                 let p_exact = dist.pmf(table[0]);
-                let mode = ((n + 1) * (n1 + 1)) / (n1 + n2 + 2) as u64; // todo: check floor?
+                let mode = ((n + 1) * (n1 + 1)) / (n1 + n2 + 2) as u64;
                 let p_mode = dist.pmf(mode);
 
                 if (p_exact - p_mode).abs() / p_exact.max(p_mode) <= 1.0 - EPSILON {
@@ -197,6 +213,7 @@ mod tests {
     use crate::prec;
     use crate::stats_tests::fisher::{fishers_exact_with_odds_ratio, Alternative};
 
+    /// Test fishers_exact by comparing against values from scipy.
     #[test]
     fn test_fishers_exact() {
         let cases = [
