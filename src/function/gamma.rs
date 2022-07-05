@@ -421,6 +421,24 @@ fn signum(x: f64) -> f64 {
     }
 }
 
+/// Computes the [multivariate gamma function](https://en.wikipedia.org/wiki/Multivariate_gamma_function).
+pub fn mvgamma(p: i64, a: f64) -> f64 {
+    let mut res = std::f64::consts::PI.powf((p * (p - 1)) as f64 / 4.0);
+    for ii in 1..=p {
+        res *= gamma(a + (1 - ii) as f64 / 2.0);
+    }
+    res
+}
+
+/// Computes the log [multivariate gamma function](https://en.wikipedia.org/wiki/Multivariate_gamma_function).
+pub fn mvlgamma(p: i64, a: f64) -> f64 {
+    let mut res = (p * (p - 1)) as f64 * consts::LN_PI / 4.0;
+    for ii in 1..=p {
+        res += ln_gamma(a + (1 - ii) as f64 / 2.0);
+    }
+    res
+}
+
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
@@ -804,5 +822,15 @@ mod tests {
         assert_almost_eq!(super::inv_digamma(1.5061176684318004727268212432509309022911739973934097), 5.0, 1e-14);
         assert_almost_eq!(super::inv_digamma(1.6110931485817511237336268416044190359814435699427405), 5.5, 1e-14);
         assert_almost_eq!(super::inv_digamma(2.2622143570941481235561593642219403924532310597356171), 10.1, 1e-13);
+    }
+
+    #[test]
+    fn test_ln_mvlgamma() {
+        assert!(super::mvlgamma(2, f64::NAN).is_nan());
+        assert_almost_eq!(super::mvlgamma(0, 1.0), 0.0, 1e-12);
+        assert_almost_eq!(super::mvlgamma(2, 1.0), 1.1447298858494002, 1e-12);
+        assert_almost_eq!(super::mvlgamma(3, 1.5), 2.1686775340635553, 1e-12);
+        assert_almost_eq!(super::mvlgamma(3, 150.0 + 1.0e-12), 1794.2387481112528, 1e-12);
+        assert_almost_eq!(super::mvlgamma(11, 14.5), 225.2071467353132, 1e-12);
     }
 }
