@@ -69,6 +69,7 @@ mod uniform;
 mod weibull;
 mod ziggurat;
 mod ziggurat_tables;
+mod wishart;
 
 use crate::Result;
 
