@@ -47,6 +47,14 @@ impl Wishart {
         }
     }
 
+    pub fn freedom(&self) -> f64 {
+        self.freedom
+    }
+
+    pub fn scale(&self) -> &DMatrix<f64> {
+        &self.scale
+    }
+
     pub fn p(&self) -> usize {
         self.scale.nrows()
     }
