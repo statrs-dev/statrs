@@ -70,6 +70,7 @@ mod weibull;
 mod ziggurat;
 mod ziggurat_tables;
 mod wishart;
+mod inverse_wishart;
 
 use crate::Result;
 
