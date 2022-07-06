@@ -20,6 +20,20 @@ fn mvdigamma(p: i64, a: f64) -> f64 {
 
 
 /// Implements the [Wishart distribution](http://en.wikipedia.org/wiki/Wishart_distribution)
+///
+/// # Example
+/// ```
+/// use nalgebra::DMatrix;
+/// use statrs::distribution::{Wishart, Continuous};
+/// use statrs::statistics::Distribution;
+/// use statrs::prec;
+///
+/// let result = Wishart::new(2.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
+/// assert!(result.is_ok());
+///
+/// let result = Wishart::new(1.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
+/// assert!(result.is_err());
+/// ```
 #[derive(Debug, Clone)]
 pub struct Wishart {
     freedom: f64,
@@ -28,6 +42,28 @@ pub struct Wishart {
 }
 
 impl Wishart {
+    /// Constructs a new Wishart distribution with a degrees of freedom (ν) of `freedom`
+    /// and a scale matrix (ψ) of `scale`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `scale` matrix is not square.
+    /// Returns an error if `freedom` is `NaN`.
+    /// Returns an error if `freedom <= rows(scale) - 1`
+    /// Returns an error if `scale` is not positive definite.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use nalgebra::DMatrix;
+    /// use statrs::distribution::Wishart;
+    ///
+    /// let result = Wishart::new(2.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
+    /// assert!(result.is_ok());
+    ///
+    /// let result = Wishart::new(1.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
+    /// assert!(result.is_err());
+    /// ```
     pub fn new(freedom: f64, scale: DMatrix<f64>) -> Result<Self> {
         if scale.nrows() != scale.ncols() {
             return Err(StatsError::BadParams);
@@ -47,18 +83,54 @@ impl Wishart {
         }
     }
 
+    /// Returns the degrees of freedom of
+    /// the Wishart distribution.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use nalgebra::DMatrix;
+    /// use statrs::distribution::Wishart;
+    ///
+    /// let w = Wishart::new(2.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0])).unwrap();
+    /// assert_eq!(n.freedom(), 2.0);
+    /// ```
     pub fn freedom(&self) -> f64 {
         self.freedom
     }
 
+    /// Returns the scale of the Wishart distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use nalgebra::DMatrix;
+    /// use statrs::distribution::Wishart;
+    ///
+    /// let w = Wishart::new(2.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0])).unwrap();
+    /// assert_eq!(n.scale(), DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
+    /// ```
     pub fn scale(&self) -> &DMatrix<f64> {
         &self.scale
     }
 
+    /// Returns the dimensionality of the Wishart distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use nalgebra::DMatrix;
+    /// use statrs::distribution::Wishart;
+    ///
+    /// let w = Wishart::new(3.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0])).unwrap();
+    /// assert_eq!(n.p(), 2);
+    /// ```
     pub fn p(&self) -> usize {
         self.scale.nrows()
     }
 
+    /// Returns the entropy of the Wishart distribution.
+    /// See [formula](https://en.wikipedia.org/wiki/Wishart_distribution#Entropy)
     pub fn entropy(&self) -> Option<f64> {
         let p = self.p() as f64;
         Some(
@@ -72,12 +144,30 @@ impl Wishart {
 }
 
 impl MeanN<DMatrix<f64>> for Wishart {
+    /// Returns the mean of the Wishart distribution
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// νψ
+    /// ```
+    ///
+    /// where `ν` is the degree of freedom, `ψ` is the scale matrix
     fn mean(&self) -> Option<DMatrix<f64>> {
         Some(self.freedom * &self.scale)
     }
 }
 
 impl VarianceN<DMatrix<f64>> for Wishart {
+    /// Returns the variance of the Wishart distribution
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// Var(x_ij) = ν(ψ_ij^2 + ψ_ii ψ_jj)
+    /// ```
+    ///
+    /// where `ν` is the degree of freedom, `ψ` is the scale matrix
     fn variance(&self) -> Option<DMatrix<f64>> {
         Some(self.scale.map_with_location(|i, j, x| {
             self.freedom * (self.scale[(i, i)] * self.scale[(j, j)] + x.powi(2))
@@ -85,9 +175,26 @@ impl VarianceN<DMatrix<f64>> for Wishart {
     }
 }
 
-impl Mode<DMatrix<f64>> for Wishart {
-    fn mode(&self) -> DMatrix<f64> {
-        (self.freedom - self.p() as f64 - 1.0) * &self.scale
+impl Mode<Option<DMatrix<f64>>> for Wishart {
+    /// Returns the median of the Wishart distribution
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// if k == 1 {
+    ///     0
+    /// } else {
+    ///     λ((k - 1) / k)^(1 / k)
+    /// }
+    /// ```
+    ///
+    /// where `ν` is the degree of freedom, `ψ` is the scale matrix
+    fn mode(&self) -> Option<DMatrix<f64>> {
+        if self.freedom >= self.p() as f64 + 1.0 {
+            Some((self.freedom - self.p() as f64 - 1.0) * &self.scale)
+        } else {
+            None
+        }
     }
 }
 
@@ -112,6 +219,8 @@ impl ::rand::distributions::Distribution<DMatrix<f64>> for Wishart {
 }
 
 impl Continuous<DMatrix<f64>, f64> for Wishart {
+    /// Calculates the probability density function for the Wishart
+    /// distribution at `x`
     fn pdf(&self, x: DMatrix<f64>) -> f64 {
         let p = self.p() as f64;
         let x_det = x.determinant();
@@ -124,6 +233,8 @@ impl Continuous<DMatrix<f64>, f64> for Wishart {
             / mvgamma(p as i64, self.freedom / 2.0)
     }
 
+    /// Calculates the log probability density function for the Wishart
+    /// distribution at `x`
     fn ln_pdf(&self, x: DMatrix<f64>) -> f64 {
         let p = self.p() as f64;
         let x_lndet = x.determinant().ln();
@@ -202,7 +313,7 @@ mod tests {
         test_almost_mat(
             7.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]),
             DMatrix::from_row_slice(2, 2, &[4.0, 0.0, 0.0, 4.0]),
-            1e-15, |w| w.mode(),
+            1e-15, |w| w.mode().unwrap(),
         );
     }
 

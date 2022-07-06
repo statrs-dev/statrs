@@ -8,6 +8,20 @@ use crate::function::gamma::{mvgamma, mvlgamma};
 use crate::statistics::{MeanN, Mode, VarianceN};
 
 /// Implements the [Inverse Wishart distribution](http://en.wikipedia.org/wiki/Inverse-Wishart_distribution)
+///
+/// # Example
+/// ```
+/// use nalgebra::DMatrix;
+/// use statrs::distribution::{InverseWishart, Continuous};
+/// use statrs::statistics::Distribution;
+/// use statrs::prec;
+///
+/// let result = InverseWishart::new(2.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
+/// assert!(result.is_ok());
+///
+/// let result = InverseWishart::new(1.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
+/// assert!(result.is_err());
+/// ```
 #[derive(Debug, Clone)]
 pub struct InverseWishart {
     freedom: f64,
@@ -16,6 +30,28 @@ pub struct InverseWishart {
 }
 
 impl InverseWishart {
+    /// Constructs a new Inverse Wishart distribution with a degrees of freedom (ν) of `freedom`
+    /// and a scale matrix (ψ) of `scale`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `scale` matrix is not square.
+    /// Returns an error if `freedom` is `NaN`.
+    /// Returns an error if `freedom <= rows(scale) - 1`
+    /// Returns an error if `scale` is not positive definite.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use nalgebra::DMatrix;
+    /// use statrs::distribution::InverseWishart;
+    ///
+    /// let result = InverseWishart::new(2.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
+    /// assert!(result.is_ok());
+    ///
+    /// let result = InverseWishart::new(1.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
+    /// assert!(result.is_err());
+    /// ```
     pub fn new(freedom: f64, scale: DMatrix<f64>) -> Result<Self> {
         if scale.nrows() != scale.ncols() {
             return Err(StatsError::BadParams);
@@ -35,26 +71,75 @@ impl InverseWishart {
         }
     }
 
+    /// Returns the degrees of freedom of
+    /// the Inverse Wishart distribution.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use nalgebra::DMatrix;
+    /// use statrs::distribution::InverseWishart;
+    ///
+    /// let w = InverseWishart::new(2.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0])).unwrap();
+    /// assert_eq!(n.freedom(), 2.0);
+    /// ```
     pub fn freedom(&self) -> f64 {
         self.freedom
     }
 
+    /// Returns the scale of the Inverse Wishart distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use nalgebra::DMatrix;
+    /// use statrs::distribution::InverseWishart;
+    ///
+    /// let w = InverseWishart::new(2.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0])).unwrap();
+    /// assert_eq!(n.scale(), DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
+    /// ```
     pub fn scale(&self) -> &DMatrix<f64> {
         &self.scale
     }
 
+    /// Returns the dimensionality of the Inverse Wishart distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use nalgebra::DMatrix;
+    /// use statrs::distribution::InverseWishart;
+    ///
+    /// let w = InverseWishart::new(3.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0])).unwrap();
+    /// assert_eq!(n.p(), 2);
+    /// ```
     pub fn p(&self) -> usize {
         self.scale.nrows()
     }
 }
 
 impl MeanN<DMatrix<f64>> for InverseWishart {
+    /// Returns the mean of the Inverse Wishart distribution
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// ψ/(ν - p - 1)
+    /// ```
+    ///
+    /// where `ν` is the degree of freedom, `ψ` is the scale matrix, and `p` is the dimensionality of the distribution.
     fn mean(&self) -> Option<DMatrix<f64>> {
-        Some(&self.scale * (1.0 / (self.freedom - self.p() as f64 - 1.0)))
+        if self.freedom > self.p() as f64 + 1.0 {
+            Some(&self.scale / (self.freedom - self.p() as f64 - 1.0))
+        } else {
+            None
+        }
     }
 }
 
 impl VarianceN<DMatrix<f64>> for InverseWishart {
+    /// Returns the variance of the Inverse Wishart distribution
+    /// See [formula](https://en.wikipedia.org/wiki/Inverse-Wishart_distribution#Moments)
     fn variance(&self) -> Option<DMatrix<f64>> {
         let p = self.p() as f64;
 
@@ -66,9 +151,22 @@ impl VarianceN<DMatrix<f64>> for InverseWishart {
     }
 }
 
-impl Mode<DMatrix<f64>> for InverseWishart {
-    fn mode(&self) -> DMatrix<f64> {
-        &self.scale * (1.0 / (self.freedom + self.p() as f64 + 1.0))
+impl Mode<Option<DMatrix<f64>>> for InverseWishart {
+    /// Returns the median of the Inverse Wishart distribution
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// ψ/(ν + p + 1)
+    /// ```
+    ///
+    /// where `ν` is the degree of freedom, `ψ` is the scale matrix, and `p` is the dimensionality of the distribution.
+    fn mode(&self) -> Option<DMatrix<f64>> {
+        if self.freedom > self.p() as f64 + 1.0 {
+            Some(&self.scale * (1.0 / (self.freedom + self.p() as f64 + 1.0)))
+        } else {
+            None
+        }
     }
 }
 
@@ -84,6 +182,8 @@ impl ::rand::distributions::Distribution<DMatrix<f64>> for InverseWishart {
 }
 
 impl Continuous<DMatrix<f64>, f64> for InverseWishart {
+    /// Calculates the probability density function for the Inverse Wishart
+    /// distribution at `x`
     fn pdf(&self, x: DMatrix<f64>) -> f64 {
         let p = self.p() as f64;
         let chol = Cholesky::new(x).expect("x is not positive definite");
@@ -97,6 +197,8 @@ impl Continuous<DMatrix<f64>, f64> for InverseWishart {
             / mvgamma(p as i64, self.freedom / 2.0)
     }
 
+    /// Calculates the log probability density function for the Inverse Wishart
+    /// distribution at `x`
     fn ln_pdf(&self, x: DMatrix<f64>) -> f64 {
         let p = self.p() as f64;
         let chol = Cholesky::new(x).expect("x is not positive definite");
@@ -196,7 +298,7 @@ mod tests {
                 0.111111, 0.0,
                 0.0, 0.111111
             ]),
-            1e-5, |w| w.mode(),
+            1e-5, |w| w.mode().unwrap(),
         );
         test_almost_mat(
             7.0, DMatrix::from_row_slice(3, 3, &[
@@ -209,7 +311,7 @@ mod tests {
                 0.0, 0.0184909, 0.0,
                 0.0, 0.0, 0.0863182,
             ]),
-            1e-5, |w| w.mode(),
+            1e-5, |w| w.mode().unwrap(),
         );
     }
 
