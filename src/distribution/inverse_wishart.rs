@@ -177,7 +177,7 @@ impl ::rand::distributions::Distribution<DMatrix<f64>> for InverseWishart {
             self.scale.clone().try_inverse().unwrap(), // We already know S is positive definite
         ).unwrap();
 
-        w.sample(rng).pseudo_inverse(1e-4).unwrap()
+        w.sample(rng).pseudo_inverse(1e-4).unwrap().symmetric_part()
     }
 }
 
