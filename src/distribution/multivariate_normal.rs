@@ -21,7 +21,10 @@ use std::f64::consts::{E, PI};
 /// use nalgebra::{DVector, DMatrix};
 /// use statrs::statistics::{MeanN, VarianceN};
 ///
-/// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+/// let mvn = MultivariateNormal::new(
+///     DVector::from_row_slice(&[0., 0.]),
+///     DMatrix::from_row_slice(2, 2, &[1., 0., 0., 1.]),
+/// ).unwrap();
 /// assert_eq!(mvn.mean().unwrap(), DVector::from_vec(vec![0., 0.]));
 /// assert_eq!(mvn.variance().unwrap(), DMatrix::from_vec(2, 2, vec![1., 0., 0., 1.]));
 /// assert_eq!(mvn.pdf(&DVector::from_vec(vec![1.,  1.])), 0.05854983152431917);
@@ -44,9 +47,11 @@ impl MultivariateNormal {
     ///
     /// Returns an error if the given covariance matrix is not
     /// symmetric or positive-definite
-    pub fn new(mean: Vec<f64>, cov: Vec<f64>) -> Result<Self> {
-        let mean = DVector::from_vec(mean);
-        let cov = DMatrix::from_vec(mean.len(), mean.len(), cov);
+    pub fn new(mean: DVector<f64>, cov: DMatrix<f64>) -> Result<Self> {
+        if cov.nrows() != cov.ncols() && cov.nrows() != mean.nrows() {
+            return Err(StatsError::SpecialCase("Covariance matrix must be square"));
+        }
+
         let dim = mean.len();
         // Check that the provided covariance matrix is symmetric
         if cov.lower_triangle() != cov.upper_triangle().transpose()
@@ -217,6 +222,8 @@ mod tests  {
 
     fn try_create(mean: Vec<f64>, covariance: Vec<f64>) -> MultivariateNormal
     {
+        let mean = DVector::from_vec(mean);
+        let covariance = DMatrix::from_vec(mean.len(), mean.len(), covariance);
         let mvn = MultivariateNormal::new(mean, covariance);
         assert!(mvn.is_ok());
         mvn.unwrap()
@@ -231,6 +238,8 @@ mod tests  {
 
     fn bad_create_case(mean: Vec<f64>, covariance: Vec<f64>)
     {
+        let mean = DVector::from_vec(mean);
+        let covariance = DMatrix::from_vec(mean.len(), mean.len(), covariance);
         let mvn = MultivariateNormal::new(mean, covariance);
         assert!(mvn.is_err());
     }

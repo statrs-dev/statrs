@@ -22,7 +22,7 @@ use std::f64;
 /// use nalgebra::DVector;
 /// use statrs::statistics::MeanN;
 ///
-/// let n = Dirichlet::new(vec![1.0, 2.0, 3.0]).unwrap();
+/// let n = Dirichlet::new(DVector::from_vec(vec![1.0, 2.0, 3.0])).unwrap();
 /// assert_eq!(n.mean().unwrap(), DVector::from_vec(vec![1.0 / 6.0, 1.0 / 3.0, 0.5]));
 /// assert_eq!(n.pdf(&DVector::from_vec(vec![0.33333, 0.33333, 0.33333])), 2.222155556222205);
 /// ```
@@ -46,21 +46,21 @@ impl Dirichlet {
     /// use statrs::distribution::Dirichlet;
     /// use nalgebra::DVector;
     ///
-    /// let alpha_ok = vec![1.0, 2.0, 3.0];
+    /// let alpha_ok = DVector::from_vec(vec![1.0, 2.0, 3.0]);
     /// let mut result = Dirichlet::new(alpha_ok);
     /// assert!(result.is_ok());
     ///
-    /// let alpha_err = vec![0.0];
+    /// let alpha_err = DVector::from_vec(vec![0.0]);
     /// result = Dirichlet::new(alpha_err);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(alpha: Vec<f64>) -> Result<Dirichlet> {
-        if !is_valid_alpha(&alpha) {
+    pub fn new(alpha: DVector<f64>) -> Result<Dirichlet> {
+        if !is_valid_alpha(alpha.as_slice()) {
             Err(StatsError::BadParams)
         } else {
             // let vec = alpha.to_vec();
             Ok(Dirichlet {
-                alpha: DVector::from_vec(alpha.to_vec()),
+                alpha,
             })
         }
     }
@@ -85,7 +85,7 @@ impl Dirichlet {
     /// assert!(result.is_err());
     /// ```
     pub fn new_with_param(alpha: f64, n: usize) -> Result<Dirichlet> {
-        Self::new(vec![alpha; n])
+        Self::new(DVector::from_vec(vec![alpha; n]))
     }
 
     /// Returns the concentration parameters of
@@ -97,7 +97,7 @@ impl Dirichlet {
     /// use statrs::distribution::Dirichlet;
     /// use nalgebra::DVector;
     ///
-    /// let n = Dirichlet::new(vec![1.0, 2.0, 3.0]).unwrap();
+    /// let n = Dirichlet::new(DVector::from_vec(vec![1.0, 2.0, 3.0])).unwrap();
     /// assert_eq!(n.alpha(), &DVector::from_vec(vec![1.0, 2.0, 3.0]));
     /// ```
     pub fn alpha(&self) -> &DVector<f64> {
@@ -317,7 +317,7 @@ mod tests {
 
     fn try_create(alpha: &[f64]) -> Dirichlet
     {
-        let n = Dirichlet::new(alpha.to_vec());
+        let n = Dirichlet::new(DVector::from_row_slice(alpha));
         assert!(n.is_ok());
         n.unwrap()
     }
@@ -333,7 +333,7 @@ mod tests {
 
     fn bad_create_case(alpha: &[f64])
     {
-        let n = Dirichlet::new(alpha.to_vec());
+        let n = Dirichlet::new(DVector::from_row_slice(alpha));
         assert!(n.is_err());
     }
 
