@@ -126,12 +126,17 @@ impl DiscreteCDF<u64, f64> for Binomial {
     /// # Formula
     ///
     /// ```ignore
-    /// I_(1 - p)(n - x, 1 + x)
+    /// I_(p)(x + 1, n - x)
     /// ```
     ///
     /// where `I_(x)(a, b)` is the regularized incomplete beta function
     fn sf(&self, x: u64) -> f64 {
-        1. - self.cdf(x)
+        if x >= self.n {
+            0.0
+        } else {
+            let k = x;
+            beta::beta_reg(k as f64 + 1.0, (self.n - k) as f64, self.p)
+        }
     }
 }
 
@@ -312,8 +317,9 @@ impl Discrete<u64, f64> for Binomial {
     }
 }
 
-#[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+//#[rustfmt::skip]
+//#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use std::fmt::Debug;
     use crate::statistics::*;
@@ -351,6 +357,7 @@ mod tests {
               F: Fn(Binomial) -> T
     {
         let x = get_value(p, n, eval);
+        println!("{} {} {:?}", p, n, expected);
         assert_eq!(expected, x);
     }
 
@@ -519,9 +526,44 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: u64| move |x: Binomial| x.sf(arg);
+        test_case(0.0, 1, 0.0, sf(0));
+        test_case(0.0, 1, 0.0, sf(1));
+        test_case(0.0, 3, 0.0, sf(0));
+        test_case(0.0, 3, 0.0, sf(1));
+        test_case(0.0, 3, 0.0, sf(3));
+        test_case(0.0, 10, 0.0, sf(0));
+        test_case(0.0, 10, 0.0, sf(1));
+        test_case(0.0, 10, 0.0, sf(10));
+        test_almost(0.3, 1, 0.3, 1e-15, sf(0));
+        test_case(0.3, 1, 0.0, sf(1));
+        test_almost(0.3, 3, 0.657, 1e-14, sf(0));
+        test_almost(0.3, 3, 0.216, 1e-15, sf(1));
+        test_case(0.3, 3, 0.0, sf(3));
+        test_almost(0.3, 10, 0.9717524751000001, 1e-16, sf(0));
+        test_almost(0.3, 10, 0.850691654100002, 1e-14, sf(1));
+        test_case(0.3, 10, 0.0, sf(10));
+        test_case(1.0, 1, 1.0, sf(0));
+        test_case(1.0, 1, 0.0, sf(1));
+        test_case(1.0, 3, 1.0, sf(0));
+        test_case(1.0, 3, 1.0, sf(1));
+        test_case(1.0, 3, 0.0, sf(3));
+        test_case(1.0, 10, 1.0, sf(0));
+        test_case(1.0, 10, 1.0, sf(1));
+        test_case(1.0, 10, 0.0, sf(10));
+    }
+
+    #[test]
     fn test_cdf_upper_bound() {
         let cdf = |arg: u64| move |x: Binomial| x.cdf(arg);
         test_case(0.5, 3, 1.0, cdf(5));
+    }
+
+    #[test]
+    fn test_sf_upper_bound() {
+        let sf = |arg: u64| move |x: Binomial| x.sf(arg);
+        test_case(0.5, 3, 0.0, sf(5));
     }
 
     #[test]
