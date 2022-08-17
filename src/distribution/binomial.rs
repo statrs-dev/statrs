@@ -317,9 +317,8 @@ impl Discrete<u64, f64> for Binomial {
     }
 }
 
-//#[rustfmt::skip]
-//#[cfg(all(test, feature = "nightly"))]
-#[cfg(test)]
+#[rustfmt::skip]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use std::fmt::Debug;
     use crate::statistics::*;
