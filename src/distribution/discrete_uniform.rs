@@ -92,7 +92,7 @@ impl DiscreteCDF<i64, f64> for DiscreteUniform {
         } else {
             let lower = self.min as f64;
             let upper = self.max as f64;
-            let ans = (x as f64 - upper + 1.0) / (upper - lower + 1.0);
+            let ans = (upper - x as f64) / (upper - lower + 1.0);
             if ans > 1.0 {
                 1.0
             } else {
@@ -386,7 +386,7 @@ mod tests {
     fn test_sf() {
         let sf = |arg: i64| move |x: DiscreteUniform| x.sf(arg);
         test_case(-10, 10, 0.7142857142857142857143, sf(-5));
-        test_case(-10, 10, 0.4285714285714286, sf(1));
+        test_case(-10, 10, 0.42857142857142855, sf(1));
         test_case(-10, 10, 0.0, sf(10));
         test_case(-10, -10, 0.0, sf(-10));
     }
