@@ -25,6 +25,7 @@ use std::f64;
 pub struct Categorical {
     norm_pmf: Vec<f64>,
     cdf: Vec<f64>,
+    sf: Vec<f64>
 }
 
 impl Categorical {
@@ -58,6 +59,8 @@ impl Categorical {
         } else {
             // extract un-normalized cdf
             let cdf = prob_mass_to_cdf(prob_mass);
+            // extract un-normalized sf
+            let sf = cdf_to_sf(&cdf);
             // extract normalized probability mass
             let sum = cdf[cdf.len() - 1];
             let mut norm_pmf = vec![0.0; prob_mass.len()];
@@ -65,7 +68,7 @@ impl Categorical {
                 .iter_mut()
                 .zip(prob_mass.iter())
                 .for_each(|(np, pm)| *np = *pm / sum);
-            Ok(Categorical { norm_pmf, cdf })
+            Ok(Categorical { norm_pmf, cdf, sf })
         }
     }
 
@@ -276,6 +279,13 @@ pub fn prob_mass_to_cdf(prob_mass: &[f64]) -> Vec<f64> {
         sum
     });
     cdf
+}
+
+/// Computes the sf from the given cumulative densities. 
+/// Performs no parameter or bounds checking.
+pub fn cdf_to_sf(cdf: &[f64]) -> Vec<f64> {
+    let max = *cdf.last().unwrap();
+    cdf.iter().map(|x| max - x).collect()
 }
 
 // Returns the index of val if placed into the sorted search array.
