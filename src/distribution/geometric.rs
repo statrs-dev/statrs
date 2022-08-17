@@ -99,8 +99,22 @@ impl DiscreteCDF<u64, f64> for Geometric {
         }
     }
 
+    /// Calculates the survival function for the geometric
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// (1 - p) ^ x
+    /// ```
     fn sf(&self, x: u64) -> f64 {
-        1. - self.cdf(x)
+        // (1-p) ^ x = exp(log(1-p)*x)
+        //           = exp(log1p(-p) * x)
+        if x == 0 {
+            1.0
+        } else {
+            ((-self.p).ln_1p() * (x as f64)).exp()
+        }
     }
 }
 
