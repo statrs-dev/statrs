@@ -84,7 +84,21 @@ impl DiscreteCDF<i64, f64> for DiscreteUniform {
     }
 
     fn sf(&self, x: i64) -> f64 {
-        1. - self.cdf(x)
+        //1. - self.cdf(x)
+        if x < self.min {
+            1.0
+        } else if x >= self.max {
+            0.0
+        } else {
+            let lower = self.min as f64;
+            let upper = self.max as f64;
+            let ans = (x as f64 - upper + 1.0) / (upper - lower + 1.0);
+            if ans > 1.0 {
+                1.0
+            } else {
+                ans
+            }
+        }
     }
 }
 
