@@ -412,6 +412,15 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: u64| move |x: Geometric| x.sf(arg);
+        test_case(1.0, 0.0, sf(1));
+        test_case(1.0, 0.0, sf(2));
+        test_almost(0.5, 0.5, 1e-15, sf(1));
+        test_almost(0.5, 0.25, 1e-15, sf(2));
+    }
+
+    #[test]
     fn test_cdf_small_p() {
         //
         // Expected values were computed with the arbitrary precision
@@ -429,6 +438,15 @@ mod tests {
         let cdf = geom.cdf(5u64);
         let expected = 4.99999999e-09;
         assert_relative_eq!(cdf, expected, epsilon = 0.0, max_relative = 1e-15);
+    }
+
+    #[test]
+    fn test_sf_small_p() {
+        let geom = Geometric::new(1e-9f64).unwrap();
+
+        let sf = geom.sf(5u64);
+        let expected = 0.999999995;
+        assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
     }
 
     #[test]
@@ -456,9 +474,28 @@ mod tests {
     }
 
     #[test]
+    fn test_sf_very_small_p() {
+        let geom = Geometric::new(1e-17f64).unwrap();
+
+        let sf = geom.sf(10u64);
+        let expected =  0.9999999999999999;
+        assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
+
+        let sf = geom.sf(100000000000000u64);
+        let expected = 0.999000499833375;
+        assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
+    }
+
+    #[test]
     fn test_cdf_lower_bound() {
         let cdf = |arg: u64| move |x: Geometric| x.cdf(arg);
         test_case(0.3, 0.0, cdf(0));
+    }
+
+    #[test]
+    fn test_sf_lower_bound() {
+        let sf = |arg: u64| move |x: Geometric| x.sf(arg);
+        test_case(0.3, 1.0, sf(0));
     }
 
     #[test]
