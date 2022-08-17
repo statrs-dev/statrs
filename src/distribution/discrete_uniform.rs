@@ -369,9 +369,24 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: i64| move |x: DiscreteUniform| x.sf(arg);
+        test_case(-10, 10, 0.7142857142857142857143, sf(-5));
+        test_case(-10, 10, 0.4285714285714286, sf(1));
+        test_case(-10, 10, 0.0, sf(10));
+        test_case(-10, -10, 0.0, sf(-10));
+    }
+
+    #[test]
     fn test_cdf_lower_bound() {
         let cdf = |arg: i64| move |x: DiscreteUniform| x.cdf(arg);
         test_case(0, 3, 0.0, cdf(-1));
+    }
+
+    #[test]
+    fn test_sf_lower_bound() {
+        let sf = |arg: i64| move |x: DiscreteUniform| x.sf(arg);
+        test_case(0, 3, 1.0, sf(-1));
     }
 
     #[test]
