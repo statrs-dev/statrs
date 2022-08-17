@@ -119,6 +119,20 @@ impl DiscreteCDF<u64, f64> for Binomial {
             beta::beta_reg((self.n - k) as f64, k as f64 + 1.0, 1.0 - self.p)
         }
     }
+
+    /// Calculates the survival function for the
+    /// binomial distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// I_(1 - p)(n - x, 1 + x)
+    /// ```
+    ///
+    /// where `I_(x)(a, b)` is the regularized incomplete beta function
+    fn sf(&self, x: u64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<u64> for Binomial {

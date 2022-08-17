@@ -98,6 +98,10 @@ impl DiscreteCDF<u64, f64> for Geometric {
             -((-self.p).ln_1p() * (x as f64)).exp_m1()
         }
     }
+
+    fn sf(&self, x: u64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<u64> for Geometric {

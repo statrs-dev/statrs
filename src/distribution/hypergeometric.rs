@@ -164,6 +164,10 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
             })
         }
     }
+
+    fn sf(&self, x: u64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<u64> for Hypergeometric {

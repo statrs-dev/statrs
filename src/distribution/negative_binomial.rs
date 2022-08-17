@@ -113,6 +113,10 @@ impl DiscreteCDF<u64, f64> for NegativeBinomial {
     fn cdf(&self, x: u64) -> f64 {
         1.0 - beta::beta_reg(x as f64 + 1.0, self.r, 1.0 - self.p)
     }
+
+    fn sf(&self, x: u64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<u64> for NegativeBinomial {

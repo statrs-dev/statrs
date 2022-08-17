@@ -100,6 +100,20 @@ impl DiscreteCDF<u64, f64> for Bernoulli {
     fn cdf(&self, x: u64) -> f64 {
         self.b.cdf(x)
     }
+
+    /// Calculates the survival function for the 
+    /// bernoulli distribution at `x`.
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// if x < 0 { 1 }
+    /// else if x >= 1 { 0 }
+    /// else { p }
+    /// ```
+    fn sf(&self, x: u64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<u64> for Bernoulli {

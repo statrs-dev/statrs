@@ -82,6 +82,10 @@ impl DiscreteCDF<i64, f64> for DiscreteUniform {
             }
         }
     }
+
+    fn sf(&self, x: i64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<i64> for DiscreteUniform {

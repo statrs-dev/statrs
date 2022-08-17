@@ -98,6 +98,10 @@ impl DiscreteCDF<u64, f64> for Categorical {
             self.cdf.get(x as usize).unwrap() / self.cdf_max()
         }
     }
+
+    fn sf(&self, x: u64) -> f64 {
+        1. - self.cdf(x)
+    }
     /// Calculates the inverse cumulative distribution function for the
     /// categorical
     /// distribution at `x`

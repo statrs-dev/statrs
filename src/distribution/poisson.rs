@@ -92,6 +92,10 @@ impl DiscreteCDF<u64, f64> for Poisson {
     fn cdf(&self, x: u64) -> f64 {
         1.0 - gamma::gamma_lr(x as f64 + 1.0, self.lambda)
     }
+
+    fn sf(&self, x: u64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<u64> for Poisson {
