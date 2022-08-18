@@ -89,7 +89,7 @@ impl ContinuousCDF<f64, f64> for Chi {
     /// ```
     ///
     /// where `k` is the degrees of freedom and `P` is
-    /// the regularized Gamma function
+    /// the regularized lower incomplete Gamma function
     fn cdf(&self, x: f64) -> f64 {
         if self.freedom == f64::INFINITY || x == f64::INFINITY {
             1.0
@@ -100,8 +100,25 @@ impl ContinuousCDF<f64, f64> for Chi {
         }
     }
 
+    /// Calculates the survival function for the chi
+    /// distribution at `x`.
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// P(k / 2, x^2 / 2)
+    /// ```
+    ///
+    /// where `k` is the degrees of freedom and `P` is
+    /// the regularized upper incomplete Gamma function
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        if self.freedom == f64::INFINITY || x == f64::INFINITY {
+            0.0
+        } else if x <= 0.0 {
+            1.0
+        } else {
+            gamma::gamma_ur(self.freedom / 2.0, x * x / 2.0)
+        }
     }
 }
 
