@@ -114,8 +114,26 @@ impl ContinuousCDF<f64, f64> for Pareto {
         }
     }
 
+    /// Calculates the survival function for the Pareto
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// if x < x_m {
+    ///     1
+    /// } else {
+    ///     (x_m/x)^α
+    /// }
+    /// ```
+    ///
+    /// where `x_m` is the scale and `α` is the shape
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        if x < self.scale {
+            1.0
+        } else {
+            (self.scale / x).powf(self.shape)
+        }
     }
 }
 
