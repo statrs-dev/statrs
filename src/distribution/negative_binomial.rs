@@ -106,8 +106,6 @@ impl DiscreteCDF<u64, f64> for NegativeBinomial {
     /// # Formula
     ///
     /// ```ignore
-    /// 1 - I_(1 - p)(x + 1, r)
-    /// // or without precision loss
     /// I_(p)(r, x+1)
     /// ```
     ///
@@ -116,6 +114,22 @@ impl DiscreteCDF<u64, f64> for NegativeBinomial {
         beta::beta_reg(self.r, x as f64 + 1.0, self.p)
     }
 
+    /// Calculates the survival function for the
+    /// negative binomial distribution at `x`
+    ///
+    /// Note that due to extending the distribution to the reals
+    /// (allowing positive real values for `r`), while still technically
+    /// a discrete distribution the CDF behaves more like that of a
+    /// continuous distribution rather than a discrete distribution
+    /// (i.e. a smooth graph rather than a step-ladder)
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// I_(1-p)(x+1, r)
+    /// ```
+    ///
+    /// where `I_(x)(a, b)` is the regularized incomplete beta function
     fn sf(&self, x: u64) -> f64 {
         beta::beta_reg(x as f64 + 1.0, self.r, 1. - self.p)
     }
