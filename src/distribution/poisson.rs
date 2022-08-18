@@ -93,8 +93,18 @@ impl DiscreteCDF<u64, f64> for Poisson {
         gamma::gamma_ur(x as f64 + 1.0, self.lambda)
     }
 
+    /// Calculates the survival function for the poisson
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// P(x + 1, λ)
+    /// ```
+    ///
+    /// where `λ` is the rate and `P` is the lower regularized gamma function
     fn sf(&self, x: u64) -> f64 {
-        1. - self.cdf(x)
+        gamma::gamma_lr(x as f64 + 1.0, self.lambda)
     }
 }
 
