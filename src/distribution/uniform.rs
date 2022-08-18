@@ -81,8 +81,26 @@ impl ContinuousCDF<f64, f64> for Uniform {
         }
     }
 
+    /// Calculates the survival function for the uniform
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// (max - x) / (max - min)
+    /// ```
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        if x <= self.min {
+            1.0
+        } else if x >= self.max {
+            0.0
+        } else if x.is_infinite() && self.max.is_infinite() {
+            0.0
+        } else if self.max.is_infinite() {
+            1.0
+        } else {
+            (self.max - x) / (self.max - self.min)
+        }
     }
 }
 
