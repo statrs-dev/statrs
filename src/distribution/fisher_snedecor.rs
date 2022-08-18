@@ -541,6 +541,29 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: FisherSnedecor| x.sf(arg);
+        test_almost(0.1, 0.1, 0.5528701396657489, 1e-15, sf(0.1));
+        test_almost(1.0, 0.1, 0.9184347790489533, 1e-15, sf(0.1));
+        test_almost(10.0, 0.1, 0.9668159942836896, 1e-13, sf(0.1));
+        test_almost(0.1, 1.0, 0.25621289082013654, 1e-15, sf(0.1));
+        test_almost(1.0, 1.0, 0.8050177709578634, 1e-16, sf(0.1));
+        test_almost(10.0, 1.0, 0.9898804402645662, 1e-17, sf(0.1));
+        test_almost(0.1, 0.1, 0.5, 1e-15, sf(1.0));
+        test_almost(1.0, 0.1, 0.8326564849905562, 1e-14, sf(1.0));
+        test_almost(10.0, 0.1, 0.8779243933525519, 1e-13, sf(1.0));
+        test_almost(0.1, 1.0, 0.16734351500944344, 1e-15, sf(1.0));
+        test_almost(1.0, 1.0, 0.5, 1e-15, sf(1.0));
+        test_almost(10.0, 1.0, 0.65910686769794, 1e-15, sf(1.0));
+    }
+
+    #[test]
+    fn test_sf_lower_bound() {
+        let sf = |arg: f64| move |x: FisherSnedecor| x.sf(arg);
+        test_case(0.1, 0.1, 1.0, sf(-1.0));
+    }
+
+    #[test]
     fn test_continuous() {
         test::check_continuous_distribution(&try_create(10.0, 10.0), 0.0, 10.0);
     }
