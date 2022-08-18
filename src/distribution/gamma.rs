@@ -120,7 +120,21 @@ impl ContinuousCDF<f64, f64> for Gamma {
     }
 
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        if x <= 0.0 {
+            1.0
+        }
+        else if ulps_eq!(x, self.shape) && self.rate.is_infinite() {
+            0.0
+        }
+        else if self.rate.is_infinite() {
+            1.0
+        }
+        else if x.is_infinite() {
+            0.0
+        }
+        else {
+            gamma::gamma_ur(self.shape, x * self.rate)
+        }
     }
 }
 
