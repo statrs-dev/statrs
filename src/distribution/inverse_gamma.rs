@@ -450,7 +450,7 @@ mod tests {
         let sf = |arg: f64| move |x: InverseGamma| x.sf(arg);
         test_almost(0.1, 0.1, 0.8137848038053936, 1e-14, sf(1.2));
         test_almost(0.1, 1.0, 0.9414024458901327, 1e-14, sf(2.0));
-        test_case(1.0, 0.1, 0.06449301496838222, sf(1.5));
+        test_almost(1.0, 0.1, 0.0644930149683822, 1e-14, sf(1.5));
         test_almost(1.0, 1.0, 0.565401791492922, 1e-14, sf(1.2));
     }
 
