@@ -113,6 +113,10 @@ impl ContinuousCDF<f64, f64> for Pareto {
             1.0 - (self.scale / x).powf(self.shape)
         }
     }
+
+    fn sf(&self, x: f64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<f64> for Pareto {

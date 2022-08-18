@@ -123,6 +123,10 @@ impl ContinuousCDF<f64, f64> for FisherSnedecor {
             )
         }
     }
+
+    fn sf(&self, x: f64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<f64> for FisherSnedecor {

@@ -105,6 +105,11 @@ impl ContinuousCDF<f64, f64> for Laplace {
             y
         }
     }
+
+    fn sf(&self, x: f64) -> f64 {
+        1. - self.cdf(x)
+    }
+
     /// Calculates the inverse cumulative distribution function for the
     /// laplace distribution at `p`
     ///

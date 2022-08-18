@@ -151,6 +151,10 @@ impl ContinuousCDF<f64, f64> for StudentsT {
         }
     }
 
+    fn sf(&self, x: f64) -> f64 {
+        1. - self.cdf(x)
+    }
+
     /// Calculates the inverse cumulative distribution function for the
     /// Student's T-distribution at `x`
     fn inverse_cdf(&self, x: f64) -> f64 {

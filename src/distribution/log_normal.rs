@@ -83,6 +83,10 @@ impl ContinuousCDF<f64, f64> for LogNormal {
             0.5 * erf::erfc((self.location - x.ln()) / (self.scale * f64::consts::SQRT_2))
         }
     }
+
+    fn sf(&self, x: f64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<f64> for LogNormal {

@@ -189,6 +189,10 @@ impl ContinuousCDF<f64, f64> for Empirical {
         }
         sum as f64 / self.sum
     }
+
+    fn sf(&self, x: f64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 #[cfg(all(test, feature = "nightly"))]

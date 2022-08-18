@@ -99,6 +99,10 @@ impl ContinuousCDF<f64, f64> for Chi {
             gamma::gamma_lr(self.freedom / 2.0, x * x / 2.0)
         }
     }
+
+    fn sf(&self, x: f64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<f64> for Chi {

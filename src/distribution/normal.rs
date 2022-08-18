@@ -74,6 +74,11 @@ impl ContinuousCDF<f64, f64> for Normal {
     fn cdf(&self, x: f64) -> f64 {
         cdf_unchecked(x, self.mean, self.std_dev)
     }
+
+    fn sf(&self, x: f64) -> f64 {
+        1. - self.cdf(x)
+    }
+
     /// Calculates the inverse cumulative distribution function for the
     /// normal distribution at `x`
     ///

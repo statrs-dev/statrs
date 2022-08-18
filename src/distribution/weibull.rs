@@ -115,6 +115,10 @@ impl ContinuousCDF<f64, f64> for Weibull {
             -(-x.powf(self.shape) * self.scale_pow_shape_inv).exp_m1()
         }
     }
+
+    fn sf(&self, x: f64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<f64> for Weibull {

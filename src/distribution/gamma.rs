@@ -118,6 +118,10 @@ impl ContinuousCDF<f64, f64> for Gamma {
             gamma::gamma_lr(self.shape, x * self.rate)
         }
     }
+
+    fn sf(&self, x: f64) -> f64 {
+        1. - self.cdf(x)
+    }
 }
 
 impl Min<f64> for Gamma {
