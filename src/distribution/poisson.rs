@@ -85,12 +85,12 @@ impl DiscreteCDF<u64, f64> for Poisson {
     /// # Formula
     ///
     /// ```ignore
-    /// 1 - P(x + 1, λ)
+    /// P(x + 1, λ)
     /// ```
     ///
-    /// where `λ` is the rate and `P` is the lower regularized gamma function
+    /// where `λ` is the rate and `P` is the upper regularized gamma function
     fn cdf(&self, x: u64) -> f64 {
-        1.0 - gamma::gamma_lr(x as f64 + 1.0, self.lambda)
+        gamma::gamma_ur(x as f64 + 1.0, self.lambda)
     }
 
     fn sf(&self, x: u64) -> f64 {
