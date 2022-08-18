@@ -102,7 +102,7 @@ impl ContinuousCDF<f64, f64> for Erlang {
     }
 
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        self.g.sf(x)
     }
 }
 
