@@ -75,8 +75,28 @@ impl ContinuousCDF<f64, f64> for Normal {
         cdf_unchecked(x, self.mean, self.std_dev)
     }
 
+    /// Calculates the survival function for the
+    /// normal distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// (1 / 2) * (1 + erf(-(x - μ) / (σ * sqrt(2))))
+    /// ```
+    ///
+    /// where `μ` is the mean, `σ` is the standard deviation, and
+    /// `erf` is the error function
+    ///
+    /// note that this calculates the complement due to flipping
+    /// the sign of the argument error function with respect to the cdf.
+    ///
+    /// the normal cdf Φ (and internal error function) as the following property:
+    /// ```ignore
+    ///  Φ(-x) + Φ(x) = 1
+    ///  Φ(-x)        = 1 - Φ(x) 
+    /// ```
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        sf_unchecked(x, self.mean, self.std_dev)
     }
 
     /// Calculates the inverse cumulative distribution function for the
@@ -241,6 +261,12 @@ impl Continuous<f64, f64> for Normal {
 /// with the given mean and standard deviation at x
 pub fn cdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
     0.5 * erf::erfc((mean - x) / (std_dev * f64::consts::SQRT_2))
+}
+
+/// performs an unchecked sf calculation for a normal distribution
+/// with the given mean and standard deviation at x
+pub fn sf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
+    0.5 * erf::erfc((x - mean) / (std_dev * f64::consts::SQRT_2))
 }
 
 /// performs an unchecked pdf calculation for a normal distribution
