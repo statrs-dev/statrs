@@ -129,8 +129,35 @@ impl ContinuousCDF<f64, f64> for Beta {
         }
     }
 
+    /// Calculates the survival function for the beta
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// I_(1-x)(β, α)
+    /// ```
+    ///
+    /// where `α` is shapeA, `β` is shapeB, and `I_x` is the regularized
+    /// lower incomplete beta function
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        if x < 0.0 {
+            1.0
+        } else if x >= 1.0 {
+            0.0
+        } else if self.shape_a.is_infinite() {
+            if x < 1.0 {
+                1.0
+            } else {
+                0.0
+            }
+        } else if self.shape_b.is_infinite() {
+            0.0
+        } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
+            1. - x
+        } else {
+            beta::beta_reg(self.shape_b, self.shape_a, 1.0 - x) 
+        }
     }
 }
 
