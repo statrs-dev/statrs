@@ -476,6 +476,33 @@ mod tests {
         test_case(0.0, 3.0, 1.5, 1.0, cdf(5.0));
     }
 
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Triangular| x.sf(arg);
+        test_case(0.0, 1.0, 0.5, 0.875, sf(0.25));
+        test_case(0.0, 1.0, 0.5, 0.5, sf(0.5));
+        test_case(0.0, 1.0, 0.5, 0.125, sf(0.75));
+        test_case(-5.0, 8.0, -3.5, 0.9487179487179487, sf(-4.0));
+        test_case(-5.0, 8.0, -3.5, 0.8846153846153846, sf(-3.5));
+        test_case(-5.0, 8.0, -3.5, 0.1070234113712375, sf(4.0));
+        test_case(-5.0, -3.0, -4.0, 0.875, sf(-4.5));
+        test_case(-5.0, -3.0, -4.0, 0.5, sf(-4.0));
+        test_case(-5.0, -3.0, -4.0, 0.125, sf(-3.5));
+    }
+
+    #[test]
+    fn test_sf_lower_bound() {
+        let sf = |arg: f64| move |x: Triangular| x.sf(arg);
+        test_case(0.0, 3.0, 1.5, 1.0, sf(-1.0));
+    }
+
+    #[test]
+    fn test_sf_upper_bound() {
+        let sf = |arg: f64| move |x: Triangular| x.sf(arg);
+        test_case(0.0, 3.0, 1.5, 0.0, sf(5.0));
+    }
+
     #[test]
     fn test_continuous() {
         test::check_continuous_distribution(&try_create(-5.0, 5.0, 0.0), -5.0, 5.0);
