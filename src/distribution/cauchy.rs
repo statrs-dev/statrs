@@ -100,8 +100,20 @@ impl ContinuousCDF<f64, f64> for Cauchy {
         (1.0 / f64::consts::PI) * ((x - self.location) / self.scale).atan() + 0.5
     }
 
+    /// Calculates the survival function for the
+    /// cauchy distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// (1 / π) * arctan(-(x - x_0) / γ) + 0.5
+    /// ```
+    ///
+    /// where `x_0` is the location and `γ` is the scale.
+    /// note that this is identical to the cdf except for
+    /// the negative argument to the arctan function
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        (1.0 / f64::consts::PI) * (-((x - self.location) / self.scale)).atan() + 0.5
     }
 }
 
