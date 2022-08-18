@@ -458,6 +458,20 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: u64| move |x: Poisson| x.sf(arg);
+        test_almost(1.5, 0.44217459962892536, 1e-15, sf(1));
+        test_almost(1.5, 0.0000005517532358246565, 1e-15, sf(10));
+        test_almost(1.5, 2.3372210700347092e-17, 1e-15, sf(20));
+        test_almost(5.4, 0.971093881967279, 1e-16, sf(1));
+        test_almost(5.4, 0.022513699310235582, 1e-15, sf(10));
+        test_almost(5.4, 0.0000002800071708975261, 1e-15, sf(20));
+        test_almost(10.8, 0.9997592858597482, 1e-16, sf(1));
+        test_almost(10.8, 0.5160307640044303, 1e-15, sf(10));
+        test_almost(10.8, 0.003819923039191422, 1e-15, sf(20));
+    }
+
+    #[test]
     fn test_discrete() {
         test::check_discrete_distribution(&try_create(0.3), 10);
         test::check_discrete_distribution(&try_create(4.5), 30);
