@@ -447,7 +447,7 @@ mod tests {
     #[test]
     fn test_sf_upper_bound() {
         let sf = |arg: u64| move |x: NegativeBinomial| x.sf(arg);
-        test_case(3.0, 0.5, 0.0, sf(100));
+        test_almost(3.0, 0.5, 5.282409836586059e-28, 1e-28, sf(100));
     }
 
     // TODO: figure out the best way to re-implement this test. We currently
