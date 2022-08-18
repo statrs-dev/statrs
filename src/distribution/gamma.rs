@@ -119,6 +119,17 @@ impl ContinuousCDF<f64, f64> for Gamma {
         }
     }
 
+    /// Calculates the survival function for the gamma
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// (1 / Γ(α)) * γ(α, β * x)
+    /// ```
+    ///
+    /// where `α` is the shape, `β` is the rate, `Γ` is the gamma function,
+    /// and `γ` is the upper incomplete gamma function
     fn sf(&self, x: f64) -> f64 {
         if x <= 0.0 {
             1.0
