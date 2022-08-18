@@ -148,6 +148,9 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
     /// and `p_F_q` is the [generalized hypergeometric
     /// function](https://en.wikipedia.
     /// org/wiki/Generalized_hypergeometric_function)
+    ///
+    /// Calculated as a discrete integral over the probability mass
+    /// function evaluated from 0..k+1
     fn cdf(&self, x: u64) -> f64 {
         if x < self.min() {
             0.0
