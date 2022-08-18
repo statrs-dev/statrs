@@ -423,9 +423,29 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: u64| move |x: NegativeBinomial| x.sf(arg);
+        test_almost(1.0, 0.3, 0.7, 1e-08, sf(0));
+        test_almost(1.0, 0.3, 0.49, 1e-08, sf(1));
+        test_almost(1.0, 0.3, 0.1680699999999986, 1e-08, sf(4));
+        test_almost(1.0, 0.3, 0.019773267430000074, 1e-08, sf(10));
+        test_case(1.0, 1.0, 0.0, sf(0));
+        test_case(1.0, 1.0, 0.0, sf(1));
+        test_almost(10.0, 0.75, 0.9436864852905275, 1e-08, sf(0));
+        test_almost(10.0, 0.75, 0.8029026985168456, 1e-08, sf(1));
+        test_almost(10.0, 0.75, 0.003942141664083465, 1e-08, sf(10));
+    }
+
+    #[test]
     fn test_cdf_upper_bound() {
         let cdf = |arg: u64| move |x: NegativeBinomial| x.cdf(arg);
         test_case(3.0, 0.5, 1.0, cdf(100));
+    }
+
+    #[test]
+    fn test_sf_upper_bound() {
+        let sf = |arg: u64| move |x: NegativeBinomial| x.sf(arg);
+        test_case(3.0, 0.5, 0.0, sf(100));
     }
 
     // TODO: figure out the best way to re-implement this test. We currently
