@@ -165,8 +165,38 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
         }
     }
 
+    /// Calculates the survival function for the hypergeometric
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// 1 - ((n choose k+1) * (N-n choose K-k-1)) / (N choose K) * 3_F_2(1,
+    /// k+1-K, k+1-n; k+2, N+k+2-K-n; 1)
+    /// ```
+    ///
+    /// where `N` is population, `K` is successes, `n` is draws,
+    /// and `p_F_q` is the [generalized hypergeometric
+    /// function](https://en.wikipedia.
+    /// org/wiki/Generalized_hypergeometric_function)
+    ///
+    /// Calculated as a discrete integral over the probability mass
+    /// function evaluated from (k+1)..max
     fn sf(&self, x: u64) -> f64 {
-        1. - self.cdf(x)
+        if x < self.min() {
+            1.0
+        } else if x >= self.max() {
+            0.0
+        } else {
+            let k = x;
+            let ln_denom = factorial::ln_binomial(self.population, self.draws);
+            (k + 1 .. self.max() + 1).fold(0.0, |acc, i| {
+                acc + (factorial::ln_binomial(self.successes, i)
+                    + factorial::ln_binomial(self.population - self.successes, self.draws - i)
+                    - ln_denom)
+                    .exp()
+            })
+        }
     }
 }
 
