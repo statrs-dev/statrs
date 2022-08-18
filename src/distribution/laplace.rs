@@ -106,8 +106,23 @@ impl ContinuousCDF<f64, f64> for Laplace {
         }
     }
 
+    /// Calculates the survival function for the
+    /// laplace distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// 1 - [(1 / 2) * (1 + signum(x - μ)) - signum(x - μ) * exp(-|x - μ| / b)]
+    /// ```
+    ///
+    /// where `μ` is the location, `b` is the scale
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        let y = (-(x - self.location).abs() / self.scale).exp() / 2.;
+        if x >= self.location {
+            y
+        } else {
+            1. - y
+        }
     }
 
     /// Calculates the inverse cumulative distribution function for the
