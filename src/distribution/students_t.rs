@@ -134,8 +134,7 @@ impl ContinuousCDF<f64, f64> for StudentsT {
     ///
     /// where `t = v / (v + k^2)`, `k = (x - μ) / σ`, `μ` is the location,
     /// `σ` is the scale, `v` is the freedom, and `I` is the regularized
-    /// incomplete
-    /// beta function
+    /// incomplete beta function
     fn cdf(&self, x: f64) -> f64 {
         if self.freedom.is_infinite() {
             super::normal::cdf_unchecked(x, self.location, self.scale)
