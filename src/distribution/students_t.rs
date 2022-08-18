@@ -151,8 +151,36 @@ impl ContinuousCDF<f64, f64> for StudentsT {
         }
     }
 
+    /// Calculates the cumulative distribution function for the student's
+    /// t-distribution
+    /// at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// if x < μ {
+    ///     1 - (1 / 2) * I(t, v / 2, 1 / 2)
+    /// } else {
+    ///     (1 / 2) * I(t, v / 2, 1 / 2)
+    /// }
+    /// ```
+    ///
+    /// where `t = v / (v + k^2)`, `k = (x - μ) / σ`, `μ` is the location,
+    /// `σ` is the scale, `v` is the freedom, and `I` is the regularized
+    /// incomplete beta function
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        if self.freedom.is_infinite() {
+            super::normal::sf_unchecked(x, self.location, self.scale)
+        } else {
+            let k = (x - self.location) / self.scale;
+            let h = self.freedom / (self.freedom + k * k);
+            let ib = 0.5 * beta::beta_reg(self.freedom / 2.0, 0.5, h);
+            if x <= self.location {
+                1.0 - ib
+            } else {
+                ib
+            }
+        }
     }
 
     /// Calculates the inverse cumulative distribution function for the
