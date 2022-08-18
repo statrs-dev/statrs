@@ -492,6 +492,26 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Laplace| x.sf(arg);
+        let loc = 0.0f64;
+        let scale = 1.0f64;
+        let reltol = 1e-15f64;
+
+        // Expected value from Wolfram Alpha: SurvivalFunction[LaplaceDistribution[0, 1], 1/2].
+        let expected = 0.30326532985631671180189976749559022f64;
+        test_rel_close(loc, scale, expected, reltol, sf(0.5));
+
+        // Wolfram Alpha: SurvivalFunction[LaplaceDistribution[0, 1], -1/2]
+        let expected = 0.69673467014368328819810023250440977f64;
+        test_rel_close(loc, scale, expected, reltol, sf(-0.5));
+
+        // Wolfram Alpha: SurvivalFunction[LaplaceDistribution[0, 1], 100]
+        let expected = 1.86003798801041798147984790193155916e-44;
+        test_rel_close(loc, scale, expected, reltol, sf(100.0));
+    }
+
+    #[test]
     fn test_inverse_cdf() {
         let inverse_cdf = |arg: f64| move |x: Laplace| x.inverse_cdf(arg);
         let loc = 0.0f64;
