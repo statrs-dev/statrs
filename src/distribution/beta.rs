@@ -599,6 +599,31 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Beta| x.sf(arg);
+        let test = [
+            ((1.0, 1.0), 0.0, 1.0),
+            ((1.0, 1.0), 0.5, 0.5),
+            ((1.0, 1.0), 1.0, 0.0),
+            ((9.0, 1.0), 0.0, 1.0),
+            ((9.0, 1.0), 0.5, 0.998046875),
+            ((9.0, 1.0), 1.0, 0.0),
+            ((5.0, 100.0), 0.0, 1.0),
+            ((5.0, 100.0), 0.5, 0.0),
+            ((5.0, 100.0), 1.0, 0.0),
+            ((1.0, INF), 0.0, 0.0),
+            ((1.0, INF), 0.5, 0.0),
+            ((1.0, INF), 1.0, 0.0),
+            ((INF, 1.0), 0.0, 1.0),
+            ((INF, 1.0), 0.5, 1.0),
+            ((INF, 1.0), 1.0, 0.0),
+        ];
+        for &(arg, x, expect) in test.iter() {
+            test_case(arg, expect, sf(x));
+        }
+    }
+
+    #[test]
     fn test_cdf_input_lt_0() {
         let cdf = |arg: f64| move |x: Beta| x.cdf(arg);
         test_case((1.0, 1.0), 0.0, cdf(-1.0));
@@ -608,6 +633,18 @@ mod tests {
     fn test_cdf_input_gt_1() {
         let cdf = |arg: f64| move |x: Beta| x.cdf(arg);
         test_case((1.0, 1.0), 1.0, cdf(2.0));
+    }
+
+    #[test]
+    fn test_sf_input_lt_0() {
+        let sf = |arg: f64| move |x: Beta| x.sf(arg);
+        test_case((1.0, 1.0), 1.0, sf(-1.0));
+    }
+
+    #[test]
+    fn test_sf_input_gt_1() {
+        let sf = |arg: f64| move |x: Beta| x.sf(arg);
+        test_case((1.0, 1.0), 0.0, sf(2.0));
     }
 
     #[test]
