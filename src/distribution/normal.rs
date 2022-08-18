@@ -450,6 +450,19 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Normal| x.sf(arg);
+        test_case(5.0, 2.0, 1.0, sf(f64::NEG_INFINITY));
+        test_almost(5.0, 2.0, 0.9999997133484281, 1e-16, sf(-5.0));
+        test_almost(5.0, 2.0, 0.9997673709209455, 1e-13, sf(-2.0));
+        test_almost(5.0, 2.0, 0.9937903346744879, 1e-12, sf(0.0));
+        test_case(5.0, 2.0, 0.6914624612740131, sf(4.0));
+        test_case(5.0, 2.0, 0.5, sf(5.0));
+        test_case(5.0, 2.0, 0.3085375387259869, sf(6.0));
+        test_almost(5.0, 2.0, 0.006209665325512148, 1e-12, sf(10.0));
+    }
+
+    #[test]
     fn test_continuous() {
         test::check_continuous_distribution(&try_create(0.0, 1.0), -10.0, 10.0);
         test::check_continuous_distribution(&try_create(20.0, 0.5), 10.0, 30.0);
