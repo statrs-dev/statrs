@@ -492,6 +492,19 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Pareto| x.sf(arg);
+        test_case(0.1, 0.1, 1.0, sf(0.1));
+        test_case(1.0, 1.0, 1.0, sf(1.0));
+        test_case(5.0, 5.0, 1.0, sf(2.0));
+        test_almost(7.0, 7.0, 0.08235429999999999, 1e-14, sf(10.0));
+        test_almost(10.0, 10.0, 0.16150558288984573, 1e14, sf(12.0));
+        test_case(5.0, 1.0, 0.5, sf(10.0));
+        test_almost(3.0, 10.0, 0.0009765625, 1e-14, sf(6.0));
+        test_case(1.0, 1.0, 0.0, sf(f64::INFINITY));
+    }
+
+    #[test]
     fn test_continuous() {
         test::check_continuous_distribution(&try_create(1.0, 10.0), 1.0, 10.0);
         test::check_continuous_distribution(&try_create(0.1, 2.0), 0.1, 100.0);
