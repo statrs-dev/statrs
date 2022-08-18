@@ -107,11 +107,13 @@ impl DiscreteCDF<u64, f64> for NegativeBinomial {
     ///
     /// ```ignore
     /// 1 - I_(1 - p)(x + 1, r)
+    /// // or without precision loss
+    /// I_(p)(r, x+1)
     /// ```
     ///
     /// where `I_(x)(a, b)` is the regularized incomplete beta function
     fn cdf(&self, x: u64) -> f64 {
-        1.0 - beta::beta_reg(x as f64 + 1.0, self.r, 1.0 - self.p)
+        beta::beta_reg(self.r, x as f64 + 1.0, self.p)
     }
 
     fn sf(&self, x: u64) -> f64 {
