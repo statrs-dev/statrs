@@ -116,8 +116,22 @@ impl ContinuousCDF<f64, f64> for Weibull {
         }
     }
 
+    /// Calculates the survival function for the weibull
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// e^-((x/λ)^k)
+    /// ```
+    ///
+    /// where `k` is the shape and `λ` is the scale
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        if x < 0.0 {
+            1.0
+        } else {
+            (-x.powf(self.shape) * self.scale_pow_shape_inv).exp()
+        }
     }
 }
 
