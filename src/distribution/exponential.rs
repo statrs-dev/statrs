@@ -92,8 +92,22 @@ impl ContinuousCDF<f64, f64> for Exp {
         }
     }
 
+    /// Calculates the cumulative distribution function for the
+    /// exponential distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// e^(-λ * x)
+    /// ```
+    ///
+    /// where `λ` is the rate
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        if x < 0.0 {
+            1.0
+        } else {
+            (-self.rate * x).exp()
+        }
     }
 }
 
