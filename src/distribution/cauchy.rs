@@ -415,6 +415,41 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Cauchy| x.sf(arg);
+        test_almost(0.0, 0.1, 0.9936346508990272, 1e-16, sf(-5.0));
+        test_almost(0.0, 0.1, 0.9682744825694465, 1e-16, sf(-1.0));
+        test_case(0.0, 0.1, 0.5, sf(0.0));
+        test_case(0.0, 0.1, 0.03172551743055352, sf(1.0));
+        test_case(0.0, 0.1, 0.006365349100972806, sf(5.0));
+        test_almost(0.0, 1.0, 0.9371670418109989, 1e-16, sf(-5.0));
+        test_case(0.0, 1.0, 0.75, sf(-1.0));
+        test_case(0.0, 1.0, 0.5, sf(0.0));
+        test_case(0.0, 1.0, 0.25, sf(1.0));
+        test_case(0.0, 1.0, 0.06283295818900114, sf(5.0));
+        test_case(0.0, 10.0, 0.6475836176504333, sf(-5.0));
+        test_case(0.0, 10.0, 0.5317255174305535, sf(-1.0));
+        test_case(0.0, 10.0, 0.5, sf(0.0));
+        test_case(0.0, 10.0, 0.4682744825694464, sf(1.0));
+        test_case(0.0, 10.0, 0.35241638234956674, sf(5.0));
+        test_case(-5.0, 100.0, 0.5, sf(-5.0));
+        test_case(-5.0, 100.0, 0.4872743886520082, sf(-1.0));
+        test_case(-5.0, 100.0, 0.4840977487438236, sf(0.0));
+        test_case(-5.0, 100.0, 0.48092427576416374, sf(1.0));
+        test_case(-5.0, 100.0, 0.4682744825694464, sf(5.0));
+        test_case(0.0, f64::INFINITY, 0.5, sf(-5.0));
+        test_case(0.0, f64::INFINITY, 0.5, sf(-1.0));
+        test_case(0.0, f64::INFINITY, 0.5, sf(0.0));
+        test_case(0.0, f64::INFINITY, 0.5, sf(1.0));
+        test_case(0.0, f64::INFINITY, 0.5, sf(5.0));
+        test_case(f64::INFINITY, 1.0, 1.0, sf(-5.0));
+        test_case(f64::INFINITY, 1.0, 1.0, sf(-1.0));
+        test_case(f64::INFINITY, 1.0, 1.0, sf(0.0));
+        test_case(f64::INFINITY, 1.0, 1.0, sf(1.0));
+        test_case(f64::INFINITY, 1.0, 1.0, sf(5.0));
+    }
+
+    #[test]
     fn test_continuous() {
         test::check_continuous_distribution(&try_create(-1.2, 3.4), -1500.0, 1500.0);
         test::check_continuous_distribution(&try_create(-4.5, 6.7), -5000.0, 5000.0);
