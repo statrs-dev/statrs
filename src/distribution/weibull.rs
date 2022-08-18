@@ -488,6 +488,23 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Weibull| x.sf(arg);
+        test_case(1.0, 0.1, 1.0, sf(0.0));
+        test_case(1.0, 0.1, 4.5399929762484854e-5, sf(1.0));
+        test_case(1.0, 0.1, 3.720075976020836e-44, sf(10.0));
+        test_case(1.0, 1.0, 1.0, sf(0.0));
+        test_case(1.0, 1.0, 0.36787944117144233, sf(1.0));
+        test_case(1.0, 1.0, 4.5399929762484854e-5, sf(10.0));
+        test_case(10.0, 10.0, 1.0, sf(0.0));
+        test_almost(10.0, 10.0, 0.9999999999, 1e-25, sf(1.0));
+        test_case(10.0, 10.0, 0.36787944117144233, sf(10.0));
+        test_case(10.0, 1.0, 1.0, sf(0.0));
+        test_case(10.0, 1.0, 0.36787944117144233, sf(1.0));
+        test_case(10.0, 1.0, 0.0, sf(10.0));
+    }
+
+    #[test]
     fn test_continuous() {
         test::check_continuous_distribution(&try_create(1.0, 0.2), 0.0, 10.0);
     }
