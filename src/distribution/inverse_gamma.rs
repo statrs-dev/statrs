@@ -116,8 +116,26 @@ impl ContinuousCDF<f64, f64> for InverseGamma {
         }
     }
 
+    /// Calculates the survival function for the inverse gamma
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// Γ(α, β / x) / Γ(α)
+    /// ```
+    ///
+    /// where the numerator is the lower incomplete gamma function,
+    /// the denominator is the gamma function, `α` is the shape,
+    /// and `β` is the rate
     fn sf(&self, x: f64) -> f64 {
-        1. - self.cdf(x)
+        if x <= 0.0 {
+            1.0
+        } else if x.is_infinite() {
+            0.0
+        } else {
+            gamma::gamma_lr(self.shape, self.rate / x)
+        }
     }
 }
 
