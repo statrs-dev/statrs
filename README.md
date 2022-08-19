@@ -45,7 +45,7 @@ use rand::distributions::Distribution;
 
 let mut r = rand::rngs::OsRng;
 let n = Exp::new(0.5).unwrap();
-print!("{}", n.sample(&mut r);
+print!("{}", n.sample(&mut r));
 ```
 
 Statrs also comes with a number of useful utility traits for more detailed introspection of distributions
