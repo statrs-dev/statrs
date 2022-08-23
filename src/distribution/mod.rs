@@ -149,10 +149,10 @@ pub trait DiscreteCDF<K: Bounded + Clone + Num, T: Float>: Min<K> + Max<K> {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::{ContinuousCDF, Uniform};
+    /// use statrs::distribution::{DiscreteCDF, DiscreteUniform};
     ///
-    /// let n = Uniform::new(0.0, 1.0).unwrap();
-    /// assert_eq!(0.5, n.cdf(0.5));
+    /// let n = DiscreteUniform::new(1, 10).unwrap();
+    /// assert_eq!(0.6, n.cdf(6));
     /// ```
     fn cdf(&self, x: K) -> T;
 
@@ -162,10 +162,10 @@ pub trait DiscreteCDF<K: Bounded + Clone + Num, T: Float>: Min<K> + Max<K> {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::{ContinuousCDF, Uniform};
+    /// use statrs::distribution::{DiscreteCDF, DiscreteUniform};
     ///
-    /// let n = Uniform::new(0.0, 1.0).unwrap();
-    /// assert_eq!(0.5, n.cdf(0.5));
+    /// let n = DiscreteUniform::new(1, 10).unwrap();
+    /// assert_eq!(0.4, n.sf(6));
     /// ```
     fn sf(&self, x: K) -> T;
 
