@@ -113,7 +113,7 @@ impl ContinuousCDF<f64, f64> for Cauchy {
     /// note that this is identical to the cdf except for
     /// the negative argument to the arctan function
     fn sf(&self, x: f64) -> f64 {
-        (1.0 / f64::consts::PI) * (-((x - self.location) / self.scale)).atan() + 0.5
+        (1.0 / f64::consts::PI) * ((self.location - x) / self.scale).atan() + 0.5
     }
 }
 
