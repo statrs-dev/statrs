@@ -118,12 +118,32 @@ impl DiscreteCDF<u64, f64> for NegativeBinomial {
     /// # Formula
     ///
     /// ```ignore
-    /// 1 - I_(1 - p)(x + 1, r)
+    /// I_(p)(r, x+1)
     /// ```
     ///
     /// where `I_(x)(a, b)` is the regularized incomplete beta function.
     fn cdf(&self, x: u64) -> f64 {
-        1.0 - beta::beta_reg(x as f64 + 1.0, self.r, 1.0 - self.p)
+        beta::beta_reg(self.r, x as f64 + 1.0, self.p)
+    }
+
+    /// Calculates the survival function for the
+    /// negative binomial distribution at `x`
+    ///
+    /// Note that due to extending the distribution to the reals
+    /// (allowing positive real values for `r`), while still technically
+    /// a discrete distribution the CDF behaves more like that of a
+    /// continuous distribution rather than a discrete distribution
+    /// (i.e. a smooth graph rather than a step-ladder)
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// I_(1-p)(x+1, r)
+    /// ```
+    ///
+    /// where `I_(x)(a, b)` is the regularized incomplete beta function
+    fn sf(&self, x: u64) -> f64 {
+        beta::beta_reg(x as f64 + 1.0, self.r, 1. - self.p)
     }
 }
 
@@ -452,6 +472,20 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: u64| move |x: NegativeBinomial| x.sf(arg);
+        test_almost(1.0, 0.3, 0.7, 1e-08, sf(0));
+        test_almost(1.0, 0.3, 0.49, 1e-08, sf(1));
+        test_almost(1.0, 0.3, 0.1680699999999986, 1e-08, sf(4));
+        test_almost(1.0, 0.3, 0.019773267430000074, 1e-08, sf(10));
+        test_case(1.0, 1.0, 0.0, sf(0));
+        test_case(1.0, 1.0, 0.0, sf(1));
+        test_almost(10.0, 0.75, 0.9436864852905275, 1e-08, sf(0));
+        test_almost(10.0, 0.75, 0.8029026985168456, 1e-08, sf(1));
+        test_almost(10.0, 0.75, 0.003942141664083465, 1e-08, sf(10));
+    }
+
+    #[test]
     fn test_cdf_upper_bound() {
         let cdf = |arg: u64| move |x: NegativeBinomial| x.cdf(arg);
         test_case(3.0, 0.5, 1.0, cdf(100));
@@ -461,5 +495,11 @@ mod tests {
     fn test_discrete() {
         test::check_discrete_distribution(&try_create(5.0, 0.3), 35);
         test::check_discrete_distribution(&try_create(10.0, 0.7), 21);
+    }
+    
+    #[test]
+    fn test_sf_upper_bound() {
+        let sf = |arg: u64| move |x: NegativeBinomial| x.sf(arg);
+        test_almost(3.0, 0.5, 5.282409836586059e-28, 1e-28, sf(100));
     }
 }

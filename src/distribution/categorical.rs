@@ -25,6 +25,7 @@ use std::f64;
 pub struct Categorical {
     norm_pmf: Vec<f64>,
     cdf: Vec<f64>,
+    sf: Vec<f64>
 }
 
 impl Categorical {
@@ -58,6 +59,8 @@ impl Categorical {
         } else {
             // extract un-normalized cdf
             let cdf = prob_mass_to_cdf(prob_mass);
+            // extract un-normalized sf
+            let sf = cdf_to_sf(&cdf);
             // extract normalized probability mass
             let sum = cdf[cdf.len() - 1];
             let mut norm_pmf = vec![0.0; prob_mass.len()];
@@ -65,7 +68,7 @@ impl Categorical {
                 .iter_mut()
                 .zip(prob_mass.iter())
                 .for_each(|(np, pm)| *np = *pm / sum);
-            Ok(Categorical { norm_pmf, cdf })
+            Ok(Categorical { norm_pmf, cdf, sf })
         }
     }
 
@@ -98,6 +101,23 @@ impl DiscreteCDF<u64, f64> for Categorical {
             self.cdf.get(x as usize).unwrap() / self.cdf_max()
         }
     }
+
+    /// Calculates the survival function for the categorical distribution
+    /// at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// [ sum(p_j) from x..end ]
+    /// ```
+    fn sf(&self, x: u64) -> f64 {
+        if x >= self.sf.len() as u64 {
+            0.0
+        } else {
+            self.sf.get(x as usize).unwrap() / self.cdf_max()
+        }
+    }
+
     /// Calculates the inverse cumulative distribution function for the
     /// categorical
     /// distribution at `x`
@@ -272,6 +292,13 @@ pub fn prob_mass_to_cdf(prob_mass: &[f64]) -> Vec<f64> {
         sum
     });
     cdf
+}
+
+/// Computes the sf from the given cumulative densities. 
+/// Performs no parameter or bounds checking.
+pub fn cdf_to_sf(cdf: &[f64]) -> Vec<f64> {
+    let max = *cdf.last().unwrap();
+    cdf.iter().map(|x| max - x).collect()
 }
 
 // Returns the index of val if placed into the sorted search array.
@@ -456,9 +483,35 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: u64| move |x: Categorical| x.sf(arg);
+        test_case(&[0.0, 3.0, 1.0, 1.0], 2.0 / 5.0, sf(1));
+        test_case(&[1.0, 1.0, 1.0, 1.0], 0.75, sf(0));
+        test_case(&[4.0, 2.5, 2.5, 1.0], 0.6, sf(0));
+        test_case(&[4.0, 2.5, 2.5, 1.0], 0.0, sf(3));
+        test_case(&[4.0, 2.5, 2.5, 1.0], 0.0, sf(4));
+    }
+
+    #[test]
     fn test_cdf_input_high() {
         let cdf = |arg: u64| move |x: Categorical| x.cdf(arg);
         test_case(&[4.0, 2.5, 2.5, 1.0], 1.0, cdf(4));
+    }
+
+    #[test]
+    fn test_sf_input_high() {
+        let sf = |arg: u64| move |x: Categorical| x.sf(arg);
+        test_case(&[4.0, 2.5, 2.5, 1.0], 0.0, sf(4));
+    }
+
+    #[test]
+    fn test_cdf_sf_mirror() {
+        let mass = [4.0, 2.5, 2.5, 1.0];
+        let cat = Categorical::new(&mass).unwrap();
+        assert_eq!(cat.cdf(0), 1.-cat.sf(0));
+        assert_eq!(cat.cdf(1), 1.-cat.sf(1));
+        assert_eq!(cat.cdf(2), 1.-cat.sf(2));
+        assert_eq!(cat.cdf(3), 1.-cat.sf(3));
     }
 
     #[test]

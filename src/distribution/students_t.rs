@@ -134,8 +134,7 @@ impl ContinuousCDF<f64, f64> for StudentsT {
     ///
     /// where `t = v / (v + k^2)`, `k = (x - μ) / σ`, `μ` is the location,
     /// `σ` is the scale, `v` is the freedom, and `I` is the regularized
-    /// incomplete
-    /// beta function
+    /// incomplete beta function
     fn cdf(&self, x: f64) -> f64 {
         if self.freedom.is_infinite() {
             super::normal::cdf_unchecked(x, self.location, self.scale)
@@ -147,6 +146,38 @@ impl ContinuousCDF<f64, f64> for StudentsT {
                 ib
             } else {
                 1.0 - ib
+            }
+        }
+    }
+
+    /// Calculates the cumulative distribution function for the student's
+    /// t-distribution
+    /// at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// if x < μ {
+    ///     1 - (1 / 2) * I(t, v / 2, 1 / 2)
+    /// } else {
+    ///     (1 / 2) * I(t, v / 2, 1 / 2)
+    /// }
+    /// ```
+    ///
+    /// where `t = v / (v + k^2)`, `k = (x - μ) / σ`, `μ` is the location,
+    /// `σ` is the scale, `v` is the freedom, and `I` is the regularized
+    /// incomplete beta function
+    fn sf(&self, x: f64) -> f64 {
+        if self.freedom.is_infinite() {
+            super::normal::sf_unchecked(x, self.location, self.scale)
+        } else {
+            let k = (x - self.location) / self.scale;
+            let h = self.freedom / (self.freedom + k * k);
+            let ib = 0.5 * beta::beta_reg(self.freedom / 2.0, 0.5, h);
+            if x <= self.location {
+                1.0 - ib
+            } else {
+                ib
             }
         }
     }
@@ -565,6 +596,27 @@ mod tests {
         // TODO: these are curiously low accuracy and should be re-examined
         test_case((0.0, 1.0, f64::INFINITY), 0.841344746068543, cdf(1.0));
         test_case((0.0, 1.0, f64::INFINITY), 0.977249868051821, cdf(2.0));
+    }
+
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: StudentsT| x.sf(arg);
+        test_case((0.0, 1.0, 1.0), 0.5, sf(0.0));
+        test_case((0.0, 1.0, 1.0), 0.25, sf(1.0));
+        test_case((0.0, 1.0, 1.0), 0.75, sf(-1.0));
+        test_case((0.0, 1.0, 1.0), 0.147583617650433, sf(2.0));
+        test_case((0.0, 1.0, 1.0), 0.852416382349566, sf(-2.0));
+        test_case((0.0, 1.0, 2.0), 0.5, sf(0.0));
+        test_case((0.0, 1.0, 2.0), 0.211324865405186, sf(1.0));
+        test_case((0.0, 1.0, 2.0), 0.788675134594813, sf(-1.0));
+        test_case((0.0, 1.0, 2.0), 0.091751709536137, sf(2.0));
+        test_case((0.0, 1.0, 2.0), 0.908248290463862, sf(-2.0));
+        test_case((0.0, 1.0, f64::INFINITY), 0.5, sf(0.0));
+
+        // TODO: these are curiously low accuracy and should be re-examined
+        test_case((0.0, 1.0, f64::INFINITY), 0.158655253945057, sf(1.0));
+        test_case((0.0, 1.0, f64::INFINITY), 0.022750131947162, sf(2.0));
     }
 
     #[test]

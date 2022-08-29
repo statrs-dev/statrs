@@ -91,6 +91,24 @@ impl ContinuousCDF<f64, f64> for Exp {
             1.0 - (-self.rate * x).exp()
         }
     }
+
+    /// Calculates the cumulative distribution function for the
+    /// exponential distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// e^(-λ * x)
+    /// ```
+    ///
+    /// where `λ` is the rate
+    fn sf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            1.0
+        } else {
+            (-self.rate * x).exp()
+        }
+    }
 }
 
 impl Min<f64> for Exp {
@@ -440,9 +458,28 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Exp| x.sf(arg);
+        test_case(0.1, 1.0, sf(0.0));
+        test_case(1.0, 1.0, sf(0.0));
+        test_case(10.0, 1.0, sf(0.0));
+        test_is_nan(f64::INFINITY, sf(0.0));
+        test_almost(0.1, 0.9900498337491681, 1e-16, sf(0.1));
+        test_almost(1.0, 0.9048374180359595, 1e-16, sf(0.1));
+        test_almost(10.0, 0.36787944117144233, 1e-15, sf(0.1));
+        test_case(f64::INFINITY, 0.0, sf(0.1));
+    }
+
+    #[test]
     fn test_neg_cdf() {
         let cdf = |arg: f64| move |x: Exp| x.cdf(arg);
         test_case(0.1, 0.0, cdf(-1.0));
+    }
+
+    #[test]
+    fn test_neg_sf() {
+        let sf = |arg: f64| move |x: Exp| x.sf(arg);
+        test_case(0.1, 1.0, sf(-1.0));
     }
 
     #[test]

@@ -117,6 +117,21 @@ impl ContinuousCDF<f64, f64> for ChiSquared {
     fn cdf(&self, x: f64) -> f64 {
         self.g.cdf(x)
     }
+
+    /// Calculates the cumulative distribution function for the
+    /// chi-squared distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// (1 / Γ(k / 2)) * γ(k / 2, x / 2)
+    /// ```
+    ///
+    /// where `k` is the degrees of freedom, `Γ` is the gamma function,
+    /// and `γ` is the upper incomplete gamma function
+    fn sf(&self, x: f64) -> f64 {
+        self.g.sf(x)
+    }
 }
 
 impl Min<f64> for ChiSquared {

@@ -82,6 +82,24 @@ impl DiscreteCDF<i64, f64> for DiscreteUniform {
             }
         }
     }
+
+    fn sf(&self, x: i64) -> f64 {
+        //1. - self.cdf(x)
+        if x < self.min {
+            1.0
+        } else if x >= self.max {
+            0.0
+        } else {
+            let lower = self.min as f64;
+            let upper = self.max as f64;
+            let ans = (upper - x as f64) / (upper - lower + 1.0);
+            if ans > 1.0 {
+                1.0
+            } else {
+                ans
+            }
+        }
+    }
 }
 
 impl Min<i64> for DiscreteUniform {
@@ -365,9 +383,24 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: i64| move |x: DiscreteUniform| x.sf(arg);
+        test_case(-10, 10, 0.7142857142857142857143, sf(-5));
+        test_case(-10, 10, 0.42857142857142855, sf(1));
+        test_case(-10, 10, 0.0, sf(10));
+        test_case(-10, -10, 0.0, sf(-10));
+    }
+
+    #[test]
     fn test_cdf_lower_bound() {
         let cdf = |arg: i64| move |x: DiscreteUniform| x.cdf(arg);
         test_case(0, 3, 0.0, cdf(-1));
+    }
+
+    #[test]
+    fn test_sf_lower_bound() {
+        let sf = |arg: i64| move |x: DiscreteUniform| x.sf(arg);
+        test_case(0, 3, 1.0, sf(-1));
     }
 
     #[test]

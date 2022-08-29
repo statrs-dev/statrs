@@ -100,6 +100,22 @@ impl ContinuousCDF<f64, f64> for Erlang {
     fn cdf(&self, x: f64) -> f64 {
         self.g.cdf(x)
     }
+
+    /// Calculates the cumulative distribution function for the erlang
+    /// distribution
+    /// at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// γ(k, λx)  (k - 1)!
+    /// ```
+    ///
+    /// where `k` is the shape, `λ` is the rate, and `γ` is the upper
+    /// incomplete gamma function
+    fn sf(&self, x: f64) -> f64 {
+        self.g.sf(x)
+    }
 }
 
 impl Min<f64> for Erlang {
