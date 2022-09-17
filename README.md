@@ -4,7 +4,7 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE.md)
 [![Crates.io](https://img.shields.io/crates/v/statrs.svg)](https://crates.io/crates/statrs)
 
-## Current Version: v0.15.0
+## Current Version: v0.16.0
 
 Should work for both nightly and stable Rust.
 
@@ -32,8 +32,9 @@ Add the most recent release to your `Cargo.toml`
 
 ```Rust
 [dependencies]
-statrs = "0.15"
+statrs = "0.16"
 ```
+
 ## Examples
 
 Statrs comes with a number of commonly used distributions including Normal, Gamma, Student's T, Exponential, Weibull, etc.
@@ -45,7 +46,7 @@ use rand::distributions::Distribution;
 
 let mut r = rand::rngs::OsRng;
 let n = Exp::new(0.5).unwrap();
-print!("{}", n.sample(&mut r);
+print!("{}", n.sample(&mut r));
 ```
 
 Statrs also comes with a number of useful utility traits for more detailed introspection of distributions

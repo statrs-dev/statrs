@@ -97,6 +97,37 @@ impl ContinuousCDF<f64, f64> for Triangular {
             1.0
         }
     }
+
+    /// Calculates the survival function for the triangular
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// if x == min {
+    ///     1
+    /// } if min < x <= mode {
+    ///     1 - (x - min)^2 / ((max - min) * (mode - min))
+    /// } else if mode < x < max {
+    ///     (max - min)^2 / ((max - min) * (max - mode))
+    /// } else {
+    ///     0
+    /// }
+    /// ```
+    fn sf(&self, x: f64) -> f64 {
+        let a = self.min;
+        let b = self.max;
+        let c = self.mode;
+        if x <= a {
+            1.0
+        } else if x <= c {
+            1.0 - ((x - a) * (x - a) / ((b - a) * (c - a)))
+        } else if x < b {
+            (b - x) * (b - x) / ((b - a) * (b - c))
+        } else {
+            0.0
+        }
+    }
 }
 
 impl Min<f64> for Triangular {
@@ -470,6 +501,33 @@ mod tests {
     fn test_cdf_upper_bound() {
         let cdf = |arg: f64| move |x: Triangular| x.cdf(arg);
         test_case(0.0, 3.0, 1.5, 1.0, cdf(5.0));
+    }
+
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Triangular| x.sf(arg);
+        test_case(0.0, 1.0, 0.5, 0.875, sf(0.25));
+        test_case(0.0, 1.0, 0.5, 0.5, sf(0.5));
+        test_case(0.0, 1.0, 0.5, 0.125, sf(0.75));
+        test_case(-5.0, 8.0, -3.5, 0.9487179487179487, sf(-4.0));
+        test_case(-5.0, 8.0, -3.5, 0.8846153846153846, sf(-3.5));
+        test_case(-5.0, 8.0, -3.5, 0.10702341137123746, sf(4.0));
+        test_case(-5.0, -3.0, -4.0, 0.875, sf(-4.5));
+        test_case(-5.0, -3.0, -4.0, 0.5, sf(-4.0));
+        test_case(-5.0, -3.0, -4.0, 0.125, sf(-3.5));
+    }
+
+    #[test]
+    fn test_sf_lower_bound() {
+        let sf = |arg: f64| move |x: Triangular| x.sf(arg);
+        test_case(0.0, 3.0, 1.5, 1.0, sf(-1.0));
+    }
+
+    #[test]
+    fn test_sf_upper_bound() {
+        let sf = |arg: f64| move |x: Triangular| x.sf(arg);
+        test_case(0.0, 3.0, 1.5, 0.0, sf(5.0));
     }
 
     #[test]

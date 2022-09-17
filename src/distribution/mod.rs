@@ -92,6 +92,21 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
     /// assert_eq!(0.5, n.cdf(0.5));
     /// ```
     fn cdf(&self, x: K) -> T;
+
+    /// Returns the survival function calculated
+    /// at `x` for a given distribution. May panic depending
+    /// on the implementor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::{ContinuousCDF, Uniform};
+    ///
+    /// let n = Uniform::new(0.0, 1.0).unwrap();
+    /// assert_eq!(0.5, n.sf(0.5));
+    /// ```
+    fn sf(&self, x: K) -> T;
+
     /// Due to issues with rounding and floating-point accuracy the default
     /// implementation may be ill-behaved.
     /// Specialized inverse cdfs should be used whenever possible.
@@ -138,12 +153,26 @@ pub trait DiscreteCDF<K: Bounded + Clone + Num, T: Float>: Min<K> + Max<K> {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::{ContinuousCDF, Uniform};
+    /// use statrs::distribution::{DiscreteCDF, DiscreteUniform};
     ///
-    /// let n = Uniform::new(0.0, 1.0).unwrap();
-    /// assert_eq!(0.5, n.cdf(0.5));
+    /// let n = DiscreteUniform::new(1, 10).unwrap();
+    /// assert_eq!(0.6, n.cdf(6));
     /// ```
     fn cdf(&self, x: K) -> T;
+
+    /// Returns the survival function calculated at `x` for
+    /// a given distribution. May panic depending on the implementor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::{DiscreteCDF, DiscreteUniform};
+    ///
+    /// let n = DiscreteUniform::new(1, 10).unwrap();
+    /// assert_eq!(0.4, n.sf(6));
+    /// ```
+    fn sf(&self, x: K) -> T;
+
     /// Due to issues with rounding and floating-point accuracy the default implementation may be ill-behaved
     /// Specialized inverse cdfs should be used whenever possible.
     fn inverse_cdf(&self, p: T) -> K {

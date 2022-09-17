@@ -115,6 +115,28 @@ impl ContinuousCDF<f64, f64> for InverseGamma {
             gamma::gamma_ur(self.shape, self.rate / x)
         }
     }
+
+    /// Calculates the survival function for the inverse gamma
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// Γ(α, β / x) / Γ(α)
+    /// ```
+    ///
+    /// where the numerator is the lower incomplete gamma function,
+    /// the denominator is the gamma function, `α` is the shape,
+    /// and `β` is the rate
+    fn sf(&self, x: f64) -> f64 {
+        if x <= 0.0 {
+            1.0
+        } else if x.is_infinite() {
+            0.0
+        } else {
+            gamma::gamma_lr(self.shape, self.rate / x)
+        }
+    }
 }
 
 impl Min<f64> for InverseGamma {
@@ -438,6 +460,16 @@ mod tests {
         test_almost(0.1, 1.0, 0.05859755410986647796141, 1e-14, cdf(2.0));
         test_case(1.0, 0.1, 0.9355069850316177377304, cdf(1.5));
         test_almost(1.0, 1.0, 0.4345982085070782231613, 1e-14, cdf(1.2));
+    }
+
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: InverseGamma| x.sf(arg);
+        test_almost(0.1, 0.1, 0.8137848038053936, 1e-14, sf(1.2));
+        test_almost(0.1, 1.0, 0.9414024458901327, 1e-14, sf(2.0));
+        test_almost(1.0, 0.1, 0.0644930149683822, 1e-14, sf(1.5));
+        test_almost(1.0, 1.0, 0.565401791492922, 1e-14, sf(1.2));
     }
 
     #[test]

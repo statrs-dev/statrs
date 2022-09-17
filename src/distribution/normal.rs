@@ -74,6 +74,31 @@ impl ContinuousCDF<f64, f64> for Normal {
     fn cdf(&self, x: f64) -> f64 {
         cdf_unchecked(x, self.mean, self.std_dev)
     }
+
+    /// Calculates the survival function for the
+    /// normal distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// (1 / 2) * (1 + erf(-(x - μ) / (σ * sqrt(2))))
+    /// ```
+    ///
+    /// where `μ` is the mean, `σ` is the standard deviation, and
+    /// `erf` is the error function
+    ///
+    /// note that this calculates the complement due to flipping
+    /// the sign of the argument error function with respect to the cdf.
+    ///
+    /// the normal cdf Φ (and internal error function) as the following property:
+    /// ```ignore
+    ///  Φ(-x) + Φ(x) = 1
+    ///  Φ(-x)        = 1 - Φ(x) 
+    /// ```
+    fn sf(&self, x: f64) -> f64 {
+        sf_unchecked(x, self.mean, self.std_dev)
+    }
+
     /// Calculates the inverse cumulative distribution function for the
     /// normal distribution at `x`
     ///
@@ -236,6 +261,12 @@ impl Continuous<f64, f64> for Normal {
 /// with the given mean and standard deviation at x
 pub fn cdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
     0.5 * erf::erfc((mean - x) / (std_dev * f64::consts::SQRT_2))
+}
+
+/// performs an unchecked sf calculation for a normal distribution
+/// with the given mean and standard deviation at x
+pub fn sf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
+    0.5 * erf::erfc((x - mean) / (std_dev * f64::consts::SQRT_2))
 }
 
 /// performs an unchecked pdf calculation for a normal distribution
@@ -442,6 +473,19 @@ mod tests {
         test_case(5.0, 2.0, 0.5, cdf(5.0));
         test_case(5.0, 2.0, 0.69146246127401310363770461060833773988360217555457859, cdf(6.0));
         test_almost(5.0, 2.0, 0.993790334674, 1e-12, cdf(10.0));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Normal| x.sf(arg);
+        test_case(5.0, 2.0, 1.0, sf(f64::NEG_INFINITY));
+        test_almost(5.0, 2.0, 0.9999997133484281, 1e-16, sf(-5.0));
+        test_almost(5.0, 2.0, 0.9997673709209455, 1e-13, sf(-2.0));
+        test_almost(5.0, 2.0, 0.9937903346744879, 1e-12, sf(0.0));
+        test_case(5.0, 2.0, 0.6914624612740131, sf(4.0));
+        test_case(5.0, 2.0, 0.5, sf(5.0));
+        test_case(5.0, 2.0, 0.3085375387259869, sf(6.0));
+        test_almost(5.0, 2.0, 0.006209665325512148, 1e-12, sf(10.0));
     }
 
     #[test]

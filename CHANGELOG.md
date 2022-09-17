@@ -1,12 +1,21 @@
+v0.16.0
+
+- Adds an `sf` method to the `ContinuousCDF` and `DiscreteCDF` traits
+  - Calculates the survival function (CDF complement) for the distribution.
+- Survival function implemented for all distributions implementing `ContinuousCDF` and `DiscreteCDF`
+  - See [PR description](https://github.com/statrs-dev/statrs/pull/172) for in-depth changes
+
 v0.15.0
+
 - upgrade `nalgebra` to `0.27.1` to avoid RUSTSEC-2021-0070
 
 v0.14.0
+
 - upgrade `rand` dependency to `0.8`
 - fix inaccurate sampling of `Gamma`
 - Implemented Empirical distribution
 - Implemented Laplace distribution
-- Removed Checked* traits
+- Removed Checked\* traits
 - Almost clippy-clean
 - Almost fully enabled rustfmt
 - Begin applying consistent numeric relative-accuracy targets with the approx crate
@@ -15,6 +24,7 @@ v0.14.0
 - Reduced a number of distribution-specific traits into the Distribution and DiscreteDistribution traits
 
 v0.13.0
+
 - Implemented `MultivariateNormal` distribution (depends on `nalgebra 0.19`)
 - Implemented `Dirac` distribution
 - Implemented `Negative Binomial` distribution

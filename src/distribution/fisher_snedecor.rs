@@ -123,6 +123,32 @@ impl ContinuousCDF<f64, f64> for FisherSnedecor {
             )
         }
     }
+
+    /// Calculates the survival function for the fisher-snedecor
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// I_(1 - ((d1 * x) / (d1 * x + d2))(d2 / 2, d1 / 2)
+    /// ```
+    ///
+    /// where `d1` is the first degree of freedom, `d2` is
+    /// the second degree of freedom, and `I` is the regularized incomplete
+    /// beta function
+    fn sf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            1.0
+        } else if x.is_infinite() {
+            0.0
+        } else {
+            beta::beta_reg(
+                self.freedom_2 / 2.0,
+                self.freedom_1 / 2.0, 
+                1. - ((self.freedom_1 * x) / (self.freedom_1 * x + self.freedom_2))
+            )
+        }
+    }
 }
 
 impl Min<f64> for FisherSnedecor {
@@ -534,6 +560,29 @@ mod tests {
     fn test_cdf_lower_bound() {
         let cdf = |arg: f64| move |x: FisherSnedecor| x.cdf(arg);
         test_case(0.1, 0.1, 0.0, cdf(-1.0));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: FisherSnedecor| x.sf(arg);
+        test_almost(0.1, 0.1, 0.5528701396657489, 1e-12, sf(0.1));
+        test_almost(1.0, 0.1, 0.9184347790489533, 1e-12, sf(0.1));
+        test_almost(10.0, 0.1, 0.9668159942836896, 1e-12, sf(0.1));
+        test_almost(0.1, 1.0, 0.25621289082013654, 1e-12, sf(0.1));
+        test_almost(1.0, 1.0, 0.8050177709578634, 1e-12, sf(0.1));
+        test_almost(10.0, 1.0, 0.9898804402645662, 1e-12, sf(0.1));
+        test_almost(0.1, 0.1, 0.5, 1e-15, sf(1.0));
+        test_almost(1.0, 0.1, 0.8326564849905562, 1e-12, sf(1.0));
+        test_almost(10.0, 0.1, 0.8779243933525519, 1e-12, sf(1.0));
+        test_almost(0.1, 1.0, 0.16734351500944344, 1e-12, sf(1.0));
+        test_almost(1.0, 1.0, 0.5, 1e-12, sf(1.0));
+        test_almost(10.0, 1.0, 0.65910686769794, 1e-12, sf(1.0));
+    }
+
+    #[test]
+    fn test_sf_lower_bound() {
+        let sf = |arg: f64| move |x: FisherSnedecor| x.sf(arg);
+        test_case(0.1, 0.1, 1.0, sf(-1.0));
     }
 
     #[test]

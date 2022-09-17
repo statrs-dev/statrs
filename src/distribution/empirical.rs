@@ -189,6 +189,17 @@ impl ContinuousCDF<f64, f64> for Empirical {
         }
         sum as f64 / self.sum
     }
+
+    fn sf(&self, x: f64) -> f64 {
+        let mut sum = 0;
+        for (keys, values) in self.data.iter().rev() {
+            if keys.0 <= x {
+                return sum as f64 / self.sum;
+            }
+            sum += values;
+        }
+        sum as f64 / self.sum
+    }
 }
 
 #[cfg(all(test, feature = "nightly"))]
@@ -219,6 +230,34 @@ mod tests {
         empirical.remove(2.0);
         // because of rounding errors, this doesn't hold in general
         // due to the mean and variance being calculated in a streaming way
+        assert_eq!(unchanged, empirical);
+    }
+
+    #[test]
+    fn test_sf() {
+        let samples = vec![5.0, 10.0];
+        let mut empirical = Empirical::from_vec(samples);
+        assert_eq!(empirical.sf(0.0), 1.0);
+        assert_eq!(empirical.sf(5.0), 0.5);
+        assert_eq!(empirical.sf(5.5), 0.5);
+        assert_eq!(empirical.sf(6.0), 0.5);
+        assert_eq!(empirical.sf(10.0), 0.0);
+        assert_eq!(empirical.min(), 5.0);
+        assert_eq!(empirical.max(), 10.0);
+        empirical.add(2.0);
+        empirical.add(2.0);
+        assert_eq!(empirical.sf(0.0), 1.0);
+        assert_eq!(empirical.sf(5.0), 0.25);
+        assert_eq!(empirical.sf(5.5), 0.25);
+        assert_eq!(empirical.sf(6.0), 0.25);
+        assert_eq!(empirical.sf(10.0), 0.0);
+        assert_eq!(empirical.min(), 2.0);
+        assert_eq!(empirical.max(), 10.0);
+        let unchanged = empirical.clone();
+        empirical.add(2.0);
+        empirical.remove(2.0);
+         //because of rounding errors, this doesn't hold in general
+         //due to the mean and variance being calculated in a streaming way
         assert_eq!(unchanged, empirical);
     }
 }

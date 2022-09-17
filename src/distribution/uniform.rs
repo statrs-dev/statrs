@@ -80,6 +80,28 @@ impl ContinuousCDF<f64, f64> for Uniform {
             (x - self.min) / (self.max - self.min)
         }
     }
+
+    /// Calculates the survival function for the uniform
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// (max - x) / (max - min)
+    /// ```
+    fn sf(&self, x: f64) -> f64 {
+        if x <= self.min {
+            1.0
+        } else if x >= self.max {
+            0.0
+        } else if x.is_infinite() && self.max.is_infinite() {
+            0.0
+        } else if self.max.is_infinite() {
+            1.0
+        } else {
+            (self.max - x) / (self.max - self.min)
+        }
+    }
 }
 
 impl Min<f64> for Uniform {
@@ -405,6 +427,33 @@ mod tests {
     fn test_cdf_upper_bound() {
         let cdf = |arg: f64| move |x: Uniform| x.cdf(arg);
         test_case(0.0, 3.0, 1.0, cdf(5.0));
+    }
+
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Uniform| x.sf(arg);
+        test_case(0.0, 0.0, 1.0, sf(0.0));
+        test_case(0.0, 0.1, 0.5, sf(0.05));
+        test_case(0.0, 1.0, 0.5, sf(0.5));
+        test_case(0.0, 10.0, 0.9, sf(1.0));
+        test_case(0.0, 10.0, 0.5, sf(5.0));
+        test_case(-5.0, 100.0, 1.0, sf(-5.0));
+        test_case(-5.0, 100.0, 0.9523809523809523, sf(0.0));
+        test_case(0.0, f64::INFINITY, 1.0, sf(10.0));
+        test_case(0.0, f64::INFINITY, 0.0, sf(f64::INFINITY));
+    }
+
+    #[test]
+    fn test_sf_lower_bound() {
+        let sf = |arg: f64| move |x: Uniform| x.sf(arg);
+        test_case(0.0, 3.0, 1.0, sf(-1.0));
+    }
+
+    #[test]
+    fn test_sf_upper_bound() {
+        let sf = |arg: f64| move |x: Uniform| x.sf(arg);
+        test_case(0.0, 3.0, 0.0, sf(5.0));
     }
 
     #[test]

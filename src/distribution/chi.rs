@@ -89,7 +89,7 @@ impl ContinuousCDF<f64, f64> for Chi {
     /// ```
     ///
     /// where `k` is the degrees of freedom and `P` is
-    /// the regularized Gamma function
+    /// the regularized lower incomplete Gamma function
     fn cdf(&self, x: f64) -> f64 {
         if self.freedom == f64::INFINITY || x == f64::INFINITY {
             1.0
@@ -97,6 +97,27 @@ impl ContinuousCDF<f64, f64> for Chi {
             0.0
         } else {
             gamma::gamma_lr(self.freedom / 2.0, x * x / 2.0)
+        }
+    }
+
+    /// Calculates the survival function for the chi
+    /// distribution at `x`.
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// P(k / 2, x^2 / 2)
+    /// ```
+    ///
+    /// where `k` is the degrees of freedom and `P` is
+    /// the regularized upper incomplete Gamma function
+    fn sf(&self, x: f64) -> f64 {
+        if self.freedom == f64::INFINITY || x == f64::INFINITY {
+            0.0
+        } else if x <= 0.0 {
+            1.0
+        } else {
+            gamma::gamma_ur(self.freedom / 2.0, x * x / 2.0)
         }
     }
 }
@@ -553,9 +574,40 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Chi| x.sf(arg);
+        test_case(1.0, 1.0, sf(0.0));
+        test_almost(1.0, 0.920344325445942, 1e-16, sf(0.1));
+        test_almost(1.0, 0.31731050786291404, 1e-15, sf(1.0));
+        test_almost(1.0, 3.797912493177544e-8, 1e-15, sf(5.5));
+        test_case(1.0, 0.0, sf(f64::INFINITY));
+        test_case(2.0, 1.0, sf(0.0));
+        test_almost(2.0, 0.9950124791926823, 1e-17, sf(0.1));
+        test_almost(2.0, 0.6065306597126333, 1e-15, sf(1.0));
+        test_almost(2.0, 2.699578503363014e-7, 1e-15, sf(5.5));
+        test_case(2.0, 0.0, sf(f64::INFINITY));
+        test_case(2.5, 1.0, sf(0.0));
+        test_almost(2.5, 0.998829758628597, 1e-18, sf(0.1));
+        test_almost(2.5, 0.716210047334687, 1e-16, sf(1.0));
+        test_almost(2.5, 5.966267719870189e-7, 1e-15, sf(5.5));
+        test_case(2.5, 0.0, sf(f64::INFINITY));
+        test_case(f64::INFINITY, 0.0, sf(0.0));
+        test_case(f64::INFINITY, 0.0, sf(0.1));
+        test_case(f64::INFINITY, 0.0, sf(1.0));
+        test_case(f64::INFINITY, 0.0, sf(5.5));
+        test_case(f64::INFINITY, 0.0, sf(f64::INFINITY));
+    }
+
+    #[test]
     fn test_neg_cdf() {
         let cdf = |arg: f64| move |x: Chi| x.cdf(arg);
         test_case(1.0, 0.0, cdf(-1.0));
+    }
+
+    #[test]
+    fn test_neg_sf() {
+        let sf = |arg: f64| move |x: Chi| x.sf(arg);
+        test_case(1.0, 1.0, sf(-1.0));
     }
 
     #[test]
