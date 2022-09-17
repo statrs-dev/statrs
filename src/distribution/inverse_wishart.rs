@@ -81,7 +81,7 @@ impl InverseWishart {
     /// use statrs::distribution::InverseWishart;
     ///
     /// let w = InverseWishart::new(2.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0])).unwrap();
-    /// assert_eq!(n.freedom(), 2.0);
+    /// assert_eq!(w.freedom(), 2.0);
     /// ```
     pub fn freedom(&self) -> f64 {
         self.freedom
@@ -96,7 +96,7 @@ impl InverseWishart {
     /// use statrs::distribution::InverseWishart;
     ///
     /// let w = InverseWishart::new(2.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0])).unwrap();
-    /// assert_eq!(n.scale(), DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
+    /// assert_eq!(w.scale(), &DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0]));
     /// ```
     pub fn scale(&self) -> &DMatrix<f64> {
         &self.scale
@@ -111,7 +111,7 @@ impl InverseWishart {
     /// use statrs::distribution::InverseWishart;
     ///
     /// let w = InverseWishart::new(3.0, DMatrix::from_row_slice(2, 2, &[1.0, 0.0, 0.0, 1.0])).unwrap();
-    /// assert_eq!(n.p(), 2);
+    /// assert_eq!(w.p(), 2);
     /// ```
     pub fn p(&self) -> usize {
         self.scale.nrows()
