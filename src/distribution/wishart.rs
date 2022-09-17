@@ -204,7 +204,7 @@ impl ::rand::distributions::Distribution<DMatrix<f64>> for Wishart {
         let mut a = DMatrix::zeros(p, p);
 
         for i in 0..p {
-            a[(i, i)] = ChiSquared::new(self.freedom - i as f64).unwrap().sample(rng);
+            a[(i, i)] = ChiSquared::new(self.freedom - i as f64).unwrap().sample(rng).sqrt();
         }
 
         for i in 1..p {
@@ -213,8 +213,8 @@ impl ::rand::distributions::Distribution<DMatrix<f64>> for Wishart {
             }
         }
 
-        let l = self.chol.l();
-        &l * &a * a.transpose() * l.transpose()
+        let l = self.chol.l() * &a;
+        &l * &l.transpose()
     }
 }
 
