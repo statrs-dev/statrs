@@ -34,6 +34,8 @@ pub use self::students_t::StudentsT;
 pub use self::triangular::Triangular;
 pub use self::uniform::Uniform;
 pub use self::weibull::Weibull;
+pub use self::wishart::Wishart;
+pub use self::inverse_wishart::InverseWishart;
 
 mod bernoulli;
 mod beta;
@@ -69,6 +71,8 @@ mod uniform;
 mod weibull;
 mod ziggurat;
 mod ziggurat_tables;
+mod wishart;
+mod inverse_wishart;
 
 use crate::Result;
 
