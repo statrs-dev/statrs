@@ -118,6 +118,35 @@ impl ContinuousCDF<f64, f64> for Gamma {
             gamma::gamma_lr(self.shape, x * self.rate)
         }
     }
+
+    /// Calculates the survival function for the gamma
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// (1 / Γ(α)) * γ(α, β * x)
+    /// ```
+    ///
+    /// where `α` is the shape, `β` is the rate, `Γ` is the gamma function,
+    /// and `γ` is the upper incomplete gamma function
+    fn sf(&self, x: f64) -> f64 {
+        if x <= 0.0 {
+            1.0
+        }
+        else if ulps_eq!(x, self.shape) && self.rate.is_infinite() {
+            0.0
+        }
+        else if self.rate.is_infinite() {
+            1.0
+        }
+        else if x.is_infinite() {
+            0.0
+        }
+        else {
+            gamma::gamma_ur(self.shape, x * self.rate)
+        }
+    }
 }
 
 impl Min<f64> for Gamma {
@@ -532,6 +561,31 @@ mod tests {
     #[test]
     fn test_cdf_at_zero() {
         test_case((1.0, 0.1), 0.0, |x| x.cdf(0.0));
+    }
+
+    #[test]
+    fn test_sf() {
+        let f = |arg: f64| move |x: Gamma| x.sf(arg);
+        let test = [
+            ((1.0, 0.1), 1.0, 0.9048374180359595),
+            ((1.0, 0.1), 10.0, 0.3678794411714419),
+            ((1.0, 1.0), 1.0, 0.3678794411714419),
+            ((1.0, 1.0), 10.0, 4.539992976249074e-5),
+            ((10.0, 10.0), 1.0, 0.4579297144718528),
+            ((10.0, 10.0), 10.0, 1.1253473960842808e-31),
+            ((10.0, 1.0), 1.0, 0.9999998885745217),
+            ((10.0, 1.0), 10.0, 0.4579297144718528),
+            ((10.0, INF), 1.0, 1.0),
+            ((10.0, INF), 10.0, 0.0),
+        ];
+        for &(arg, x, res) in test.iter() {
+            test_case(arg, res, f(x));
+        }
+    }
+
+    #[test]
+    fn test_sf_at_zero() {
+        test_case((1.0, 0.1), 1.0, |x| x.sf(0.0));
     }
 
     #[test]

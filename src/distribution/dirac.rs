@@ -64,6 +64,19 @@ impl ContinuousCDF<f64, f64> for Dirac {
             1.0
         }
     }
+
+    /// Calculates the survival function for the
+    /// dirac distribution at `x`
+    ///
+    /// Where the value is 0 if x > `v`, 1 otherwise.
+    ///
+    fn sf(&self, x: f64) -> f64 {
+        if x < self.0 {
+            1.0
+        } else {
+            0.0
+        }
+    }
 }
 
 impl Min<f64> for Dirac {
@@ -274,5 +287,14 @@ mod tests {
         test_case(3.0, 1.0, cdf(3.0));
         test_case(f64::INFINITY, 0.0, cdf(1.0));
         test_case(f64::INFINITY, 1.0, cdf(f64::INFINITY));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Dirac| x.sf(arg);
+        test_case(0.0, 0.0, sf(0.0));
+        test_case(3.0, 0.0, sf(3.0));
+        test_case(f64::INFINITY, 1.0, sf(1.0));
+        test_case(f64::INFINITY, 0.0, sf(f64::INFINITY));
     }
 }

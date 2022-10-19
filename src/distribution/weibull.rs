@@ -115,6 +115,24 @@ impl ContinuousCDF<f64, f64> for Weibull {
             -(-x.powf(self.shape) * self.scale_pow_shape_inv).exp_m1()
         }
     }
+
+    /// Calculates the survival function for the weibull
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// e^-((x/λ)^k)
+    /// ```
+    ///
+    /// where `k` is the shape and `λ` is the scale
+    fn sf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            1.0
+        } else {
+            (-x.powf(self.shape) * self.scale_pow_shape_inv).exp()
+        }
+    }
 }
 
 impl Min<f64> for Weibull {
@@ -481,6 +499,23 @@ mod tests {
         test_case(10.0, 1.0, 0.0, cdf(0.0));
         test_case(10.0, 1.0, 0.63212055882855767840447622983853913255418886896823, cdf(1.0));
         test_case(10.0, 1.0, 1.0, cdf(10.0));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Weibull| x.sf(arg);
+        test_case(1.0, 0.1, 1.0, sf(0.0));
+        test_case(1.0, 0.1, 4.5399929762484854e-5, sf(1.0));
+        test_case(1.0, 0.1, 3.720075976020836e-44, sf(10.0));
+        test_case(1.0, 1.0, 1.0, sf(0.0));
+        test_case(1.0, 1.0, 0.36787944117144233, sf(1.0));
+        test_case(1.0, 1.0, 4.5399929762484854e-5, sf(10.0));
+        test_case(10.0, 10.0, 1.0, sf(0.0));
+        test_almost(10.0, 10.0, 0.9999999999, 1e-25, sf(1.0));
+        test_case(10.0, 10.0, 0.36787944117144233, sf(10.0));
+        test_case(10.0, 1.0, 1.0, sf(0.0));
+        test_case(10.0, 1.0, 0.36787944117144233, sf(1.0));
+        test_case(10.0, 1.0, 0.0, sf(10.0));
     }
 
     #[test]
