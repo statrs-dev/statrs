@@ -100,7 +100,8 @@ impl ContinuousCDF<f64, f64> for Normal {
     }
 
     /// Calculates the inverse cumulative distribution function for the
-    /// normal distribution at `x`
+    /// normal distribution at `x`.
+    /// In other languages, such as R, this is known as the the quantile function.
     ///
     /// # Panics
     ///
