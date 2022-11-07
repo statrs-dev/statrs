@@ -107,7 +107,7 @@ impl NegativeBinomial {
 impl ::rand::distributions::Distribution<u64> for NegativeBinomial {
     fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> u64 {
         let lambda = distribution::gamma::sample_unchecked(r, self.r, (1.0 - self.p) / self.p);
-        poisson::sample_unchecked(r, lambda).floor() as u64
+        poisson::sample_unchecked(r, lambda)
     }
 }
 
