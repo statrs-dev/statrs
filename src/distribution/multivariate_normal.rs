@@ -1,11 +1,83 @@
 use crate::distribution::Continuous;
 use crate::distribution::Normal;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
-use crate::{Result, StatsError};
+use crate::StatsError;
 use nalgebra::{Cholesky, Const, DMatrix, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
 use rand::Rng;
 use std::f64;
 use std::f64::consts::{E, PI};
+
+/// computes both the normalization and exponential argument in the normal distribution
+/// # Errors
+/// will error on dimension mismatch
+pub(super) fn density_normalization_and_exponential<D>(
+    mu: &OVector<f64, D>,
+    cov: &OMatrix<f64, D, D>,
+    precision: &OMatrix<f64, D, D>,
+    x: &OVector<f64, D>,
+) -> std::result::Result<(f64, f64), StatsError>
+where
+    D: DimMin<D, Output = D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>
+        + nalgebra::allocator::Allocator<f64, D, D>
+        + nalgebra::allocator::Allocator<(usize, usize), D>,
+{
+    Ok((
+        density_distribution_pdf_const(mu, cov)?,
+        density_distribution_exponential(mu, precision, x)?,
+    ))
+}
+
+/// computes the argument of the exponential term in the normal distribution
+/// ```text
+/// ```
+/// # Errors
+/// will error on dimension mismatch
+#[inline]
+pub(super) fn density_distribution_exponential<D>(
+    mu: &OVector<f64, D>,
+    precision: &OMatrix<f64, D, D>,
+    x: &OVector<f64, D>,
+) -> std::result::Result<f64, StatsError>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator:
+        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+{
+    if x.shape_generic().0 != precision.shape_generic().0
+        || x.shape_generic().0 != mu.shape_generic().0
+        || !precision.is_square()
+    {
+        return Err(StatsError::ContainersMustBeSameLength);
+    }
+    let dv = x - mu;
+    let exp_term: f64 = -0.5 * (precision * &dv).dot(&dv);
+    Ok(exp_term)
+    // TODO update to dimension mismatch error
+}
+
+/// computes the argument of the normalization term in the normal distribution
+/// # Errors
+/// will error on dimension mismatch
+#[inline]
+pub(super) fn density_distribution_pdf_const<D>(
+    mu: &OVector<f64, D>,
+    cov: &OMatrix<f64, D, D>,
+) -> std::result::Result<f64, StatsError>
+where
+    D: DimMin<D, Output = D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>
+        + nalgebra::allocator::Allocator<f64, D, D>
+        + nalgebra::allocator::Allocator<(usize, usize), D>,
+{
+    if cov.shape_generic().0 != mu.shape_generic().0 || !cov.is_square() {
+        return Err(StatsError::ContainersMustBeSameLength);
+    }
+    let cov_det = cov.determinant();
+    Ok(((2. * PI).powi(mu.nrows() as i32) * cov_det.abs())
+        .recip()
+        .sqrt())
+}
 
 /// Implements the [Multivariate Normal](https://en.wikipedia.org/wiki/Multivariate_normal_distribution)
 /// distribution using the "nalgebra" crate for matrix operations
@@ -44,7 +116,7 @@ impl MultivariateNormal<Dyn> {
     ///
     /// Returns an error if the given covariance matrix is not
     /// symmetric or positive-definite
-    pub fn new(mean: Vec<f64>, cov: Vec<f64>) -> Result<Self> {
+    pub fn new(mean: Vec<f64>, cov: Vec<f64>) -> Result<Self, StatsError> {
         let mean = DVector::from_vec(mean);
         let cov = DMatrix::from_vec(mean.len(), mean.len(), cov);
         MultivariateNormal::new_from_nalgebra(mean, cov)
@@ -66,7 +138,10 @@ where
     ///
     /// Returns an error if the given covariance matrix is not
     /// symmetric or positive-definite
-    pub fn new_from_nalgebra(mean: OVector<f64, D>, cov: OMatrix<f64, D, D>) -> Result<Self> {
+    pub fn new_from_nalgebra(
+        mean: OVector<f64, D>,
+        cov: OMatrix<f64, D, D>,
+    ) -> Result<Self, StatsError> {
         // Check that the provided covariance matrix is symmetric
         if cov.lower_triangle() != cov.upper_triangle().transpose()
         // Check that mean and covariance do not contain NaN
@@ -77,10 +152,6 @@ where
         {
             return Err(StatsError::BadParams);
         }
-        let cov_det = cov.determinant();
-        let pdf_const = ((2. * PI).powi(mean.nrows() as i32) * cov_det.abs())
-            .recip()
-            .sqrt();
         // Store the Cholesky decomposition of the covariance matrix
         // for sampling
         match Cholesky::new(cov.clone()) {
@@ -88,11 +159,11 @@ where
             Some(cholesky_decomp) => {
                 let precision = cholesky_decomp.inverse();
                 Ok(MultivariateNormal {
+                    pdf_const: density_distribution_pdf_const(&mean, &cov).unwrap(),
                     cov_chol_decomp: cholesky_decomp.unpack(),
                     mu: mean,
                     cov,
                     precision,
-                    pdf_const,
                 })
             }
         }
@@ -231,9 +302,8 @@ where
 impl<'a, D> Continuous<&'a OVector<f64, D>, f64> for MultivariateNormal<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>
-        + nalgebra::allocator::Allocator<f64, D, D>
-        + nalgebra::allocator::Allocator<f64, nalgebra::Const<1>, D>,
+    nalgebra::DefaultAllocator:
+        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
 {
     /// Calculates the probability density function for the multivariate
     /// normal distribution at `x`
@@ -246,47 +316,18 @@ where
     ///
     /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
     /// of the covariance matrix, and `k` is the dimension of the distribution
-    fn pdf(&self, x: &'a OVector<f64, D>) -> f64 {
-        let dv = x - &self.mu;
-        let exp_term = -0.5
-            * *(&dv.transpose() * &self.precision * &dv)
-                .get((0, 0))
-                .unwrap();
-        self.pdf_const * exp_term.exp()
+    fn pdf(&self, x: &OVector<f64, D>) -> f64 {
+        self.pdf_const
+            * density_distribution_exponential(&self.mu, &self.precision, x)
+                .unwrap()
+                .exp()
     }
 
     /// Calculates the log probability density function for the multivariate
     /// normal distribution at `x`. Equivalent to pdf(x).ln().
-    fn ln_pdf(&self, x: &'a OVector<f64, D>) -> f64 {
-        let dv = x - &self.mu;
-        let exp_term = -0.5
-            * *(&dv.transpose() * &self.precision * &dv)
-                .get((0, 0))
-                .unwrap();
-        self.pdf_const.ln() + exp_term
-    }
-}
-
-impl Continuous<Vec<f64>, f64> for MultivariateNormal<Dyn> {
-    /// Calculates the probability density function for the multivariate
-    /// normal distribution at `x`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (2 * π) ^ (-k / 2) * det(Σ) ^ (1 / 2) * e ^ ( -(1 / 2) * transpose(x - μ) * inv(Σ) * (x - μ))
-    /// ```
-    ///
-    /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
-    /// of the covariance matrix, and `k` is the dimension of the distribution
-    fn pdf(&self, x: Vec<f64>) -> f64 {
-        self.pdf(&DVector::from(x))
-    }
-
-    /// Calculates the log probability density function for the multivariate
-    /// normal distribution at `x`. Equivalent to pdf(x).ln().
-    fn ln_pdf(&self, x: Vec<f64>) -> f64 {
-        self.pdf(&DVector::from(x))
+    fn ln_pdf(&self, x: &OVector<f64, D>) -> f64 {
+        self.pdf_const.ln()
+            + density_distribution_exponential(&self.mu, &self.precision, x).unwrap()
     }
 }
 
@@ -608,5 +649,12 @@ mod tests  {
             f64::NEG_INFINITY,
             ln_pdf(dvector![100., 100.]),
         );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_pdf_mismatched_arg_size() {
+        let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.,]).unwrap();
+        mvn.pdf(&vec![1.].into()); // x.size != mu.size
     }
 }
