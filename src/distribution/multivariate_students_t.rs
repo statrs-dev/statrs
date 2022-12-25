@@ -33,10 +33,17 @@ pub struct MultivariateStudent {
     scale: DMatrix<f64>,
     freedom: f64,
     precision: DMatrix<f64>,
-    pdf_const: f64,
+    ln_pdf_const: f64,
 }
 
 impl MultivariateStudent {
+    /// Constructs a new multivariate students t distribution with a location of `location`,
+    /// scale matrix `scale` and `freedom` degrees of freedom
+    ///
+    /// # Errors
+    ///
+    /// Returns `StatsError::BadParams` if the scale matrix is not Symmetric-positive
+    /// definite and `StatsError::ArgMustBePositive` if freedom is non-positive.
     pub fn new(location: Vec<f64>, scale: Vec<f64>, freedom: f64) -> Result<Self> {
         let dim = location.len();
         let location = DVector::from_vec(location);
@@ -62,10 +69,10 @@ impl MultivariateStudent {
         }
 
         let scale_det = scale.determinant();
-        let pdf_const = gamma::gamma((freedom + (dim as f64)) / 2.)
-            * (gamma::gamma(freedom / 2.)
-                * (freedom.powi(dim as i32) * PI.powi(dim as i32) * scale_det.abs()).sqrt())
-            .recip();
+        let ln_pdf_const = gamma::ln_gamma(0.5 * (freedom + dim as f64))
+            - gamma::ln_gamma(0.5 * freedom)
+            - 0.5 * (dim as f64) * (freedom * PI).ln()
+            - 0.5 * scale_det.ln();
 
         match Cholesky::new(scale.clone()) {
             None => Err(StatsError::BadParams),
@@ -78,7 +85,7 @@ impl MultivariateStudent {
                     scale,
                     freedom,
                     precision,
-                    pdf_const,
+                    ln_pdf_const,
                 })
             }
         }
@@ -198,7 +205,7 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateStudent {
                 * *(&dv.transpose() * &self.precision * &dv)
                     .get((0, 0))
                     .unwrap();
-        self.pdf_const * base_term.powf(-(self.freedom + self.dim as f64) / 2.)
+        self.ln_pdf_const.exp() * base_term.powf(-(self.freedom + self.dim as f64) / 2.)
     }
 
     /// Calculates the log probability density function for the multivariate
@@ -210,7 +217,7 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateStudent {
                 * *(&dv.transpose() * &self.precision * &dv)
                     .get((0, 0))
                     .unwrap();
-        self.pdf_const.ln() - (self.freedom + self.dim as f64) / 2. * base_term.ln()
+        self.ln_pdf_const - (self.freedom + self.dim as f64) / 2. * base_term.ln()
     }
 }
 
@@ -268,6 +275,7 @@ mod tests  {
     fn test_almost_multivariate_normal<F1, F2>(
         location: Vec<f64>,
         scale: Vec<f64>,
+        freedom: f64,
         acc: f64,
         x: DVector<f64>,
         eval_mvs: F1,
@@ -276,7 +284,7 @@ mod tests  {
             F1: FnOnce(MultivariateStudent, DVector<f64>) -> f64,
             F2: FnOnce(MultivariateNormal, DVector<f64>) -> f64,
         {
-        let mvs = try_create(location.clone(), scale.clone(), f64::INFINITY);
+        let mvs = try_create(location.clone(), scale.clone(), freedom);
         let mvn0 = MultivariateNormal::new(location, scale);
         assert!(mvn0.is_ok());
         let mvn = mvn0.unwrap();
@@ -388,9 +396,10 @@ mod tests  {
 
     // TODO: These tests fail because inf degrees of freedom give NaN
     #[test]
-    fn test_pdf_freedom_inf() {
+    fn test_pdf_freedom_large() {
         let pdf_mvs = |mv: MultivariateStudent, arg: DVector<f64>| mv.pdf(&arg);
         let pdf_mvn = |mv: MultivariateNormal, arg: DVector<f64>| mv.pdf(&arg);
-        test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], 1e-14, dvec![1., 1.], pdf_mvs, pdf_mvn)
+        test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], 1e10, 1e-7, dvec![1., 1.], pdf_mvs, pdf_mvn);
+        test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], f64::INFINITY, 1e-15, dvec![1., 1.], pdf_mvs, pdf_mvn);
     }
 }
