@@ -3,6 +3,7 @@
 //! concrete implementations for a variety of distributions.
 use super::statistics::{Max, Min};
 use ::num_traits::{float::Float, Bounded, Num};
+use ::nalgebra::DVector;
 
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::Beta;
@@ -273,4 +274,37 @@ pub trait Discrete<K, T> {
     /// assert!(prec::almost_eq(n.ln_pmf(5), (0.24609375f64).ln(), 1e-15));
     /// ```
     fn ln_pmf(&self, x: K) -> T;
+}
+
+/// The `ContinuousMultivariateCDF` trait is used to specify and interface
+/// for univariate distributions for which cdf DVector float arguments are
+/// sensible
+pub trait ContinuousMultivariateCDF<K: Float, T: Float> {
+    /// Returns the cumulative distribution function calculated
+    /// at `x` for a given multivariate distribution. May panic depending
+    /// on the implementor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::{ContinuousMultivariateCDF, MultivariateNormal};
+    ///
+    /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(0.5, mvn.cdf([0., 0.,]));
+    /// ```
+    fn cdf(&self, x: DVector<K>) -> T;
+    
+    /// Returns the survival function calculated
+    /// at `x` for a given distribution. May panic depending
+    /// on the implementor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::{ContinuousMultivariateCDF, MultivariateNormal};
+    ///
+    /// let mvs = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(f64::NEG_INFINITY, mvs.sf([f64::INFINITY, f64::INFINITY]));
+    /// ```
+    fn sf(&self, x: DVector<K>) -> T;
 }
