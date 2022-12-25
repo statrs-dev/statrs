@@ -73,7 +73,7 @@ impl MultivariateStudent {
         let ln_pdf_const = gamma::ln_gamma(0.5 * (freedom + dim as f64))
             - gamma::ln_gamma(0.5 * freedom)
             - 0.5 * (dim as f64) * (freedom * PI).ln()
-            - 0.5* scale_det.ln();
+            - 0.5 * scale_det.ln();
 
         match Cholesky::new(scale.clone()) {
             None => Err(StatsError::BadParams),
@@ -90,6 +90,38 @@ impl MultivariateStudent {
                 })
             }
         }
+    }
+
+    /// Returns the dimension of the distribution
+    pub fn dim(&self) -> usize {
+        self.dim
+    }
+    /// Returns the cholesky decomposiiton matrix of the scale matrix
+    ///
+    /// Returns A where Σ = AAᵀ
+    pub fn scale_chol_decomp(&self) -> DMatrix<f64> {
+        self.scale_chol_decomp.clone()
+    }
+    /// Returns the location of the distribution
+    pub fn location(&self) -> DVector<f64> {
+        self.location.clone()
+    }
+    /// Returns the scale matrix of the distribution
+    pub fn scale(&self) -> DMatrix<f64> {
+        self.scale.clone()
+    }
+    /// Returns the degrees of freedom of the distribution
+    pub fn freedom(&self) -> f64 {
+        self.freedom
+    }
+    /// Returns the inverse of the cholesky decomposition matrix
+    pub fn precision(&self) -> DMatrix<f64> {
+        self.precision.clone()
+    }
+    /// Returns the logarithmed constant part of the probability
+    /// distribution function
+    pub fn ln_pdf_const(&self) -> f64 {
+        self.ln_pdf_const
     }
 }
 
