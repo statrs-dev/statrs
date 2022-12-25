@@ -90,6 +90,38 @@ impl MultivariateStudent {
             }
         }
     }
+
+    /// Returns the dimension of the distribution
+    pub fn dim(&self) -> usize {
+        self.dim
+    }
+    /// Returns the cholesky decomposiiton matrix of the scale matrix
+    ///
+    /// Returns A where Σ = AAᵀ
+    pub fn scale_chol_decomp(&self) -> DMatrix<f64> {
+        self.scale_chol_decomp.clone()
+    }
+    /// Returns the location of the distribution
+    pub fn location(&self) -> DVector<f64> {
+        self.location.clone()
+    }
+    /// Returns the scale matrix of the distribution
+    pub fn scale(&self) -> DMatrix<f64> {
+        self.scale.clone()
+    }
+    /// Returns the degrees of freedom of the distribution
+    pub fn freedom(&self) -> f64 {
+        self.freedom
+    }
+    /// Returns the inverse of the cholesky decomposition matrix
+    pub fn precision(&self) -> DMatrix<f64> {
+        self.precision.clone()
+    }
+    /// Returns the logarithmed constant part of the probability
+    /// distribution function
+    pub fn ln_pdf_const(&self) -> f64 {
+        self.ln_pdf_const
+    }
 }
 
 impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateStudent {

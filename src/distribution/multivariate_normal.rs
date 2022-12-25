@@ -1,5 +1,5 @@
 use crate::distribution::Continuous;
-use crate::distribution::Normal;
+use crate::distribution::{MultivariateStudent, Normal};
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
 use crate::{Result, StatsError};
 use nalgebra::{Cholesky, Const, DMatrix, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
@@ -116,6 +116,26 @@ where
                 .determinant()
                 .ln(),
         )
+    }
+
+    /// Constructs a new multivariate normal distribution from a
+    /// multivariate students t distribution, which have equal variables
+    /// when `mvs.freedom == f64::INFINITY`
+    pub fn from_students(mvs: MultivariateStudent) -> Result<Self> {
+        let mu = mvs.location();
+        let scale = mvs.scale();
+        let cov_det = scale.determinant();
+        let pdf_const = ((2. * PI).powi(mu.nrows() as i32) * cov_det.abs())
+            .recip()
+            .sqrt();
+        Ok(MultivariateNormal {
+            dim: mvs.dim(),
+            cov_chol_decomp: mvs.scale_chol_decomp(),
+            mu: mvs.location(),
+            cov: mvs.scale(),
+            precision: mvs.precision(),
+            pdf_const,
+        })
     }
 }
 
