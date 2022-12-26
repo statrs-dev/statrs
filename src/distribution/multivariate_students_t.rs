@@ -449,4 +449,11 @@ mod tests  {
         test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], 1e10, 1e-5, dvec![1., 1.], pdf_mvs, pdf_mvn);
         test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], f64::INFINITY, 1e-50, dvec![1., 1.], pdf_mvs, pdf_mvn);
     }
+
+    #[test]
+    #[should_panic]
+    fn test_pdf_mismatched_arg_size() {
+        let mvs = MultivariateStudent::new(vec![0., 0.], vec![1., 0., 0., 1.,], 3.).unwrap();
+        mvs.pdf(&dvec![1.]); // x.size != mu.size
+    }
 }
