@@ -628,4 +628,11 @@ mod tests  {
             ln_pdf(dvector![100., 100.]),
         );
     }
+
+    #[test]
+    #[should_panic]
+    fn test_pdf_mismatched_arg_size() {
+        let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.,]).unwrap();
+        mvn.pdf(&dvec![1.]); // x.size != mu.size
+    }
 }
