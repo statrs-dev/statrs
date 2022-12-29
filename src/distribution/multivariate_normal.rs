@@ -121,20 +121,22 @@ impl MultivariateNormal {
             // Find the index of which to switch rows with
             for j in i..self.dim {
                 let mut num = 0.;
-                let mut den = 0.;
+                let mut den = cov[(j,j)].sqrt();
                 if i > 0 {
                     // Numerator:
                     // -Σ lᵢₘyₘ, sum from m=1 to i-1
-                    num = (chol_lower.index((j,..i)) * y.index((..i,0)))[0];
+                    num = (chol_lower.index((j, ..i)) * y.index((..i, 0)))[0];
                     // Denominator:
                     // √(σᵢᵢ - Σ lᵢₘ²), sum from m=1 to i-1
-                    den = (cov[(j,j)] - (chol_lower.index((j,..i)).transpose() * chol_lower.index((j,..i)))[0]).sqrt(); 
-                } 
+                    den = (cov[(j, j)]
+                        - (chol_lower.index((j, ..i)).transpose() * chol_lower.index((j, ..i)))[0])
+                        .sqrt();
+                }
                 let pot_a_tilde = (a[j] - num) / den;
                 let pot_b_tilde = (b[j] - num) / den;
                 let cdf_a = std_normal.cdf(pot_a_tilde);
                 let cdf_b = std_normal.cdf(pot_b_tilde);
-                
+
                 let pot_cdf_diff = cdf_b - cdf_a; // Potential minimum
                 if pot_cdf_diff < cdf_diff {
                     new_i = j;
@@ -144,23 +146,26 @@ impl MultivariateNormal {
                 }
             }
             if i != new_i {
-                cov.swap_rows(i,new_i);
-                cov.swap_columns(i,new_i);
-                a.swap_rows(i,new_i);
-                b.swap_rows(i,new_i);
-                chol_lower.swap_rows(i,new_i);
-                chol_lower.swap_columns(i,new_i);
+                cov.swap_rows(i, new_i);
+                cov.swap_columns(i, new_i);
+                a.swap_rows(i, new_i);
+                b.swap_rows(i, new_i);
+                chol_lower.swap_rows(i, new_i);
+                chol_lower.swap_columns(i, new_i);
             }
 
             // Get the expected values:
-            // yᵢ = 1 / (Ψ(bᵢ) - Ψ(𝑎ᵢ)) * ∫_𝑎ᵢ^𝑏ᵢ sψ(s) ds 
-            y[i] = ((-a_tilde.powi(2)/2.).exp() - (-b_tilde.powi(2)/2.).exp()) / (cdf_diff);
+            // yᵢ = 1 / (Ψ(bᵢ) - Ψ(𝑎ᵢ)) * ∫_𝑎ᵢ^𝑏ᵢ sψ(s) ds
+            y[i] = ((-a_tilde.powi(2) / 2.).exp() - (-b_tilde.powi(2) / 2.).exp()) / ((2. * PI).sqrt() * cdf_diff);
 
             // Cholesky decomposition algorithm with the new changed row
-            let mut ids = chol_lower.index_mut((..,..i+1)); // Get only the relevant indices
-            ids[(i,i)] = (cov[(i,i)] - (ids.index((i,..i)) * ids.index((i,..i)).transpose())[0]).sqrt();
-            for j in i+1..self.dim {
-                ids[(j,i)] = (cov[(j,i)] - (ids.index((i,..i)) * ids.index((j,..i)).transpose())[0]) / ids[(i,i)];
+            let mut ids = chol_lower.index_mut((.., ..i + 1)); // Get only the relevant indices
+            ids[(i, i)] =
+                (cov[(i, i)] - (ids.index((i, ..i)) * ids.index((i, ..i)).transpose())[0]).sqrt();
+            for j in i + 1..self.dim {
+                ids[(j, i)] = (cov[(j, i)]
+                    - (ids.index((i, ..i)) * ids.index((j, ..i)).transpose())[0])
+                    / ids[(i, i)];
             }
         }
         chol_lower
