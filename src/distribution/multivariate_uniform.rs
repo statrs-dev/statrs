@@ -15,8 +15,8 @@ use std::f64;
 /// use statrs::statistics::Distribution;
 ///
 /// let n = MultivariateUniform::new(vec![-1., 0.], vec![0., 1.]).unwrap();
-// /// assert_eq!(n.mean().unwrap(), 0.5);
-// /// assert_eq!(n.pdf(0.5), 1.0);
+/// assert_eq!(n.mean().unwrap(), DVector::from_vec(vec![-0.5, 0.5]);
+/// assert_eq!(n.pdf(DVector::from_vec(vec![-0.5, 0.5])), 1.);
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct MultivariateUniform {
@@ -27,7 +27,7 @@ pub struct MultivariateUniform {
 }
 
 impl MultivariateUniform {
-    /// Constructs a new uniform distribution with a min in each dimension 
+    /// Constructs a new uniform distribution with a min in each dimension
     /// of `min` and a max in each dimension of `max`
     ///
     /// # Errors
@@ -51,9 +51,9 @@ impl MultivariateUniform {
         let min = DVector::from_vec(min);
         let max = DVector::from_vec(max);
         if min.iter().any(|f| f.is_nan())
-            || max.iter().any(|f| f.is_nan()) 
+            || max.iter().any(|f| f.is_nan())
             || min.len() != max.len()
-            || min.iter().zip(max.iter()).any(|(f,g)| f > g)
+            || min.iter().zip(max.iter()).any(|(f, g)| f > g)
         {
             Err(StatsError::BadParams)
         } else {
@@ -67,14 +67,44 @@ impl MultivariateUniform {
                 sample_limits = None;
             } else {
                 for i in 0..dim {
-                    sample_limits_unchecked[i] = Some(RandUniform::new_inclusive(min[i],max[i]))
+                    sample_limits_unchecked[i] = Some(RandUniform::new_inclusive(min[i], max[i]))
                 }
                 sample_limits = Some(DVector::from_vec(
-                    sample_limits_unchecked.into_iter().flatten().collect::<Vec<RandUniform<f64>>>()
+                    sample_limits_unchecked
+                        .into_iter()
+                        .flatten()
+                        .collect::<Vec<RandUniform<f64>>>(),
                 ));
             }
-            Ok(MultivariateUniform { dim, min, max, sample_limits})
+            Ok(MultivariateUniform {
+                dim,
+                min,
+                max,
+                sample_limits,
+            })
         }
+    }
+
+    /// Returns a uniform distribution on the unit hypercube [0,1]^dim
+    pub fn standard(dim: usize) -> Result<MultivariateUniform> {
+        let mut sample_limits: Vec<Option<RandUniform<f64>>> = vec![None; dim];
+        let min = DVector::from_vec(vec![0.; dim]);
+        let max = DVector::from_vec(vec![1.; dim]);
+        for i in 0..dim {
+            sample_limits[i] = Some(RandUniform::new_inclusive(0., 1.))
+        }
+        let sample_limits = Some(DVector::from_vec(
+            sample_limits
+                .into_iter()
+                .flatten()
+                .collect::<Vec<RandUniform<f64>>>(),
+        ));
+        Ok(MultivariateUniform {
+            dim,
+            min,
+            max,
+            sample_limits,
+        })
     }
 }
 
@@ -89,8 +119,8 @@ impl ::rand::distributions::Distribution<Option<DVector<f64>>> for MultivariateU
                     samples[i] = rng.sample(sample_limits[i]);
                 }
                 Some(samples)
-            },
-            None => None
+            }
+            None => None,
         }
     }
 }
@@ -106,13 +136,18 @@ impl ContinuousMultivariateCDF<f64, f64> for MultivariateUniform {
     /// (x - min) / (max - min)
     /// ```
     fn cdf(&self, x: DVector<f64>) -> f64 {
-        if x <= self.min {
-            0.
-        } else if x >= self.max {
-            1.
-        } else {
-            (x - &self.min).iter().product::<f64>() / self.min.iter().zip(self.max.iter()).map(|(f,g)| g - f).product::<f64>()
+        let mut p = 1.;
+        for i in 0..self.dim {
+            if x[i] <= self.min[i]
+                || (self.max[i].is_infinite() || self.min[i].is_infinite()) && x[i] < self.max[i]
+            {
+                p = 0.;
+                break;
+            } else if x[i] < self.max[i] {
+                p *= (x[i] - self.min[i]) / (self.max[i] - self.min[i])
+            }
         }
+        return p;
     }
 
     /// Calculates the survival function for the uniform
@@ -124,13 +159,18 @@ impl ContinuousMultivariateCDF<f64, f64> for MultivariateUniform {
     /// (max - x) / (max - min)
     /// ```
     fn sf(&self, x: DVector<f64>) -> f64 {
-        if x <= self.min {
-            1.0
-        } else if x >= self.max {
-            0.0
-        } else {
-            (&self.max - x).iter().product::<f64>() / self.min.iter().zip(self.max.iter()).map(|(f,g)| g - f).product::<f64>()
+        let mut p = 1.;
+        for i in 0..self.dim {
+            if x[i] >= self.max[i]
+                || (self.max[i].is_infinite() || self.min[i].is_infinite()) && x[i] > self.min[i]
+            {
+                p = 0.;
+                break;
+            } else if x[i] > self.min[i] {
+                p *= (self.max[i] - x[i]) / (self.max[i] - self.min[i])
+            }
         }
+        return p;
     }
 }
 
@@ -152,13 +192,6 @@ impl MeanN<DVector<f64>> for MultivariateUniform {
         Some((&self.min + &self.max) / 2.)
     }
 }
-
-// impl VarianceN<DMatrix<f64>> for MultivariateUniform {
-//     /// Returns the covariance matrix of the multivariate uniform distribution
-//     fn variance(&self) -> Option<DMatrix<f64>> {
-//         Some(...)
-//     }
-// }
 
 impl Median<DVector<f64>> for MultivariateUniform {
     /// Returns the median for the continuous uniform distribution
@@ -205,10 +238,18 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateUniform {
     /// 1 / ∏(max - min)
     /// ```
     fn pdf(&self, x: &'a DVector<f64>) -> f64 {
-        if x < &self.min || x > &self.max {
+        if x.iter()
+            .zip(self.min.iter().zip(self.max.iter()))
+            .any(|(f, (g, h))| f < g || f > h)
+        {
             0.0
         } else {
-            1. / self.min.iter().zip(self.max.iter()).map(|(f,g)| g - f).product::<f64>()
+            1. / self
+                .min
+                .iter()
+                .zip(self.max.iter())
+                .map(|(f, g)| g - f)
+                .product::<f64>()
         }
     }
 
@@ -223,24 +264,35 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateUniform {
     /// # Formula
     ///
     /// ```ignore
-    /// ln(1 / ∏(max - min)) = -ln(∑(max -min))
+    /// ln(1 / ∏(max - min)) = -∑ln(max -min))
     /// ```
     fn ln_pdf(&self, x: &'a DVector<f64>) -> f64 {
-        if x < &self.min || x > &self.max {
+        if x.iter()
+            .zip(self.min.iter().zip(self.max.iter()))
+            .any(|(f, (g, h))| f < g || f > h)
+        {
             f64::NEG_INFINITY
         } else {
-            -self.min.iter().zip(self.max.iter()).map(|(f,g)| g - f).sum::<f64>().ln()
+            -self
+                .min
+                .iter()
+                .zip(self.max.iter())
+                .map(|(f, g)| (g - f).ln())
+                .sum::<f64>()
         }
     }
 }
 
 #[rustfmt::skip]
-// #[cfg(all(test, feature = "nightly"))]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use crate::statistics::*;
-    use crate::distribution::{ContinuousCDF, Continuous, MultivariateUniform};
+    use crate::distribution::{
+        ContinuousCDF, Continuous, MultivariateUniform, ContinuousMultivariateCDF
+    };
     use crate::distribution::internal::*;
     use crate::consts::ACC;
+    use core::fmt::Debug;
     use nalgebra::DVector;
 
     fn try_create(min: Vec<f64>, max: Vec<f64>) -> MultivariateUniform {
@@ -260,15 +312,17 @@ mod tests {
         assert!(n.is_err());
     }
 
-    fn get_value<F>(min: Vec<f64>, max: Vec<f64>, eval: F) -> DVector<f64>
-        where F: Fn(MultivariateUniform) -> DVector<f64>
+    fn get_value<F, T>(min: Vec<f64>, max: Vec<f64>, eval: F) -> T
+        where F: FnOnce(MultivariateUniform) -> T
     {
         let n = try_create(min, max);
         eval(n)
     }
 
-    fn test_case<F>(min: Vec<f64>, max: Vec<f64>, expected: DVector<f64>, eval: F)
-        where F: Fn(MultivariateUniform) -> DVector<f64>
+    fn test_case<F, T>(min: Vec<f64>, max: Vec<f64>, expected: T, eval: F)
+        where 
+            T: Debug + PartialEq,
+            F: FnOnce(MultivariateUniform) -> T
     {
         let x = get_value(min, max, eval);
         assert_eq!(expected, x);
@@ -292,6 +346,8 @@ mod tests {
         create_case(vec![0.1, 0.], vec![0.2, 0.1,]);
         create_case(vec![-5., 5., 10.], vec![-4., 6., 11.,]);
         create_case(vec![0.], vec![1.]);
+        create_case(vec![0.; 100], vec![1.; 100]);
+        create_case(vec![1.; 5], vec![1.; 5]);
     }
 
     #[test]
@@ -301,39 +357,8 @@ mod tests {
         bad_create_case(vec![0., 0.], vec![-1., 1.]);
         bad_create_case(vec![0., 0.,], vec![f64::NAN, 3.]);
         bad_create_case(vec![0.], vec![1., 2.]);
+        bad_create_case(vec![0.; 10], vec![-1.; 10]);
     }
-
-    // #[test]
-    // fn test_variance() {
-    //     let variance = |x: MultivariateUniform| x.variance().unwrap();
-    //     test_case(-0.0, 2.0, 1.0 / 3.0, variance);
-    //     test_case(0.0, 2.0, 1.0 / 3.0, variance);
-    //     test_almost(0.1, 4.0, 1.2675, 1e-15, variance);
-    //     test_case(10.0, 11.0, 1.0 / 12.0, variance);
-    //     test_case(0.0, f64::INFINITY, f64::INFINITY, variance);
-    // }
-
-    // #[test]
-    // fn test_entropy() {
-    //     let entropy = |x: MultivariateUniform| x.entropy().unwrap();
-    //     test_case(-0.0, 2.0, 0.6931471805599453094172, entropy);
-    //     test_case(0.0, 2.0, 0.6931471805599453094172, entropy);
-    //     test_almost(0.1, 4.0, 1.360976553135600743431, 1e-15, entropy);
-    //     test_case(1.0, 10.0, 2.19722457733621938279, entropy);
-    //     test_case(10.0, 11.0, 0.0, entropy);
-    //     test_case(0.0, f64::INFINITY, f64::INFINITY, entropy);
-    // }
-
-    // #[test]
-    // fn test_skewness() {
-    //     let skewness = |x: MultivariateUniform| x.skewness().unwrap();
-    //     test_case(-0.0, 2.0, 0.0, skewness);
-    //     test_case(0.0, 2.0, 0.0, skewness);
-    //     test_case(0.1, 4.0, 0.0, skewness);
-    //     test_case(1.0, 10.0, 0.0, skewness);
-    //     test_case(10.0, 11.0, 0.0, skewness);
-    //     test_case(0.0, f64::INFINITY, 0.0, skewness);
-    // }
 
     #[test]
     fn test_mode() {
@@ -344,146 +369,72 @@ mod tests {
         test_case(vec![0.], vec![f64::INFINITY], dvec![f64::INFINITY], mode);
     }
 
-    // #[test]
-    // fn test_median() {
-    //     let median = |x: MultivariateUniform| x.median();
-    //     test_case(-0.0, 2.0, 1.0, median);
-    //     test_case(0.0, 2.0, 1.0, median);
-    //     test_case(0.1, 4.0, 2.05, median);
-    //     test_case(1.0, 10.0, 5.5, median);
-    //     test_case(10.0, 11.0, 10.5, median);
-    //     test_case(0.0, f64::INFINITY, f64::INFINITY, median);
-    // }
+    #[test]
+    fn test_median() {
+        let median = |x: MultivariateUniform| x.median();
+        test_case(vec![-5., 5.], vec![0., 10.], dvec![-2.5, 7.5], median);
+        test_case(vec![10.0, 5.0], vec![11.0, 6.0], dvec![10.5, 5.5], median);
+        test_case(vec![0., 0., 0.,], vec![1., 2., 3.,], dvec![0.5, 1., 1.5], median);
+        test_case(vec![f64::NEG_INFINITY, f64::NEG_INFINITY], vec![0., 0.], dvec![f64::NEG_INFINITY, f64::NEG_INFINITY], median);
+    }
 
-    // #[test]
-    // fn test_pdf() {
-    //     let pdf = |arg: f64| move |x: MultivariateUniform| x.pdf(arg);
-    //     test_case(0.0, 0.0, 0.0, pdf(-5.0));
-    //     test_case(0.0, 0.0, f64::INFINITY, pdf(0.0));
-    //     test_case(0.0, 0.0, 0.0, pdf(5.0));
-    //     test_case(0.0, 0.1, 0.0, pdf(-5.0));
-    //     test_case(0.0, 0.1, 10.0, pdf(0.05));
-    //     test_case(0.0, 0.1, 0.0, pdf(5.0));
-    //     test_case(0.0, 1.0, 0.0, pdf(-5.0));
-    //     test_case(0.0, 1.0, 1.0, pdf(0.5));
-    //     test_case(0.0, 0.1, 0.0, pdf(5.0));
-    //     test_case(0.0, 10.0, 0.0, pdf(-5.0));
-    //     test_case(0.0, 10.0, 0.1, pdf(1.0));
-    //     test_case(0.0, 10.0, 0.1, pdf(5.0));
-    //     test_case(0.0, 10.0, 0.0, pdf(11.0));
-    //     test_case(-5.0, 100.0, 0.0, pdf(-10.0));
-    //     test_case(-5.0, 100.0, 0.009523809523809523809524, pdf(-5.0));
-    //     test_case(-5.0, 100.0, 0.009523809523809523809524, pdf(0.0));
-    //     test_case(-5.0, 100.0, 0.0, pdf(101.0));
-    //     test_case(0.0, f64::INFINITY, 0.0, pdf(-5.0));
-    //     test_case(0.0, f64::INFINITY, 0.0, pdf(10.0));
-    //     test_case(0.0, f64::INFINITY, 0.0, pdf(f64::INFINITY));
-    // }
+    #[test]
+    fn test_pdf() {
+        let pdf = |arg: Vec<f64>| move |x: MultivariateUniform| x.pdf(&DVector::from_vec(arg));
+        test_case(vec![0., 0.,], vec![1., 1.,], 0.0, pdf(vec![-10., -10.]));
+        test_case(vec![0., 0.,], vec![1., 1.,], 0.0, pdf(vec![-10., 0.5]));
+        test_case(vec![0., 0.,], vec![1., 1.,], 0.0, pdf(vec![2., 0.5]));
+        test_case(vec![0., 0.,], vec![1., 1.,], 0.0, pdf(vec![2., 2.]));
+        test_case(vec![0., 0.,], vec![1., 1.,], 1., pdf(vec![0.5, 0.5]));
+        test_case(vec![0., 0.,], vec![1., 1.,], 1., pdf(vec![1., 0.8]));
+        test_case(vec![0., 0.,], vec![1., 1.,], 1., pdf(vec![1., 1.]));
+        test_case(vec![-5., -10.], vec![5., 10.], 0.005, pdf(vec![0., 0.]));
+        test_case(vec![0., f64::NEG_INFINITY], vec![1., 0.], 0., pdf(vec![0.5, -1.]));
+        test_case(vec![-1., -2., -4.], vec![1., 2., 4.,], 0.5*0.25*0.125, pdf(vec![0., 0., 0.]));
+        test_case(vec![0.], vec![f64::INFINITY], 0., pdf(vec![200.]))
+    }
 
-    // #[test]
-    // fn test_ln_pdf() {
-    //     let ln_pdf = |arg: f64| move |x: MultivariateUniform| x.ln_pdf(arg);
-    //     test_case(0.0, 0.0, f64::NEG_INFINITY, ln_pdf(-5.0));
-    //     test_case(0.0, 0.0, f64::INFINITY, ln_pdf(0.0));
-    //     test_case(0.0, 0.0, f64::NEG_INFINITY, ln_pdf(5.0));
-    //     test_case(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(-5.0));
-    //     test_almost(0.0, 0.1, 2.302585092994045684018, 1e-15, ln_pdf(0.05));
-    //     test_case(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(5.0));
-    //     test_case(0.0, 1.0, f64::NEG_INFINITY, ln_pdf(-5.0));
-    //     test_case(0.0, 1.0, 0.0, ln_pdf(0.5));
-    //     test_case(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(5.0));
-    //     test_case(0.0, 10.0, f64::NEG_INFINITY, ln_pdf(-5.0));
-    //     test_case(0.0, 10.0, -2.302585092994045684018, ln_pdf(1.0));
-    //     test_case(0.0, 10.0, -2.302585092994045684018, ln_pdf(5.0));
-    //     test_case(0.0, 10.0, f64::NEG_INFINITY, ln_pdf(11.0));
-    //     test_case(-5.0, 100.0, f64::NEG_INFINITY, ln_pdf(-10.0));
-    //     test_case(-5.0, 100.0, -4.653960350157523371101, ln_pdf(-5.0));
-    //     test_case(-5.0, 100.0, -4.653960350157523371101, ln_pdf(0.0));
-    //     test_case(-5.0, 100.0, f64::NEG_INFINITY, ln_pdf(101.0));
-    //     test_case(0.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(-5.0));
-    //     test_case(0.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(10.0));
-    //     test_case(0.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
-    // }
+    #[test]
+    fn test_ln_pdf() {
+        let ln_pdf = |arg: Vec<f64>| move |x: MultivariateUniform| x.ln_pdf(&DVector::from_vec(arg));
+        test_case(vec![0., 0.,], vec![1., 1.,], 0., ln_pdf(vec![1., 1.]));
+        test_case(vec![0., 0.,], vec![1., 1.,], 0., ln_pdf(vec![0., 0.]));
+        test_case(vec![0., 0.,], vec![1., 1.,], 0., ln_pdf(vec![0.5, 0.2]));
+        test_case(vec![-1., -1.], vec![1., 1.], f64::NEG_INFINITY, ln_pdf(vec![-2., -2.]));
+        test_case(vec![0.; 10], vec![1.; 10], 0., ln_pdf(vec![0.5; 10]));
+        test_case(vec![0.; 10], vec![f64::INFINITY; 10], f64::NEG_INFINITY, ln_pdf(vec![f64::NEG_INFINITY; 10]));
+        test_case(vec![0.; 10], vec![f64::INFINITY; 10], f64::NEG_INFINITY, ln_pdf(vec![f64::INFINITY; 10]));
+    }
 
-    // #[test]
-    // fn test_cdf() {
-    //     let cdf = |arg: f64| move |x: MultivariateUniform| x.cdf(arg);
-    //     test_case(0.0, 0.0, 0.0, cdf(0.0));
-    //     test_case(0.0, 0.1, 0.5, cdf(0.05));
-    //     test_case(0.0, 1.0, 0.5, cdf(0.5));
-    //     test_case(0.0, 10.0, 0.1, cdf(1.0));
-    //     test_case(0.0, 10.0, 0.5, cdf(5.0));
-    //     test_case(-5.0, 100.0, 0.0, cdf(-5.0));
-    //     test_case(-5.0, 100.0, 0.04761904761904761904762, cdf(0.0));
-    //     test_case(0.0, f64::INFINITY, 0.0, cdf(10.0));
-    //     test_case(0.0, f64::INFINITY, 1.0, cdf(f64::INFINITY));
-    // }
+    #[test]
+    fn test_cdf() {
+        let cdf = |arg: Vec<f64>| move |x: MultivariateUniform| x.cdf(DVector::from_vec(arg));
+        test_case(vec![0., 0.], vec![1., 1.], 0.25, cdf(vec![0.5, 0.5]));
+        test_case(vec![0., 0.], vec![1., 1.], 0.0, cdf(vec![-1., 0.5]));
+        test_case(vec![0., 0.], vec![1., 1.], 0.0, cdf(vec![0.5, -1.]));
+        test_case(vec![0., 0.], vec![1., 1.], 1., cdf(vec![1., 1.]));
+        test_case(vec![0., 0.], vec![1., 1.], 1., cdf(vec![2., 2.]));
+        test_case(vec![0.; 100], vec![1.; 100], 0.5_f64.powi(100), cdf(vec![0.5; 100]));
+        test_case(vec![0.; 100], vec![1.; 100], 1., cdf(vec![1.5; 100]));
+        test_case(vec![0.; 5], vec![1.; 5], 0., cdf(vec![1., 1., 1., 1., -1.]));
+        test_case(vec![0.; 5], vec![1.; 5], 0.5, cdf(vec![1., 1., 1., 1., 0.5]));
+        test_case(vec![f64::NEG_INFINITY, 0.], vec![0., f64::INFINITY], 0., cdf(vec![-1., 1.]));
+        test_case(vec![f64::NEG_INFINITY, 0.], vec![0., f64::INFINITY], 1., cdf(vec![0., f64::INFINITY]));
+    }
 
-    // #[test]
-    // fn test_cdf_lower_bound() {
-    //     let cdf = |arg: f64| move |x: MultivariateUniform| x.cdf(arg);
-    //     test_case(0.0, 3.0, 0.0, cdf(-1.0));
-    // }
-
-    // #[test]
-    // fn test_cdf_upper_bound() {
-    //     let cdf = |arg: f64| move |x: MultivariateUniform| x.cdf(arg);
-    //     test_case(0.0, 3.0, 1.0, cdf(5.0));
-    // }
-
-
-    // #[test]
-    // fn test_sf() {
-    //     let sf = |arg: f64| move |x: MultivariateUniform| x.sf(arg);
-    //     test_case(0.0, 0.0, 1.0, sf(0.0));
-    //     test_case(0.0, 0.1, 0.5, sf(0.05));
-    //     test_case(0.0, 1.0, 0.5, sf(0.5));
-    //     test_case(0.0, 10.0, 0.9, sf(1.0));
-    //     test_case(0.0, 10.0, 0.5, sf(5.0));
-    //     test_case(-5.0, 100.0, 1.0, sf(-5.0));
-    //     test_case(-5.0, 100.0, 0.9523809523809523, sf(0.0));
-    //     test_case(0.0, f64::INFINITY, 1.0, sf(10.0));
-    //     test_case(0.0, f64::INFINITY, 0.0, sf(f64::INFINITY));
-    // }
-
-    // #[test]
-    // fn test_sf_lower_bound() {
-    //     let sf = |arg: f64| move |x: MultivariateUniform| x.sf(arg);
-    //     test_case(0.0, 3.0, 1.0, sf(-1.0));
-    // }
-
-    // #[test]
-    // fn test_sf_upper_bound() {
-    //     let sf = |arg: f64| move |x: MultivariateUniform| x.sf(arg);
-    //     test_case(0.0, 3.0, 0.0, sf(5.0));
-    // }
-
-    // #[test]
-    // fn test_continuous() {
-    //     test::check_continuous_distribution(&try_create(0.0, 10.0), 0.0, 10.0);
-    //     test::check_continuous_distribution(&try_create(-2.0, 15.0), -2.0, 15.0);
-    // }
-
-    // #[test]
-    // fn test_samples_in_range() {
-    //     use rand::rngs::StdRng;
-    //     use rand::SeedableRng;
-    //     use rand::distributions::Distribution;
-
-    //     let seed = [
-    //         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-    //         19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-    //     ];
-    //     let mut r: StdRng = SeedableRng::from_seed(seed);
-
-    //     let min = -0.5;
-    //     let max = 0.5;
-    //     let num_trials = 10_000;
-    //     let n = try_create(min, max);
-
-    //     assert!((0..num_trials)
-    //         .map(|_| n.sample::<StdRng>(&mut r))
-    //         .all(|v| (min <= v) && (v < max))
-    //     );
-    // }
+    #[test]
+    fn test_sf() {
+        let sf = |arg: Vec<f64>| move |x: MultivariateUniform| x.sf(DVector::from_vec(arg));
+        test_case(vec![0., 0.], vec![1., 1.], 0.25, sf(vec![0.5, 0.5]));
+        test_case(vec![0., 0.], vec![1., 1.], 0.5, sf(vec![-1., 0.5]));
+        test_case(vec![0., 0.], vec![1., 1.], 0.5, sf(vec![0.5, -1.]));
+        test_case(vec![0., 0.], vec![1., 1.], 0., sf(vec![1., 1.]));
+        test_case(vec![0., 0.], vec![1., 1.], 0., sf(vec![2., 2.]));
+        test_case(vec![0.; 100], vec![1.; 100], 0.5_f64.powi(100), sf(vec![0.5; 100]));
+        test_case(vec![0.; 100], vec![1.; 100], 0., sf(vec![1.5; 100]));
+        test_case(vec![0.; 5], vec![1.; 5], 0., sf(vec![1., 1., 1., 1., -1.]));
+        test_case(vec![0.; 5], vec![1.; 5], 0.5, sf(vec![0., 0., 0., 0., 0.5]));
+        test_case(vec![f64::NEG_INFINITY, 0.], vec![0., f64::INFINITY], 0., sf(vec![-1., 1.]));
+        test_case(vec![f64::NEG_INFINITY, 0.], vec![0., f64::INFINITY], 1., sf(vec![f64::NEG_INFINITY, 0.]));
+    }
 }
