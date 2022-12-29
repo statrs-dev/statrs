@@ -237,8 +237,12 @@ impl ContinuousMultivariateCDF<f64, f64> for MultivariateNormal {
                 let mut fi = std_normal.cdf(x[0] / chol_lower[(0, 0)]);
                 for m in 1..self.dim {
                     y[m - 1] = std_normal.inverse_cdf(w[m - 1] * fi);
-                    let cdf_arg = (x[m] - (chol_lower.index((m, ..m)) * y.index((..m, 0)))[0])
+                    let mut cdf_arg = (x[m] - (chol_lower.index((m, ..m)) * y.index((..m, 0)))[0])
                         / chol_lower[(m, m)];
+                    if cdf_arg.is_nan() {
+                        // Either -inf, 0 or inf
+                        cdf_arg = f64::INFINITY;
+                    }
                     fi *= std_normal.cdf(cdf_arg);
                 }
                 sum_i += (fi - sum_i) / ((j + 1) as f64);
@@ -342,7 +346,7 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateNormal {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+// #[cfg(all(test, feature = "nightly"))]
 mod tests  {
     use crate::distribution::{Continuous, MultivariateNormal};
     use crate::statistics::*;
@@ -398,10 +402,26 @@ mod tests  {
         assert_almost_eq!(expected, x, acc);
     }
 
+    fn identity_vec(dim: usize) -> Vec<f64> {
+        let id: DMatrix<f64> = DMatrix::identity(dim,dim);
+        return id.data.into();
+    }
+
+    fn cov_matrix(dim: usize, eye_factor: f64, off_diag_factor: f64) -> Vec<f64> {
+        let id: DMatrix<f64> = eye_factor * DMatrix::identity(dim,dim);
+        let rho = DMatrix::from_vec(dim,dim,vec![off_diag_factor; dim*dim]);
+        return (id - DMatrix::identity(dim,dim)*off_diag_factor + rho).data.into()
+    }
+
     use super::*;
 
     macro_rules! dvec {
-        ($($x:expr),*) => (DVector::from_vec(vec![$($x),*]));
+        ($($x:expr),*) => {
+            DVector::from_vec(vec![$($x),*])
+        };
+        ($($x:expr)?;$($y:expr)?) => {
+            DVector::from_vec(vec![$($x)?;$($y)?])
+        };
     }
 
     macro_rules! mat2 {
@@ -491,5 +511,19 @@ mod tests  {
         test_almost(vec![0.5, -0.2], vec![2.0, 0.3, 0.3, 0.5],  (0.0013075203140666656f64).ln(), 1e-15, ln_pdf(dvec![2., 2.]));
         test_case(vec![0., 0.], vec![f64::INFINITY, 0., 0., f64::INFINITY], f64::NEG_INFINITY, ln_pdf(dvec![10., 10.]));
         test_case(vec![0., 0.], vec![f64::INFINITY, 0., 0., f64::INFINITY], f64::NEG_INFINITY, ln_pdf(dvec![100., 100.]));
+    }
+
+    #[test]
+    fn test_cdf() {
+        let cdf = |arg: DVector<_>| move |x: MultivariateNormal| x.cdf(arg);
+        test_case(vec![0., 0., 0.], identity_vec(3), 0., cdf(dvec![f64::NEG_INFINITY; 3]));
+        test_case(vec![0., 0., 0.], identity_vec(3), 1., cdf(dvec![f64::INFINITY; 3]));
+        test_case(vec![1., -1., 10.], identity_vec(3), 1., cdf(dvec![f64::INFINITY; 3]));
+        test_almost(vec![-5., 0., 5.], cov_matrix(3, 1., 0.5), 0.23397186, 1e-5, cdf(dvec![-2., 1., 4.3]));
+        test_almost(vec![1., 0., 2.], cov_matrix(3, 1., 0.9), 0.0663303, 1e-5, cdf(dvec![0.5; 3]));
+        test_almost(vec![-0.5, 1.1], cov_matrix(2, 1., 0.2), 0.700540224, 1e-5, cdf(dvec![0.5, 2.]));
+        // These fail... whilst the ones above don't
+        test_almost(vec![10., 10., 10.], cov_matrix(3, 5., 1.5), 0.5945585970, 1e-5, cdf(dvec![12.; 3]));
+        test_almost(vec![1.; 15], cov_matrix(15, 2., 0.5), 0.121248186, 1e-5, cdf(dvec![1.; 15]));
     }
 }
