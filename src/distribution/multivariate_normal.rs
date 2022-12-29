@@ -1,5 +1,6 @@
-use crate::distribution::Continuous;
-use crate::distribution::Normal;
+use crate::distribution::{
+    Continuous, ContinuousCDF, ContinuousMultivariateCDF, Normal
+};
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
 use crate::{Result, StatsError};
 use nalgebra::{
@@ -8,6 +9,7 @@ use nalgebra::{
 };
 use nalgebra::{DMatrix, DVector};
 use rand::Rng;
+use primes::{Sieve, PrimeSet};
 use std::f64;
 use std::f64::consts::{E, PI};
 
@@ -29,7 +31,7 @@ use std::f64::consts::{E, PI};
 #[derive(Debug, Clone, PartialEq)]
 pub struct MultivariateNormal {
     dim: usize,
-    cov_chol_decomp: DMatrix<f64>,
+    pub cov_chol_decomp: DMatrix<f64>,
     mu: DVector<f64>,
     cov: DMatrix<f64>,
     precision: DMatrix<f64>,
@@ -98,6 +100,71 @@ impl MultivariateNormal {
                 .ln(),
         )
     }
+
+    /// Returns the lower triangular cholesky decomposition of
+    /// self.cov wrt. switching of rows and columns of the matrix as well as mutating
+    /// the input `a` and `b` with the row switches
+    ///
+    /// Algorithm explained in 4.1.3 in ´Computation of Multivariate
+    /// Normal and t Probabilities´, Alan Genz.
+    pub fn chol_chrows(&self, a: &mut DVector<f64>, b: &mut DVector<f64>) -> DMatrix<f64> {
+        let mut cov = self.cov.clone();
+        let mut chol_lower: DMatrix<f64> = DMatrix::zeros(self.dim, self.dim);
+        let mut y: DVector<f64> = DVector::zeros(self.dim);
+
+        let std_normal = Normal::new(0., 1.).unwrap();
+        for i in 0..self.dim {
+            let mut cdf_diff = f64::INFINITY;
+            let mut new_i = i;
+            let mut a_tilde = a[i];
+            let mut b_tilde = b[i];
+            // Find the index of which to switch rows with
+            for j in i..self.dim {
+                let mut num = 0.;
+                let mut den = 0.;
+                if i > 0 {
+                    // Numerator:
+                    // -Σ lᵢₘyₘ, sum from m=1 to i-1
+                    num = (chol_lower.index((j,..i)) * y.index((..i,0)))[0];
+                    // Denominator:
+                    // √(σᵢᵢ - Σ lᵢₘ²), sum from m=1 to i-1
+                    den = (cov[(j,j)] - (chol_lower.index((j,..i)).transpose() * chol_lower.index((j,..i)))[0]).sqrt(); 
+                } 
+                let pot_a_tilde = (a[j] - num) / den;
+                let pot_b_tilde = (b[j] - num) / den;
+                let cdf_a = std_normal.cdf(pot_a_tilde);
+                let cdf_b = std_normal.cdf(pot_b_tilde);
+                
+                let pot_cdf_diff = cdf_b - cdf_a; // Potential minimum
+                if pot_cdf_diff < cdf_diff {
+                    new_i = j;
+                    cdf_diff = pot_cdf_diff;
+                    a_tilde = pot_a_tilde;
+                    b_tilde = pot_b_tilde;
+                }
+            }
+            if i != new_i {
+                cov.swap_rows(i,new_i);
+                cov.swap_columns(i,new_i);
+                a.swap_rows(i,new_i);
+                b.swap_rows(i,new_i);
+                chol_lower.swap_rows(i,new_i);
+                chol_lower.swap_columns(i,new_i);
+            }
+
+            // Get the expected values:
+            // yᵢ = 1 / (Ψ(bᵢ) - Ψ(𝑎ᵢ)) * ∫_𝑎ᵢ^𝑏ᵢ sψ(s) ds 
+            y[i] = ((-a_tilde.powi(2)/2.).exp() - (-b_tilde.powi(2)/2.).exp()) / (cdf_diff);
+
+            // Cholesky decomposition algorithm with the new changed row
+            let mut ids = chol_lower.index_mut((..,..i+1)); // Get only the relevant indices
+            ids[(i,i)] = (cov[(i,i)] - (ids.index((i,..i)) * ids.index((i,..i)).transpose())[0]).sqrt();
+            for j in i+1..self.dim {
+                ids[(j,i)] = (cov[(j,i)] - (ids.index((i,..i)) * ids.index((j,..i)).transpose())[0]) / ids[(i,i)];
+            }
+        }
+        chol_lower
+    }
 }
 
 impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateNormal {
@@ -114,6 +181,40 @@ impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateNormal {
         let d = Normal::new(0., 1.).unwrap();
         let z = DVector::<f64>::from_distribution(self.dim, &d, rng);
         (&self.cov_chol_decomp * z) + &self.mu
+    }
+}
+
+impl ContinuousMultivariateCDF<f64, f64> for MultivariateNormal {
+    /// Returns the cumulative distribution function at `x` for the
+    /// multivariate normal distribution, using approximation with
+    /// `N` points. Uses the algorithm as explained in
+    /// 'Computation of Multivariate Normal and t Probabilites', Section 4.2.2,
+    /// by Alan Genz.
+    fn cdf(&self, mut x: DVector<f64>) -> f64 {
+        // Shift integration limit wrt. mean
+        x -= &self.mu;
+
+        let chol_lower = self.chol_chrows(&mut x, &mut DVector::zeros(self.dim));
+
+        // Generate first `dim` primes, Ricthmyer generators
+        // Could write function in crate for this instead if we
+        // want less imports. Efficiency in this part of the code does not 
+        // matter much
+        let mut sqrt_primes = vec![0.; self.dim];
+        let mut pset = Sieve::new();
+        for (i, n) in pset.iter().enumerate().take(self.dim) {
+            sqrt_primes[i] = (n as f64).sqrt();
+        }
+
+        // let n_samples = 1000 * self.dim;
+        return 0.
+    }
+
+    /// Returns the survival function at `x` for the
+    /// multivariate normal distribution, using approximation with
+    /// `N` points.
+    fn sf(&self, x: DVector<f64>) -> f64 {
+        1. - self.cdf(x)
     }
 }
 

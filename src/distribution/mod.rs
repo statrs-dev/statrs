@@ -293,7 +293,7 @@ pub trait ContinuousMultivariateCDF<K: Float, T: Float> {
     /// assert_eq!(0.5, mvn.cdf([0., 0.,]));
     /// ```
     fn cdf(&self, x: DVector<K>) -> T;
-    
+
     /// Returns the survival function calculated
     /// at `x` for a given distribution. May panic depending
     /// on the implementor.
