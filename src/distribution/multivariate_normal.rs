@@ -1,5 +1,5 @@
 use crate::distribution::{
-    Continuous, ContinuousCDF, ContinuousMultivariateCDF, Normal
+    Continuous, ContinuousCDF, ContinuousMultivariateCDF, MultivariateUniform, Normal,
 };
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
 use crate::{Result, StatsError};
@@ -8,8 +8,9 @@ use nalgebra::{
     LU, U1,
 };
 use nalgebra::{DMatrix, DVector};
+use primes::{PrimeSet, Sieve};
+use rand::distributions::Distribution;
 use rand::Rng;
-use primes::{Sieve, PrimeSet};
 use std::f64;
 use std::f64::consts::{E, PI};
 
@@ -121,7 +122,7 @@ impl MultivariateNormal {
             // Find the index of which to switch rows with
             for j in i..self.dim {
                 let mut num = 0.;
-                let mut den = cov[(j,j)].sqrt();
+                let mut den = cov[(j, j)].sqrt();
                 if i > 0 {
                     // Numerator:
                     // -Σ lᵢₘyₘ, sum from m=1 to i-1
@@ -156,7 +157,8 @@ impl MultivariateNormal {
 
             // Get the expected values:
             // yᵢ = 1 / (Ψ(bᵢ) - Ψ(𝑎ᵢ)) * ∫_𝑎ᵢ^𝑏ᵢ sψ(s) ds
-            y[i] = ((-a_tilde.powi(2) / 2.).exp() - (-b_tilde.powi(2) / 2.).exp()) / ((2. * PI).sqrt() * cdf_diff);
+            y[i] = ((-a_tilde.powi(2) / 2.).exp() - (-b_tilde.powi(2) / 2.).exp())
+                / ((2. * PI).sqrt() * cdf_diff);
 
             // Cholesky decomposition algorithm with the new changed row
             let mut ids = chol_lower.index_mut((.., ..i + 1)); // Get only the relevant indices
@@ -199,20 +201,51 @@ impl ContinuousMultivariateCDF<f64, f64> for MultivariateNormal {
         // Shift integration limit wrt. mean
         x -= &self.mu;
 
-        let chol_lower = self.chol_chrows(&mut x, &mut DVector::zeros(self.dim));
+        let chol_lower = self.chol_chrows(
+            &mut DVector::from_vec(vec![f64::NEG_INFINITY; self.dim]),
+            &mut x,
+        );
 
         // Generate first `dim` primes, Ricthmyer generators
         // Could write function in crate for this instead if we
-        // want less imports. Efficiency in this part of the code does not 
-        // matter much
-        let mut sqrt_primes = vec![0.; self.dim];
+        // want less imports. Efficiency here does not matter much
+        let mut sqrt_primes = DVector::zeros(self.dim);
         let mut pset = Sieve::new();
         for (i, n) in pset.iter().enumerate().take(self.dim) {
             sqrt_primes[i] = (n as f64).sqrt();
         }
 
-        // let n_samples = 1000 * self.dim;
-        return 0.
+        let n_samples = 15;
+        let n_points = 1000 * self.dim;
+        let mvu = MultivariateUniform::standard(self.dim).unwrap();
+        let std_normal = Normal::new(0., 1.).unwrap();
+        let mut rng = rand::thread_rng();
+        let mut p = 0.; // The cdf probability
+        for i in 0..n_samples {
+            let rnd_points = mvu.sample(&mut rng).unwrap();
+            let mut sum_i = 0.;
+            for j in 0..n_points {
+                let w =
+                    (2. * DVector::from_vec(
+                        ((j as f64) * &sqrt_primes + &rnd_points)
+                            .iter()
+                            .map(|x| x % 1.)
+                            .collect::<Vec<f64>>(),
+                    ) - DVector::from_vec(vec![1.; self.dim]))
+                    .abs();
+                let mut y: DVector<f64> = DVector::zeros(self.dim - 1);
+                let mut fi = std_normal.cdf(x[0] / chol_lower[(0, 0)]);
+                for m in 1..self.dim {
+                    y[m - 1] = std_normal.inverse_cdf(w[m - 1] * fi);
+                    let cdf_arg = (x[m] - (chol_lower.index((m, ..m)) * y.index((..m, 0)))[0])
+                        / chol_lower[(m, m)];
+                    fi *= std_normal.cdf(cdf_arg);
+                }
+                sum_i += (fi - sum_i) / ((j + 1) as f64);
+            }
+            p += (sum_i - p) / ((i + 1) as f64);
+        }
+        return p;
     }
 
     /// Returns the survival function at `x` for the
