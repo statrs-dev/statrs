@@ -292,7 +292,7 @@ pub trait ContinuousMultivariateCDF<K: Float, T: Float> {
     /// use statrs::distribution::{ContinuousMultivariateCDF, MultivariateNormal};
     ///
     /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
-    /// assert_eq!(0.5, mvn.cdf([0., 0.,]));
+    /// assert_eq!(0.25, mvn.cdf([0., 0.,]));
     /// ```
     fn cdf(&self, x: DVector<K>) -> T;
 
