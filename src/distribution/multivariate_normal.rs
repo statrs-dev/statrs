@@ -108,7 +108,7 @@ impl MultivariateNormal {
     ///
     /// Algorithm explained in 4.1.3 in ´Computation of Multivariate
     /// Normal and t Probabilities´, Alan Genz.
-    pub fn chol_chrows(&self, a: &mut DVector<f64>, b: &mut DVector<f64>) -> DMatrix<f64> {
+    fn chol_chrows(&self, a: &mut DVector<f64>, b: &mut DVector<f64>) -> DMatrix<f64> {
         let mut cov = self.cov.clone();
         let mut chol_lower: DMatrix<f64> = DMatrix::zeros(self.dim, self.dim);
         let mut y: DVector<f64> = DVector::zeros(self.dim);
@@ -172,6 +172,71 @@ impl MultivariateNormal {
         }
         chol_lower
     }
+
+    /// Uses the algorithm as explained in
+    /// 'Computation of Multivariate Normal and t Probabilites', Section 4.2.2,
+    /// by Alan Genz.
+    fn integrate_pdf(&self, a: &mut DVector<f64>, b: &mut DVector<f64>) -> (f64, f64) {
+        let chol_lower = self.chol_chrows(a, b);
+
+        // Generate first `dim` primes, Ricthmyer generators
+        // Could write function in crate for this instead if we
+        // want less imports. Efficiency here does not matter much
+        let mut sqrt_primes = DVector::zeros(self.dim);
+        let mut pset = Sieve::new();
+        for (i, n) in pset.iter().enumerate().take(self.dim) {
+            sqrt_primes[i] = (n as f64).sqrt();
+        }
+
+        let n_samples = 15;
+        let n_points = 1000 * self.dim;
+        let mvu = MultivariateUniform::standard(self.dim).unwrap();
+        let std_normal = Normal::new(0., 1.).unwrap();
+        let mut rng = rand::thread_rng();
+
+        let one = DVector::from_vec(vec![1.; self.dim]);
+        let mut y: DVector<f64> = DVector::zeros(self.dim - 1);
+
+        let alpha = 3.;
+        let mut err = 0.;
+        let mut err_help = 0.;
+        let mut p = 0.; // The cdf probability
+        for i in 0..n_samples {
+            let rnd_points = mvu.sample(&mut rng).unwrap();
+            let mut sum_i = 0.;
+            for j in 0..n_points {
+                let w =
+                    (2. * DVector::from_vec(
+                        ((j as f64) * &sqrt_primes + &rnd_points)
+                            .iter()
+                            .map(|x| x % 1.)
+                            .collect::<Vec<f64>>(),
+                    ) - &one)
+                        .abs();
+                let mut di = std_normal.cdf(a[0] / chol_lower[(0, 0)]);
+                let mut ei = std_normal.cdf(b[0] / chol_lower[(0, 0)]);
+                let mut fi = ei - di;
+                for m in 1..self.dim {
+                    y[m - 1] = std_normal.inverse_cdf(di + w[m - 1] * (ei - di));
+                    let mut num = (chol_lower.index((m, ..m)) * y.index((..m, 0)))[0];
+                    let den = chol_lower[(m, m)];
+                    if num.is_nan() {
+                        // Either -inf, 0 or inf, comes when yᵢ = -inf and chol_lowerₘᵢ = 0
+                        num = 0.;
+                    }
+                    di = std_normal.cdf((a[m] - num) / den);
+                    ei = std_normal.cdf((b[m] - num) / den);
+                    fi *= ei - di;
+                }
+                sum_i += (fi - sum_i) / ((j + 1) as f64);
+            }
+            let delta = (sum_i - p) / ((i + 1) as f64);
+            p += delta;
+            err_help = (((i - 1) as f64) * err_help / ((i + 1) as f64)) + delta.powi(2);
+            err = alpha * err_help.sqrt()
+        }
+        return (p, err);
+    }
 }
 
 impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateNormal {
@@ -193,63 +258,15 @@ impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateNormal {
 
 impl ContinuousMultivariateCDF<f64, f64> for MultivariateNormal {
     /// Returns the cumulative distribution function at `x` for the
-    /// multivariate normal distribution, using approximation with
-    /// `N` points. Uses the algorithm as explained in
-    /// 'Computation of Multivariate Normal and t Probabilites', Section 4.2.2,
-    /// by Alan Genz.
+    /// multivariate normal distribution
     fn cdf(&self, mut x: DVector<f64>) -> f64 {
         // Shift integration limit wrt. mean
         x -= &self.mu;
-
-        let chol_lower = self.chol_chrows(
+        let (p, _) = self.integrate_pdf(
             &mut DVector::from_vec(vec![f64::NEG_INFINITY; self.dim]),
             &mut x,
         );
-
-        // Generate first `dim` primes, Ricthmyer generators
-        // Could write function in crate for this instead if we
-        // want less imports. Efficiency here does not matter much
-        let mut sqrt_primes = DVector::zeros(self.dim);
-        let mut pset = Sieve::new();
-        for (i, n) in pset.iter().enumerate().take(self.dim) {
-            sqrt_primes[i] = (n as f64).sqrt();
-        }
-
-        let n_samples = 15;
-        let n_points = 1000 * self.dim;
-        let mvu = MultivariateUniform::standard(self.dim).unwrap();
-        let std_normal = Normal::new(0., 1.).unwrap();
-        let mut rng = rand::thread_rng();
-        let mut p = 0.; // The cdf probability
-        for i in 0..n_samples {
-            let rnd_points = mvu.sample(&mut rng).unwrap();
-            let mut sum_i = 0.;
-            for j in 0..n_points {
-                let w =
-                    (2. * DVector::from_vec(
-                        ((j as f64) * &sqrt_primes + &rnd_points)
-                            .iter()
-                            .map(|x| x % 1.)
-                            .collect::<Vec<f64>>(),
-                    ) - DVector::from_vec(vec![1.; self.dim]))
-                    .abs();
-                let mut y: DVector<f64> = DVector::zeros(self.dim - 1);
-                let mut fi = std_normal.cdf(x[0] / chol_lower[(0, 0)]);
-                for m in 1..self.dim {
-                    y[m - 1] = std_normal.inverse_cdf(w[m - 1] * fi);
-                    let mut cdf_arg = (x[m] - (chol_lower.index((m, ..m)) * y.index((..m, 0)))[0])
-                        / chol_lower[(m, m)];
-                    if cdf_arg.is_nan() {
-                        // Either -inf, 0 or inf
-                        cdf_arg = f64::INFINITY;
-                    }
-                    fi *= std_normal.cdf(cdf_arg);
-                }
-                sum_i += (fi - sum_i) / ((j + 1) as f64);
-            }
-            p += (sum_i - p) / ((i + 1) as f64);
-        }
-        return p;
+        p
     }
 
     /// Returns the survival function at `x` for the
