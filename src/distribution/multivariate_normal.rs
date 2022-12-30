@@ -32,7 +32,7 @@ use std::f64::consts::{E, PI};
 #[derive(Debug, Clone, PartialEq)]
 pub struct MultivariateNormal {
     dim: usize,
-    pub cov_chol_decomp: DMatrix<f64>,
+    cov_chol_decomp: DMatrix<f64>,
     mu: DVector<f64>,
     cov: DMatrix<f64>,
     precision: DMatrix<f64>,
