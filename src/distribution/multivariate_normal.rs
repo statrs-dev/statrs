@@ -363,7 +363,7 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateNormal {
 }
 
 #[rustfmt::skip]
-// #[cfg(all(test, feature = "nightly"))]
+#[cfg(all(test, feature = "nightly"))]
 mod tests  {
     use crate::distribution::{Continuous, MultivariateNormal};
     use crate::statistics::*;
@@ -424,9 +424,9 @@ mod tests  {
         return id.data.into();
     }
 
-    fn cov_matrix(dim: usize, eye_factor: f64, off_diag_factor: f64) -> Vec<f64> {
-        let id: DMatrix<f64> = eye_factor * DMatrix::identity(dim,dim);
-        let rho = DMatrix::from_vec(dim,dim,vec![off_diag_factor; dim*dim]);
+    fn cov_matrix(dim: usize, diag_factor: f64, off_diag_factor: f64) -> Vec<f64> {
+        let id = DMatrix::from_diagonal_element(dim,dim,diag_factor);
+        let rho = DMatrix::repeat(dim, dim, off_diag_factor);
         return (id - DMatrix::identity(dim,dim)*off_diag_factor + rho).data.into()
     }
 
@@ -536,11 +536,14 @@ mod tests  {
         test_case(vec![0., 0., 0.], identity_vec(3), 0., cdf(dvec![f64::NEG_INFINITY; 3]));
         test_case(vec![0., 0., 0.], identity_vec(3), 1., cdf(dvec![f64::INFINITY; 3]));
         test_case(vec![1., -1., 10.], identity_vec(3), 1., cdf(dvec![f64::INFINITY; 3]));
+        test_almost(vec![0., 0., 0.], cov_matrix(3, 1., 0.1), 0.119415222, 1e-5, cdf(dvec![-0.1; 3]));
         test_almost(vec![-5., 0., 5.], cov_matrix(3, 1., 0.5), 0.23397186, 1e-5, cdf(dvec![-2., 1., 4.3]));
         test_almost(vec![1., 0., 2.], cov_matrix(3, 1., 0.9), 0.0663303, 1e-5, cdf(dvec![0.5; 3]));
         test_almost(vec![-0.5, 1.1], cov_matrix(2, 1., 0.2), 0.700540224, 1e-5, cdf(dvec![0.5, 2.]));
-        // These fail... whilst the ones above don't
         test_almost(vec![10., 10., 10.], cov_matrix(3, 5., 1.5), 0.5945585970, 1e-5, cdf(dvec![12.; 3]));
-        test_almost(vec![1.; 15], cov_matrix(15, 2., 0.5), 0.121248186, 1e-5, cdf(dvec![1.; 15]));
+        test_almost(vec![1.; 4], cov_matrix(4, 2., 0.5), 0.1264796225, 1e-5, cdf(dvec![1.; 4]));
+        test_almost(vec![1.; 15], cov_matrix(15, 2., 0.5), 0.011545573, 1e-5, cdf(dvec![1.; 15]));
+        test_almost(vec![-100., -150., 150.], vec![1., 0.2, 0.9, 0.2, 1., 0.3, 0.9, 0.3, 1.], 0.999999713, 1e-5, cdf(dvec![-90., -140., 155.]));
+        test_almost(vec![0.5,0.2,1.1], vec![1., 0.2, 0.9, 0.2, 1., 0.3, 0.9, 0.3, 1.], 0.07532228836, 1e-5, cdf(dvec![-0.9, 1.3, 2.2]));
     }
 }
