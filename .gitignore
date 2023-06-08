@@ -14,3 +14,7 @@
 #editor specific
 /.vscode/
 .idea/
+*.iml
+
+# macOS
+.DS_Store
