@@ -120,7 +120,7 @@ impl ContinuousCDF<f64, f64> for Exp {
     ///
     /// where `p` is the probability and `λ` is the rate
     fn inverse_cdf(&self, p: f64) -> f64 {
-        -(1.0 - p).ln() / self.rate
+        -(-p).ln_1p() / self.rate
     }
 }
 
