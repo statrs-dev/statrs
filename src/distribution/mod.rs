@@ -290,9 +290,10 @@ pub trait ContinuousMultivariateCDF<K: Float, T: Float> {
     ///
     /// ```
     /// use statrs::distribution::{ContinuousMultivariateCDF, MultivariateNormal};
+    /// use nalgebra::DVector;
     ///
     /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
-    /// assert_eq!(0.25, mvn.cdf([0., 0.,]));
+    /// assert_eq!(0.25, mvn.cdf(DVector::from_vec(vec![0., 0.,])));
     /// ```
     fn cdf(&self, x: DVector<K>) -> T;
 
@@ -304,9 +305,10 @@ pub trait ContinuousMultivariateCDF<K: Float, T: Float> {
     ///
     /// ```
     /// use statrs::distribution::{ContinuousMultivariateCDF, MultivariateNormal};
+    /// use nalgebra::DVector;
     ///
     /// let mvs = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
-    /// assert_eq!(f64::NEG_INFINITY, mvs.sf([f64::INFINITY, f64::INFINITY]));
+    /// assert_eq!(0., mvs.sf(DVector::from_vec(vec![f64::INFINITY, f64::INFINITY])));
     /// ```
     fn sf(&self, x: DVector<K>) -> T;
 }

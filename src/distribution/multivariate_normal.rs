@@ -273,6 +273,7 @@ impl ContinuousMultivariateCDF<f64, f64> for MultivariateNormal {
     /// multivariate normal distribution, using approximation with
     /// `N` points.
     fn sf(&self, x: DVector<f64>) -> f64 {
+        // Shift integration limit wrt. mean
         1. - self.cdf(x)
     }
 }

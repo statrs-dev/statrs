@@ -12,11 +12,12 @@ use std::f64;
 ///
 /// ```
 /// use statrs::distribution::{MultivariateUniform, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::statistics::{Distribution, MeanN};
+/// use nalgebra::DVector;
 ///
 /// let n = MultivariateUniform::new(vec![-1., 0.], vec![0., 1.]).unwrap();
-/// assert_eq!(n.mean().unwrap(), DVector::from_vec(vec![-0.5, 0.5]);
-/// assert_eq!(n.pdf(DVector::from_vec(vec![-0.5, 0.5])), 1.);
+/// assert_eq!(n.mean().unwrap(), DVector::from_vec(vec![-0.5, 0.5]));
+/// assert_eq!(n.pdf(&DVector::from_vec(vec![-0.5, 0.5])), 1.);
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct MultivariateUniform {
@@ -40,11 +41,12 @@ impl MultivariateUniform {
     /// use statrs::distribution::MultivariateUniform;
     /// use std::f64;
     ///
-    /// let mut result = Uniform::new(vec![-1., 0.], vec![0., 1.,]);
+    /// let mut result = MultivariateUniform::new(vec![-1., 0.], vec![0., 1.,]);
     /// assert!(result.is_ok());
     ///
-    /// result = Uniform::new(f64::NAN, f64::NAN);
-    /// result = Uniform::new(vec![0., f64::NAN], vec![f64::NAN, 1.]);
+    /// result = MultivariateUniform::new(vec![f64::NAN], vec![f64::NAN]);
+    /// assert!(result.is_err());
+    /// result = MultivariateUniform::new(vec![0., f64::NAN], vec![f64::NAN, 1.]);
     /// assert!(result.is_err());
     /// ```
     pub fn new(min: Vec<f64>, max: Vec<f64>) -> Result<MultivariateUniform> {
