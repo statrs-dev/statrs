@@ -43,7 +43,7 @@ impl MultivariateStudent {
     ///
     /// # Errors
     ///
-    /// Returns `StatsError::BadParams` if the scale matrix is not Symmetric-positive
+    /// Returns `StatsError::BadParams` if the scale matrix is not symmetric-positive
     /// definite and `StatsError::ArgMustBePositive` if freedom is non-positive.
     pub fn new(location: Vec<f64>, scale: Vec<f64>, freedom: f64) -> Result<Self> {
         let dim = location.len();
@@ -76,7 +76,7 @@ impl MultivariateStudent {
             - 0.5 * scale_det.ln();
 
         match Cholesky::new(scale.clone()) {
-            None => Err(StatsError::BadParams),
+            None => Err(StatsError::BadParams), // Scale matrix is not positive definite
             Some(cholesky_decomp) => {
                 let precision = cholesky_decomp.inverse();
                 Ok(MultivariateStudent {
@@ -130,7 +130,9 @@ impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateStudent {
     ///
     /// # Formula
     ///
+    ///```ignore
     /// W * L * Z + μ
+    ///```
     ///
     /// where `W` has √(ν/Sν) distribution, Sν has Chi-squared
     /// distribution with ν degrees of freedom,
@@ -261,6 +263,7 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateStudent {
     }
 }
 
+// TODO: Add more tests for other matrices than really straightforward symmetric positive
 #[rustfmt::skip]
 #[cfg(all(test, feature = "nightly"))]
 mod tests {
@@ -396,6 +399,7 @@ mod tests {
     fn test_mean() {
         let mean = |x: MultivariateStudent| x.mean().unwrap();
         test_case(vec![0., 0.], vec![1., 0., 0., 1.], 2., dvec![0., 0.], mean);
+        test_case(vec![-1., 1., 3.], vec![1., 0., 0.5, 0., 2.0, 0., 0.5, 0., 3.0], 2., dvec![-1., 1., 3.], mean);
     }
 
     #[test]
