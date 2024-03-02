@@ -429,12 +429,12 @@ mod tests  {
 
     #[test]
     fn test_ln_pdf() {
-        let pdf = |arg: DVector<f64>| move |x: MultivariateStudent| x.ln_pdf(&arg);
-        test_almost(vec![0., 0.], vec![1., 0., 0., 1.], 4., -3.0542723907338383, 1e-14, pdf(dvec![1., 1.]));
-        test_almost(vec![0., 0.], vec![1., 0., 0., 1.], 2., -4.3434030034000815, 1e-14, pdf(dvec![1., 2.]));
-        test_almost(vec![2., 1.], vec![5., 0., 0., 1.], 2.5, -10.542229575274265, 1e-14, pdf(dvec![1., 10.]));
-        test_almost(vec![-1., 0.], vec![2., 1., 1., 6.], 1.5, -9.650699521198622, 1e-14, pdf(dvec![10., 10.]));
-        test_case(vec![-1., 0.], vec![f64::INFINITY, 0., 0., f64::INFINITY], 10., f64::NEG_INFINITY, pdf(dvec![10., 10.]));
+        let ln_pdf = |arg: DVector<f64>| move |x: MultivariateStudent| x.ln_pdf(&arg);
+        test_almost(vec![0., 0.], vec![1., 0., 0., 1.], 4., -3.0542723907338383, 1e-14, ln_pdf(dvec![1., 1.]));
+        test_almost(vec![0., 0.], vec![1., 0., 0., 1.], 2., -4.3434030034000815, 1e-14, ln_pdf(dvec![1., 2.]));
+        test_almost(vec![2., 1.], vec![5., 0., 0., 1.], 2.5, -10.542229575274265, 1e-14, ln_pdf(dvec![1., 10.]));
+        test_almost(vec![-1., 0.], vec![2., 1., 1., 6.], 1.5, -9.650699521198622, 1e-14, ln_pdf(dvec![10., 10.]));
+        test_case(vec![-1., 0.], vec![f64::INFINITY, 0., 0., f64::INFINITY], 10., f64::NEG_INFINITY, ln_pdf(dvec![10., 10.]));
     }
 
     // #[test]
