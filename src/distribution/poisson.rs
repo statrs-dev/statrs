@@ -229,7 +229,7 @@ impl Discrete<u64, f64> for Poisson {
     /// # Formula
     ///
     /// ```ignore
-    /// (λ^k * e^(-λ)) / x!
+    /// (λ^x * e^(-λ)) / x!
     /// ```
     ///
     /// where `λ` is the rate
@@ -244,7 +244,7 @@ impl Discrete<u64, f64> for Poisson {
     /// # Formula
     ///
     /// ```ignore
-    /// ln((λ^k * e^(-λ)) / x!)
+    /// ln((λ^x * e^(-λ)) / x!)
     /// ```
     ///
     /// where `λ` is the rate

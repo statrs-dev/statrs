@@ -140,8 +140,8 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
     /// # Formula
     ///
     /// ```ignore
-    /// 1 - ((n choose k+1) * (N-n choose K-k-1)) / (N choose K) * 3_F_2(1,
-    /// k+1-K, k+1-n; k+2, N+k+2-K-n; 1)
+    /// 1 - ((n choose x+1) * (N-n choose K-x-1)) / (N choose K) * 3_F_2(1,
+    /// x+1-K, x+1-n; k+2, N+x+2-K-n; 1)
     /// ```
     ///
     /// where `N` is population, `K` is successes, `n` is draws,
@@ -150,7 +150,7 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
     /// org/wiki/Generalized_hypergeometric_function)
     ///
     /// Calculated as a discrete integral over the probability mass
-    /// function evaluated from 0..k+1
+    /// function evaluated from 0..x+1
     fn cdf(&self, x: u64) -> f64 {
         if x < self.min() {
             0.0
@@ -174,8 +174,8 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
     /// # Formula
     ///
     /// ```ignore
-    /// 1 - ((n choose k+1) * (N-n choose K-k-1)) / (N choose K) * 3_F_2(1,
-    /// k+1-K, k+1-n; k+2, N+k+2-K-n; 1)
+    /// 1 - ((n choose x+1) * (N-n choose K-x-1)) / (N choose K) * 3_F_2(1,
+    /// x+1-K, x+1-n; x+2, N+x+2-K-n; 1)
     /// ```
     ///
     /// where `N` is population, `K` is successes, `n` is draws,
@@ -184,7 +184,7 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
     /// org/wiki/Generalized_hypergeometric_function)
     ///
     /// Calculated as a discrete integral over the probability mass
-    /// function evaluated from (k+1)..max
+    /// function evaluated from (x+1)..max
     fn sf(&self, x: u64) -> f64 {
         if x < self.min() {
             1.0
