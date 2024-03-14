@@ -103,7 +103,7 @@ impl ContinuousCDF<f64, f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// I_x(α, β)
     /// ```
     ///
@@ -134,7 +134,7 @@ impl ContinuousCDF<f64, f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// I_(1-x)(β, α)
     /// ```
     ///
@@ -168,7 +168,7 @@ impl Min<f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -183,7 +183,7 @@ impl Max<f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1
     /// ```
     fn max(&self) -> f64 {
@@ -196,7 +196,7 @@ impl Distribution<f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α / (α + β)
     /// ```
     ///
@@ -215,7 +215,7 @@ impl Distribution<f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (α * β) / ((α + β)^2 * (α + β + 1))
     /// ```
     ///
@@ -235,7 +235,7 @@ impl Distribution<f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(B(α, β)) - (α - 1)ψ(α) - (β - 1)ψ(β) + (α + β - 2)ψ(α + β)
     /// ```
     ///
@@ -256,7 +256,7 @@ impl Distribution<f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2(β - α) * sqrt(α + β + 1) / ((α + β + 2) * sqrt(αβ))
     /// ```
     ///
@@ -290,7 +290,7 @@ impl Mode<Option<f64>> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (α - 1) / (α + β - 2)
     /// ```
     ///
@@ -314,7 +314,7 @@ impl Continuous<f64, f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// let B(α, β) = Γ(α)Γ(β)/Γ(α + β)
     ///
     /// x^(α - 1) * (1 - x)^(β - 1) / B(α, β)
@@ -352,7 +352,7 @@ impl Continuous<f64, f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// let B(α, β) = Γ(α)Γ(β)/Γ(α + β)
     ///
     /// ln(x^(α - 1) * (1 - x)^(β - 1) / B(α, β))

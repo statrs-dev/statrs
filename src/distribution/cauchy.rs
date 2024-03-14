@@ -91,7 +91,7 @@ impl ContinuousCDF<f64, f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / π) * arctan((x - x_0) / γ) + 0.5
     /// ```
     ///
@@ -105,7 +105,7 @@ impl ContinuousCDF<f64, f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / π) * arctan(-(x - x_0) / γ) + 0.5
     /// ```
     ///
@@ -123,7 +123,7 @@ impl Min<f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// NEG_INF
     /// ```
     fn min(&self) -> f64 {
@@ -137,7 +137,7 @@ impl Max<f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -150,7 +150,7 @@ impl Distribution<f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(γ) + ln(4π)
     /// ```
     ///
@@ -165,7 +165,7 @@ impl Median<f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// x_0
     /// ```
     ///
@@ -180,7 +180,7 @@ impl Mode<Option<f64>> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// x_0
     /// ```
     ///
@@ -196,7 +196,7 @@ impl Continuous<f64, f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / (πγ * (1 + ((x - x_0) / γ)^2))
     /// ```
     ///
@@ -212,7 +212,7 @@ impl Continuous<f64, f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(1 / (πγ * (1 + ((x - x_0) / γ)^2)))
     /// ```
     ///

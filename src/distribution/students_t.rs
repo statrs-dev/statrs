@@ -124,7 +124,7 @@ impl ContinuousCDF<f64, f64> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < μ {
     ///     (1 / 2) * I(t, v / 2, 1 / 2)
     /// } else {
@@ -156,7 +156,7 @@ impl ContinuousCDF<f64, f64> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < μ {
     ///     1 - (1 / 2) * I(t, v / 2, 1 / 2)
     /// } else {
@@ -209,7 +209,7 @@ impl Min<f64> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// -INF
     /// ```
     fn min(&self) -> f64 {
@@ -223,7 +223,7 @@ impl Max<f64> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -240,7 +240,7 @@ impl Distribution<f64> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -260,7 +260,7 @@ impl Distribution<f64> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if v == INF {
     ///     Some(σ^2)
     /// } else if freedom > 2.0 {
@@ -284,7 +284,7 @@ impl Distribution<f64> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// - ln(σ) + (v + 1) / 2 * (ψ((v + 1) / 2) - ψ(v / 2)) + ln(sqrt(v) * B(v / 2, 1 /
     /// 2))
     /// ```
@@ -309,7 +309,7 @@ impl Distribution<f64> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -326,7 +326,7 @@ impl Median<f64> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -341,7 +341,7 @@ impl Mode<Option<f64>> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -358,7 +358,7 @@ impl Continuous<f64, f64> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// Γ((v + 1) / 2) / (sqrt(vπ) * Γ(v / 2) * σ) * (1 + k^2 / v)^(-1 / 2 * (v
     /// + 1))
     /// ```
@@ -387,7 +387,7 @@ impl Continuous<f64, f64> for StudentsT {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(Γ((v + 1) / 2) / (sqrt(vπ) * Γ(v / 2) * σ) * (1 + k^2 / v)^(-1 / 2 *
     /// (v + 1)))
     /// ```

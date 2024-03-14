@@ -68,7 +68,7 @@ impl ContinuousCDF<f64, f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) + (1 / 2) * erf((ln(x) - μ) / sqrt(2) * σ)
     /// ```
     ///
@@ -89,7 +89,7 @@ impl ContinuousCDF<f64, f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) + (1 / 2) * erf(-(ln(x) - μ) / sqrt(2) * σ)
     /// ```
     ///
@@ -100,9 +100,9 @@ impl ContinuousCDF<f64, f64> for LogNormal {
     /// the sign of the argument error function with respect to the cdf.
     ///
     /// the normal cdf Φ (and internal error function) as the following property:
-    /// ```ignore
+    /// ```text
     ///  Φ(-x) + Φ(x) = 1
-    ///  Φ(-x)        = 1 - Φ(x) 
+    ///  Φ(-x)        = 1 - Φ(x)
     /// ```
     fn sf(&self, x: f64) -> f64 {
         if x <= 0.0 {
@@ -121,7 +121,7 @@ impl Min<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -135,7 +135,7 @@ impl Max<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -148,7 +148,7 @@ impl Distribution<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// e^(μ + σ^2 / 2)
     /// ```
     ///
@@ -160,7 +160,7 @@ impl Distribution<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (e^(σ^2) - 1) * e^(2μ + σ^2)
     /// ```
     ///
@@ -173,7 +173,7 @@ impl Distribution<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(σe^(μ + 1 / 2) * sqrt(2π))
     /// ```
     ///
@@ -185,7 +185,7 @@ impl Distribution<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (e^(σ^2) + 2) * sqrt(e^(σ^2) - 1)
     /// ```
     ///
@@ -201,7 +201,7 @@ impl Median<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// e^μ
     /// ```
     ///
@@ -216,7 +216,7 @@ impl Mode<Option<f64>> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// e^(μ - σ^2)
     /// ```
     ///
@@ -232,7 +232,7 @@ impl Continuous<f64, f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / xσ * sqrt(2π)) * e^(-((ln(x) - μ)^2) / 2σ^2)
     /// ```
     ///
@@ -251,7 +251,7 @@ impl Continuous<f64, f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((1 / xσ * sqrt(2π)) * e^(-((ln(x) - μ)^2) / 2σ^2))
     /// ```
     ///

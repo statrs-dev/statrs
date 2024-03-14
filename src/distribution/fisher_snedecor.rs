@@ -103,7 +103,7 @@ impl ContinuousCDF<f64, f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// I_((d1 * x) / (d1 * x + d2))(d1 / 2, d2 / 2)
     /// ```
     ///
@@ -129,7 +129,7 @@ impl ContinuousCDF<f64, f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// I_(1 - ((d1 * x) / (d1 * x + d2))(d2 / 2, d1 / 2)
     /// ```
     ///
@@ -158,7 +158,7 @@ impl Min<f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -173,7 +173,7 @@ impl Max<f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -194,7 +194,7 @@ impl Distribution<f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// d2 / (d2 - 2)
     /// ```
     ///
@@ -218,7 +218,7 @@ impl Distribution<f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2 * d2^2 * (d1 + d2 - 2)) / (d1 * (d2 - 2)^2 * (d2 - 4))
     /// ```
     ///
@@ -249,7 +249,7 @@ impl Distribution<f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ((2d1 + d2 - 2) * sqrt(8 * (d2 - 4))) / ((d2 - 6) * sqrt(d1 * (d1 + d2
     /// - 2)))
     /// ```
@@ -282,7 +282,7 @@ impl Mode<Option<f64>> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ((d1 - 2) / d1) * (d2 / (d2 + 2))
     /// ```
     ///
@@ -311,7 +311,7 @@ impl Continuous<f64, f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// sqrt(((d1 * x) ^ d1 * d2 ^ d2) / (d1 * x + d2) ^ (d1 + d2)) / (x * β(d1
     /// / 2, d2 / 2))
     /// ```
@@ -340,7 +340,7 @@ impl Continuous<f64, f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(sqrt(((d1 * x) ^ d1 * d2 ^ d2) / (d1 * x + d2) ^ (d1 + d2)) / (x *
     /// β(d1 / 2, d2 / 2)))
     /// ```

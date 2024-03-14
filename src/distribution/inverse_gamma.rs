@@ -99,7 +99,7 @@ impl ContinuousCDF<f64, f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// Γ(α, β / x) / Γ(α)
     /// ```
     ///
@@ -121,7 +121,7 @@ impl ContinuousCDF<f64, f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// Γ(α, β / x) / Γ(α)
     /// ```
     ///
@@ -146,7 +146,7 @@ impl Min<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -161,7 +161,7 @@ impl Max<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -178,7 +178,7 @@ impl Distribution<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// β / (α - 1)
     /// ```
     ///
@@ -198,7 +198,7 @@ impl Distribution<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// β^2 / ((α - 1)^2 * (α - 2))
     /// ```
     ///
@@ -216,7 +216,7 @@ impl Distribution<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α + ln(β * Γ(α)) - (1 + α) * ψ(α)
     /// ```
     ///
@@ -235,7 +235,7 @@ impl Distribution<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 4 * sqrt(α - 2) / (α - 3)
     /// ```
     ///
@@ -254,7 +254,7 @@ impl Mode<Option<f64>> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// β / (α + 1)
     /// ```
     ///
@@ -270,7 +270,7 @@ impl Continuous<f64, f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (β^α / Γ(α)) * x^(-α - 1) * e^(-β / x)
     /// ```
     ///
@@ -291,7 +291,7 @@ impl Continuous<f64, f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((β^α / Γ(α)) * x^(-α - 1) * e^(-β / x))
     /// ```
     ///

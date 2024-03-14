@@ -108,7 +108,7 @@ impl ContinuousCDF<f64, f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / Γ(k / 2)) * γ(k / 2, x / 2)
     /// ```
     ///
@@ -123,7 +123,7 @@ impl ContinuousCDF<f64, f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / Γ(k / 2)) * γ(k / 2, x / 2)
     /// ```
     ///
@@ -141,7 +141,7 @@ impl Min<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -156,7 +156,7 @@ impl Max<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -169,7 +169,7 @@ impl Distribution<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k
     /// ```
     ///
@@ -181,7 +181,7 @@ impl Distribution<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2k
     /// ```
     ///
@@ -193,7 +193,7 @@ impl Distribution<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (k / 2) + ln(2 * Γ(k / 2)) + (1 - (k / 2)) * ψ(k / 2)
     /// ```
     ///
@@ -206,7 +206,7 @@ impl Distribution<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// sqrt(8 / k)
     /// ```
     ///
@@ -221,7 +221,7 @@ impl Median<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k * (1 - (2 / 9k))^3
     /// ```
     fn median(&self) -> f64 {
@@ -241,7 +241,7 @@ impl Mode<Option<f64>> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k - 2
     /// ```
     ///
@@ -257,7 +257,7 @@ impl Continuous<f64, f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / (2^(k / 2) * Γ(k / 2)) * x^((k / 2) - 1) * e^(-x / 2)
     /// ```
     ///
@@ -271,7 +271,7 @@ impl Continuous<f64, f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(1 / (2^(k / 2) * Γ(k / 2)) * x^((k / 2) - 1) * e^(-x / 2))
     /// ```
     fn ln_pdf(&self, x: f64) -> f64 {

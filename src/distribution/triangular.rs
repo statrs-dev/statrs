@@ -72,7 +72,7 @@ impl ContinuousCDF<f64, f64> for Triangular {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x == min {
     ///     0
     /// } if min < x <= mode {
@@ -103,7 +103,7 @@ impl ContinuousCDF<f64, f64> for Triangular {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x == min {
     ///     1
     /// } if min < x <= mode {
@@ -159,7 +159,7 @@ impl Distribution<f64> for Triangular {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (min + max + mode) / 3
     /// ```
     fn mean(&self) -> Option<f64> {
@@ -169,7 +169,7 @@ impl Distribution<f64> for Triangular {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (min^2 + max^2 + mode^2 - min * max - min * mode - max * mode) / 18
     /// ```
     fn variance(&self) -> Option<f64> {
@@ -182,7 +182,7 @@ impl Distribution<f64> for Triangular {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / 2 + ln((max - min) / 2)
     /// ```
     fn entropy(&self) -> Option<f64> {
@@ -192,7 +192,7 @@ impl Distribution<f64> for Triangular {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (sqrt(2) * (min + max - 2 * mode) * (2 * min - max - mode) * (min - 2 *
     /// max + mode)) /
     /// ( 5 * (min^2 + max^2 + mode^2 - min * max - min * mode - max * mode)^(3
@@ -213,7 +213,7 @@ impl Median<f64> for Triangular {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if mode >= (min + max) / 2 {
     ///     min + sqrt((max - min) * (mode - min) / 2)
     /// } else {
@@ -237,7 +237,7 @@ impl Mode<Option<f64>> for Triangular {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// mode
     /// ```
     fn mode(&self) -> Option<f64> {
@@ -252,7 +252,7 @@ impl Continuous<f64, f64> for Triangular {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < min {
     ///     0
     /// } else if min <= x <= mode {
@@ -282,7 +282,7 @@ impl Continuous<f64, f64> for Triangular {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln( if x < min {
     ///     0
     /// } else if min <= x <= mode {

@@ -79,7 +79,7 @@ impl ContinuousCDF<f64, f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - e^(-λ * x)
     /// ```
     ///
@@ -97,7 +97,7 @@ impl ContinuousCDF<f64, f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// e^(-λ * x)
     /// ```
     ///
@@ -117,7 +117,7 @@ impl Min<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -131,7 +131,7 @@ impl Max<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -144,7 +144,7 @@ impl Distribution<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / λ
     /// ```
     ///
@@ -156,7 +156,7 @@ impl Distribution<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / λ^2
     /// ```
     ///
@@ -168,7 +168,7 @@ impl Distribution<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - ln(λ)
     /// ```
     ///
@@ -180,7 +180,7 @@ impl Distribution<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -193,7 +193,7 @@ impl Median<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / λ) * ln2
     /// ```
     ///
@@ -208,7 +208,7 @@ impl Mode<Option<f64>> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn mode(&self) -> Option<f64> {
@@ -222,7 +222,7 @@ impl Continuous<f64, f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ * e^(-λ * x)
     /// ```
     ///
@@ -240,7 +240,7 @@ impl Continuous<f64, f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(λ * e^(-λ * x))
     /// ```
     ///

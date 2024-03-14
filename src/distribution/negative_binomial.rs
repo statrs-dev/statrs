@@ -117,7 +117,7 @@ impl DiscreteCDF<u64, f64> for NegativeBinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// I_(p)(r, x+1)
     /// ```
     ///
@@ -137,7 +137,7 @@ impl DiscreteCDF<u64, f64> for NegativeBinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// I_(1-p)(x+1, r)
     /// ```
     ///
@@ -154,7 +154,7 @@ impl Min<u64> for NegativeBinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> u64 {
@@ -169,7 +169,7 @@ impl Max<u64> for NegativeBinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// u64::MAX
     /// ```
     fn max(&self) -> u64 {
@@ -182,7 +182,7 @@ impl DiscreteDistribution<f64> for NegativeBinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// r * (1-p) / p
     /// ```
     fn mean(&self) -> Option<f64> {
@@ -192,7 +192,7 @@ impl DiscreteDistribution<f64> for NegativeBinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// r * (1-p) / p^2
     /// ```
     fn variance(&self) -> Option<f64> {
@@ -202,7 +202,7 @@ impl DiscreteDistribution<f64> for NegativeBinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2-p) / sqrt(r * (1-p))
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -215,7 +215,7 @@ impl Mode<Option<f64>> for NegativeBinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if r > 1 then
     ///     floor((r - 1) * (1-p / p))
     /// else
@@ -239,13 +239,13 @@ impl Discrete<u64, f64> for NegativeBinomial {
     ///
     /// When `r` is an integer, the formula is:
     ///
-    /// ```ignore
+    /// ```text
     /// (x + r - 1 choose x) * (1 - p)^x * p^r
     /// ```
     ///
     /// The general formula for real `r` is:
     ///
-    /// ```ignore
+    /// ```text
     /// Γ(r + x)/(Γ(r) * Γ(x + 1)) * (1 - p)^x * p^r
     /// ```
     ///
@@ -261,13 +261,13 @@ impl Discrete<u64, f64> for NegativeBinomial {
     ///
     /// When `r` is an integer, the formula is:
     ///
-    /// ```ignore
+    /// ```text
     /// ln((x + r - 1 choose x) * (1 - p)^x * p^r)
     /// ```
     ///
     /// The general formula for real `r` is:
     ///
-    /// ```ignore
+    /// ```text
     /// ln(Γ(r + x)/(Γ(r) * Γ(x + 1)) * (1 - p)^x * p^r)
     /// ```
     ///

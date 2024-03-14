@@ -139,7 +139,7 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - ((n choose x+1) * (N-n choose K-x-1)) / (N choose K) * 3_F_2(1,
     /// x+1-K, x+1-n; k+2, N+x+2-K-n; 1)
     /// ```
@@ -173,7 +173,7 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - ((n choose x+1) * (N-n choose K-x-1)) / (N choose K) * 3_F_2(1,
     /// x+1-K, x+1-n; x+2, N+x+2-K-n; 1)
     /// ```
@@ -193,7 +193,7 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
         } else {
             let k = x;
             let ln_denom = factorial::ln_binomial(self.population, self.draws);
-            (k + 1 .. self.max() + 1).fold(0.0, |acc, i| {
+            (k + 1..self.max() + 1).fold(0.0, |acc, i| {
                 acc + (factorial::ln_binomial(self.successes, i)
                     + factorial::ln_binomial(self.population - self.successes, self.draws - i)
                     - ln_denom)
@@ -210,7 +210,7 @@ impl Min<u64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// max(0, n + K - N)
     /// ```
     ///
@@ -227,7 +227,7 @@ impl Max<u64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// min(K, n)
     /// ```
     ///
@@ -246,7 +246,7 @@ impl Distribution<f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// K * n / N
     /// ```
     ///
@@ -266,7 +266,7 @@ impl Distribution<f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// n * (K / N) * ((N - K) / N) * ((N - n) / (N - 1))
     /// ```
     ///
@@ -289,7 +289,7 @@ impl Distribution<f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ((N - 2K) * (N - 1)^(1 / 2) * (N - 2n)) / ([n * K * (N - K) * (N -
     /// n)]^(1 / 2) * (N - 2))
     /// ```
@@ -315,7 +315,7 @@ impl Mode<Option<u64>> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor((n + 1) * (k + 1) / (N + 2))
     /// ```
     ///
@@ -331,7 +331,7 @@ impl Discrete<u64, f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (K choose x) * (N-K choose n-x) / (N choose n)
     /// ```
     ///
@@ -351,7 +351,7 @@ impl Discrete<u64, f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((K choose x) * (N-K choose n-x) / (N choose n))
     /// ```
     ///

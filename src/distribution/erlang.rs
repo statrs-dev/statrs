@@ -91,7 +91,7 @@ impl ContinuousCDF<f64, f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// γ(k, λx)  (k - 1)!
     /// ```
     ///
@@ -107,7 +107,7 @@ impl ContinuousCDF<f64, f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// γ(k, λx)  (k - 1)!
     /// ```
     ///
@@ -125,7 +125,7 @@ impl Min<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -140,7 +140,7 @@ impl Max<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -158,7 +158,7 @@ impl Distribution<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k / λ
     /// ```
     ///
@@ -170,7 +170,7 @@ impl Distribution<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k / λ^2
     /// ```
     ///
@@ -182,7 +182,7 @@ impl Distribution<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k - ln(λ) + ln(Γ(k)) + (1 - k) * ψ(k)
     /// ```
     ///
@@ -195,7 +195,7 @@ impl Distribution<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2 / sqrt(k)
     /// ```
     ///
@@ -215,7 +215,7 @@ impl Mode<Option<f64>> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (k - 1) / λ
     /// ```
     ///
@@ -236,7 +236,7 @@ impl Continuous<f64, f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (λ^k / Γ(k)) * x^(k - 1) * e^(-λ * x)
     /// ```
     ///
@@ -256,7 +256,7 @@ impl Continuous<f64, f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((λ^k / Γ(k)) * x^(k - 1) * e ^(-λ * x))
     /// ```
     ///

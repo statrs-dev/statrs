@@ -108,7 +108,7 @@ impl MeanN<DVector<f64>> for Multinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// n * p_i for i in 1...k
     /// ```
     ///
@@ -126,7 +126,7 @@ impl VarianceN<DMatrix<f64>> for Multinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// n * p_i * (1 - p_i) for i in 1...k
     /// ```
     ///
@@ -147,7 +147,7 @@ impl VarianceN<DMatrix<f64>> for Multinomial {
 //     ///
 //     /// # Formula
 //     ///
-//     /// ```ignore
+//     /// ```text
 //     /// (1 - 2 * p_i) / (n * p_i * (1 - p_i)) for i in 1...k
 //     /// ```
 //     ///
@@ -176,7 +176,7 @@ impl<'a> Discrete<&'a [u64], f64> for Multinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (n! / x_1!...x_k!) * p_i^x_i for i in 1...k
     /// ```
     ///
@@ -212,7 +212,7 @@ impl<'a> Discrete<&'a [u64], f64> for Multinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((n! / x_1!...x_k!) * p_i^x_i) for i in 1...k
     /// ```
     ///

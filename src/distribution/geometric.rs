@@ -85,7 +85,7 @@ impl DiscreteCDF<u64, f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - (1 - p) ^ x
     /// ```
     fn cdf(&self, x: u64) -> f64 {
@@ -104,7 +104,7 @@ impl DiscreteCDF<u64, f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 - p) ^ x
     /// ```
     fn sf(&self, x: u64) -> f64 {
@@ -125,7 +125,7 @@ impl Min<u64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1
     /// ```
     fn min(&self) -> u64 {
@@ -140,7 +140,7 @@ impl Max<u64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2^63 - 1
     /// ```
     fn max(&self) -> u64 {
@@ -153,7 +153,7 @@ impl Distribution<f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / p
     /// ```
     fn mean(&self) -> Option<f64> {
@@ -163,7 +163,7 @@ impl Distribution<f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 - p) / p^2
     /// ```
     fn variance(&self) -> Option<f64> {
@@ -173,7 +173,7 @@ impl Distribution<f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (-(1 - p) * log_2(1 - p) - p * log_2(p)) / p
     /// ```
     fn entropy(&self) -> Option<f64> {
@@ -184,7 +184,7 @@ impl Distribution<f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2 - p) / sqrt(1 - p)
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -200,7 +200,7 @@ impl Mode<Option<u64>> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1
     /// ```
     fn mode(&self) -> Option<u64> {
@@ -215,7 +215,7 @@ impl Median<f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ceil(-1 / log_2(1 - p))
     /// ```
     fn median(&self) -> f64 {
@@ -229,7 +229,7 @@ impl Discrete<u64, f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 - p)^(x - 1) * p
     /// ```
     fn pmf(&self, x: u64) -> f64 {
@@ -245,7 +245,7 @@ impl Discrete<u64, f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((1 - p)^(x - 1) * p)
     /// ```
     fn ln_pmf(&self, x: u64) -> f64 {

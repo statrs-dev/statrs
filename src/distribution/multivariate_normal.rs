@@ -83,7 +83,7 @@ impl MultivariateNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * ln(det(2 * π * e * Σ))
     /// ```
     ///
@@ -104,7 +104,9 @@ impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateNormal {
     /// Samples from the multivariate normal distribution
     ///
     /// # Formula
+    /// ```text
     /// L * Z + μ
+    /// ```
     ///
     /// where `L` is the Cholesky decomposition of the covariance matrix,
     /// `Z` is a vector of normally distributed random variables, and
@@ -160,7 +162,7 @@ impl Mode<DVector<f64>> for MultivariateNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -176,7 +178,7 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2 * π) ^ (-k / 2) * det(Σ) ^ (1 / 2) * e ^ ( -(1 / 2) * transpose(x - μ) * inv(Σ) * (x - μ))
     /// ```
     ///
@@ -208,7 +210,7 @@ impl Continuous<Vec<f64>, f64> for MultivariateNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2 * π) ^ (-k / 2) * det(Σ) ^ (1 / 2) * e ^ ( -(1 / 2) * transpose(x - μ) * inv(Σ) * (x - μ))
     /// ```
     ///

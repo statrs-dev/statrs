@@ -92,7 +92,7 @@ impl ContinuousCDF<f64, f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * (1 + signum(x - μ)) - signum(x - μ) * exp(-|x - μ| / b)
     /// ```
     ///
@@ -111,7 +111,7 @@ impl ContinuousCDF<f64, f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - [(1 / 2) * (1 + signum(x - μ)) - signum(x - μ) * exp(-|x - μ| / b)]
     /// ```
     ///
@@ -131,11 +131,11 @@ impl ContinuousCDF<f64, f64> for Laplace {
     /// # Formula
     ///
     /// if p <= 1/2
-    /// ```ignore
+    /// ```text
     /// μ + b * ln(2p)
     /// ```
     /// if p >= 1/2
-    /// ```ignore
+    /// ```text
     /// μ - b * ln(2 - 2p)
     /// ```
     ///
@@ -158,7 +158,7 @@ impl Min<f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// NEG_INF
     /// ```
     fn min(&self) -> f64 {
@@ -172,7 +172,7 @@ impl Max<f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -185,7 +185,7 @@ impl Distribution<f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -197,7 +197,7 @@ impl Distribution<f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2*b^2
     /// ```
     ///
@@ -209,7 +209,7 @@ impl Distribution<f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(2be)
     /// ```
     ///
@@ -221,7 +221,7 @@ impl Distribution<f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -234,7 +234,7 @@ impl Median<f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -249,7 +249,7 @@ impl Mode<Option<f64>> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -265,7 +265,7 @@ impl Continuous<f64, f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2b) * exp(-|x - μ| / b)
     /// ```
     /// where `μ` is the location and `b` is the scale
@@ -278,7 +278,7 @@ impl Continuous<f64, f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((1 / 2b) * exp(-|x - μ| / b))
     /// ```
     ///

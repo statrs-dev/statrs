@@ -84,7 +84,7 @@ impl ContinuousCDF<f64, f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// P(k / 2, x^2 / 2)
     /// ```
     ///
@@ -105,7 +105,7 @@ impl ContinuousCDF<f64, f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// P(k / 2, x^2 / 2)
     /// ```
     ///
@@ -128,7 +128,7 @@ impl Min<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -142,7 +142,7 @@ impl Max<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -159,7 +159,7 @@ impl Distribution<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// sqrt2 * Γ((k + 1) / 2) / Γ(k / 2)
     /// ```
     ///
@@ -193,7 +193,7 @@ impl Distribution<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k - μ^2
     /// ```
     ///
@@ -211,7 +211,7 @@ impl Distribution<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(Γ(k / 2)) + 0.5 * (k - ln2 - (k - 1) * ψ(k / 2))
     /// ```
     ///
@@ -236,7 +236,7 @@ impl Distribution<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (μ / σ^3) * (1 - 2σ^2)
     /// ```
     /// where `μ` is the mean and `σ` the standard deviation
@@ -257,7 +257,7 @@ impl Mode<Option<f64>> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// sqrt(k - 1)
     /// ```
     ///
@@ -276,7 +276,7 @@ impl Continuous<f64, f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2^(1 - (k / 2)) * x^(k - 1) * e^(-x^2 / 2)) / Γ(k / 2)
     /// ```
     ///
@@ -299,7 +299,7 @@ impl Continuous<f64, f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((2^(1 - (k / 2)) * x^(k - 1) * e^(-x^2 / 2)) / Γ(k / 2))
     /// ```
     fn ln_pdf(&self, x: f64) -> f64 {

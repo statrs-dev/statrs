@@ -97,7 +97,7 @@ impl ContinuousCDF<f64, f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < x_m {
     ///     0
     /// } else {
@@ -119,7 +119,7 @@ impl ContinuousCDF<f64, f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < x_m {
     ///     1
     /// } else {
@@ -143,7 +143,7 @@ impl Min<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// x_m
     /// ```
     ///
@@ -159,7 +159,7 @@ impl Max<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -172,7 +172,7 @@ impl Distribution<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if α <= 1 {
     ///     INF
     /// } else {
@@ -192,7 +192,7 @@ impl Distribution<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if α <= 2 {
     ///     INF
     /// } else {
@@ -213,7 +213,7 @@ impl Distribution<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(α/x_m) - 1/α - 1
     /// ```
     ///
@@ -231,7 +231,7 @@ impl Distribution<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     ///     (2*(α + 1)/(α - 3))*sqrt((α - 2)/α)
     /// ```
     ///
@@ -253,7 +253,7 @@ impl Median<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// x_m*2^(1/α)
     /// ```
     ///
@@ -268,7 +268,7 @@ impl Mode<Option<f64>> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// x_m
     /// ```
     ///
@@ -284,7 +284,7 @@ impl Continuous<f64, f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < x_m {
     ///     0
     /// } else {
@@ -306,7 +306,7 @@ impl Continuous<f64, f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < x_m {
     ///     -INF
     /// } else {

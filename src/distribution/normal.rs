@@ -65,7 +65,7 @@ impl ContinuousCDF<f64, f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * (1 + erf((x - μ) / (σ * sqrt(2))))
     /// ```
     ///
@@ -80,7 +80,7 @@ impl ContinuousCDF<f64, f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * (1 + erf(-(x - μ) / (σ * sqrt(2))))
     /// ```
     ///
@@ -91,9 +91,9 @@ impl ContinuousCDF<f64, f64> for Normal {
     /// the sign of the argument error function with respect to the cdf.
     ///
     /// the normal cdf Φ (and internal error function) as the following property:
-    /// ```ignore
+    /// ```text
     ///  Φ(-x) + Φ(x) = 1
-    ///  Φ(-x)        = 1 - Φ(x) 
+    ///  Φ(-x)        = 1 - Φ(x)
     /// ```
     fn sf(&self, x: f64) -> f64 {
         sf_unchecked(x, self.mean, self.std_dev)
@@ -108,7 +108,7 @@ impl ContinuousCDF<f64, f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ - sqrt(2) * σ * erfc_inv(2x)
     /// ```
     ///
@@ -129,7 +129,7 @@ impl Min<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// -INF
     /// ```
     fn min(&self) -> f64 {
@@ -143,7 +143,7 @@ impl Max<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -164,7 +164,7 @@ impl Distribution<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// σ^2
     /// ```
     ///
@@ -176,7 +176,7 @@ impl Distribution<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * ln(2σ^2 * π * e)
     /// ```
     ///
@@ -188,7 +188,7 @@ impl Distribution<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -201,7 +201,7 @@ impl Median<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -216,7 +216,7 @@ impl Mode<Option<f64>> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -232,7 +232,7 @@ impl Continuous<f64, f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / sqrt(2σ^2 * π)) * e^(-(x - μ)^2 / 2σ^2)
     /// ```
     ///
@@ -247,7 +247,7 @@ impl Continuous<f64, f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((1 / sqrt(2σ^2 * π)) * e^(-(x - μ)^2 / 2σ^2))
     /// ```
     ///

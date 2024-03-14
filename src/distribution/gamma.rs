@@ -99,7 +99,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / Γ(α)) * γ(α, β * x)
     /// ```
     ///
@@ -124,7 +124,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / Γ(α)) * γ(α, β * x)
     /// ```
     ///
@@ -156,7 +156,7 @@ impl Min<f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -171,7 +171,7 @@ impl Max<f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -184,7 +184,7 @@ impl Distribution<f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α / β
     /// ```
     ///
@@ -196,7 +196,7 @@ impl Distribution<f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α / β^2
     /// ```
     ///
@@ -208,7 +208,7 @@ impl Distribution<f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α - ln(β) + ln(Γ(α)) + (1 - α) * ψ(α)
     /// ```
     ///
@@ -224,7 +224,7 @@ impl Distribution<f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2 / sqrt(α)
     /// ```
     ///
@@ -239,7 +239,7 @@ impl Mode<Option<f64>> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (α - 1) / β
     /// ```
     ///
@@ -260,7 +260,7 @@ impl Continuous<f64, f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (β^α / Γ(α)) * x^(α - 1) * e^(-β * x)
     /// ```
     ///
@@ -291,7 +291,7 @@ impl Continuous<f64, f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((β^α / Γ(α)) * x^(α - 1) * e ^(-β * x))
     /// ```
     ///

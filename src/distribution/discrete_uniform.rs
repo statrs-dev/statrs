@@ -63,7 +63,7 @@ impl DiscreteCDF<i64, f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (floor(x) - min + 1) / (max - min + 1)
     /// ```
     fn cdf(&self, x: i64) -> f64 {
@@ -131,7 +131,7 @@ impl Distribution<f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (min + max) / 2
     /// ```
     fn mean(&self) -> Option<f64> {
@@ -141,7 +141,7 @@ impl Distribution<f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ((max - min + 1)^2 - 1) / 12
     /// ```
     fn variance(&self) -> Option<f64> {
@@ -152,7 +152,7 @@ impl Distribution<f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(max - min + 1)
     /// ```
     fn entropy(&self) -> Option<f64> {
@@ -163,7 +163,7 @@ impl Distribution<f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -176,7 +176,7 @@ impl Median<f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (max + min) / 2
     /// ```
     fn median(&self) -> f64 {
@@ -194,7 +194,7 @@ impl Mode<Option<i64>> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// N/A // (max + min) / 2 for the middle element
     /// ```
     fn mode(&self) -> Option<i64> {
@@ -212,7 +212,7 @@ impl Discrete<i64, f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / (max - min + 1)
     /// ```
     fn pmf(&self, x: i64) -> f64 {
@@ -232,7 +232,7 @@ impl Discrete<i64, f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(1 / (max - min + 1))
     /// ```
     fn ln_pmf(&self, x: i64) -> f64 {

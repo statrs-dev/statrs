@@ -84,7 +84,7 @@ impl DiscreteCDF<u64, f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// P(x + 1, λ)
     /// ```
     ///
@@ -98,7 +98,7 @@ impl DiscreteCDF<u64, f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// P(x + 1, λ)
     /// ```
     ///
@@ -114,7 +114,7 @@ impl Min<u64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> u64 {
@@ -128,7 +128,7 @@ impl Max<u64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2^63 - 1
     /// ```
     fn max(&self) -> u64 {
@@ -141,7 +141,7 @@ impl Distribution<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ
     /// ```
     ///
@@ -153,7 +153,7 @@ impl Distribution<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ
     /// ```
     ///
@@ -165,7 +165,7 @@ impl Distribution<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * ln(2πeλ) - 1 / (12λ) - 1 / (24λ^2) - 19 / (360λ^3)
     /// ```
     ///
@@ -182,7 +182,7 @@ impl Distribution<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ^(-1/2)
     /// ```
     ///
@@ -197,7 +197,7 @@ impl Median<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor(λ + 1 / 3 - 0.02 / λ)
     /// ```
     ///
@@ -212,7 +212,7 @@ impl Mode<Option<u64>> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor(λ)
     /// ```
     ///
@@ -228,7 +228,7 @@ impl Discrete<u64, f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (λ^x * e^(-λ)) / x!
     /// ```
     ///
@@ -243,7 +243,7 @@ impl Discrete<u64, f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((λ^x * e^(-λ)) / x!)
     /// ```
     ///

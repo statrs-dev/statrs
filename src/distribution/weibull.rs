@@ -103,7 +103,7 @@ impl ContinuousCDF<f64, f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - e^-((x/λ)^k)
     /// ```
     ///
@@ -121,7 +121,7 @@ impl ContinuousCDF<f64, f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// e^-((x/λ)^k)
     /// ```
     ///
@@ -141,7 +141,7 @@ impl Min<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -155,7 +155,7 @@ impl Max<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// INF
     /// ```
     fn max(&self) -> f64 {
@@ -168,7 +168,7 @@ impl Distribution<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λΓ(1 + 1 / k)
     /// ```
     ///
@@ -181,7 +181,7 @@ impl Distribution<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ^2 * (Γ(1 + 2 / k) - Γ(1 + 1 / k)^2)
     /// ```
     ///
@@ -195,7 +195,7 @@ impl Distribution<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// γ(1 - 1 / k) + ln(λ / k) + 1
     /// ```
     ///
@@ -211,7 +211,7 @@ impl Distribution<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (Γ(1 + 3 / k) * λ^3 - 3μσ^2 - μ^3) / σ^3
     /// ```
     ///
@@ -236,7 +236,7 @@ impl Median<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ(ln(2))^(1 / k)
     /// ```
     ///
@@ -251,7 +251,7 @@ impl Mode<Option<f64>> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if k == 1 {
     ///     0
     /// } else {
@@ -276,7 +276,7 @@ impl Continuous<f64, f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (k / λ) * (x / λ)^(k - 1) * e^(-(x / λ)^k)
     /// ```
     ///
@@ -301,7 +301,7 @@ impl Continuous<f64, f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((k / λ) * (x / λ)^(k - 1) * e^(-(x / λ)^k))
     /// ```
     ///

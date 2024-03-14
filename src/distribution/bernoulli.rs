@@ -92,7 +92,7 @@ impl DiscreteCDF<u64, f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < 0 { 0 }
     /// else if x >= 1 { 1 }
     /// else { 1 - p }
@@ -106,7 +106,7 @@ impl DiscreteCDF<u64, f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < 0 { 1 }
     /// else if x >= 1 { 0 }
     /// else { p }
@@ -123,7 +123,7 @@ impl Min<u64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> u64 {
@@ -138,7 +138,7 @@ impl Max<u64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1
     /// ```
     fn max(&self) -> u64 {
@@ -152,7 +152,7 @@ impl Distribution<f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// p
     /// ```
     fn mean(&self) -> Option<f64> {
@@ -163,7 +163,7 @@ impl Distribution<f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// p * (1 - p)
     /// ```
     fn variance(&self) -> Option<f64> {
@@ -174,7 +174,7 @@ impl Distribution<f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// q = (1 - p)
     /// -q * ln(q) - p * ln(p)
     /// ```
@@ -186,7 +186,7 @@ impl Distribution<f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// q = (1 - p)
     /// (1 - 2p) / sqrt(p * q)
     /// ```
@@ -201,7 +201,7 @@ impl Median<f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if p < 0.5 { 0 }
     /// else if p > 0.5 { 1 }
     /// else { 0.5 }
@@ -216,7 +216,7 @@ impl Mode<Option<u64>> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if p < 0.5 { 0 }
     /// else { 1 }
     /// ```
@@ -231,7 +231,7 @@ impl Discrete<u64, f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x == 0 { 1 - p }
     /// else { p }
     /// ```
@@ -244,7 +244,7 @@ impl Discrete<u64, f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// else if x == 0 { ln(1 - p) }
     /// else { ln(p) }
     /// ```
