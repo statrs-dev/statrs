@@ -111,6 +111,8 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
     /// Performs a binary search on the domain of `cdf` to obtain an approximation
     /// of `F^-1(p) := inf { x | F(x) >= p }`. Needless to say, performance may
     /// may be lacking.
+    #[doc(alias = "quantile function")]
+    #[doc(alias = "quantile")]
     fn inverse_cdf(&self, p: T) -> K {
         if p == T::zero() {
             return self.min();
