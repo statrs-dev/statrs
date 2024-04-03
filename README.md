@@ -1,6 +1,6 @@
 # statrs
 
-[![Build Status](https://travis-ci.org/boxtown/statrs.svg?branch=master)](https://travis-ci.org/boxtown/statrs)
+![tests](https://github.com/statrs-dev/statrs/actions/workflows/test.yml/badge.svg)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE.md)
 [![Crates.io](https://img.shields.io/crates/v/statrs.svg)](https://crates.io/crates/statrs)
 
@@ -13,18 +13,15 @@ Should work for both nightly and stable Rust.
 ## Description
 
 Statrs provides a host of statistical utilities for Rust scientific computing.
-Included are a number of common distributions that can be sampled (i.e. Normal, Exponential,
-Student's T, Gamma, Uniform, etc.) plus common statistical functions like the gamma function,
-beta function, and error function.
+Included are a number of common distributions that can be sampled (i.e. Normal, Exponential, Student's T, Gamma, Uniform, etc.) plus common statistical functions like the gamma function, beta function, and error function.
 
-This library is a work-in-progress port of the statistical capabilities
-in the C# Math.NET library. All unit tests in the library borrowed from Math.NET when possible
-and filled-in when not.
+This library is a work-in-progress port of the statistical capabilities in the C# Math.NET library.
+All unit tests in the library borrowed from Math.NET when possible and filled-in when not.
 
-This library is a work-in-progress and not complete. Planned for future releases are continued implementations
-of distributions as well as porting over more statistical utilities
+This library is a work-in-progress and not complete.
+Planned for future releases are continued implementations of distributions as well as porting over more statistical utilities.
 
-Please check out the documentation [here](https://docs.rs/statrs/*/statrs/)
+Please check out the documentation [here](https://docs.rs/statrs/*/statrs/).
 
 ## Usage
 
@@ -38,7 +35,7 @@ statrs = "0.16"
 ## Examples
 
 Statrs comes with a number of commonly used distributions including Normal, Gamma, Student's T, Exponential, Weibull, etc.
-The common use case is to set up the distributions and sample from them which depends on the `Rand` crate for random number generation
+The common use case is to set up the distributions and sample from them which depends on the `Rand` crate for random number generation.
 
 ```Rust
 use statrs::distribution::Exp;
@@ -49,7 +46,7 @@ let n = Exp::new(0.5).unwrap();
 print!("{}", n.sample(&mut r));
 ```
 
-Statrs also comes with a number of useful utility traits for more detailed introspection of distributions
+Statrs also comes with a number of useful utility traits for more detailed introspection of distributions.
 
 ```Rust
 use statrs::distribution::{Exp, Continuous, ContinuousCDF};
@@ -76,7 +73,8 @@ assert!(n.variance().is_none());
 
 ## Contributing
 
-Want to contribute? Check out some of the issues marked [help wanted](https://github.com/statrs-dev/statrs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+Want to contribute?
+Check out some of the issues marked [help wanted](https://github.com/statrs-dev/statrs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 ### How to contribute
 
@@ -92,24 +90,28 @@ Create a feature branch:
 git checkout -b <feature_branch> master
 ```
 
+Write your code and docs, then ensure it is formatted:
+
+The below sample modify in-place, use `--check` flag to view diff without making file changes.
+Not using `fmt` from +nightly may result in some warnings and different formatting.
+Our CI will `fmt`, but less chores in commit history are appreciated.
+
+```
+cargo +nightly fmt
+```
+
 After commiting your code:
 
 ```
 git push -u origin <feature_branch>
 ```
 
-Then submit a PR, preferably referencing the relevant issue.
-
-### Style
-
-This repo makes use of `rustfmt` with the configuration specified in `rustfmt.toml`.
-See https://github.com/rust-lang-nursery/rustfmt for instructions on installation
-and usage and run the formatter using `rustfmt --write-mode overwrite *.rs` in
-the `src` directory before committing.
+Then submit a PR, preferably referencing the relevant issue, if it exists.
 
 ### Commit messages
 
 Please be explicit and and purposeful with commit messages.
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) encouraged.
 
 #### Bad
 
@@ -122,3 +124,8 @@ Modify test code
 ```
 test: Update statrs::distribution::Normal test_cdf
 ```
+
+### Communication Expectations
+
+Please allow at least one week before pinging issues/pr's.
+
