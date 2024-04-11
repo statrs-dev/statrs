@@ -8,8 +8,8 @@ license = "MIT"
 keywords = ["probability", "statistics", "stats", "distribution", "math"]
 categories = ["science"]
 documentation = "https://docs.rs/statrs/0.15.0/statrs/"
-homepage = "https://github.com/boxtown/statrs"
-repository = "https://github.com/boxtown/statrs"
+homepage = "https://github.com/statrs-dev/statrs"
+repository = "https://github.com/statrs-dev/statrs"
 edition = "2018"
 
 include = ["CHANGELOG.md", "LICENSE.md", "src/"]
