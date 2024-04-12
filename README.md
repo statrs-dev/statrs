@@ -1,8 +1,10 @@
 # statrs
 
 ![tests](https://github.com/statrs-dev/statrs/actions/workflows/test.yml/badge.svg)
-[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE.md)
-[![Crates.io](https://img.shields.io/crates/v/statrs.svg)](https://crates.io/crates/statrs)
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE.md)]
+[![Crate](https://img.shields.io/crates/v/statrs.svg)](https://crates.io/crates/statrs)
+![docs.rs](https://img.shields.io/docsrs/statrs?style=for-the-badge).
+[![codecov](https://codecov.io/gh/statrs-dev/statrs/graph/badge.svg?token=XtMSMYXvIf)](https://codecov.io/gh/statrs-dev/statrs)
 
 ## Current Version: v0.16.0
 
@@ -32,44 +34,7 @@ Add the most recent release to your `Cargo.toml`
 statrs = "0.16"
 ```
 
-## Examples
-
-Statrs comes with a number of commonly used distributions including Normal, Gamma, Student's T, Exponential, Weibull, etc.
-The common use case is to set up the distributions and sample from them which depends on the `Rand` crate for random number generation.
-
-```Rust
-use statrs::distribution::Exp;
-use rand::distributions::Distribution;
-
-let mut r = rand::rngs::OsRng;
-let n = Exp::new(0.5).unwrap();
-print!("{}", n.sample(&mut r));
-```
-
-Statrs also comes with a number of useful utility traits for more detailed introspection of distributions.
-
-```Rust
-use statrs::distribution::{Exp, Continuous, ContinuousCDF};
-use statrs::statistics::Distribution;
-
-let n = Exp::new(1.0).unwrap();
-assert_eq!(n.mean(), Some(1.0));
-assert_eq!(n.variance(), Some(1.0));
-assert_eq!(n.entropy(), Some(1.0));
-assert_eq!(n.skewness(), Some(2.0));
-assert_eq!(n.cdf(1.0), 0.6321205588285576784045);
-assert_eq!(n.pdf(1.0), 0.3678794411714423215955);
-```
-
-as well as utility functions including `erf`, `gamma`, `ln_gamma`, `beta`, etc.
-
-```Rust
-use statrs::statistics::Distribution;
-use statrs::distribution::FisherSnedecor;
-
-let n = FisherSnedecor::new(1.0, 1.0).unwrap();
-assert!(n.variance().is_none());
-```
+For examples, view the docs hosted on ![docs.rs](https://img.shields.io/docsrs/statrs?style=for-the-badge).
 
 ## Contributing
 
