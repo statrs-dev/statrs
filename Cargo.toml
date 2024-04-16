@@ -12,6 +12,8 @@ homepage = "https://github.com/boxtown/statrs"
 repository = "https://github.com/boxtown/statrs"
 edition = "2018"
 
+include = ["CHANGELOG.md", "LICENSE.md", "src/"]
+
 [lib]
 name = "statrs"
 path = "src/lib.rs"
