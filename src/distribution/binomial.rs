@@ -49,7 +49,7 @@ impl Binomial {
     /// assert!(result.is_err());
     /// ```
     pub fn new(p: f64, n: u64) -> Result<Binomial> {
-        if p.is_nan() || p < 0.0 || p > 1.0 {
+        if p.is_nan() || !(0.0..=1.0).contains(&p) {
             Err(StatsError::BadParams)
         } else {
             Ok(Binomial { p, n })

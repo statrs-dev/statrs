@@ -65,7 +65,7 @@ impl NegativeBinomial {
     /// assert!(result.is_err());
     /// ```
     pub fn new(r: f64, p: f64) -> Result<NegativeBinomial> {
-        if p.is_nan() || p < 0.0 || p > 1.0 || r.is_nan() || r < 0.0 {
+        if p.is_nan() || !(0.0..=1.0).contains(&p) || r.is_nan() || r < 0.0 {
             Err(StatsError::BadParams)
         } else {
             Ok(NegativeBinomial { r, p })

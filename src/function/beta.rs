@@ -365,7 +365,7 @@ pub fn inv_beta_reg(mut a: f64, mut b: f64, mut x: f64) -> f64 {
 
                 if sq < prev {
                     pnext = p - adj;
-                    if 0.0 <= pnext && pnext <= 1.0 {
+                    if (0.0..=1.0).contains(&pnext) {
                         break;
                     }
                 }
