@@ -24,31 +24,25 @@ jobs:
         run: cargo clippy --all-targets
 
   test:
-    name: Test
     needs: clippy
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            toolchain: stable
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            toolchain: nightly
+          os: [ubuntu-latest, macos-latest, windows-latest]
+          toolchain: [stable, nightly]
+
     steps:
       - uses: actions/checkout@v4
-      - name: Install toolchain
+      - name: Install Rust ${{ matrix.toolchain }}
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
-      - name: Test nightly feature (if possible)
-        if: ${{ matrix.toolchain == 'nightly' }}
-        run: |
-          cargo test --target ${{ matrix.target }} --features=nightly
-          cargo test --target ${{ matrix.target }} --benches --features=nightly
+
+      - name: Test nightly feature
+        if: matrix.toolchain == 'nightly'
+        run: cargo test --all-targets --features=nightly
+
       - name: Test default features
-        run: |
-          cargo test --target ${{ matrix.target }}
+        if: matrix.toolchain != 'nightly'
+        run: cargo test --all-targets
 
