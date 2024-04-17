@@ -21,14 +21,11 @@ jobs:
             target: x86_64-unknown-linux-gnu
             toolchain: nightly
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
-          target: ${{ matrix.target }}
           toolchain: ${{ matrix.toolchain }}
-          override: true
       - name: Test nightly feature (if possible)
         if: ${{ matrix.toolchain == 'nightly' }}
         run: |
@@ -37,3 +34,4 @@ jobs:
       - name: Test default features
         run: |
           cargo test --target ${{ matrix.target }}
+
