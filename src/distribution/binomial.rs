@@ -279,7 +279,7 @@ impl Discrete<u64, f64> for Binomial {
                 0.0
             }
         } else {
-            (factorial::ln_binomial(self.n as u64, x as u64)
+            (factorial::ln_binomial(self.n, x)
                 + x as f64 * self.p.ln()
                 + (self.n - x) as f64 * (1.0 - self.p).ln())
             .exp()
@@ -310,7 +310,7 @@ impl Discrete<u64, f64> for Binomial {
                 f64::NEG_INFINITY
             }
         } else {
-            factorial::ln_binomial(self.n as u64, x as u64)
+            factorial::ln_binomial(self.n, x)
                 + x as f64 * self.p.ln()
                 + (self.n - x) as f64 * (1.0 - self.p).ln()
         }

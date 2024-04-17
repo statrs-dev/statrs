@@ -234,7 +234,7 @@ impl Discrete<u64, f64> for Poisson {
     ///
     /// where `λ` is the rate
     fn pmf(&self, x: u64) -> f64 {
-        (-self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x as u64)).exp()
+        (-self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x)).exp()
     }
 
     /// Calculates the log probability mass function for the poisson
@@ -249,7 +249,7 @@ impl Discrete<u64, f64> for Poisson {
     ///
     /// where `λ` is the rate
     fn ln_pmf(&self, x: u64) -> f64 {
-        -self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x as u64)
+        -self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x)
     }
 }
 /// Generates one sample from the Poisson distribution either by
