@@ -31,7 +31,7 @@ impl Uniform {
     ///
     /// # Errors
     ///
-    /// Returns an error if `min` or `max` are `NaN`
+    /// Returns an error if `min` or `max` are `NaN` or unbounded
     ///
     /// # Examples
     ///
@@ -44,12 +44,21 @@ impl Uniform {
     ///
     /// result = Uniform::new(f64::NAN, f64::NAN);
     /// assert!(result.is_err());
+    ///
+    /// result = Uniform::new(f64::NEG_INFINITY, 1.0);
+    /// assert!(result.is_err());
     /// ```
     pub fn new(min: f64, max: f64) -> Result<Uniform> {
-        if min > max || min.is_nan() || max.is_nan() {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(Uniform { min, max })
+        if min.is_nan() || max.is_nan() {
+            return Err(StatsError::BadParams);
+        }
+
+        match (min.is_finite(), max.is_finite(), min < max) {
+            (false, false, _) => Err(StatsError::ArgFinite("min and max")),
+            (false, true, _) => Err(StatsError::ArgFinite("min")),
+            (true, false, _) => Err(StatsError::ArgFinite("max")),
+            (true, true, false) => Err(StatsError::ArgLteArg("min", "max")),
+            (true, true, true) => Ok(Uniform { min, max }),
         }
     }
 }
@@ -94,10 +103,6 @@ impl ContinuousCDF<f64, f64> for Uniform {
             1.0
         } else if x >= self.max {
             0.0
-        } else if x.is_infinite() && self.max.is_infinite() {
-            0.0
-        } else if self.max.is_infinite() {
-            1.0
         } else {
             (self.max - x) / (self.max - self.min)
         }
