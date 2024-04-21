@@ -3,7 +3,7 @@ use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::distributions::OpenClosed01;
 use rand::Rng;
-use std::{f64, u64};
+use std::f64;
 
 /// Implements the
 /// [Geometric](https://en.wikipedia.org/wiki/Geometric_distribution)

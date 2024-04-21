@@ -173,7 +173,7 @@ impl Max<u64> for NegativeBinomial {
     /// u64::MAX
     /// ```
     fn max(&self) -> u64 {
-        std::u64::MAX
+        u64::MAX
     }
 }
 
