@@ -327,11 +327,7 @@ pub fn inv_beta_reg(mut a: f64, mut b: f64, mut x: f64) -> f64 {
         }
     }
 
-    if p < 0.0001 {
-        p = 0.0001;
-    } else if 0.9999 < p {
-        p = 0.9999;
-    }
+    p = p.clamp(0.0001, 0.9999);
 
     // Remark AS R83
     // http://www.jstor.org/stable/2347779
