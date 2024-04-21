@@ -210,7 +210,7 @@ impl Min<f64> for StudentsT {
     /// # Formula
     ///
     /// ```text
-    /// -INF
+    /// f64::NEG_INFINITY
     /// ```
     fn min(&self) -> f64 {
         f64::NEG_INFINITY
@@ -224,7 +224,7 @@ impl Max<f64> for StudentsT {
     /// # Formula
     ///
     /// ```text
-    /// INF
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -261,7 +261,7 @@ impl Distribution<f64> for StudentsT {
     /// # Formula
     ///
     /// ```text
-    /// if v == INF {
+    /// if v == f64::INFINITY {
     ///     Some(σ^2)
     /// } else if freedom > 2.0 {
     ///     Some(v * σ^2 / (v - 2))

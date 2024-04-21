@@ -173,7 +173,7 @@ impl Max<f64> for Laplace {
     /// # Formula
     ///
     /// ```text
-    /// INF
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -291,7 +291,6 @@ impl Continuous<f64, f64> for Laplace {
 #[cfg(all(test, feature = "nightly"))]
 mod tests {
     use super::*;
-    use core::f64::INFINITY as INF;
     use rand::thread_rng;
 
     fn try_create(location: f64, scale: f64) -> Laplace {
@@ -349,12 +348,12 @@ mod tests {
     #[test]
     fn test_create() {
         try_create(1.0, 2.0);
-        try_create(-INF, 0.1);
+        try_create(f64::NEG_INFINITY, 0.1);
         try_create(-5.0 - 1.0, 1.0);
         try_create(0.0, 5.0);
         try_create(1.0, 7.0);
         try_create(5.0, 10.0);
-        try_create(INF, INF);
+        try_create(f64::INFINITY, f64::INFINITY);
     }
 
     #[test]
@@ -367,71 +366,71 @@ mod tests {
     #[test]
     fn test_mean() {
         let mean = |x: Laplace| x.mean().unwrap();
-        test_case(-INF, 0.1, -INF, mean);
+        test_case(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, mean);
         test_case(-5.0 - 1.0, 1.0, -6.0, mean);
         test_case(0.0, 5.0, 0.0, mean);
         test_case(1.0, 10.0, 1.0, mean);
-        test_case(INF, INF, INF, mean);
+        test_case(f64::INFINITY, f64::INFINITY, f64::INFINITY, mean);
     }
 
     #[test]
     fn test_variance() {
         let variance = |x: Laplace| x.variance().unwrap();
-        test_almost(-INF, 0.1, 0.02, 1E-12, variance);
+        test_almost(f64::NEG_INFINITY, 0.1, 0.02, 1E-12, variance);
         test_almost(-5.0 - 1.0, 1.0, 2.0, 1E-12, variance);
         test_almost(0.0, 5.0, 50.0, 1E-12, variance);
         test_almost(1.0, 7.0, 98.0, 1E-12, variance);
         test_almost(5.0, 10.0, 200.0, 1E-12, variance);
-        test_almost(INF, INF, INF, 1E-12, variance);
+        test_almost(f64::INFINITY, f64::INFINITY, f64::INFINITY, 1E-12, variance);
     }
     #[test]
     fn test_entropy() {
         let entropy = |x: Laplace| x.entropy().unwrap();
-        test_almost(-INF, 0.1, (2.0 * f64::consts::E * 0.1).ln(), 1E-12, entropy);
+        test_almost(f64::NEG_INFINITY, 0.1, (2.0 * f64::consts::E * 0.1).ln(), 1E-12, entropy);
         test_almost(-6.0, 1.0, (2.0 * f64::consts::E).ln(), 1E-12, entropy);
         test_almost(1.0, 7.0, (2.0 * f64::consts::E * 7.0).ln(), 1E-12, entropy);
         test_almost(5., 10., (2. * f64::consts::E * 10.).ln(), 1E-12, entropy);
-        test_almost(INF, INF, INF, 1E-12, entropy);
+        test_almost(f64::INFINITY, f64::INFINITY, f64::INFINITY, 1E-12, entropy);
     }
 
     #[test]
     fn test_skewness() {
         let skewness = |x: Laplace| x.skewness().unwrap();
-        test_case(-INF, 0.1, 0.0, skewness);
+        test_case(f64::NEG_INFINITY, 0.1, 0.0, skewness);
         test_case(-6.0, 1.0, 0.0, skewness);
         test_case(1.0, 7.0, 0.0, skewness);
         test_case(5.0, 10.0, 0.0, skewness);
-        test_case(INF, INF, 0.0, skewness);
+        test_case(f64::INFINITY, f64::INFINITY, 0.0, skewness);
     }
 
     #[test]
     fn test_mode() {
         let mode = |x: Laplace| x.mode().unwrap();
-        test_case(-INF, 0.1, -INF, mode);
+        test_case(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, mode);
         test_case(-6.0, 1.0, -6.0, mode);
         test_case(1.0, 7.0, 1.0, mode);
         test_case(5.0, 10.0, 5.0, mode);
-        test_case(INF, INF, INF, mode);
+        test_case(f64::INFINITY, f64::INFINITY, f64::INFINITY, mode);
     }
 
     #[test]
     fn test_median() {
         let median = |x: Laplace| x.median();
-        test_case(-INF, 0.1, -INF, median);
+        test_case(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, median);
         test_case(-6.0, 1.0, -6.0, median);
         test_case(1.0, 7.0, 1.0, median);
         test_case(5.0, 10.0, 5.0, median);
-        test_case(INF, INF, INF, median);
+        test_case(f64::INFINITY, f64::INFINITY, f64::INFINITY, median);
     }
 
     #[test]
     fn test_min() {
-        test_case(0.0, 1.0, -INF, |l| l.min());
+        test_case(0.0, 1.0, f64::NEG_INFINITY, |l| l.min());
     }
 
     #[test]
     fn test_max() {
-        test_case(0.0, 1.0, INF, |l| l.max());
+        test_case(0.0, 1.0, f64::INFINITY, |l| l.max());
     }
 
     #[test]
@@ -442,22 +441,22 @@ mod tests {
         test_almost(-1.0, 0.1, 3.8905661205668983e-19, 1E-12, pdf(-5.4));
         test_almost(5.0, 0.1, 5.056107463052243e-43, 1E-12, pdf(-4.9));
         test_almost(-5.0, 0.1, 1.9877248679543235e-30, 1E-12, pdf(2.0));
-        test_almost(INF, 0.1, 0.0, 1E-12, pdf(5.5));
-        test_almost(-INF, 0.1, 0.0, 1E-12, pdf(-0.0));
-        test_almost(0.0, 1.0, 0.0, 1E-12, pdf(INF));
+        test_almost(f64::INFINITY, 0.1, 0.0, 1E-12, pdf(5.5));
+        test_almost(f64::NEG_INFINITY, 0.1, 0.0, 1E-12, pdf(-0.0));
+        test_almost(0.0, 1.0, 0.0, 1E-12, pdf(f64::INFINITY));
         test_almost(1.0, 1.0, 0.00915781944436709, 1E-12, pdf(5.0));
         test_almost(-1.0, 1.0, 0.5, 1E-12, pdf(-1.0));
         test_almost(5.0, 1.0, 0.0012393760883331792, 1E-12, pdf(-1.0));
         test_almost(-5.0, 1.0, 0.0002765421850739168, 1E-12, pdf(2.5));
-        test_almost(INF, 0.1, 0.0, 1E-12, pdf(2.0));
-        test_almost(-INF, 0.1, 0.0, 1E-12, pdf(15.0));
-        test_almost(0.0, INF, 0.0, 1E-12, pdf(89.3));
-        test_almost(1.0, INF, 0.0, 1E-12, pdf(-0.1));
-        test_almost(-1.0, INF, 0.0, 1E-12, pdf(0.1));
-        test_almost(5.0, INF, 0.0, 1E-12, pdf(-6.1));
-        test_almost(-5.0, INF, 0.0, 1E-12, pdf(-10.0));
-        test_is_nan(INF, INF, pdf(2.0));
-        test_is_nan(-INF, INF, pdf(-5.1));
+        test_almost(f64::INFINITY, 0.1, 0.0, 1E-12, pdf(2.0));
+        test_almost(f64::NEG_INFINITY, 0.1, 0.0, 1E-12, pdf(15.0));
+        test_almost(0.0, f64::INFINITY, 0.0, 1E-12, pdf(89.3));
+        test_almost(1.0, f64::INFINITY, 0.0, 1E-12, pdf(-0.1));
+        test_almost(-1.0, f64::INFINITY, 0.0, 1E-12, pdf(0.1));
+        test_almost(5.0, f64::INFINITY, 0.0, 1E-12, pdf(-6.1));
+        test_almost(-5.0, f64::INFINITY, 0.0, 1E-12, pdf(-10.0));
+        test_is_nan(f64::INFINITY, f64::INFINITY, pdf(2.0));
+        test_is_nan(f64::NEG_INFINITY, f64::INFINITY, pdf(-5.1));
     }
 
     #[test]
@@ -468,22 +467,22 @@ mod tests {
         test_almost(-1.0, 0.1, -42.39056208756591, 1E-12, ln_pdf(-5.4));
         test_almost(5.0, 0.1, -97.3905620875659, 1E-12, ln_pdf(-4.9));
         test_almost(-5.0, 0.1, -68.3905620875659, 1E-12, ln_pdf(2.0));
-        test_case(INF, 0.1, -INF, ln_pdf(5.5));
-        test_case(-INF, 0.1, -INF, ln_pdf(-0.0));
-        test_case(0.0, 1.0, -INF, ln_pdf(INF));
+        test_case(f64::INFINITY, 0.1, f64::NEG_INFINITY, ln_pdf(5.5));
+        test_case(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, ln_pdf(-0.0));
+        test_case(0.0, 1.0, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
         test_almost(1.0, 1.0, -4.693147180559945, 1E-12, ln_pdf(5.0));
         test_almost(-1.0, 1.0, -f64::consts::LN_2, 1E-12, ln_pdf(-1.0));
         test_almost(5.0, 1.0, -6.693147180559945, 1E-12, ln_pdf(-1.0));
         test_almost(-5.0, 1.0, -8.193147180559945, 1E-12, ln_pdf(2.5));
-        test_case(INF, 0.1, -INF, ln_pdf(2.0));
-        test_case(-INF, 0.1, -INF, ln_pdf(15.0));
-        test_case(0.0, INF, -INF, ln_pdf(89.3));
-        test_case(1.0, INF, -INF, ln_pdf(-0.1));
-        test_case(-1.0, INF, -INF, ln_pdf(0.1));
-        test_case(5.0, INF, -INF, ln_pdf(-6.1));
-        test_case(-5.0, INF, -INF, ln_pdf(-10.0));
-        test_is_nan(INF, INF, ln_pdf(2.0));
-        test_is_nan(-INF, INF, ln_pdf(-5.1));
+        test_case(f64::INFINITY, 0.1, f64::NEG_INFINITY, ln_pdf(2.0));
+        test_case(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, ln_pdf(15.0));
+        test_case(0.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(89.3));
+        test_case(1.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(-0.1));
+        test_case(-1.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(0.1));
+        test_case(5.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(-6.1));
+        test_case(-5.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(-10.0));
+        test_is_nan(f64::INFINITY, f64::INFINITY, ln_pdf(2.0));
+        test_is_nan(f64::NEG_INFINITY, f64::INFINITY, ln_pdf(-5.1));
     }
 
     #[test]

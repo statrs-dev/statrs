@@ -160,7 +160,7 @@ impl Max<f64> for Pareto {
     /// # Formula
     ///
     /// ```text
-    /// INF
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -174,7 +174,7 @@ impl Distribution<f64> for Pareto {
     ///
     /// ```text
     /// if α <= 1 {
-    ///     INF
+    ///     f64::INFINITY
     /// } else {
     ///     (α * x_m)/(α - 1)
     /// }
@@ -194,7 +194,7 @@ impl Distribution<f64> for Pareto {
     ///
     /// ```text
     /// if α <= 2 {
-    ///     INF
+    ///     f64::INFINITY
     /// } else {
     ///     (x_m/(α - 1))^2 * (α/(α - 2))
     /// }
@@ -308,7 +308,7 @@ impl Continuous<f64, f64> for Pareto {
     ///
     /// ```text
     /// if x < x_m {
-    ///     -INF
+    ///     f64::NEG_INFINITY
     /// } else {
     ///     ln(α) + α*ln(x_m) - (α + 1)*ln(x)
     /// }

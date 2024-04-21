@@ -132,7 +132,7 @@ impl Max<f64> for Exp {
     /// # Formula
     ///
     /// ```text
-    /// INF
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY

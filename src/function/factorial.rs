@@ -4,7 +4,6 @@
 use crate::error::StatsError;
 use crate::function::gamma;
 use crate::Result;
-use core::f64::INFINITY as INF;
 
 /// The maximum factorial representable
 /// by a 64-bit floating point without
@@ -20,7 +19,7 @@ pub const MAX_FACTORIAL: usize = 170;
 /// Returns `f64::INFINITY` if `x > 170`
 pub fn factorial(x: u64) -> f64 {
     let x = x as usize;
-    FCACHE.get(x).map_or(INF, |&fac| fac)
+    FCACHE.get(x).map_or(f64::INFINITY, |&fac| fac)
 }
 
 /// Computes the logarithmic factorial function `x -> ln(x!)`
@@ -124,8 +123,8 @@ mod tests {
 
     #[test]
     fn test_factorial_overflow() {
-        assert_eq!(factorial(172), INF);
-        assert_eq!(factorial(u64::MAX), INF);
+        assert_eq!(factorial(172), f64::INFINITY);
+        assert_eq!(factorial(u64::MAX), f64::INFINITY);
     }
 
     #[test]

@@ -2,7 +2,6 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
 use crate::{Result, StatsError};
-use core::f64::INFINITY as INF;
 use rand::Rng;
 
 /// Implements the [Gamma](https://en.wikipedia.org/wiki/Gamma_distribution)
@@ -172,10 +171,10 @@ impl Max<f64> for Gamma {
     /// # Formula
     ///
     /// ```text
-    /// INF
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
-        INF
+        f64::INFINITY
     }
 }
 
@@ -255,8 +254,8 @@ impl Continuous<f64, f64> for Gamma {
     ///
     /// # Remarks
     ///
-    /// Returns `NAN` if any of `shape` or `rate` are `INF`
-    /// or if `x` is `INF`
+    /// Returns `NAN` if any of `shape` or `rate` are `f64::INFINITY`
+    /// or if `x` is `f64::INFINITY`
     ///
     /// # Formula
     ///
@@ -286,8 +285,8 @@ impl Continuous<f64, f64> for Gamma {
     ///
     /// # Remarks
     ///
-    /// Returns `NAN` if any of `shape` or `rate` are `INF`
-    /// or if `x` is `INF`
+    /// Returns `NAN` if any of `shape` or `rate` are `f64::INFINITY`
+    /// or if `x` is `f64::INFINITY`
     ///
     /// # Formula
     ///
@@ -367,7 +366,7 @@ mod tests {
             (1.0, 1.0),
             (10.0, 10.0),
             (10.0, 1.0),
-            (10.0, INF),
+            (10.0, f64::INFINITY),
         ];
 
         for &arg in valid.iter() {
@@ -398,7 +397,7 @@ mod tests {
             ((1.0, 1.0), 1.0),
             ((10.0, 10.0), 1.0),
             ((10.0, 1.0), 10.0),
-            ((10.0, INF), 0.0),
+            ((10.0, f64::INFINITY), 0.0),
         ];
         for &(arg, res) in test.iter() {
             test_case(arg, res, f);
@@ -413,7 +412,7 @@ mod tests {
             ((1.0, 1.0), 1.0),
             ((10.0, 10.0), 0.1),
             ((10.0, 1.0), 10.0),
-            ((10.0, INF), 0.0),
+            ((10.0, f64::INFINITY), 0.0),
         ];
         for &(arg, res) in test.iter() {
             test_case(arg, res, f);
@@ -428,7 +427,7 @@ mod tests {
             ((1.0, 1.0), 1.0),
             ((10.0, 10.0), 0.2334690854869339583626209),
             ((10.0, 1.0), 2.53605417848097964238061239),
-            ((10.0, INF), f64::NEG_INFINITY),
+            ((10.0, f64::INFINITY), f64::NEG_INFINITY),
         ];
         for &(arg, res) in test.iter() {
             test_case(arg, res, f);
@@ -443,7 +442,7 @@ mod tests {
             ((1.0, 1.0), 2.0),
             ((10.0, 10.0), 0.6324555320336758663997787),
             ((10.0, 1.0), 0.63245553203367586639977870),
-            ((10.0, INF), 0.6324555320336758),
+            ((10.0, f64::INFINITY), 0.6324555320336758),
         ];
         for &(arg, res) in test.iter() {
             test_case(arg, res, f);
@@ -457,7 +456,7 @@ mod tests {
         for &(arg, res) in test.iter() {
             test_case_special(arg, res, 10e-6, f);
         }
-        let test = [((10.0, 10.0), 0.9), ((10.0, 1.0), 9.0), ((10.0, INF), 0.0)];
+        let test = [((10.0, 10.0), 0.9), ((10.0, 1.0), 9.0), ((10.0, f64::INFINITY), 0.0)];
         for &(arg, res) in test.iter() {
             test_case(arg, res, f);
         }
@@ -471,18 +470,18 @@ mod tests {
             ((1.0, 1.0), 0.0),
             ((10.0, 10.0), 0.0),
             ((10.0, 1.0), 0.0),
-            ((10.0, INF), 0.0),
+            ((10.0, f64::INFINITY), 0.0),
         ];
         for &(arg, res) in test.iter() {
             test_case(arg, res, f);
         }
         let f = |x: Gamma| x.max();
         let test = [
-            ((1.0, 0.1), INF),
-            ((1.0, 1.0), INF),
-            ((10.0, 10.0), INF),
-            ((10.0, 1.0), INF),
-            ((10.0, INF), INF),
+            ((1.0, 0.1), f64::INFINITY),
+            ((1.0, 1.0), f64::INFINITY),
+            ((10.0, 10.0), f64::INFINITY),
+            ((10.0, 1.0), f64::INFINITY),
+            ((10.0, f64::INFINITY), f64::INFINITY),
         ];
         for &(arg, res) in test.iter() {
             test_case(arg, res, f);
@@ -506,9 +505,9 @@ mod tests {
             test_case(arg, res, f(x));
         }
         //TODO: test special
-        // test_is_nan((10.0, INF), pdf(1.0)); // is this really the behavior we want?
+        // test_is_nan((10.0, f64::INFINITY), pdf(1.0)); // is this really the behavior we want?
         //TODO: test special
-        // (10.0, INF, INF, 0.0, pdf(INF)),];
+        // (10.0, f64::INFINITY, f64::INFINITY, 0.0, pdf(f64::INFINITY)),];
     }
 
     #[test]
@@ -529,13 +528,13 @@ mod tests {
             ((10.0, 10.0), 10.0, -69.0527107131946016148658),
             ((10.0, 1.0), 1.0, -13.8018274800814696112077),
             ((10.0, 1.0), 10.0, -2.07856164313505845504579),
-            ((10.0, INF), INF, f64::NEG_INFINITY),
+            ((10.0, f64::INFINITY), f64::INFINITY, f64::NEG_INFINITY),
         ];
         for &(arg, x, res) in test.iter() {
             test_case(arg, res, f(x));
         }
         // TODO: test special
-        // test_is_nan((10.0, INF), f(1.0)); // is this really the behavior we want?
+        // test_is_nan((10.0, f64::INFINITY), f(1.0)); // is this really the behavior we want?
     }
 
     #[test]
@@ -550,8 +549,8 @@ mod tests {
             ((10.0, 10.0), 10.0, 0.999999999999999999999999),
             ((10.0, 1.0), 1.0, 0.000000111425478338720677),
             ((10.0, 1.0), 10.0, 0.542070285528147791685835),
-            ((10.0, INF), 1.0, 0.0),
-            ((10.0, INF), 10.0, 1.0),
+            ((10.0, f64::INFINITY), 1.0, 0.0),
+            ((10.0, f64::INFINITY), 10.0, 1.0),
         ];
         for &(arg, x, res) in test.iter() {
             test_case(arg, res, f(x));
@@ -575,8 +574,8 @@ mod tests {
             ((10.0, 10.0), 10.0, 1.1253473960842808e-31),
             ((10.0, 1.0), 1.0, 0.9999998885745217),
             ((10.0, 1.0), 10.0, 0.4579297144718528),
-            ((10.0, INF), 1.0, 1.0),
-            ((10.0, INF), 10.0, 0.0),
+            ((10.0, f64::INFINITY), 1.0, 1.0),
+            ((10.0, f64::INFINITY), 10.0, 0.0),
         ];
         for &(arg, x, res) in test.iter() {
             test_case(arg, res, f(x));

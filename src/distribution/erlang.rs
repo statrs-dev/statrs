@@ -141,7 +141,7 @@ impl Max<f64> for Erlang {
     /// # Formula
     ///
     /// ```text
-    /// INF
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         self.g.max()

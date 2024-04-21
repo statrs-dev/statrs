@@ -174,7 +174,7 @@ impl Max<f64> for FisherSnedecor {
     /// # Formula
     ///
     /// ```text
-    /// INF
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY

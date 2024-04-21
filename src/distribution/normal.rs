@@ -130,7 +130,7 @@ impl Min<f64> for Normal {
     /// # Formula
     ///
     /// ```text
-    /// -INF
+    /// f64::NEG_INFINITY
     /// ```
     fn min(&self) -> f64 {
         f64::NEG_INFINITY
@@ -144,7 +144,7 @@ impl Max<f64> for Normal {
     /// # Formula
     ///
     /// ```text
-    /// INF
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
