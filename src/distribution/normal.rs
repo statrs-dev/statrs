@@ -160,6 +160,7 @@ impl Distribution<f64> for Normal {
     fn mean(&self) -> Option<f64> {
         Some(self.mean)
     }
+
     /// Returns the variance of the normal distribution
     ///
     /// # Formula
@@ -172,6 +173,7 @@ impl Distribution<f64> for Normal {
     fn variance(&self) -> Option<f64> {
         Some(self.std_dev * self.std_dev)
     }
+
     /// Returns the entropy of the normal distribution
     ///
     /// # Formula
@@ -184,6 +186,7 @@ impl Distribution<f64> for Normal {
     fn entropy(&self) -> Option<f64> {
         Some(self.std_dev.ln() + consts::LN_SQRT_2PIE)
     }
+
     /// Returns the skewness of the normal distribution
     ///
     /// # Formula

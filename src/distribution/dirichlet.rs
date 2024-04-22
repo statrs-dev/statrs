@@ -107,6 +107,7 @@ impl Dirichlet {
     fn alpha_sum(&self) -> f64 {
         self.alpha.fold(0.0, |acc, x| acc + x)
     }
+
     /// Returns the entropy of the dirichlet distribution
     ///
     /// # Formula

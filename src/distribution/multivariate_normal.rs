@@ -205,6 +205,7 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateNormal {
                 .unwrap();
         self.pdf_const * exp_term.exp()
     }
+
     /// Calculates the log probability density function for the multivariate
     /// normal distribution at `x`. Equivalent to pdf(x).ln().
     fn ln_pdf(&self, x: &'a DVector<f64>) -> f64 {
@@ -232,6 +233,7 @@ impl Continuous<Vec<f64>, f64> for MultivariateNormal {
     fn pdf(&self, x: Vec<f64>) -> f64 {
         self.pdf(&DVector::from(x))
     }
+
     /// Calculates the log probability density function for the multivariate
     /// normal distribution at `x`. Equivalent to pdf(x).ln().
     fn ln_pdf(&self, x: Vec<f64>) -> f64 {

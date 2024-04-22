@@ -252,6 +252,7 @@ impl Distribution<f64> for StudentsT {
             Some(self.location)
         }
     }
+
     /// Returns the variance of the student's t-distribution
     ///
     /// # None
@@ -280,6 +281,7 @@ impl Distribution<f64> for StudentsT {
             None
         }
     }
+
     /// Returns the entropy for the student's t-distribution
     ///
     /// # Formula
@@ -301,6 +303,7 @@ impl Distribution<f64> for StudentsT {
             + (self.freedom.sqrt() * beta::beta(self.freedom / 2.0, 0.5)).ln();
         Some(result + shift)
     }
+
     /// Returns the skewness of the student's t-distribution
     ///
     /// # None
@@ -597,7 +600,6 @@ mod tests {
         test_case((0.0, 1.0, f64::INFINITY), 0.841344746068543, cdf(1.0));
         test_case((0.0, 1.0, f64::INFINITY), 0.977249868051821, cdf(2.0));
     }
-
 
     #[test]
     fn test_sf() {

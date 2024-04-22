@@ -156,6 +156,7 @@ impl Distribution<f64> for LogNormal {
     fn mean(&self) -> Option<f64> {
         Some((self.location + self.scale * self.scale / 2.0).exp())
     }
+
     /// Returns the variance of the log-normal distribution
     ///
     /// # Formula
@@ -169,6 +170,7 @@ impl Distribution<f64> for LogNormal {
         let sigma2 = self.scale * self.scale;
         Some((sigma2.exp() - 1.0) * (self.location + self.location + sigma2).exp())
     }
+
     /// Returns the entropy of the log-normal distribution
     ///
     /// # Formula
@@ -181,6 +183,7 @@ impl Distribution<f64> for LogNormal {
     fn entropy(&self) -> Option<f64> {
         Some(0.5 + self.scale.ln() + self.location + consts::LN_SQRT_2PI)
     }
+
     /// Returns the skewness of the log-normal distribution
     ///
     /// # Formula

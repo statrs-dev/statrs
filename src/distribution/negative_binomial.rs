@@ -188,6 +188,7 @@ impl DiscreteDistribution<f64> for NegativeBinomial {
     fn mean(&self) -> Option<f64> {
         Some(self.r * (1.0 - self.p) / self.p)
     }
+
     /// Returns the variance of the negative binomial distribution.
     ///
     /// # Formula
@@ -198,6 +199,7 @@ impl DiscreteDistribution<f64> for NegativeBinomial {
     fn variance(&self) -> Option<f64> {
         Some(self.r * (1.0 - self.p) / (self.p * self.p))
     }
+
     /// Returns the skewness of the negative binomial distribution.
     ///
     /// # Formula

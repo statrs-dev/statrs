@@ -177,6 +177,7 @@ impl Distribution<f64> for Weibull {
     fn mean(&self) -> Option<f64> {
         Some(self.scale * gamma::gamma(1.0 + 1.0 / self.shape))
     }
+
     /// Returns the variance of the weibull distribution
     ///
     /// # Formula
@@ -191,6 +192,7 @@ impl Distribution<f64> for Weibull {
         let mean = self.mean()?;
         Some(self.scale * self.scale * gamma::gamma(1.0 + 2.0 / self.shape) - mean * mean)
     }
+
     /// Returns the entropy of the weibull distribution
     ///
     /// # Formula
@@ -207,6 +209,7 @@ impl Distribution<f64> for Weibull {
             + 1.0;
         Some(entr)
     }
+
     /// Returns the skewness of the weibull distribution
     ///
     /// # Formula

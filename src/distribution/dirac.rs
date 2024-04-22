@@ -56,7 +56,6 @@ impl ContinuousCDF<f64, f64> for Dirac {
     /// dirac distribution at `x`
     ///
     /// Where the value is 1 if x > `v`, 0 otherwise.
-    ///
     fn cdf(&self, x: f64) -> f64 {
         if x < self.0 {
             0.0
@@ -69,7 +68,6 @@ impl ContinuousCDF<f64, f64> for Dirac {
     /// dirac distribution at `x`
     ///
     /// Where the value is 0 if x > `v`, 1 otherwise.
-    ///
     fn sf(&self, x: f64) -> f64 {
         if x < self.0 {
             1.0
@@ -117,6 +115,7 @@ impl Distribution<f64> for Dirac {
     fn mean(&self) -> Option<f64> {
         Some(self.0)
     }
+
     /// Returns the variance of the dirac distribution
     ///
     /// # Formula
@@ -129,6 +128,7 @@ impl Distribution<f64> for Dirac {
     fn variance(&self) -> Option<f64> {
         Some(0.0)
     }
+
     /// Returns the entropy of the dirac distribution
     ///
     /// # Formula
@@ -141,6 +141,7 @@ impl Distribution<f64> for Dirac {
     fn entropy(&self) -> Option<f64> {
         Some(0.0)
     }
+
     /// Returns the skewness of the dirac distribution
     ///
     /// # Formula

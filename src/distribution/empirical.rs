@@ -56,7 +56,6 @@ impl Empirical {
     ///
     /// let mut result = Empirical::new();
     /// assert!(result.is_ok());
-    ///
     /// ```
     pub fn new() -> Result<Empirical> {
         Ok(Empirical {
@@ -65,6 +64,7 @@ impl Empirical {
             data: BTreeMap::new(),
         })
     }
+
     pub fn from_vec(src: Vec<f64>) -> Empirical {
         let mut empirical = Empirical::new().unwrap();
         for elt in src.into_iter() {
@@ -72,6 +72,7 @@ impl Empirical {
         }
         empirical
     }
+
     pub fn add(&mut self, data_point: f64) {
         if !data_point.is_nan() {
             self.sum += 1.;
@@ -89,6 +90,7 @@ impl Empirical {
             *self.data.entry(NonNan(data_point)).or_insert(0) += 1;
         }
     }
+
     pub fn remove(&mut self, data_point: f64) {
         if !data_point.is_nan() {
             if let (Some(val), Some((mean, var))) =
@@ -111,6 +113,7 @@ impl Empirical {
             }
         }
     }
+
     // Due to issues with rounding and floating-point accuracy the default
     // implementation may be ill-behaved.
     // Specialized inverse cdfs should be used whenever possible.
@@ -158,7 +161,7 @@ impl ::rand::distributions::Distribution<f64> for Empirical {
 /// Panics if number of samples is zero
 impl Max<f64> for Empirical {
     fn max(&self) -> f64 {
-        self.data.keys().rev().map(|key| key.0) .next().unwrap()
+        self.data.keys().rev().map(|key| key.0).next().unwrap()
     }
 }
 
@@ -173,6 +176,7 @@ impl Distribution<f64> for Empirical {
     fn mean(&self) -> Option<f64> {
         self.mean_and_var.map(|(mean, _)| mean)
     }
+
     fn variance(&self) -> Option<f64> {
         self.mean_and_var.map(|(_, var)| var / (self.sum - 1.))
     }
@@ -256,8 +260,8 @@ mod tests {
         let unchanged = empirical.clone();
         empirical.add(2.0);
         empirical.remove(2.0);
-         //because of rounding errors, this doesn't hold in general
-         //due to the mean and variance being calculated in a streaming way
+        // because of rounding errors, this doesn't hold in general
+        // due to the mean and variance being calculated in a streaming way
         assert_eq!(unchanged, empirical);
     }
 }

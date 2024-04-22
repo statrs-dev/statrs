@@ -159,6 +159,7 @@ impl Distribution<f64> for Geometric {
     fn mean(&self) -> Option<f64> {
         Some(1.0 / self.p)
     }
+
     /// Returns the standard deviation of the geometric distribution
     ///
     /// # Formula
@@ -169,6 +170,7 @@ impl Distribution<f64> for Geometric {
     fn variance(&self) -> Option<f64> {
         Some((1.0 - self.p) / (self.p * self.p))
     }
+
     /// Returns the entropy of the geometric distribution
     ///
     /// # Formula
@@ -180,6 +182,7 @@ impl Distribution<f64> for Geometric {
         let inv = 1.0 / self.p;
         Some(-inv * (1. - self.p).log(2.0) + (inv - 1.).log(2.0))
     }
+
     /// Returns the skewness of the geometric distribution
     ///
     /// # Formula

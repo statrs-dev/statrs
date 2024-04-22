@@ -185,6 +185,7 @@ impl Distribution<f64> for Chi {
             Some(mean)
         }
     }
+
     /// Returns the variance of the chi distribution
     ///
     /// # Remarks
@@ -203,6 +204,7 @@ impl Distribution<f64> for Chi {
         let mean = self.mean()?;
         Some(self.freedom - mean * mean)
     }
+
     /// Returns the entropy of the chi distribution
     ///
     /// # Remarks
@@ -228,6 +230,7 @@ impl Distribution<f64> for Chi {
                 / 2.0;
         Some(entr)
     }
+
     /// Returns the skewness of the chi distribution
     ///
     /// # Remarks

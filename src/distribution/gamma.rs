@@ -191,6 +191,7 @@ impl Distribution<f64> for Gamma {
     fn mean(&self) -> Option<f64> {
         Some(self.shape / self.rate)
     }
+
     /// Returns the variance of the gamma distribution
     ///
     /// # Formula
@@ -203,6 +204,7 @@ impl Distribution<f64> for Gamma {
     fn variance(&self) -> Option<f64> {
         Some(self.shape / (self.rate * self.rate))
     }
+
     /// Returns the entropy of the gamma distribution
     ///
     /// # Formula
@@ -219,6 +221,7 @@ impl Distribution<f64> for Gamma {
             + (1.0 - self.shape) * gamma::digamma(self.shape);
         Some(entr)
     }
+
     /// Returns the skewness of the gamma distribution
     ///
     /// # Formula
@@ -504,9 +507,9 @@ mod tests {
         for &(arg, x, res) in test.iter() {
             test_case(arg, res, f(x));
         }
-        //TODO: test special
+        // TODO: test special
         // test_is_nan((10.0, f64::INFINITY), pdf(1.0)); // is this really the behavior we want?
-        //TODO: test special
+        // TODO: test special
         // (10.0, f64::INFINITY, f64::INFINITY, 0.0, pdf(f64::INFINITY)),];
     }
 

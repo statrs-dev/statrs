@@ -144,8 +144,8 @@ impl ContinuousCDF<f64, f64> for FisherSnedecor {
         } else {
             beta::beta_reg(
                 self.freedom_2 / 2.0,
-                self.freedom_1 / 2.0, 
-                1. - ((self.freedom_1 * x) / (self.freedom_1 * x + self.freedom_2))
+                self.freedom_1 / 2.0,
+                1. - ((self.freedom_1 * x) / (self.freedom_1 * x + self.freedom_2)),
             )
         }
     }
@@ -206,6 +206,7 @@ impl Distribution<f64> for FisherSnedecor {
             Some(self.freedom_2 / (self.freedom_2 - 2.0))
         }
     }
+
     /// Returns the variance of the fisher-snedecor distribution
     ///
     /// # Panics
@@ -237,6 +238,7 @@ impl Distribution<f64> for FisherSnedecor {
             Some(val)
         }
     }
+
     /// Returns the skewness of the fisher-snedecor distribution
     ///
     /// # Panics

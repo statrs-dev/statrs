@@ -181,6 +181,7 @@ impl Distribution<f64> for Binomial {
     fn mean(&self) -> Option<f64> {
         Some(self.p * self.n as f64)
     }
+
     /// Returns the variance of the binomial distribution
     ///
     /// # Formula
@@ -191,6 +192,7 @@ impl Distribution<f64> for Binomial {
     fn variance(&self) -> Option<f64> {
         Some(self.p * (1.0 - self.p) * self.n as f64)
     }
+
     /// Returns the entropy of the binomial distribution
     ///
     /// # Formula
@@ -209,6 +211,7 @@ impl Distribution<f64> for Binomial {
         };
         Some(entr)
     }
+
     /// Returns the skewness of the binomial distribution
     ///
     /// # Formula

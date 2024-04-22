@@ -152,6 +152,7 @@ impl Distribution<f64> for Exp {
     fn mean(&self) -> Option<f64> {
         Some(1.0 / self.rate)
     }
+
     /// Returns the variance of the exponential distribution
     ///
     /// # Formula
@@ -164,6 +165,7 @@ impl Distribution<f64> for Exp {
     fn variance(&self) -> Option<f64> {
         Some(1.0 / (self.rate * self.rate))
     }
+
     /// Returns the entropy of the exponential distribution
     ///
     /// # Formula
@@ -176,6 +178,7 @@ impl Distribution<f64> for Exp {
     fn entropy(&self) -> Option<f64> {
         Some(1.0 - self.rate.ln())
     }
+
     /// Returns the skewness of the exponential distribution
     ///
     /// # Formula

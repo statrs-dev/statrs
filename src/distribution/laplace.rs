@@ -193,6 +193,7 @@ impl Distribution<f64> for Laplace {
     fn mean(&self) -> Option<f64> {
         Some(self.location)
     }
+
     /// Returns the variance of the laplace distribution
     ///
     /// # Formula
@@ -205,6 +206,7 @@ impl Distribution<f64> for Laplace {
     fn variance(&self) -> Option<f64> {
         Some(2. * self.scale * self.scale)
     }
+
     /// Returns the entropy of the laplace distribution
     ///
     /// # Formula
@@ -217,6 +219,7 @@ impl Distribution<f64> for Laplace {
     fn entropy(&self) -> Option<f64> {
         Some((2. * self.scale).ln() + 1.)
     }
+
     /// Returns the skewness of the laplace distribution
     ///
     /// # Formula
