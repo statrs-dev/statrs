@@ -1098,7 +1098,7 @@ mod tests {
         //       for p in ps:
         //           q = t.invcdf(p, df)
         //           print(f"({p:5.3f}, {df:5.1f}, {float(q)}),")
-        //
+        #[rustfmt::skip]
         let invcdf_data = [
             // p       df    inverse_cdf(p, df)
             (0.001,   1.0, -318.30883898555044),
