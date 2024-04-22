@@ -389,7 +389,13 @@ mod tests {
     #[test]
     fn test_entropy() {
         let entropy = |x: Laplace| x.entropy().unwrap();
-        test_almost(f64::NEG_INFINITY, 0.1, (2.0 * f64::consts::E * 0.1).ln(), 1E-12, entropy);
+        test_almost(
+            f64::NEG_INFINITY,
+            0.1,
+            (2.0 * f64::consts::E * 0.1).ln(),
+            1E-12,
+            entropy,
+        );
         test_almost(-6.0, 1.0, (2.0 * f64::consts::E).ln(), 1E-12, entropy);
         test_almost(1.0, 7.0, (2.0 * f64::consts::E * 7.0).ln(), 1E-12, entropy);
         test_almost(5., 10., (2. * f64::consts::E * 10.).ln(), 1E-12, entropy);

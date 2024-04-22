@@ -455,7 +455,11 @@ mod tests {
         for &(arg, res) in test.iter() {
             test_case_special(arg, res, 10e-6, f);
         }
-        let test = [((10.0, 10.0), 0.9), ((10.0, 1.0), 9.0), ((10.0, f64::INFINITY), 0.0)];
+        let test = [
+            ((10.0, 10.0), 0.9),
+            ((10.0, 1.0), 9.0),
+            ((10.0, f64::INFINITY), 0.0),
+        ];
         for &(arg, res) in test.iter() {
             test_case(arg, res, f);
         }
