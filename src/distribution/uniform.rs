@@ -68,7 +68,7 @@ impl ContinuousCDF<f64, f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (x - min) / (max - min)
     /// ```
     fn cdf(&self, x: f64) -> f64 {
@@ -86,7 +86,7 @@ impl ContinuousCDF<f64, f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (max - x) / (max - min)
     /// ```
     fn sf(&self, x: f64) -> f64 {
@@ -121,7 +121,7 @@ impl Distribution<f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (min + max) / 2
     /// ```
     fn mean(&self) -> Option<f64> {
@@ -131,7 +131,7 @@ impl Distribution<f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (max - min)^2 / 12
     /// ```
     fn variance(&self) -> Option<f64> {
@@ -141,7 +141,7 @@ impl Distribution<f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(max - min)
     /// ```
     fn entropy(&self) -> Option<f64> {
@@ -151,7 +151,7 @@ impl Distribution<f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -164,7 +164,7 @@ impl Median<f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (min + max) / 2
     /// ```
     fn median(&self) -> f64 {
@@ -182,7 +182,7 @@ impl Mode<Option<f64>> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// N/A // (max + min) / 2 for the middle element
     /// ```
     fn mode(&self) -> Option<f64> {
@@ -200,7 +200,7 @@ impl Continuous<f64, f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / (max - min)
     /// ```
     fn pdf(&self, x: f64) -> f64 {
@@ -221,7 +221,7 @@ impl Continuous<f64, f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(1 / (max - min))
     /// ```
     fn ln_pdf(&self, x: f64) -> f64 {

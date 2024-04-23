@@ -89,7 +89,7 @@ impl DiscreteCDF<u64, f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// sum(p_j) from 0..x
     /// ```
     ///
@@ -107,7 +107,7 @@ impl DiscreteCDF<u64, f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// [ sum(p_j) from x..end ]
     /// ```
     fn sf(&self, x: u64) -> f64 {
@@ -128,7 +128,7 @@ impl DiscreteCDF<u64, f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// i
     /// ```
     ///
@@ -151,7 +151,7 @@ impl Min<u64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> u64 {
@@ -166,7 +166,7 @@ impl Max<u64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// n
     /// ```
     fn max(&self) -> u64 {
@@ -179,7 +179,7 @@ impl Distribution<f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// Σ(j * p_j)
     /// ```
     ///
@@ -198,7 +198,7 @@ impl Distribution<f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// Σ(p_j * (j - μ)^2)
     /// ```
     ///
@@ -221,7 +221,7 @@ impl Distribution<f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// -Σ(p_j * ln(p_j))
     /// ```
     ///
@@ -243,7 +243,7 @@ impl Median<f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// CDF^-1(0.5)
     /// ```
     fn median(&self) -> f64 {
@@ -257,7 +257,7 @@ impl Discrete<u64, f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// p_x
     /// ```
     fn pmf(&self, x: u64) -> f64 {

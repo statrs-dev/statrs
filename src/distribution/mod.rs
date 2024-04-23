@@ -104,7 +104,9 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
     /// let n = Uniform::new(0.0, 1.0).unwrap();
     /// assert_eq!(0.5, n.sf(0.5));
     /// ```
-    fn sf(&self, x: K) -> T;
+    fn sf(&self, x: K) -> T {
+        T::one() - self.cdf(x)
+    }
 
     /// Due to issues with rounding and floating-point accuracy the default
     /// implementation may be ill-behaved.
@@ -112,6 +114,8 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
     /// Performs a binary search on the domain of `cdf` to obtain an approximation
     /// of `F^-1(p) := inf { x | F(x) >= p }`. Needless to say, performance may
     /// may be lacking.
+    #[doc(alias = "quantile function")]
+    #[doc(alias = "quantile")]
     fn inverse_cdf(&self, p: T) -> K {
         if p == T::zero() {
             return self.min();
@@ -170,7 +174,9 @@ pub trait DiscreteCDF<K: Bounded + Clone + Num, T: Float>: Min<K> + Max<K> {
     /// let n = DiscreteUniform::new(1, 10).unwrap();
     /// assert_eq!(0.4, n.sf(6));
     /// ```
-    fn sf(&self, x: K) -> T;
+    fn sf(&self, x: K) -> T {
+        T::one() - self.cdf(x)
+    }
 
     /// Due to issues with rounding and floating-point accuracy the default implementation may be ill-behaved
     /// Specialized inverse cdfs should be used whenever possible.

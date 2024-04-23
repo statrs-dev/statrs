@@ -86,7 +86,7 @@ impl MultivariateNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * ln(det(2 * π * e * Σ))
     /// ```
     ///
@@ -243,7 +243,9 @@ impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateNormal {
     /// Samples from the multivariate normal distribution
     ///
     /// # Formula
+    /// ```text
     /// L * Z + μ
+    /// ```
     ///
     /// where `L` is the Cholesky decomposition of the covariance matrix,
     /// `Z` is a vector of normally distributed random variables, and
@@ -321,7 +323,7 @@ impl Mode<DVector<f64>> for MultivariateNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -337,7 +339,7 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2 * π) ^ (-k / 2) * det(Σ) ^ (1 / 2) * e ^ ( -(1 / 2) * transpose(x - μ) * inv(Σ) * (x - μ))
     /// ```
     ///
@@ -360,6 +362,28 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateNormal {
                 .get((0, 0))
                 .unwrap();
         self.pdf_const.ln() + exp_term
+    }
+}
+
+impl Continuous<Vec<f64>, f64> for MultivariateNormal {
+    /// Calculates the probability density function for the multivariate
+    /// normal distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (2 * π) ^ (-k / 2) * det(Σ) ^ (1 / 2) * e ^ ( -(1 / 2) * transpose(x - μ) * inv(Σ) * (x - μ))
+    /// ```
+    ///
+    /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
+    /// of the covariance matrix, and `k` is the dimension of the distribution
+    fn pdf(&self, x: Vec<f64>) -> f64 {
+        self.pdf(&DVector::from(x))
+    }
+    /// Calculates the log probability density function for the multivariate
+    /// normal distribution at `x`. Equivalent to pdf(x).ln().
+    fn ln_pdf(&self, x: Vec<f64>) -> f64 {
+        self.pdf(&DVector::from(x))
     }
 }
 

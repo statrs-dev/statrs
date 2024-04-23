@@ -1,9 +1,13 @@
+Unreleased
+
+
 v0.16.0
 
 - Adds an `sf` method to the `ContinuousCDF` and `DiscreteCDF` traits
   - Calculates the survival function (CDF complement) for the distribution.
 - Survival function implemented for all distributions implementing `ContinuousCDF` and `DiscreteCDF`
   - See [PR description](https://github.com/statrs-dev/statrs/pull/172) for in-depth changes
+- update `nalgebra` to `0.29`
 
 v0.15.0
 
