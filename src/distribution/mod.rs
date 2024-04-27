@@ -187,11 +187,14 @@ pub trait DiscreteCDF<K: Bounded + Clone + Num, T: Float>: Min<K> + Max<K> {
         };
         let two = K::one() + K::one();
         let mut high = two.clone();
-        let mut low = K::min_value();
+        let mut low = self.min();
         while self.cdf(high.clone()) < p {
             high = high.clone() + high.clone();
         }
-        while high != low {
+        while self.cdf(low.clone()) > p {
+            low = low.clone() / two.clone();
+        }
+        while high != low.clone() + K::one() {
             let mid = (high.clone() + low.clone()) / two.clone();
             if self.cdf(mid.clone()) >= p {
                 high = mid;
