@@ -47,7 +47,7 @@ impl MultivariateNormal {
     pub fn new(mean: Vec<f64>, cov: Vec<f64>) -> Result<Self> {
         let mean = DVector::from_vec(mean);
         let cov = DMatrix::from_vec(mean.len(), mean.len(), cov);
-        return MultivariateNormal::new_from_nalgebra(mean, cov)
+        MultivariateNormal::new_from_nalgebra(mean, cov)
     }
 
     /// Constructs a new multivariate normal distribution with a mean of `mean`
