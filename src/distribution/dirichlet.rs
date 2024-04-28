@@ -111,13 +111,13 @@ impl Dirichlet {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(B(α)) - (K - α_0)ψ(α_0) - Σ((α_i - 1)ψ(α_i))
     /// ```
     ///
     /// where
     ///
-    /// ```ignore
+    /// ```text
     /// B(α) = Π(Γ(α_i)) / Γ(Σ(α_i))
     /// ```
     ///
@@ -158,7 +158,7 @@ impl MeanN<DVector<f64>> for Dirichlet {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α_i / α_0
     /// ```
     ///
@@ -175,7 +175,7 @@ impl VarianceN<DMatrix<f64>> for Dirichlet {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (α_i * (α_0 - α_i)) / (α_0^2 * (α_0 + 1))
     /// ```
     ///
@@ -215,13 +215,13 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for Dirichlet {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / B(α)) * Π(x_i^(α_i - 1))
     /// ```
     ///
     /// where
     ///
-    /// ```ignore
+    /// ```text
     /// B(α) = Π(Γ(α_i)) / Γ(Σ(α_i))
     /// ```
     ///
@@ -249,13 +249,13 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for Dirichlet {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((1 / B(α)) * Π(x_i^(α_i - 1)))
     /// ```
     ///
     /// where
     ///
-    /// ```ignore
+    /// ```text
     /// B(α) = Π(Γ(α_i)) / Γ(Σ(α_i))
     /// ```
     ///

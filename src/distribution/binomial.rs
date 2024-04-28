@@ -49,7 +49,7 @@ impl Binomial {
     /// assert!(result.is_err());
     /// ```
     pub fn new(p: f64, n: u64) -> Result<Binomial> {
-        if p.is_nan() || p < 0.0 || p > 1.0 {
+        if p.is_nan() || !(0.0..=1.0).contains(&p) {
             Err(StatsError::BadParams)
         } else {
             Ok(Binomial { p, n })
@@ -106,7 +106,7 @@ impl DiscreteCDF<u64, f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// I_(1 - p)(n - x, 1 + x)
     /// ```
     ///
@@ -125,7 +125,7 @@ impl DiscreteCDF<u64, f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// I_(p)(x + 1, n - x)
     /// ```
     ///
@@ -147,7 +147,7 @@ impl Min<u64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> u64 {
@@ -162,7 +162,7 @@ impl Max<u64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// n
     /// ```
     fn max(&self) -> u64 {
@@ -175,7 +175,7 @@ impl Distribution<f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// p * n
     /// ```
     fn mean(&self) -> Option<f64> {
@@ -185,7 +185,7 @@ impl Distribution<f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// n * p * (1 - p)
     /// ```
     fn variance(&self) -> Option<f64> {
@@ -195,7 +195,7 @@ impl Distribution<f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * ln (2 * π * e * n * p * (1 - p))
     /// ```
     fn entropy(&self) -> Option<f64> {
@@ -213,7 +213,7 @@ impl Distribution<f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 - 2p) / sqrt(n * p * (1 - p)))
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -226,7 +226,7 @@ impl Median<f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor(n * p)
     /// ```
     fn median(&self) -> f64 {
@@ -239,7 +239,7 @@ impl Mode<Option<u64>> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor((n + 1) * p)
     /// ```
     fn mode(&self) -> Option<u64> {
@@ -260,7 +260,7 @@ impl Discrete<u64, f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (n choose k) * p^k * (1 - p)^(n - k)
     /// ```
     fn pmf(&self, x: u64) -> f64 {
@@ -279,7 +279,7 @@ impl Discrete<u64, f64> for Binomial {
                 0.0
             }
         } else {
-            (factorial::ln_binomial(self.n as u64, x as u64)
+            (factorial::ln_binomial(self.n, x)
                 + x as f64 * self.p.ln()
                 + (self.n - x) as f64 * (1.0 - self.p).ln())
             .exp()
@@ -291,7 +291,7 @@ impl Discrete<u64, f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((n choose k) * p^k * (1 - p)^(n - k))
     /// ```
     fn ln_pmf(&self, x: u64) -> f64 {
@@ -310,7 +310,7 @@ impl Discrete<u64, f64> for Binomial {
                 f64::NEG_INFINITY
             }
         } else {
-            factorial::ln_binomial(self.n as u64, x as u64)
+            factorial::ln_binomial(self.n, x)
                 + x as f64 * self.p.ln()
                 + (self.n - x) as f64 * (1.0 - self.p).ln()
         }

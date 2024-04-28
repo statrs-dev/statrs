@@ -4,7 +4,6 @@ use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
-use std::u64;
 
 /// Implements the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution)
 /// distribution
@@ -84,7 +83,7 @@ impl DiscreteCDF<u64, f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// P(x + 1, λ)
     /// ```
     ///
@@ -98,7 +97,7 @@ impl DiscreteCDF<u64, f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// P(x + 1, λ)
     /// ```
     ///
@@ -114,7 +113,7 @@ impl Min<u64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> u64 {
@@ -128,7 +127,7 @@ impl Max<u64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2^63 - 1
     /// ```
     fn max(&self) -> u64 {
@@ -141,7 +140,7 @@ impl Distribution<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ
     /// ```
     ///
@@ -153,7 +152,7 @@ impl Distribution<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ
     /// ```
     ///
@@ -165,7 +164,7 @@ impl Distribution<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * ln(2πeλ) - 1 / (12λ) - 1 / (24λ^2) - 19 / (360λ^3)
     /// ```
     ///
@@ -182,7 +181,7 @@ impl Distribution<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ^(-1/2)
     /// ```
     ///
@@ -197,7 +196,7 @@ impl Median<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor(λ + 1 / 3 - 0.02 / λ)
     /// ```
     ///
@@ -212,7 +211,7 @@ impl Mode<Option<u64>> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor(λ)
     /// ```
     ///
@@ -228,13 +227,13 @@ impl Discrete<u64, f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// (λ^k * e^(-λ)) / x!
+    /// ```text
+    /// (λ^x * e^(-λ)) / x!
     /// ```
     ///
     /// where `λ` is the rate
     fn pmf(&self, x: u64) -> f64 {
-        (-self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x as u64)).exp()
+        (-self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x)).exp()
     }
 
     /// Calculates the log probability mass function for the poisson
@@ -243,13 +242,13 @@ impl Discrete<u64, f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// ln((λ^k * e^(-λ)) / x!)
+    /// ```text
+    /// ln((λ^x * e^(-λ)) / x!)
     /// ```
     ///
     /// where `λ` is the rate
     fn ln_pmf(&self, x: u64) -> f64 {
-        -self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x as u64)
+        -self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x)
     }
 }
 /// Generates one sample from the Poisson distribution either by
