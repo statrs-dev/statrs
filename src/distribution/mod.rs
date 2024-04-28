@@ -2,7 +2,7 @@
 //! and provides
 //! concrete implementations for a variety of distributions.
 use super::statistics::{Max, Min};
-use ::num_traits::{float::Float, Bounded, Num};
+use ::num_traits::{Float, PrimInt};
 
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::Beta;
@@ -145,7 +145,7 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
 
 /// The `DiscreteCDF` trait is used to specify an interface for univariate
 /// discrete distributions.
-pub trait DiscreteCDF<K: Bounded + Clone + Num, T: Float>: Min<K> + Max<K> {
+pub trait DiscreteCDF<K: PrimInt, T: Float>: Min<K> + Max<K> {
     /// Returns the cumulative distribution function calculated
     /// at `x` for a given distribution. May panic depending
     /// on the implementor.
