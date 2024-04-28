@@ -1,3 +1,5 @@
+use num_traits::{Float, PrimInt};
+
 /// Returns true if there are no elements in `x` in `arr`
 /// such that `x <= 0.0` or `x` is `f64::NAN` and `sum(arr) > 0.0`.
 /// IF `incl_zero` is true, it tests for `x < 0.0` instead of `x <= 0.0`
@@ -10,6 +12,39 @@ pub fn is_valid_multinomial(arr: &[f64], incl_zero: bool) -> bool {
         sum += elt;
     }
     sum != 0.0
+}
+
+/// implements univariate function bisection search with infimum
+/// if `None`, either the function was found not semi-monotone on the interval
+/// or the provided bounds did not map to a range containing `z`
+/// if `Some(k)`, then the condition below is met
+/// ```text
+/// smallest k such that f(k) >= z
+/// ```
+pub fn integral_bisection_search<K: PrimInt, T: Float>(
+    f: impl Fn(K) -> T, z: T, lb: K, ub: K,
+) -> Option<K> {
+    if lb > ub || !(f(lb)..=f(ub)).contains(&z) {
+        return None;
+    }
+    let two = K::one() + K::one();
+    let mut lb = lb;
+    let mut ub = ub;
+    loop {
+        let mid = (lb + ub) / two;
+        if !(f(lb)..=f(ub)).contains(&f(mid)) {
+            // if f found to not be monotone on the interval
+            return None;
+        } else if (lb..=lb + K::one()).contains(&ub) {
+            // if ub \in [lb, lb+1]
+            return Some(ub);
+        } else if f(mid) >= z {
+            // implies mid >= z
+            ub = mid;
+        } else {
+            lb = mid;
+        }
+    }
 }
 
 #[macro_use]
