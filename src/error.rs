@@ -104,3 +104,18 @@ impl fmt::Display for StatsError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn assert_sync<T: Sync>() {}
+    fn assert_send<T: Send>() {}
+
+    #[test]
+    fn test_sync_send() {
+        // Error types should implement Sync and Send
+        let _ = assert_sync::<StatsError>();
+        let _ = assert_send::<StatsError>();
+    }
+}
