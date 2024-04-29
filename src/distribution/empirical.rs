@@ -7,17 +7,17 @@ use rand::Rng;
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, PartialEq)]
-struct NonNAN<T>(T);
+struct NonNan<T>(T);
 
-impl<T: PartialEq> Eq for NonNAN<T> {}
+impl<T: PartialEq> Eq for NonNan<T> {}
 
-impl<T: PartialOrd> PartialOrd for NonNAN<T> {
+impl<T: PartialOrd> PartialOrd for NonNan<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<T: PartialOrd> Ord for NonNAN<T> {
+impl<T: PartialOrd> Ord for NonNan<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.partial_cmp(&other.0).unwrap()
     }
@@ -42,7 +42,7 @@ pub struct Empirical {
     sum: f64,
     mean_and_var: Option<(f64, f64)>,
     // keys are data points, values are number of data points with equal value
-    data: BTreeMap<NonNAN<f64>, u64>,
+    data: BTreeMap<NonNan<f64>, u64>,
 }
 
 impl Empirical {
@@ -86,13 +86,13 @@ impl Empirical {
                     self.mean_and_var = Some((data_point, 0.));
                 }
             }
-            *self.data.entry(NonNAN(data_point)).or_insert(0) += 1;
+            *self.data.entry(NonNan(data_point)).or_insert(0) += 1;
         }
     }
     pub fn remove(&mut self, data_point: f64) {
         if !data_point.is_nan() {
             if let (Some(val), Some((mean, var))) =
-                (self.data.remove(&NonNAN(data_point)), self.mean_and_var)
+                (self.data.remove(&NonNan(data_point)), self.mean_and_var)
             {
                 if val == 1 && self.data.is_empty() {
                     self.mean_and_var = None;
@@ -105,7 +105,7 @@ impl Empirical {
                     var - (self.sum - 1.) * (data_point - mean) * (data_point - mean) / self.sum;
                 self.sum -= 1.;
                 if val != 1 {
-                    self.data.insert(NonNAN(data_point), val - 1);
+                    self.data.insert(NonNan(data_point), val - 1);
                 };
                 self.mean_and_var = Some((mean, var));
             }
