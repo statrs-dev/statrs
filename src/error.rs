@@ -115,7 +115,7 @@ mod tests {
     #[test]
     fn test_sync_send() {
         // Error types should implement Sync and Send
-        let _ = assert_sync::<StatsError>();
-        let _ = assert_send::<StatsError>();
+        assert_sync::<StatsError>();
+        assert_send::<StatsError>();
     }
 }
