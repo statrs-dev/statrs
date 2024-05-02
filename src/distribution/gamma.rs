@@ -146,6 +146,57 @@ impl ContinuousCDF<f64, f64> for Gamma {
             gamma::gamma_ur(self.shape, x * self.rate)
         }
     }
+
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        fn convergence(x: &mut f64, x_new: f64) -> bool {
+            let out = approx::relative_eq!(*x, x_new, max_relative = crate::consts::ACC);
+            *x = x_new;
+            out
+        }
+
+        const MAX_ITERS: (u16, u16) = (8, 4);
+        if !(0.0..=1.0).contains(&p) {
+            panic!("default inverse_cdf implementation should be provided probability on [0,1]")
+        }
+        if p == 0.0 {
+            return self.min();
+        };
+        if p == 1.0 {
+            return self.max();
+        };
+
+        // Bisection search for MAX_ITERS.0 iterations
+        let mut high = 2.0;
+        let mut low = 1.0;
+        while self.cdf(low) > p {
+            low /= 2.0;
+        }
+        while self.cdf(high) < p {
+            high *= 2.0;
+        }
+        let mut x_0 = (high + low) / 2.0;
+
+        for _ in 0..MAX_ITERS.0 {
+            if self.cdf(x_0) >= p {
+                high = x_0;
+            } else {
+                low = x_0;
+            }
+            if convergence(&mut x_0, (high + low) / 2.0) {
+                break;
+            }
+        }
+
+        // NR method, guarantee at least one step
+        for _ in 0..MAX_ITERS.1 {
+            let x_next = x_0 - (self.cdf(x_0) - p) / self.pdf(x_0);
+            if convergence(&mut x_0, x_next) {
+                break;
+            }
+        }
+
+        x_0
+    }
 }
 
 impl Min<f64> for Gamma {
