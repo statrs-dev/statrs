@@ -1,5 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
+use crate::prec;
 use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
@@ -148,12 +149,6 @@ impl ContinuousCDF<f64, f64> for Gamma {
     }
 
     fn inverse_cdf(&self, p: f64) -> f64 {
-        fn convergence(x: &mut f64, x_new: f64) -> bool {
-            let out = approx::relative_eq!(*x, x_new, max_relative = crate::consts::ACC);
-            *x = x_new;
-            out
-        }
-
         const MAX_ITERS: (u16, u16) = (8, 4);
         if !(0.0..=1.0).contains(&p) {
             panic!("default inverse_cdf implementation should be provided probability on [0,1]")
@@ -182,7 +177,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
             } else {
                 low = x_0;
             }
-            if convergence(&mut x_0, (high + low) / 2.0) {
+            if prec::convergence(&mut x_0, (high + low) / 2.0) {
                 break;
             }
         }
@@ -190,7 +185,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
         // NR method, guarantee at least one step
         for _ in 0..MAX_ITERS.1 {
             let x_next = x_0 - (self.cdf(x_0) - p) / self.pdf(x_0);
-            if convergence(&mut x_0, x_next) {
+            if prec::convergence(&mut x_0, x_next) {
                 break;
             }
         }
