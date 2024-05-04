@@ -609,6 +609,25 @@ mod tests {
     }
 
     #[test]
+    fn test_cdf_inverse_identity() {
+        let f = |p: f64| move |g: Gamma| g.cdf(g.inverse_cdf(p));
+        let params = [
+            (1.0, 0.1),
+            (1.0, 1.0),
+            (10.0, 10.0),
+            (10.0, 1.0),
+            (100.0, 200.0),
+        ];
+
+        for param in params {
+            for n in -5..0 {
+                let p = 10.0f64.powi(n);
+                test_case(param, p, f(p));
+            }
+        }
+    }
+
+    #[test]
     fn test_sf() {
         let f = |arg: f64| move |x: Gamma| x.sf(arg);
         let test = [
