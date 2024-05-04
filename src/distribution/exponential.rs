@@ -79,7 +79,7 @@ impl ContinuousCDF<f64, f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - e^(-λ * x)
     /// ```
     ///
@@ -91,6 +91,24 @@ impl ContinuousCDF<f64, f64> for Exp {
             1.0 - (-self.rate * x).exp()
         }
     }
+
+    /// Calculates the cumulative distribution function for the
+    /// exponential distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// e^(-λ * x)
+    /// ```
+    ///
+    /// where `λ` is the rate
+    fn sf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            1.0
+        } else {
+            (-self.rate * x).exp()
+        }
+    }
 }
 
 impl Min<f64> for Exp {
@@ -99,7 +117,7 @@ impl Min<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -113,8 +131,8 @@ impl Max<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -126,7 +144,7 @@ impl Distribution<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / λ
     /// ```
     ///
@@ -138,7 +156,7 @@ impl Distribution<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / λ^2
     /// ```
     ///
@@ -150,7 +168,7 @@ impl Distribution<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - ln(λ)
     /// ```
     ///
@@ -162,7 +180,7 @@ impl Distribution<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -175,7 +193,7 @@ impl Median<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / λ) * ln2
     /// ```
     ///
@@ -190,7 +208,7 @@ impl Mode<Option<f64>> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn mode(&self) -> Option<f64> {
@@ -204,7 +222,7 @@ impl Continuous<f64, f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ * e^(-λ * x)
     /// ```
     ///
@@ -222,7 +240,7 @@ impl Continuous<f64, f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(λ * e^(-λ * x))
     /// ```
     ///
@@ -237,7 +255,7 @@ impl Continuous<f64, f64> for Exp {
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use std::f64;
     use crate::statistics::*;
@@ -440,15 +458,34 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Exp| x.sf(arg);
+        test_case(0.1, 1.0, sf(0.0));
+        test_case(1.0, 1.0, sf(0.0));
+        test_case(10.0, 1.0, sf(0.0));
+        test_is_nan(f64::INFINITY, sf(0.0));
+        test_almost(0.1, 0.9900498337491681, 1e-16, sf(0.1));
+        test_almost(1.0, 0.9048374180359595, 1e-16, sf(0.1));
+        test_almost(10.0, 0.36787944117144233, 1e-15, sf(0.1));
+        test_case(f64::INFINITY, 0.0, sf(0.1));
+    }
+
+    #[test]
     fn test_neg_cdf() {
         let cdf = |arg: f64| move |x: Exp| x.cdf(arg);
         test_case(0.1, 0.0, cdf(-1.0));
     }
 
     #[test]
+    fn test_neg_sf() {
+        let sf = |arg: f64| move |x: Exp| x.sf(arg);
+        test_case(0.1, 1.0, sf(-1.0));
+    }
+
+    #[test]
     fn test_continuous() {
-        tests::check_continuous_distribution(&try_create(0.5), 0.0, 10.0);
-        tests::check_continuous_distribution(&try_create(1.5), 0.0, 20.0);
-        tests::check_continuous_distribution(&try_create(2.5), 0.0, 50.0);
+        test::check_continuous_distribution(&try_create(0.5), 0.0, 10.0);
+        test::check_continuous_distribution(&try_create(1.5), 0.0, 20.0);
+        test::check_continuous_distribution(&try_create(2.5), 0.0, 50.0);
     }
 }

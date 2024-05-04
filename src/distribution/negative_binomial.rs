@@ -6,8 +6,22 @@ use rand::Rng;
 use std::f64;
 
 /// Implements the
-/// [NegativeBinomial](http://en.wikipedia.org/wiki/Negative_binomial_distribution)
-/// distribution
+/// [negative binomial](http://en.wikipedia.org/wiki/Negative_binomial_distribution)
+/// distribution.
+///
+/// *Please note carefully the meaning of the parameters.*  As noted in the
+/// wikipedia article, there are several different commonly used conventions
+/// for the parameters of the negative binomial distribution.
+///
+/// The negative binomial distribution is a discrete distribution with two
+/// parameters, `r` and `p`.  When `r` is an integer, the negative binomial
+/// distribution can be interpreted as the distribution of the number of
+/// failures in a sequence of Bernoulli trials that continue until `r`
+/// successes occur.  `p` is the probability of success in a single Bernoulli
+/// trial.
+///
+/// `NegativeBinomial` accepts non-integer values for `r`.  This is a
+/// generalization of the more common case where `r` is an integer.
 ///
 /// # Examples
 ///
@@ -28,8 +42,11 @@ pub struct NegativeBinomial {
 }
 
 impl NegativeBinomial {
-    /// Constructs a new negative binomial distribution
-    /// with a given `p` probability of the number of successes `r`
+    /// Constructs a new negative binomial distribution with parameters `r`
+    /// and `p`.  When `r` is an integer, the negative binomial distribution
+    /// can be interpreted as the distribution of the number of failures in
+    /// a sequence of Bernoulli trials that continue until `r` successes occur.
+    /// `p` is the probability of success in a single Bernoulli trial.
     ///
     /// # Errors
     ///
@@ -48,15 +65,16 @@ impl NegativeBinomial {
     /// assert!(result.is_err());
     /// ```
     pub fn new(r: f64, p: f64) -> Result<NegativeBinomial> {
-        if p.is_nan() || p < 0.0 || p > 1.0 || r.is_nan() || r < 0.0 {
+        if p.is_nan() || !(0.0..=1.0).contains(&p) || r.is_nan() || r < 0.0 {
             Err(StatsError::BadParams)
         } else {
-            Ok(NegativeBinomial { p, r })
+            Ok(NegativeBinomial { r, p })
         }
     }
 
-    /// Returns the probability of success `p` of
-    /// the negative binomial distribution.
+    /// Returns the probability of success `p` of a single
+    /// Bernoulli trial associated with the negative binomial
+    /// distribution.
     ///
     /// # Examples
     ///
@@ -71,7 +89,7 @@ impl NegativeBinomial {
     }
 
     /// Returns the number `r` of success of this negative
-    /// binomial distribution
+    /// binomial distribution.
     ///
     /// # Examples
     ///
@@ -95,6 +113,20 @@ impl ::rand::distributions::Distribution<u64> for NegativeBinomial {
 
 impl DiscreteCDF<u64, f64> for NegativeBinomial {
     /// Calculates the cumulative distribution function for the
+    /// negative binomial distribution at `x`.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// I_(p)(r, x+1)
+    /// ```
+    ///
+    /// where `I_(x)(a, b)` is the regularized incomplete beta function.
+    fn cdf(&self, x: u64) -> f64 {
+        beta::beta_reg(self.r, x as f64 + 1.0, self.p)
+    }
+
+    /// Calculates the survival function for the
     /// negative binomial distribution at `x`
     ///
     /// Note that due to extending the distribution to the reals
@@ -105,24 +137,24 @@ impl DiscreteCDF<u64, f64> for NegativeBinomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// 1 - I_(1 - p)(x + 1, r)
+    /// ```text
+    /// I_(1-p)(x+1, r)
     /// ```
     ///
     /// where `I_(x)(a, b)` is the regularized incomplete beta function
-    fn cdf(&self, x: u64) -> f64 {
-        1.0 - beta::beta_reg(x as f64 + 1.0, self.r, 1.0 - self.p)
+    fn sf(&self, x: u64) -> f64 {
+        beta::beta_reg(x as f64 + 1.0, self.r, 1. - self.p)
     }
 }
 
 impl Min<u64> for NegativeBinomial {
     /// Returns the minimum value in the domain of the
     /// negative binomial distribution representable by a 64-bit
-    /// integer
+    /// integer.
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> u64 {
@@ -133,44 +165,44 @@ impl Min<u64> for NegativeBinomial {
 impl Max<u64> for NegativeBinomial {
     /// Returns the maximum value in the domain of the
     /// negative binomial distribution representable by a 64-bit
-    /// integer
+    /// integer.
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// u64::MAX
     /// ```
     fn max(&self) -> u64 {
-        std::u64::MAX
+        u64::MAX
     }
 }
 
 impl DiscreteDistribution<f64> for NegativeBinomial {
-    /// Returns the mean of the negative binomial distribution
+    /// Returns the mean of the negative binomial distribution.
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// r * (1-p) / p
     /// ```
     fn mean(&self) -> Option<f64> {
         Some(self.r * (1.0 - self.p) / self.p)
     }
-    /// Returns the variance of the negative binomial distribution
+    /// Returns the variance of the negative binomial distribution.
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// r * (1-p) / p^2
     /// ```
     fn variance(&self) -> Option<f64> {
         Some(self.r * (1.0 - self.p) / (self.p * self.p))
     }
-    /// Returns the skewness of the negative binomial distribution
+    /// Returns the skewness of the negative binomial distribution.
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2-p) / sqrt(r * (1-p))
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -179,11 +211,11 @@ impl DiscreteDistribution<f64> for NegativeBinomial {
 }
 
 impl Mode<Option<f64>> for NegativeBinomial {
-    /// Returns the mode for the negative binomial distribution
+    /// Returns the mode for the negative binomial distribution.
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if r > 1 then
     ///     floor((r - 1) * (1-p / p))
     /// else
@@ -201,39 +233,60 @@ impl Mode<Option<f64>> for NegativeBinomial {
 
 impl Discrete<u64, f64> for NegativeBinomial {
     /// Calculates the probability mass function for the negative binomial
-    /// distribution at `x`
+    /// distribution at `x`.
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// (x + r - 1 choose k) * (1 - p)^x * p^r
+    /// When `r` is an integer, the formula is:
+    ///
+    /// ```text
+    /// (x + r - 1 choose x) * (1 - p)^x * p^r
     /// ```
+    ///
+    /// The general formula for real `r` is:
+    ///
+    /// ```text
+    /// Γ(r + x)/(Γ(r) * Γ(x + 1)) * (1 - p)^x * p^r
+    /// ```
+    ///
+    /// where Γ(x) is the Gamma function.
     fn pmf(&self, x: u64) -> f64 {
         self.ln_pmf(x).exp()
     }
 
     /// Calculates the log probability mass function for the negative binomial
-    /// distribution at `x`
+    /// distribution at `x`.
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// ln(x + r - 1 choose k) * (1 - p)^x * p^r))
+    /// When `r` is an integer, the formula is:
+    ///
+    /// ```text
+    /// ln((x + r - 1 choose x) * (1 - p)^x * p^r)
     /// ```
+    ///
+    /// The general formula for real `r` is:
+    ///
+    /// ```text
+    /// ln(Γ(r + x)/(Γ(r) * Γ(x + 1)) * (1 - p)^x * p^r)
+    /// ```
+    ///
+    /// where Γ(x) is the Gamma function.
     fn ln_pmf(&self, x: u64) -> f64 {
         let k = x as f64;
         gamma::ln_gamma(self.r + k) - gamma::ln_gamma(self.r) - gamma::ln_gamma(k + 1.0)
             + (self.r * self.p.ln())
-            + (k * (1.0 - self.p).ln())
+            + (k * (-self.p).ln_1p())
     }
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use std::fmt::Debug;
     use crate::statistics::*;
     use crate::distribution::{DiscreteCDF, Discrete, NegativeBinomial};
+    use crate::distribution::internal::test;
     use crate::consts::ACC;
 
     fn try_create(r: f64, p: f64) -> NegativeBinomial {
@@ -419,18 +472,34 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: u64| move |x: NegativeBinomial| x.sf(arg);
+        test_almost(1.0, 0.3, 0.7, 1e-08, sf(0));
+        test_almost(1.0, 0.3, 0.49, 1e-08, sf(1));
+        test_almost(1.0, 0.3, 0.1680699999999986, 1e-08, sf(4));
+        test_almost(1.0, 0.3, 0.019773267430000074, 1e-08, sf(10));
+        test_case(1.0, 1.0, 0.0, sf(0));
+        test_case(1.0, 1.0, 0.0, sf(1));
+        test_almost(10.0, 0.75, 0.9436864852905275, 1e-08, sf(0));
+        test_almost(10.0, 0.75, 0.8029026985168456, 1e-08, sf(1));
+        test_almost(10.0, 0.75, 0.003942141664083465, 1e-08, sf(10));
+    }
+
+    #[test]
     fn test_cdf_upper_bound() {
         let cdf = |arg: u64| move |x: NegativeBinomial| x.cdf(arg);
         test_case(3.0, 0.5, 1.0, cdf(100));
     }
 
-    // TODO: figure out the best way to re-implement this test. We currently
-    // do not have a good way to characterize a discrete distribution with a
-    // CDF that is continuous
-    //
-    // #[test]
-    // fn test_discrete() {
-    //     tests::check_discrete_distribution(&try_create(5.0, 0.3), 35);
-    //     tests::check_discrete_distribution(&try_create(10.0, 0.7), 21);
-    // }
+    #[test]
+    fn test_discrete() {
+        test::check_discrete_distribution(&try_create(5.0, 0.3), 35);
+        test::check_discrete_distribution(&try_create(10.0, 0.7), 21);
+    }
+    
+    #[test]
+    fn test_sf_upper_bound() {
+        let sf = |arg: u64| move |x: NegativeBinomial| x.sf(arg);
+        test_almost(3.0, 0.5, 5.282409836586059e-28, 1e-28, sf(100));
+    }
 }

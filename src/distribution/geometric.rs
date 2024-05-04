@@ -3,7 +3,7 @@ use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::distributions::OpenClosed01;
 use rand::Rng;
-use std::{f64, u64};
+use std::f64;
 
 /// Implements the
 /// [Geometric](https://en.wikipedia.org/wiki/Geometric_distribution)
@@ -85,14 +85,35 @@ impl DiscreteCDF<u64, f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// 1 - (1 - p) ^ (x + 1)
+    /// ```text
+    /// 1 - (1 - p) ^ x
     /// ```
     fn cdf(&self, x: u64) -> f64 {
         if x == 0 {
             0.0
         } else {
-            1.0 - (1.0 - self.p).powf(x as f64)
+            // 1 - (1 - p) ^ x = 1 - exp(log(1 - p)*x)
+            //                 = -expm1(log1p(-p)*x))
+            //                 = -((-p).ln_1p() * x).exp_m1()
+            -((-self.p).ln_1p() * (x as f64)).exp_m1()
+        }
+    }
+
+    /// Calculates the survival function for the geometric
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (1 - p) ^ x
+    /// ```
+    fn sf(&self, x: u64) -> f64 {
+        // (1-p) ^ x = exp(log(1-p)*x)
+        //           = exp(log1p(-p) * x)
+        if x == 0 {
+            1.0
+        } else {
+            ((-self.p).ln_1p() * (x as f64)).exp()
         }
     }
 }
@@ -104,7 +125,7 @@ impl Min<u64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1
     /// ```
     fn min(&self) -> u64 {
@@ -119,7 +140,7 @@ impl Max<u64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2^63 - 1
     /// ```
     fn max(&self) -> u64 {
@@ -132,7 +153,7 @@ impl Distribution<f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / p
     /// ```
     fn mean(&self) -> Option<f64> {
@@ -142,7 +163,7 @@ impl Distribution<f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 - p) / p^2
     /// ```
     fn variance(&self) -> Option<f64> {
@@ -152,7 +173,7 @@ impl Distribution<f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (-(1 - p) * log_2(1 - p) - p * log_2(p)) / p
     /// ```
     fn entropy(&self) -> Option<f64> {
@@ -163,7 +184,7 @@ impl Distribution<f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2 - p) / sqrt(1 - p)
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -179,7 +200,7 @@ impl Mode<Option<u64>> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1
     /// ```
     fn mode(&self) -> Option<u64> {
@@ -194,7 +215,7 @@ impl Median<f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ceil(-1 / log_2(1 - p))
     /// ```
     fn median(&self) -> f64 {
@@ -208,7 +229,7 @@ impl Discrete<u64, f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 - p)^(x - 1) * p
     /// ```
     fn pmf(&self, x: u64) -> f64 {
@@ -224,7 +245,7 @@ impl Discrete<u64, f64> for Geometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((1 - p)^(x - 1) * p)
     /// ```
     fn ln_pmf(&self, x: u64) -> f64 {
@@ -241,7 +262,7 @@ impl Discrete<u64, f64> for Geometric {
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use std::fmt::Debug;
     use crate::statistics::*;
@@ -400,8 +421,83 @@ mod tests {
         let cdf = |arg: u64| move |x: Geometric| x.cdf(arg);
         test_case(1.0, 1.0, cdf(1));
         test_case(1.0, 1.0, cdf(2));
-        test_almost(0.5, 0.5, 1e-10, cdf(1));
-        test_almost(0.5, 0.75, 1e-10, cdf(2));
+        test_almost(0.5, 0.5, 1e-15, cdf(1));
+        test_almost(0.5, 0.75, 1e-15, cdf(2));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: u64| move |x: Geometric| x.sf(arg);
+        test_case(1.0, 0.0, sf(1));
+        test_case(1.0, 0.0, sf(2));
+        test_almost(0.5, 0.5, 1e-15, sf(1));
+        test_almost(0.5, 0.25, 1e-15, sf(2));
+    }
+
+    #[test]
+    fn test_cdf_small_p() {
+        //
+        // Expected values were computed with the arbitrary precision
+        // library mpmath in Python, e.g.:
+        //
+        //   import mpmath
+        //   mpmath.mp.dps = 400
+        //   p = mpmath.mpf(1e-9)
+        //   k = 5
+        //   cdf = float(1 - (1 - p)**k)
+        //   # cdf is 4.99999999e-09
+        //
+        let geom = Geometric::new(1e-9f64).unwrap();
+
+        let cdf = geom.cdf(5u64);
+        let expected = 4.99999999e-09;
+        assert_relative_eq!(cdf, expected, epsilon = 0.0, max_relative = 1e-15);
+    }
+
+    #[test]
+    fn test_sf_small_p() {
+        let geom = Geometric::new(1e-9f64).unwrap();
+
+        let sf = geom.sf(5u64);
+        let expected = 0.999999995;
+        assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
+    }
+
+    #[test]
+    fn test_cdf_very_small_p() {
+        //
+        // Expected values were computed with the arbitrary precision
+        // library mpmath in Python, e.g.:
+        //
+        //   import mpmath
+        //   mpmath.mp.dps = 400
+        //   p = mpmath.mpf(1e-17)
+        //   k = 100000000000000
+        //   cdf = float(1 - (1 - p)**k)
+        //   # cdf is 0.0009995001666250085
+        //
+        let geom = Geometric::new(1e-17f64).unwrap();
+
+        let cdf = geom.cdf(10u64);
+        let expected = 1e-16f64;
+        assert_relative_eq!(cdf, expected, epsilon = 0.0, max_relative = 1e-15);
+
+        let cdf = geom.cdf(100000000000000u64);
+        let expected = 0.0009995001666250085f64;
+        assert_relative_eq!(cdf, expected, epsilon = 0.0, max_relative = 1e-15);
+    }
+
+    #[test]
+    fn test_sf_very_small_p() {
+        let geom = Geometric::new(1e-17f64).unwrap();
+
+        let sf = geom.sf(10u64);
+        let expected =  0.9999999999999999;
+        assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
+
+        let sf = geom.sf(100000000000000u64);
+        let expected = 0.999000499833375;
+        assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
     }
 
     #[test]
@@ -411,9 +507,15 @@ mod tests {
     }
 
     #[test]
+    fn test_sf_lower_bound() {
+        let sf = |arg: u64| move |x: Geometric| x.sf(arg);
+        test_case(0.3, 1.0, sf(0));
+    }
+
+    #[test]
     fn test_discrete() {
-        tests::check_discrete_distribution(&try_create(0.3), 100);
-        tests::check_discrete_distribution(&try_create(0.6), 100);
-        tests::check_discrete_distribution(&try_create(1.0), 1);
+        test::check_discrete_distribution(&try_create(0.3), 100);
+        test::check_discrete_distribution(&try_create(0.6), 100);
+        test::check_discrete_distribution(&try_create(1.0), 1);
     }
 }

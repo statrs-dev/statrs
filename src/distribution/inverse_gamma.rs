@@ -99,7 +99,7 @@ impl ContinuousCDF<f64, f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// Γ(α, β / x) / Γ(α)
     /// ```
     ///
@@ -115,6 +115,28 @@ impl ContinuousCDF<f64, f64> for InverseGamma {
             gamma::gamma_ur(self.shape, self.rate / x)
         }
     }
+
+    /// Calculates the survival function for the inverse gamma
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// Γ(α, β / x) / Γ(α)
+    /// ```
+    ///
+    /// where the numerator is the lower incomplete gamma function,
+    /// the denominator is the gamma function, `α` is the shape,
+    /// and `β` is the rate
+    fn sf(&self, x: f64) -> f64 {
+        if x <= 0.0 {
+            1.0
+        } else if x.is_infinite() {
+            0.0
+        } else {
+            gamma::gamma_lr(self.shape, self.rate / x)
+        }
+    }
 }
 
 impl Min<f64> for InverseGamma {
@@ -124,7 +146,7 @@ impl Min<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -139,8 +161,8 @@ impl Max<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -156,7 +178,7 @@ impl Distribution<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// β / (α - 1)
     /// ```
     ///
@@ -176,7 +198,7 @@ impl Distribution<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// β^2 / ((α - 1)^2 * (α - 2))
     /// ```
     ///
@@ -194,7 +216,7 @@ impl Distribution<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α + ln(β * Γ(α)) - (1 + α) * ψ(α)
     /// ```
     ///
@@ -213,7 +235,7 @@ impl Distribution<f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 4 * sqrt(α - 2) / (α - 3)
     /// ```
     ///
@@ -232,7 +254,7 @@ impl Mode<Option<f64>> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// β / (α + 1)
     /// ```
     ///
@@ -248,7 +270,7 @@ impl Continuous<f64, f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (β^α / Γ(α)) * x^(-α - 1) * e^(-β / x)
     /// ```
     ///
@@ -269,7 +291,7 @@ impl Continuous<f64, f64> for InverseGamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((β^α / Γ(α)) * x^(-α - 1) * e^(-β / x))
     /// ```
     ///
@@ -280,7 +302,7 @@ impl Continuous<f64, f64> for InverseGamma {
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, InverseGamma};
@@ -440,9 +462,19 @@ mod tests {
         test_almost(1.0, 1.0, 0.4345982085070782231613, 1e-14, cdf(1.2));
     }
 
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: InverseGamma| x.sf(arg);
+        test_almost(0.1, 0.1, 0.8137848038053936, 1e-14, sf(1.2));
+        test_almost(0.1, 1.0, 0.9414024458901327, 1e-14, sf(2.0));
+        test_almost(1.0, 0.1, 0.0644930149683822, 1e-14, sf(1.5));
+        test_almost(1.0, 1.0, 0.565401791492922, 1e-14, sf(1.2));
+    }
+
     #[test]
     fn test_continuous() {
-        tests::check_continuous_distribution(&try_create(1.0, 0.5), 0.0, 100.0);
-        tests::check_continuous_distribution(&try_create(9.0, 2.0), 0.0, 100.0);
+        test::check_continuous_distribution(&try_create(1.0, 0.5), 0.0, 100.0);
+        test::check_continuous_distribution(&try_create(9.0, 2.0), 0.0, 100.0);
     }
 }

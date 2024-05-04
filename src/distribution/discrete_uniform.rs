@@ -53,7 +53,7 @@ impl DiscreteUniform {
 
 impl ::rand::distributions::Distribution<f64> for DiscreteUniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        rng.gen_range(self.min, self.max + 1) as f64
+        rng.gen_range(self.min..=self.max) as f64
     }
 }
 
@@ -63,7 +63,7 @@ impl DiscreteCDF<i64, f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (floor(x) - min + 1) / (max - min + 1)
     /// ```
     fn cdf(&self, x: i64) -> f64 {
@@ -75,6 +75,24 @@ impl DiscreteCDF<i64, f64> for DiscreteUniform {
             let lower = self.min as f64;
             let upper = self.max as f64;
             let ans = (x as f64 - lower + 1.0) / (upper - lower + 1.0);
+            if ans > 1.0 {
+                1.0
+            } else {
+                ans
+            }
+        }
+    }
+
+    fn sf(&self, x: i64) -> f64 {
+        //1. - self.cdf(x)
+        if x < self.min {
+            1.0
+        } else if x >= self.max {
+            0.0
+        } else {
+            let lower = self.min as f64;
+            let upper = self.max as f64;
+            let ans = (upper - x as f64) / (upper - lower + 1.0);
             if ans > 1.0 {
                 1.0
             } else {
@@ -113,7 +131,7 @@ impl Distribution<f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (min + max) / 2
     /// ```
     fn mean(&self) -> Option<f64> {
@@ -123,7 +141,7 @@ impl Distribution<f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ((max - min + 1)^2 - 1) / 12
     /// ```
     fn variance(&self) -> Option<f64> {
@@ -134,7 +152,7 @@ impl Distribution<f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(max - min + 1)
     /// ```
     fn entropy(&self) -> Option<f64> {
@@ -145,7 +163,7 @@ impl Distribution<f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -158,7 +176,7 @@ impl Median<f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (max + min) / 2
     /// ```
     fn median(&self) -> f64 {
@@ -176,7 +194,7 @@ impl Mode<Option<i64>> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// N/A // (max + min) / 2 for the middle element
     /// ```
     fn mode(&self) -> Option<i64> {
@@ -194,7 +212,7 @@ impl Discrete<i64, f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / (max - min + 1)
     /// ```
     fn pmf(&self, x: i64) -> f64 {
@@ -214,7 +232,7 @@ impl Discrete<i64, f64> for DiscreteUniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(1 / (max - min + 1))
     /// ```
     fn ln_pmf(&self, x: i64) -> f64 {
@@ -227,7 +245,7 @@ impl Discrete<i64, f64> for DiscreteUniform {
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use std::fmt::Debug;
     use crate::statistics::*;
@@ -365,9 +383,24 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: i64| move |x: DiscreteUniform| x.sf(arg);
+        test_case(-10, 10, 0.7142857142857142857143, sf(-5));
+        test_case(-10, 10, 0.42857142857142855, sf(1));
+        test_case(-10, 10, 0.0, sf(10));
+        test_case(-10, -10, 0.0, sf(-10));
+    }
+
+    #[test]
     fn test_cdf_lower_bound() {
         let cdf = |arg: i64| move |x: DiscreteUniform| x.cdf(arg);
         test_case(0, 3, 0.0, cdf(-1));
+    }
+
+    #[test]
+    fn test_sf_lower_bound() {
+        let sf = |arg: i64| move |x: DiscreteUniform| x.sf(arg);
+        test_case(0, 3, 1.0, sf(-1));
     }
 
     #[test]

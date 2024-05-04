@@ -103,7 +103,7 @@ impl ContinuousCDF<f64, f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - e^-((x/λ)^k)
     /// ```
     ///
@@ -115,6 +115,24 @@ impl ContinuousCDF<f64, f64> for Weibull {
             -(-x.powf(self.shape) * self.scale_pow_shape_inv).exp_m1()
         }
     }
+
+    /// Calculates the survival function for the weibull
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// e^-((x/λ)^k)
+    /// ```
+    ///
+    /// where `k` is the shape and `λ` is the scale
+    fn sf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            1.0
+        } else {
+            (-x.powf(self.shape) * self.scale_pow_shape_inv).exp()
+        }
+    }
 }
 
 impl Min<f64> for Weibull {
@@ -123,7 +141,7 @@ impl Min<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -137,8 +155,8 @@ impl Max<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -150,7 +168,7 @@ impl Distribution<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λΓ(1 + 1 / k)
     /// ```
     ///
@@ -163,7 +181,7 @@ impl Distribution<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ^2 * (Γ(1 + 2 / k) - Γ(1 + 1 / k)^2)
     /// ```
     ///
@@ -177,7 +195,7 @@ impl Distribution<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// γ(1 - 1 / k) + ln(λ / k) + 1
     /// ```
     ///
@@ -193,7 +211,7 @@ impl Distribution<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (Γ(1 + 3 / k) * λ^3 - 3μσ^2 - μ^3) / σ^3
     /// ```
     ///
@@ -218,7 +236,7 @@ impl Median<f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ(ln(2))^(1 / k)
     /// ```
     ///
@@ -233,7 +251,7 @@ impl Mode<Option<f64>> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if k == 1 {
     ///     0
     /// } else {
@@ -258,7 +276,7 @@ impl Continuous<f64, f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (k / λ) * (x / λ)^(k - 1) * e^(-(x / λ)^k)
     /// ```
     ///
@@ -283,7 +301,7 @@ impl Continuous<f64, f64> for Weibull {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((k / λ) * (x / λ)^(k - 1) * e^(-(x / λ)^k))
     /// ```
     ///
@@ -304,7 +322,7 @@ impl Continuous<f64, f64> for Weibull {
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Weibull};
@@ -484,7 +502,24 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Weibull| x.sf(arg);
+        test_case(1.0, 0.1, 1.0, sf(0.0));
+        test_case(1.0, 0.1, 4.5399929762484854e-5, sf(1.0));
+        test_case(1.0, 0.1, 3.720075976020836e-44, sf(10.0));
+        test_case(1.0, 1.0, 1.0, sf(0.0));
+        test_case(1.0, 1.0, 0.36787944117144233, sf(1.0));
+        test_case(1.0, 1.0, 4.5399929762484854e-5, sf(10.0));
+        test_case(10.0, 10.0, 1.0, sf(0.0));
+        test_almost(10.0, 10.0, 0.9999999999, 1e-25, sf(1.0));
+        test_case(10.0, 10.0, 0.36787944117144233, sf(10.0));
+        test_case(10.0, 1.0, 1.0, sf(0.0));
+        test_case(10.0, 1.0, 0.36787944117144233, sf(1.0));
+        test_case(10.0, 1.0, 0.0, sf(10.0));
+    }
+
+    #[test]
     fn test_continuous() {
-        tests::check_continuous_distribution(&try_create(1.0, 0.2), 0.0, 10.0);
+        test::check_continuous_distribution(&try_create(1.0, 0.2), 0.0, 10.0);
     }
 }

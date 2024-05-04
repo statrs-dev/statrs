@@ -1,26 +1,29 @@
 [package]
 
 name = "statrs"
-version = "0.13.0"
+version = "0.16.0"
 authors = ["Michael Ma"]
 description = "Statistical computing library for Rust"
 license = "MIT"
 keywords = ["probability", "statistics", "stats", "distribution", "math"]
 categories = ["science"]
-documentation = "https://docs.rs/statrs/0.13.0/statrs/"
-homepage = "https://github.com/boxtown/statrs"
-repository = "https://github.com/boxtown/statrs"
+homepage = "https://github.com/statrs-dev/statrs"
+repository = "https://github.com/statrs-dev/statrs"
 edition = "2018"
 
-[lib]
+include = ["CHANGELOG.md", "LICENSE.md", "src/"]
 
+[lib]
 name = "statrs"
 path = "src/lib.rs"
 
+[features]
+nightly = []
+
 [dependencies]
-rand = "0.7.3"
-nalgebra = "0.23.0"
-approx = "0.4.0"
+rand = "0.8"
+nalgebra = { version = "0.32", features = ["rand"] }
+approx = "0.5.0"
 num-traits = "0.2.14"
 
 [dev-dependencies]

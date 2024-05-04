@@ -108,7 +108,7 @@ impl ContinuousCDF<f64, f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / Γ(k / 2)) * γ(k / 2, x / 2)
     /// ```
     ///
@@ -116,6 +116,21 @@ impl ContinuousCDF<f64, f64> for ChiSquared {
     /// and `γ` is the lower incomplete gamma function
     fn cdf(&self, x: f64) -> f64 {
         self.g.cdf(x)
+    }
+
+    /// Calculates the cumulative distribution function for the
+    /// chi-squared distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (1 / Γ(k / 2)) * γ(k / 2, x / 2)
+    /// ```
+    ///
+    /// where `k` is the degrees of freedom, `Γ` is the gamma function,
+    /// and `γ` is the upper incomplete gamma function
+    fn sf(&self, x: f64) -> f64 {
+        self.g.sf(x)
     }
 }
 
@@ -126,7 +141,7 @@ impl Min<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -141,8 +156,8 @@ impl Max<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -154,7 +169,7 @@ impl Distribution<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k
     /// ```
     ///
@@ -166,7 +181,7 @@ impl Distribution<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2k
     /// ```
     ///
@@ -178,7 +193,7 @@ impl Distribution<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (k / 2) + ln(2 * Γ(k / 2)) + (1 - (k / 2)) * ψ(k / 2)
     /// ```
     ///
@@ -191,7 +206,7 @@ impl Distribution<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// sqrt(8 / k)
     /// ```
     ///
@@ -206,7 +221,7 @@ impl Median<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k * (1 - (2 / 9k))^3
     /// ```
     fn median(&self) -> f64 {
@@ -226,7 +241,7 @@ impl Mode<Option<f64>> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k - 2
     /// ```
     ///
@@ -242,7 +257,7 @@ impl Continuous<f64, f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / (2^(k / 2) * Γ(k / 2)) * x^((k / 2) - 1) * e^(-x / 2)
     /// ```
     ///
@@ -256,7 +271,7 @@ impl Continuous<f64, f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(1 / (2^(k / 2) * Γ(k / 2)) * x^((k / 2) - 1) * e^(-x / 2))
     /// ```
     fn ln_pdf(&self, x: f64) -> f64 {
@@ -265,7 +280,7 @@ impl Continuous<f64, f64> for ChiSquared {
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use crate::statistics::Median;
     use crate::distribution::ChiSquared;
@@ -307,8 +322,8 @@ mod tests {
     #[test]
     fn test_continuous() {
         // TODO: figure out why this test fails:
-        //tests::check_continuous_distribution(&try_create(1.0), 0.0, 10.0);
-        tests::check_continuous_distribution(&try_create(2.0), 0.0, 10.0);
-        tests::check_continuous_distribution(&try_create(5.0), 0.0, 50.0);
+        //test::check_continuous_distribution(&try_create(1.0), 0.0, 10.0);
+        test::check_continuous_distribution(&try_create(2.0), 0.0, 10.0);
+        test::check_continuous_distribution(&try_create(5.0), 0.0, 50.0);
     }
 }

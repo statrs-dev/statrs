@@ -68,7 +68,7 @@ impl ContinuousCDF<f64, f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) + (1 / 2) * erf((ln(x) - μ) / sqrt(2) * σ)
     /// ```
     ///
@@ -93,7 +93,7 @@ impl ContinuousCDF<f64, f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ - σ * sqrt(2) * erfc_inv(2p)
     /// ```
     ///
@@ -109,6 +109,35 @@ impl ContinuousCDF<f64, f64> for LogNormal {
        } else {
            panic!("p must be within [0.0, 1.0]");
        }
+  }
+    /// Calculates the survival function for the log-normal
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (1 / 2) + (1 / 2) * erf(-(ln(x) - μ) / sqrt(2) * σ)
+    /// ```
+    ///
+    /// where `μ` is the location, `σ` is the scale, and `erf` is the
+    /// error function
+    ///
+    /// note that this calculates the complement due to flipping
+    /// the sign of the argument error function with respect to the cdf.
+    ///
+    /// the normal cdf Φ (and internal error function) as the following property:
+    /// ```text
+    ///  Φ(-x) + Φ(x) = 1
+    ///  Φ(-x)        = 1 - Φ(x)
+    /// ```
+    fn sf(&self, x: f64) -> f64 {
+        if x <= 0.0 {
+            1.0
+        } else if x.is_infinite() {
+            0.0
+        } else {
+            0.5 * erf::erfc((x.ln() - self.location) / (self.scale * f64::consts::SQRT_2))
+        }
     }
 }
 
@@ -118,7 +147,7 @@ impl Min<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -132,8 +161,8 @@ impl Max<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -145,7 +174,7 @@ impl Distribution<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// e^(μ + σ^2 / 2)
     /// ```
     ///
@@ -157,7 +186,7 @@ impl Distribution<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (e^(σ^2) - 1) * e^(2μ + σ^2)
     /// ```
     ///
@@ -170,7 +199,7 @@ impl Distribution<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(σe^(μ + 1 / 2) * sqrt(2π))
     /// ```
     ///
@@ -182,7 +211,7 @@ impl Distribution<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (e^(σ^2) + 2) * sqrt(e^(σ^2) - 1)
     /// ```
     ///
@@ -198,7 +227,7 @@ impl Median<f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// e^μ
     /// ```
     ///
@@ -213,7 +242,7 @@ impl Mode<Option<f64>> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// e^(μ - σ^2)
     /// ```
     ///
@@ -229,7 +258,7 @@ impl Continuous<f64, f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / xσ * sqrt(2π)) * e^(-((ln(x) - μ)^2) / 2σ^2)
     /// ```
     ///
@@ -248,7 +277,7 @@ impl Continuous<f64, f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((1 / xσ * sqrt(2π)) * e^(-((ln(x) - μ)^2) / 2σ^2))
     /// ```
     ///
@@ -264,7 +293,7 @@ impl Continuous<f64, f64> for LogNormal {
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, LogNormal};
@@ -678,14 +707,38 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: LogNormal| x.sf(arg);
+
+        // Wolfram Alpha:: SurvivalFunction[ LogNormalDistribution(-0.1, 0.1), 0.1]
+        test_almost(-0.1, 0.1, 1.0, 1e-107, sf(0.1));
+
+        // Wolfram Alpha:: SurvivalFunction[ LogNormalDistribution(-0.1, 0.1), 0.8]
+        test_almost(-0.1, 0.1, 0.890919989231123, 1e-14, sf(0.8));
+
+        // Wolfram Alpha:: SurvivalFunction[LogNormalDistribution[1.5, 1], 0.8]
+        test_almost(1.5, 1.0, 0.957568715612642, 1e-14, sf(0.8));
+
+        // Wolfram Alpha:: SurvivalFunction[ LogNormalDistribution(2.5, 1.5), 0.1]
+        test_almost(2.5, 1.5, 0.9993169594777358, 1e-14, sf(0.1));
+    }
+
+    #[test]
     fn test_neg_cdf() {
         let cdf = |arg: f64| move |x: LogNormal| x.cdf(arg);
         test_case(0.0, 1.0, 0.0, cdf(0.0));
     }
 
+
+    #[test]
+    fn test_neg_sf() {
+        let sf = |arg: f64| move |x: LogNormal| x.sf(arg);
+        test_case(0.0, 1.0, 1.0, sf(0.0));
+    }
+
     #[test]
     fn test_continuous() {
-        tests::check_continuous_distribution(&try_create(0.0, 0.25), 0.0, 10.0);
-        tests::check_continuous_distribution(&try_create(0.0, 0.5), 0.0, 10.0);
+        test::check_continuous_distribution(&try_create(0.0, 0.25), 0.0, 10.0);
+        test::check_continuous_distribution(&try_create(0.0, 0.5), 0.0, 10.0);
     }
 }

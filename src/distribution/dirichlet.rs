@@ -5,9 +5,7 @@ use crate::{prec, Result, StatsError};
 use nalgebra::DMatrix;
 use nalgebra::DVector;
 use nalgebra::{
-    base::allocator::Allocator,
-    base::{dimension::DimName, MatrixN, VectorN},
-    DefaultAllocator, Dim, DimMin, U1,
+    base::allocator::Allocator, base::dimension::DimName, DefaultAllocator, Dim, DimMin, U1,
 };
 use rand::Rng;
 use std::f64;
@@ -113,13 +111,13 @@ impl Dirichlet {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(B(α)) - (K - α_0)ψ(α_0) - Σ((α_i - 1)ψ(α_i))
     /// ```
     ///
     /// where
     ///
-    /// ```ignore
+    /// ```text
     /// B(α) = Π(Γ(α_i)) / Γ(Σ(α_i))
     /// ```
     ///
@@ -160,7 +158,7 @@ impl MeanN<DVector<f64>> for Dirichlet {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α_i / α_0
     /// ```
     ///
@@ -177,7 +175,7 @@ impl VarianceN<DMatrix<f64>> for Dirichlet {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (α_i * (α_0 - α_i)) / (α_0^2 * (α_0 + 1))
     /// ```
     ///
@@ -217,13 +215,13 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for Dirichlet {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / B(α)) * Π(x_i^(α_i - 1))
     /// ```
     ///
     /// where
     ///
-    /// ```ignore
+    /// ```text
     /// B(α) = Π(Γ(α_i)) / Γ(Σ(α_i))
     /// ```
     ///
@@ -251,13 +249,13 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for Dirichlet {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((1 / B(α)) * Π(x_i^(α_i - 1)))
     /// ```
     ///
     /// where
     ///
-    /// ```ignore
+    /// ```text
     /// B(α) = Π(Γ(α_i)) / Γ(Σ(α_i))
     /// ```
     ///
@@ -302,7 +300,7 @@ fn is_valid_alpha(a: &[f64]) -> bool {
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use super::*;
     use nalgebra::{DVector};

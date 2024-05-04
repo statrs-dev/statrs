@@ -12,11 +12,65 @@ pub fn is_valid_multinomial(arr: &[f64], incl_zero: bool) -> bool {
     sum != 0.0
 }
 
-#[cfg(test)]
-pub mod tests {
+#[macro_use]
+#[cfg(all(test, feature = "nightly"))]
+pub mod test {
     use super::is_valid_multinomial;
     use crate::consts::ACC;
     use crate::distribution::{Continuous, ContinuousCDF, Discrete, DiscreteCDF};
+
+    #[macro_export]
+    macro_rules! testing_boiler {
+        ($arg:ty, $dist:ty) => {
+            fn try_create(arg: $arg) -> $dist {
+                let n = <$dist>::new.call_once(arg);
+                assert!(n.is_ok());
+                n.unwrap()
+            }
+
+            fn bad_create_case(arg: $arg) {
+                let n = <$dist>::new.call(arg);
+                assert!(n.is_err());
+            }
+
+            fn get_value<F, T>(arg: $arg, eval: F) -> T
+            where
+                F: Fn($dist) -> T,
+            {
+                let n = try_create(arg);
+                eval(n)
+            }
+
+            fn test_case<F, T>(arg: $arg, expected: T, eval: F)
+            where
+                F: Fn($dist) -> T,
+                T: ::core::fmt::Debug + ::approx::RelativeEq<Epsilon = f64>,
+            {
+                let x = get_value(arg, eval);
+                assert_relative_eq!(expected, x, max_relative = ACC);
+            }
+
+            #[allow(dead_code)] // This is not used by all distributions.
+            fn test_case_special<F, T>(arg: $arg, expected: T, acc: f64, eval: F)
+            where
+                F: Fn($dist) -> T,
+                T: ::core::fmt::Debug + ::approx::AbsDiffEq<Epsilon = f64>,
+            {
+                let x = get_value(arg, eval);
+                assert_abs_diff_eq!(expected, x, epsilon = acc);
+            }
+
+            #[allow(dead_code)] // This is not used by all distributions.
+            fn test_none<F, T>(arg: $arg, eval: F)
+            where
+                F: Fn($dist) -> Option<T>,
+                T: ::core::cmp::PartialEq + ::core::fmt::Debug,
+            {
+                let x = get_value(arg, eval);
+                assert_eq!(None, x);
+            }
+        };
+    }
 
     /// cdf should be the integral of the pdf
     fn check_integrate_pdf_is_cdf<D: ContinuousCDF<f64, f64> + Continuous<f64, f64>>(

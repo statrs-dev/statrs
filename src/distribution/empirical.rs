@@ -7,19 +7,19 @@ use rand::Rng;
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, PartialEq)]
-struct NonNAN<T>(T);
+struct NonNan<T>(T);
 
-impl<T: PartialEq> Eq for NonNAN<T> {}
+impl<T: PartialEq> Eq for NonNan<T> {}
 
-impl<T: PartialOrd> PartialOrd for NonNAN<T> {
+impl<T: PartialOrd> PartialOrd for NonNan<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.0.partial_cmp(&other.0)
+        Some(self.cmp(other))
     }
 }
 
-impl<T: PartialOrd> Ord for NonNAN<T> {
+impl<T: PartialOrd> Ord for NonNan<T> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
+        self.0.partial_cmp(&other.0).unwrap()
     }
 }
 
@@ -42,7 +42,7 @@ pub struct Empirical {
     sum: f64,
     mean_and_var: Option<(f64, f64)>,
     // keys are data points, values are number of data points with equal value
-    data: BTreeMap<NonNAN<f64>, u64>,
+    data: BTreeMap<NonNan<f64>, u64>,
 }
 
 impl Empirical {
@@ -86,13 +86,13 @@ impl Empirical {
                     self.mean_and_var = Some((data_point, 0.));
                 }
             }
-            *self.data.entry(NonNAN(data_point)).or_insert(0) += 1;
+            *self.data.entry(NonNan(data_point)).or_insert(0) += 1;
         }
     }
     pub fn remove(&mut self, data_point: f64) {
         if !data_point.is_nan() {
             if let (Some(val), Some((mean, var))) =
-                (self.data.remove(&NonNAN(data_point)), self.mean_and_var)
+                (self.data.remove(&NonNan(data_point)), self.mean_and_var)
             {
                 if val == 1 && self.data.is_empty() {
                     self.mean_and_var = None;
@@ -105,7 +105,7 @@ impl Empirical {
                     var - (self.sum - 1.) * (data_point - mean) * (data_point - mean) / self.sum;
                 self.sum -= 1.;
                 if val != 1 {
-                    self.data.insert(NonNAN(data_point), val - 1);
+                    self.data.insert(NonNan(data_point), val - 1);
                 };
                 self.mean_and_var = Some((mean, var));
             }
@@ -158,14 +158,14 @@ impl ::rand::distributions::Distribution<f64> for Empirical {
 /// Panics if number of samples is zero
 impl Max<f64> for Empirical {
     fn max(&self) -> f64 {
-        self.data.iter().rev().map(|(key, _)| key.0).next().unwrap()
+        self.data.keys().rev().map(|key| key.0) .next().unwrap()
     }
 }
 
 /// Panics if number of samples is zero
 impl Min<f64> for Empirical {
     fn min(&self) -> f64 {
-        self.data.iter().map(|(key, _)| key.0).next().unwrap()
+        self.data.keys().map(|key| key.0).next().unwrap()
     }
 }
 
@@ -189,9 +189,20 @@ impl ContinuousCDF<f64, f64> for Empirical {
         }
         sum as f64 / self.sum
     }
+
+    fn sf(&self, x: f64) -> f64 {
+        let mut sum = 0;
+        for (keys, values) in self.data.iter().rev() {
+            if keys.0 <= x {
+                return sum as f64 / self.sum;
+            }
+            sum += values;
+        }
+        sum as f64 / self.sum
+    }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use super::*;
     #[test]
@@ -219,6 +230,34 @@ mod tests {
         empirical.remove(2.0);
         // because of rounding errors, this doesn't hold in general
         // due to the mean and variance being calculated in a streaming way
+        assert_eq!(unchanged, empirical);
+    }
+
+    #[test]
+    fn test_sf() {
+        let samples = vec![5.0, 10.0];
+        let mut empirical = Empirical::from_vec(samples);
+        assert_eq!(empirical.sf(0.0), 1.0);
+        assert_eq!(empirical.sf(5.0), 0.5);
+        assert_eq!(empirical.sf(5.5), 0.5);
+        assert_eq!(empirical.sf(6.0), 0.5);
+        assert_eq!(empirical.sf(10.0), 0.0);
+        assert_eq!(empirical.min(), 5.0);
+        assert_eq!(empirical.max(), 10.0);
+        empirical.add(2.0);
+        empirical.add(2.0);
+        assert_eq!(empirical.sf(0.0), 1.0);
+        assert_eq!(empirical.sf(5.0), 0.25);
+        assert_eq!(empirical.sf(5.5), 0.25);
+        assert_eq!(empirical.sf(6.0), 0.25);
+        assert_eq!(empirical.sf(10.0), 0.0);
+        assert_eq!(empirical.min(), 2.0);
+        assert_eq!(empirical.max(), 10.0);
+        let unchanged = empirical.clone();
+        empirical.add(2.0);
+        empirical.remove(2.0);
+         //because of rounding errors, this doesn't hold in general
+         //due to the mean and variance being calculated in a streaming way
         assert_eq!(unchanged, empirical);
     }
 }

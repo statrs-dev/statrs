@@ -175,7 +175,7 @@ where
         for x in self {
             let borrow = *x.borrow();
             let borrow2 = match iter.next() {
-                None => panic!(format!("{}", StatsError::ContainersMustBeSameLength)),
+                None => panic!("{}", StatsError::ContainersMustBeSameLength),
                 Some(x) => *x.borrow(),
             };
             let old_mean2 = mean2;
@@ -185,7 +185,7 @@ where
             comoment += (borrow - mean1) * (borrow2 - old_mean2);
         }
         if iter.next().is_some() {
-            panic!(format!("{}", StatsError::ContainersMustBeSameLength));
+            panic!("{}", StatsError::ContainersMustBeSameLength);
         }
 
         if n > 1.0 {
@@ -205,7 +205,7 @@ where
         for x in self {
             let borrow = *x.borrow();
             let borrow2 = match iter.next() {
-                None => panic!(format!("{}", StatsError::ContainersMustBeSameLength)),
+                None => panic!("{}", StatsError::ContainersMustBeSameLength),
                 Some(x) => *x.borrow(),
             };
             let old_mean2 = mean2;
@@ -215,7 +215,7 @@ where
             comoment += (borrow - mean1) * (borrow2 - old_mean2);
         }
         if iter.next().is_some() {
-            panic!(format!("{}", StatsError::ContainersMustBeSameLength));
+            panic!("{}", StatsError::ContainersMustBeSameLength)
         }
         if n > 0.0 {
             comoment / n

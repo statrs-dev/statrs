@@ -4,13 +4,11 @@
 use crate::error::StatsError;
 use crate::function::gamma;
 use crate::Result;
-use std::f64;
-use std::sync::Once;
 
 /// The maximum factorial representable
 /// by a 64-bit floating point without
 /// overflowing
-pub const MAX_ARG: u64 = 170;
+pub const MAX_FACTORIAL: usize = 170;
 
 /// Computes the factorial function `x -> x!` for
 /// `170 >= x >= 0`. All factorials larger than `170!`
@@ -20,11 +18,8 @@ pub const MAX_ARG: u64 = 170;
 ///
 /// Returns `f64::INFINITY` if `x > 170`
 pub fn factorial(x: u64) -> f64 {
-    if x > MAX_ARG {
-        f64::INFINITY
-    } else {
-        get_fcache()[x as usize]
-    }
+    let x = x as usize;
+    FCACHE.get(x).map_or(f64::INFINITY, |&fac| fac)
 }
 
 /// Computes the logarithmic factorial function `x -> ln(x!)`
@@ -34,13 +29,10 @@ pub fn factorial(x: u64) -> f64 {
 ///
 /// Returns `0.0` if `x <= 1`
 pub fn ln_factorial(x: u64) -> f64 {
-    if x <= 1 {
-        0.0
-    } else if x > MAX_ARG {
-        gamma::ln_gamma(x as f64 + 1.0)
-    } else {
-        get_fcache()[x as usize].ln()
-    }
+    let x = x as usize;
+    FCACHE
+        .get(x)
+        .map_or_else(|| gamma::ln_gamma(x as f64 + 1.0), |&fac| fac.ln())
 }
 
 /// Computes the binomial coefficient `n choose k`
@@ -98,89 +90,95 @@ pub fn checked_multinomial(n: u64, ni: &[u64]) -> Result<f64> {
 
 // Initialization for pre-computed cache of 171 factorial
 // values 0!...170!
-const CACHE_SIZE: usize = 171;
+const FCACHE: [f64; MAX_FACTORIAL + 1] = {
+    let mut fcache = [1.0; MAX_FACTORIAL + 1];
 
-static mut FCACHE: [f64; CACHE_SIZE] = [1.0; CACHE_SIZE];
-static START: Once = Once::new();
+    // `const` only allow while loops
+    let mut i = 1;
+    while i < MAX_FACTORIAL + 1 {
+        fcache[i] = fcache[i - 1] * i as f64;
+        i += 1;
+    }
 
-fn get_fcache() -> [f64; CACHE_SIZE] {
-    START.call_once(|| {
-        (1..CACHE_SIZE).fold(1.0, |acc, i| {
-            let fac = acc * i as f64;
-            unsafe {
-                FCACHE[i] = fac;
-            }
-            fac
-        });
-    });
-    unsafe { FCACHE }
-}
+    fcache
+};
 
-#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use std::{f64, u64};
+    use super::*;
+
+    #[test]
+    fn test_fcache() {
+        assert!((FCACHE[0] - 1.0).abs() < f64::EPSILON);
+        assert!((FCACHE[1] - 1.0).abs() < f64::EPSILON);
+        assert!((FCACHE[2] - 2.0).abs() < f64::EPSILON);
+        assert!((FCACHE[3] - 6.0).abs() < f64::EPSILON);
+        assert!((FCACHE[4] - 24.0).abs() < f64::EPSILON);
+        assert!((FCACHE[70] - 1197857166996989e85).abs() < f64::EPSILON);
+        assert!((FCACHE[170] - 7257415615307994e291).abs() < f64::EPSILON);
+    }
 
     #[test]
     fn test_factorial_and_ln_factorial() {
-        let mut factorial = 1.0;
+        let mut fac = 1.0;
+        assert_eq!(factorial(0), fac);
         for i in 1..171 {
-            factorial *= i as f64;
-            assert_eq!(super::factorial(i), factorial);
-            assert_eq!(super::ln_factorial(i), factorial.ln());
+            fac *= i as f64;
+            assert_eq!(factorial(i), fac);
+            assert_eq!(ln_factorial(i), fac.ln());
         }
     }
 
     #[test]
     fn test_factorial_overflow() {
-        assert_eq!(super::factorial(172), f64::INFINITY);
-        assert_eq!(super::factorial(u64::MAX), f64::INFINITY);
+        assert_eq!(factorial(172), f64::INFINITY);
+        assert_eq!(factorial(u64::MAX), f64::INFINITY);
     }
 
     #[test]
     fn test_ln_factorial_does_not_overflow() {
-        assert_eq!(super::ln_factorial(1 << 10), 6078.2118847500501140);
-        assert_almost_eq!(super::ln_factorial(1 << 12), 29978.648060844048236, 1e-11);
-        assert_eq!(super::ln_factorial(1 << 15), 307933.81973375485425);
-        assert_eq!(super::ln_factorial(1 << 17), 1413421.9939462073242);
+        assert_eq!(ln_factorial(1 << 10), 6078.2118847500501140);
+        assert_almost_eq!(ln_factorial(1 << 12), 29978.648060844048236, 1e-11);
+        assert_eq!(ln_factorial(1 << 15), 307933.81973375485425);
+        assert_eq!(ln_factorial(1 << 17), 1413421.9939462073242);
     }
 
     #[test]
     fn test_binomial() {
-        assert_eq!(super::binomial(1, 1), 1.0);
-        assert_eq!(super::binomial(5, 2), 10.0);
-        assert_eq!(super::binomial(7, 3), 35.0);
-        assert_eq!(super::binomial(1, 0), 1.0);
-        assert_eq!(super::binomial(0, 1), 0.0);
-        assert_eq!(super::binomial(5, 7), 0.0);
+        assert_eq!(binomial(1, 1), 1.0);
+        assert_eq!(binomial(5, 2), 10.0);
+        assert_eq!(binomial(7, 3), 35.0);
+        assert_eq!(binomial(1, 0), 1.0);
+        assert_eq!(binomial(0, 1), 0.0);
+        assert_eq!(binomial(5, 7), 0.0);
     }
 
     #[test]
     fn test_ln_binomial() {
-        assert_eq!(super::ln_binomial(1, 1), 1f64.ln());
-        assert_almost_eq!(super::ln_binomial(5, 2), 10f64.ln(), 1e-14);
-        assert_almost_eq!(super::ln_binomial(7, 3), 35f64.ln(), 1e-14);
-        assert_eq!(super::ln_binomial(1, 0), 1f64.ln());
-        assert_eq!(super::ln_binomial(0, 1), 0f64.ln());
-        assert_eq!(super::ln_binomial(5, 7), 0f64.ln());
+        assert_eq!(ln_binomial(1, 1), 1f64.ln());
+        assert_almost_eq!(ln_binomial(5, 2), 10f64.ln(), 1e-14);
+        assert_almost_eq!(ln_binomial(7, 3), 35f64.ln(), 1e-14);
+        assert_eq!(ln_binomial(1, 0), 1f64.ln());
+        assert_eq!(ln_binomial(0, 1), 0f64.ln());
+        assert_eq!(ln_binomial(5, 7), 0f64.ln());
     }
 
     #[test]
     fn test_multinomial() {
-        assert_eq!(1.0, super::multinomial(1, &[1, 0]));
-        assert_eq!(10.0, super::multinomial(5, &[3, 2]));
-        assert_eq!(10.0, super::multinomial(5, &[2, 3]));
-        assert_eq!(35.0, super::multinomial(7, &[3, 4]));
+        assert_eq!(1.0, multinomial(1, &[1, 0]));
+        assert_eq!(10.0, multinomial(5, &[3, 2]));
+        assert_eq!(10.0, multinomial(5, &[2, 3]));
+        assert_eq!(35.0, multinomial(7, &[3, 4]));
     }
 
     #[test]
     #[should_panic]
     fn test_multinomial_bad_ni() {
-        super::multinomial(1, &[1, 1]);
+        multinomial(1, &[1, 1]);
     }
 
     #[test]
     fn test_checked_multinomial_bad_ni() {
-        assert!(super::checked_multinomial(1, &[1, 1]).is_err());
+        assert!(checked_multinomial(1, &[1, 1]).is_err());
     }
 }

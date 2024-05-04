@@ -5,30 +5,52 @@
 //! Math.NET in so far as they are used in the computation of distribution
 //! values. This crate depends on the `rand` crate to provide RNG.
 //!
-//! # Example
-//! The following example samples from a standard normal distribution
-//!
+//! # Sampling
+//! The common use case is to set up the distributions and sample from them which depends on the `Rand` crate for random number generation.
 //! ```
-//! # extern crate rand;
-//! # extern crate statrs;
+//! use statrs::distribution::Exp;
 //! use rand::distributions::Distribution;
-//! use statrs::distribution::Normal;
-//!
-//! # fn main() {
-//! let mut r = rand::thread_rng();
-//! let n = Normal::new(0.0, 1.0).unwrap();
-//! for _ in 0..10 {
-//!     print!("{}", n.sample(&mut r));
-//! }
-//! # }
+//! let mut r = rand::rngs::OsRng;
+//! let n = Exp::new(0.5).unwrap();
+//! print!("{}", n.sample(&mut r));
 //! ```
+//!
+//! # Introspecting distributions
+//! Statrs also comes with a number of useful utility traits for more detailed introspection of distributions.
+//! ```
+//! use statrs::distribution::{Exp, Continuous, ContinuousCDF}; // `cdf` and `pdf`
+//! use statrs::statistics::Distribution; // statistical moments and entropy
+//!
+//! let n = Exp::new(1.0).unwrap();
+//! assert_eq!(n.mean(), Some(1.0));
+//! assert_eq!(n.variance(), Some(1.0));
+//! assert_eq!(n.entropy(), Some(1.0));
+//! assert_eq!(n.skewness(), Some(2.0));
+//! assert_eq!(n.cdf(1.0), 0.6321205588285576784045);
+//! assert_eq!(n.pdf(1.0), 0.3678794411714423215955);
+//! ```
+//!
+//! # Utility functions
+//! as well as utility functions including `erf`, `gamma`, `ln_gamma`, `beta`, etc.
+//!
+//! ```
+//! use statrs::distribution::FisherSnedecor;
+//! use statrs::statistics::Distribution;
+//!
+//! let n = FisherSnedecor::new(1.0, 1.0).unwrap();
+//! assert!(n.variance().is_none());
+//! ```
+//! ## Distributions implemented
+//! Statrs comes with a number of commonly used distributions including Normal, Gamma, Student's T, Exponential, Weibull, etc. view all implemented in `distributions` module.
 
 #![crate_type = "lib"]
 #![crate_name = "statrs"]
 #![allow(clippy::excessive_precision)]
 #![allow(clippy::many_single_char_names)]
-#![allow(dead_code)]
 #![allow(unused_imports)]
+#![forbid(unsafe_code)]
+#![cfg_attr(all(test, feature = "nightly"), feature(unboxed_closures))]
+#![cfg_attr(all(test, feature = "nightly"), feature(fn_traits))]
 
 #[macro_use]
 extern crate approx;
@@ -37,15 +59,16 @@ extern crate approx;
 macro_rules! assert_almost_eq {
     ($a:expr, $b:expr, $prec:expr) => {
         if !$crate::prec::almost_eq($a, $b, $prec) {
-            panic!(format!(
+            panic!(
                 "assertion failed: `abs(left - right) < {:e}`, (left: `{}`, right: `{}`)",
                 $prec, $a, $b
-            ));
+            );
         }
     };
 }
 
 pub mod consts;
+#[macro_use]
 pub mod distribution;
 pub mod euclid;
 pub mod function;
@@ -61,7 +84,7 @@ pub(crate) fn is_zero(x: f64) -> bool {
     ulps_eq!(x, 0.0, max_ulps = 0)
 }
 
-#[cfg(test)]
+// #[cfg(test)]
 mod testing;
 
 pub use crate::error::StatsError;

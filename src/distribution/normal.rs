@@ -65,7 +65,7 @@ impl ContinuousCDF<f64, f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * (1 + erf((x - μ) / (σ * sqrt(2))))
     /// ```
     ///
@@ -74,6 +74,31 @@ impl ContinuousCDF<f64, f64> for Normal {
     fn cdf(&self, x: f64) -> f64 {
         cdf_unchecked(x, self.mean, self.std_dev)
     }
+
+    /// Calculates the survival function for the
+    /// normal distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (1 / 2) * (1 + erf(-(x - μ) / (σ * sqrt(2))))
+    /// ```
+    ///
+    /// where `μ` is the mean, `σ` is the standard deviation, and
+    /// `erf` is the error function
+    ///
+    /// note that this calculates the complement due to flipping
+    /// the sign of the argument error function with respect to the cdf.
+    ///
+    /// the normal cdf Φ (and internal error function) as the following property:
+    /// ```text
+    ///  Φ(-x) + Φ(x) = 1
+    ///  Φ(-x)        = 1 - Φ(x)
+    /// ```
+    fn sf(&self, x: f64) -> f64 {
+        sf_unchecked(x, self.mean, self.std_dev)
+    }
+
     /// Calculates the inverse cumulative distribution function for the
     /// normal distribution at `x`
     ///
@@ -83,14 +108,14 @@ impl ContinuousCDF<f64, f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ - sqrt(2) * σ * erfc_inv(2x)
     /// ```
     ///
     /// where `μ` is the mean, `σ` is the standard deviation and `erfc_inv` is
     /// the inverse of the complementary error function
     fn inverse_cdf(&self, x: f64) -> f64 {
-        if x < 0.0 || x > 1.0 {
+        if !(0.0..=1.0).contains(&x) {
             panic!("x must be in [0, 1]");
         } else {
             self.mean - (self.std_dev * f64::consts::SQRT_2 * erf::erfc_inv(2.0 * x))
@@ -104,8 +129,8 @@ impl Min<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// -INF
+    /// ```text
+    /// f64::NEG_INFINITY
     /// ```
     fn min(&self) -> f64 {
         f64::NEG_INFINITY
@@ -118,8 +143,8 @@ impl Max<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -139,7 +164,7 @@ impl Distribution<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// σ^2
     /// ```
     ///
@@ -151,7 +176,7 @@ impl Distribution<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * ln(2σ^2 * π * e)
     /// ```
     ///
@@ -163,7 +188,7 @@ impl Distribution<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -176,7 +201,7 @@ impl Median<f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -191,7 +216,7 @@ impl Mode<Option<f64>> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -207,7 +232,7 @@ impl Continuous<f64, f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / sqrt(2σ^2 * π)) * e^(-(x - μ)^2 / 2σ^2)
     /// ```
     ///
@@ -222,7 +247,7 @@ impl Continuous<f64, f64> for Normal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((1 / sqrt(2σ^2 * π)) * e^(-(x - μ)^2 / 2σ^2))
     /// ```
     ///
@@ -236,6 +261,12 @@ impl Continuous<f64, f64> for Normal {
 /// with the given mean and standard deviation at x
 pub fn cdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
     0.5 * erf::erfc((mean - x) / (std_dev * f64::consts::SQRT_2))
+}
+
+/// performs an unchecked sf calculation for a normal distribution
+/// with the given mean and standard deviation at x
+pub fn sf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
+    0.5 * erf::erfc((x - mean) / (std_dev * f64::consts::SQRT_2))
 }
 
 /// performs an unchecked pdf calculation for a normal distribution
@@ -258,7 +289,7 @@ pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, mean: f64, std_dev: f64) -
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Normal};
@@ -445,9 +476,22 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Normal| x.sf(arg);
+        test_case(5.0, 2.0, 1.0, sf(f64::NEG_INFINITY));
+        test_almost(5.0, 2.0, 0.9999997133484281, 1e-16, sf(-5.0));
+        test_almost(5.0, 2.0, 0.9997673709209455, 1e-13, sf(-2.0));
+        test_almost(5.0, 2.0, 0.9937903346744879, 1e-12, sf(0.0));
+        test_case(5.0, 2.0, 0.6914624612740131, sf(4.0));
+        test_case(5.0, 2.0, 0.5, sf(5.0));
+        test_case(5.0, 2.0, 0.3085375387259869, sf(6.0));
+        test_almost(5.0, 2.0, 0.006209665325512148, 1e-12, sf(10.0));
+    }
+
+    #[test]
     fn test_continuous() {
-        tests::check_continuous_distribution(&try_create(0.0, 1.0), -10.0, 10.0);
-        tests::check_continuous_distribution(&try_create(20.0, 0.5), 10.0, 30.0);
+        test::check_continuous_distribution(&try_create(0.0, 1.0), -10.0, 10.0);
+        test::check_continuous_distribution(&try_create(20.0, 0.5), 10.0, 30.0);
     }
 
     #[test]

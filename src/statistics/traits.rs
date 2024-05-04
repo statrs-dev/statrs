@@ -1,7 +1,5 @@
 use ::nalgebra::{
-    base::allocator::Allocator,
-    base::{dimension::DimName, MatrixN, VectorN},
-    DefaultAllocator, Dim, DimMin, U1,
+    base::allocator::Allocator, base::dimension::DimName, DefaultAllocator, Dim, DimMin, U1,
 };
 use ::num_traits::float::Float;
 

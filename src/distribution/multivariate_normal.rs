@@ -3,9 +3,8 @@ use crate::distribution::Normal;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
 use crate::{Result, StatsError};
 use nalgebra::{
-    base::allocator::Allocator,
-    base::{dimension::DimName, MatrixN, VectorN},
-    Cholesky, DefaultAllocator, Dim, DimMin, LU, U1,
+    base::allocator::Allocator, base::dimension::DimName, Cholesky, DefaultAllocator, Dim, DimMin,
+    LU, U1,
 };
 use nalgebra::{DMatrix, DVector};
 use rand::Rng;
@@ -38,7 +37,7 @@ pub struct MultivariateNormal {
 }
 
 impl MultivariateNormal {
-    ///  Constructs a new multivariate normal distribution with a mean of `mean`
+    /// Constructs a new multivariate normal distribution with a mean of `mean`
     /// and covariance matrix `cov`
     ///
     /// # Errors
@@ -48,6 +47,18 @@ impl MultivariateNormal {
     pub fn new(mean: Vec<f64>, cov: Vec<f64>) -> Result<Self> {
         let mean = DVector::from_vec(mean);
         let cov = DMatrix::from_vec(mean.len(), mean.len(), cov);
+        MultivariateNormal::new_from_nalgebra(mean, cov)
+    }
+
+    /// Constructs a new multivariate normal distribution with a mean of `mean`
+    /// and covariance matrix `cov`, but with explicitly using nalgebras
+    /// DVector and DMatrix instead of Vec<f64>
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the given covariance matrix is not
+    /// symmetric or positive-definite
+    pub fn new_from_nalgebra(mean: DVector<f64>, cov: DMatrix<f64>) -> Result<Self> {
         let dim = mean.len();
         // Check that the provided covariance matrix is symmetric
         if cov.lower_triangle() != cov.upper_triangle().transpose()
@@ -80,11 +91,12 @@ impl MultivariateNormal {
             }
         }
     }
+
     /// Returns the entropy of the multivariate normal distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * ln(det(2 * π * e * Σ))
     /// ```
     ///
@@ -105,7 +117,9 @@ impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateNormal {
     /// Samples from the multivariate normal distribution
     ///
     /// # Formula
+    /// ```text
     /// L * Z + μ
+    /// ```
     ///
     /// where `L` is the Cholesky decomposition of the covariance matrix,
     /// `Z` is a vector of normally distributed random variables, and
@@ -161,7 +175,7 @@ impl Mode<DVector<f64>> for MultivariateNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -177,7 +191,7 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2 * π) ^ (-k / 2) * det(Σ) ^ (1 / 2) * e ^ ( -(1 / 2) * transpose(x - μ) * inv(Σ) * (x - μ))
     /// ```
     ///
@@ -203,8 +217,30 @@ impl<'a> Continuous<&'a DVector<f64>, f64> for MultivariateNormal {
     }
 }
 
+impl Continuous<Vec<f64>, f64> for MultivariateNormal {
+    /// Calculates the probability density function for the multivariate
+    /// normal distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (2 * π) ^ (-k / 2) * det(Σ) ^ (1 / 2) * e ^ ( -(1 / 2) * transpose(x - μ) * inv(Σ) * (x - μ))
+    /// ```
+    ///
+    /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
+    /// of the covariance matrix, and `k` is the dimension of the distribution
+    fn pdf(&self, x: Vec<f64>) -> f64 {
+        self.pdf(&DVector::from(x))
+    }
+    /// Calculates the log probability density function for the multivariate
+    /// normal distribution at `x`. Equivalent to pdf(x).ln().
+    fn ln_pdf(&self, x: Vec<f64>) -> f64 {
+        self.pdf(&DVector::from(x))
+    }
+}
+
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests  {
     use crate::distribution::{Continuous, MultivariateNormal};
     use crate::statistics::*;
@@ -212,8 +248,8 @@ mod tests  {
     use core::fmt::Debug;
     use nalgebra::base::allocator::Allocator;
     use nalgebra::{
-        DefaultAllocator, Dim, DimMin, DimName, Matrix2, Matrix3, MatrixN, Vector2, Vector3,
-        VectorN, U1, U2,
+        DefaultAllocator, Dim, DimMin, DimName, Matrix2, Matrix3, Vector2, Vector3,
+        U1, U2,
     };
 
     fn try_create(mean: Vec<f64>, covariance: Vec<f64>) -> MultivariateNormal

@@ -139,15 +139,18 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// 1 - ((n choose k+1) * (N-n choose K-k-1)) / (N choose K) * 3_F_2(1,
-    /// k+1-K, k+1-n; k+2, N+k+2-K-n; 1)
+    /// ```text
+    /// 1 - ((n choose x+1) * (N-n choose K-x-1)) / (N choose K) * 3_F_2(1,
+    /// x+1-K, x+1-n; k+2, N+x+2-K-n; 1)
     /// ```
     ///
     /// where `N` is population, `K` is successes, `n` is draws,
     /// and `p_F_q` is the [generalized hypergeometric
     /// function](https://en.wikipedia.
     /// org/wiki/Generalized_hypergeometric_function)
+    ///
+    /// Calculated as a discrete integral over the probability mass
+    /// function evaluated from 0..x+1
     fn cdf(&self, x: u64) -> f64 {
         if x < self.min() {
             0.0
@@ -164,6 +167,40 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
             })
         }
     }
+
+    /// Calculates the survival function for the hypergeometric
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// 1 - ((n choose x+1) * (N-n choose K-x-1)) / (N choose K) * 3_F_2(1,
+    /// x+1-K, x+1-n; x+2, N+x+2-K-n; 1)
+    /// ```
+    ///
+    /// where `N` is population, `K` is successes, `n` is draws,
+    /// and `p_F_q` is the [generalized hypergeometric
+    /// function](https://en.wikipedia.
+    /// org/wiki/Generalized_hypergeometric_function)
+    ///
+    /// Calculated as a discrete integral over the probability mass
+    /// function evaluated from (x+1)..max
+    fn sf(&self, x: u64) -> f64 {
+        if x < self.min() {
+            1.0
+        } else if x >= self.max() {
+            0.0
+        } else {
+            let k = x;
+            let ln_denom = factorial::ln_binomial(self.population, self.draws);
+            (k + 1..self.max() + 1).fold(0.0, |acc, i| {
+                acc + (factorial::ln_binomial(self.successes, i)
+                    + factorial::ln_binomial(self.population - self.successes, self.draws - i)
+                    - ln_denom)
+                    .exp()
+            })
+        }
+    }
 }
 
 impl Min<u64> for Hypergeometric {
@@ -173,7 +210,7 @@ impl Min<u64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// max(0, n + K - N)
     /// ```
     ///
@@ -190,7 +227,7 @@ impl Max<u64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// min(K, n)
     /// ```
     ///
@@ -209,7 +246,7 @@ impl Distribution<f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// K * n / N
     /// ```
     ///
@@ -229,7 +266,7 @@ impl Distribution<f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// n * (K / N) * ((N - K) / N) * ((N - n) / (N - 1))
     /// ```
     ///
@@ -252,7 +289,7 @@ impl Distribution<f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ((N - 2K) * (N - 1)^(1 / 2) * (N - 2n)) / ([n * K * (N - K) * (N -
     /// n)]^(1 / 2) * (N - 2))
     /// ```
@@ -278,7 +315,7 @@ impl Mode<Option<u64>> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor((n + 1) * (k + 1) / (N + 2))
     /// ```
     ///
@@ -294,7 +331,7 @@ impl Discrete<u64, f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (K choose x) * (N-K choose n-x) / (N choose n)
     /// ```
     ///
@@ -314,7 +351,7 @@ impl Discrete<u64, f64> for Hypergeometric {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((K choose x) * (N-K choose n-x) / (N choose n))
     /// ```
     ///
@@ -327,7 +364,7 @@ impl Discrete<u64, f64> for Hypergeometric {
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use std::fmt::Debug;
     use crate::statistics::*;
@@ -509,8 +546,18 @@ mod tests {
         test_almost(10, 5, 3, 0.5, 1e-15, cdf(1));
         test_almost(10, 5, 3, 11.0 / 12.0, 1e-14, cdf(2));
         test_almost(10000, 2, 9800, 199.0 / 499950.0, 1e-14, cdf(0));
-        test_almost(10000, 2, 9800, 199.0 / 499950.0, 1e-14, cdf(0));
         test_almost(10000, 2, 9800, 19799.0 / 499950.0, 1e-12, cdf(1));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: u64| move |x: Hypergeometric| x.sf(arg);
+        test_case(2, 1, 1, 0.5, sf(0));
+        test_almost(10, 1, 1, 0.1, 1e-14, sf(0));
+        test_almost(10, 5, 3, 0.5, 1e-15, sf(1));
+        test_almost(10, 5, 3, 1.0 / 12.0, 1e-14, sf(2));
+        test_almost(10000, 2, 9800, 499751. / 499950.0, 1e-10, sf(0));
+        test_almost(10000, 2, 9800, 480151. / 499950.0, 1e-10, sf(1));
     }
 
     #[test]
@@ -526,8 +573,20 @@ mod tests {
     }
 
     #[test]
+    fn test_sf_arg_too_big() {
+        let sf = |arg: u64| move |x: Hypergeometric| x.sf(arg);
+        test_case(0, 0, 0, 0.0, sf(0));
+    }
+
+    #[test]
+    fn test_sf_arg_too_small() {
+        let sf = |arg: u64| move |x: Hypergeometric| x.sf(arg);
+        test_case(2, 2, 2, 1.0, sf(0));
+    }
+
+    #[test]
     fn test_discrete() {
-        tests::check_discrete_distribution(&try_create(5, 4, 3), 4);
-        tests::check_discrete_distribution(&try_create(3, 2, 1), 2);
+        test::check_discrete_distribution(&try_create(5, 4, 3), 4);
+        test::check_discrete_distribution(&try_create(3, 2, 1), 2);
     }
 }

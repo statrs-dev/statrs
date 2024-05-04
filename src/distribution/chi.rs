@@ -84,12 +84,12 @@ impl ContinuousCDF<f64, f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// P(k / 2, x^2 / 2)
     /// ```
     ///
     /// where `k` is the degrees of freedom and `P` is
-    /// the regularized Gamma function
+    /// the regularized lower incomplete Gamma function
     fn cdf(&self, x: f64) -> f64 {
         if self.freedom == f64::INFINITY || x == f64::INFINITY {
             1.0
@@ -97,6 +97,27 @@ impl ContinuousCDF<f64, f64> for Chi {
             0.0
         } else {
             gamma::gamma_lr(self.freedom / 2.0, x * x / 2.0)
+        }
+    }
+
+    /// Calculates the survival function for the chi
+    /// distribution at `x`.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// P(k / 2, x^2 / 2)
+    /// ```
+    ///
+    /// where `k` is the degrees of freedom and `P` is
+    /// the regularized upper incomplete Gamma function
+    fn sf(&self, x: f64) -> f64 {
+        if self.freedom == f64::INFINITY || x == f64::INFINITY {
+            0.0
+        } else if x <= 0.0 {
+            1.0
+        } else {
+            gamma::gamma_ur(self.freedom / 2.0, x * x / 2.0)
         }
     }
 }
@@ -107,7 +128,7 @@ impl Min<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -121,8 +142,8 @@ impl Max<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -138,18 +159,31 @@ impl Distribution<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// sqrt2 * Γ((k + 1) / 2) / Γ(k / 2)
     /// ```
     ///
     /// where `k` is degrees of freedom and `Γ` is the gamma function
     fn mean(&self) -> Option<f64> {
         if self.freedom.is_infinite() {
-            return None;
+            None
+        } else if self.freedom > 300.0 {
+            // Large n approximation based on the Stirling series approximation to the Gamma function
+            // This avoids call the Gamma function with large arguments and returning NaN
+            //
+            // Relative accuracy follows O(1/n^4) and at 300 d.o.f. is better than 1e-12
+            // For a f32 impl the threshold should be changed to 150
+            Some(
+                self.freedom.sqrt()
+                    / ((1.0 + 0.25 / self.freedom)
+                        * (1.0 + 0.03125 / (self.freedom * self.freedom))
+                        * (1.0 - 0.046875 / (self.freedom * self.freedom * self.freedom))),
+            )
+        } else {
+            let mean = f64::consts::SQRT_2 * gamma::gamma((self.freedom + 1.0) / 2.0)
+                / gamma::gamma(self.freedom / 2.0);
+            Some(mean)
         }
-        let mean = f64::consts::SQRT_2 * gamma::gamma((self.freedom + 1.0) / 2.0)
-            / gamma::gamma(self.freedom / 2.0);
-        Some(mean)
     }
     /// Returns the variance of the chi distribution
     ///
@@ -159,7 +193,7 @@ impl Distribution<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k - μ^2
     /// ```
     ///
@@ -177,7 +211,7 @@ impl Distribution<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(Γ(k / 2)) + 0.5 * (k - ln2 - (k - 1) * ψ(k / 2))
     /// ```
     ///
@@ -202,7 +236,7 @@ impl Distribution<f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (μ / σ^3) * (1 - 2σ^2)
     /// ```
     /// where `μ` is the mean and `σ` the standard deviation
@@ -223,7 +257,7 @@ impl Mode<Option<f64>> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// sqrt(k - 1)
     /// ```
     ///
@@ -242,7 +276,7 @@ impl Continuous<f64, f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2^(1 - (k / 2)) * x^(k - 1) * e^(-x^2 / 2)) / Γ(k / 2)
     /// ```
     ///
@@ -265,7 +299,7 @@ impl Continuous<f64, f64> for Chi {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((2^(1 - (k / 2)) * x^(k - 1) * e^(-x^2 / 2)) / Γ(k / 2))
     /// ```
     fn ln_pdf(&self, x: f64) -> f64 {
@@ -280,7 +314,7 @@ impl Continuous<f64, f64> for Chi {
 }
 
 #[rustfmt::skip]
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 mod tests {
     use std::f64;
     use crate::distribution::internal::*;
@@ -328,14 +362,6 @@ mod tests {
         assert_almost_eq!(expected, x, acc);
     }
 
-    fn test_is_nan<F>(freedom: f64, eval: F)
-    where
-        F: Fn(Chi) -> f64,
-    {
-        let x = get_value(freedom, eval);
-        assert!(x.is_nan());
-    }
-
     #[test]
     fn test_create() {
         create_case(1.0);
@@ -359,6 +385,15 @@ mod tests {
         test_almost(2.0, 1.25331413731550025121, 1e-14, mean);
         test_almost(2.5, 1.43396639245837498609, 1e-14, mean);
         test_almost(5.0, 2.12769216214097428235, 1e-14, mean);
+        test_almost(336.0, 18.31666925443713, 1e-12, mean);
+    }
+
+    #[test]
+    fn test_large_dof_mean_not_nan() {
+        for i in 1..1000 {
+            let mean = Chi::new(i as f64).unwrap().mean().unwrap();
+            assert!(!mean.is_nan(), "Chi mean for {} dof was {}", i, mean);
+        }
     }
 
     #[test]
@@ -539,15 +574,46 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Chi| x.sf(arg);
+        test_case(1.0, 1.0, sf(0.0));
+        test_almost(1.0, 0.920344325445942, 1e-16, sf(0.1));
+        test_almost(1.0, 0.31731050786291404, 1e-15, sf(1.0));
+        test_almost(1.0, 3.797912493177544e-8, 1e-15, sf(5.5));
+        test_case(1.0, 0.0, sf(f64::INFINITY));
+        test_case(2.0, 1.0, sf(0.0));
+        test_almost(2.0, 0.9950124791926823, 1e-17, sf(0.1));
+        test_almost(2.0, 0.6065306597126333, 1e-15, sf(1.0));
+        test_almost(2.0, 2.699578503363014e-7, 1e-15, sf(5.5));
+        test_case(2.0, 0.0, sf(f64::INFINITY));
+        test_case(2.5, 1.0, sf(0.0));
+        test_almost(2.5, 0.998829758628597, 1e-18, sf(0.1));
+        test_almost(2.5, 0.716210047334687, 1e-16, sf(1.0));
+        test_almost(2.5, 5.966267719870189e-7, 1e-15, sf(5.5));
+        test_case(2.5, 0.0, sf(f64::INFINITY));
+        test_case(f64::INFINITY, 0.0, sf(0.0));
+        test_case(f64::INFINITY, 0.0, sf(0.1));
+        test_case(f64::INFINITY, 0.0, sf(1.0));
+        test_case(f64::INFINITY, 0.0, sf(5.5));
+        test_case(f64::INFINITY, 0.0, sf(f64::INFINITY));
+    }
+
+    #[test]
     fn test_neg_cdf() {
         let cdf = |arg: f64| move |x: Chi| x.cdf(arg);
         test_case(1.0, 0.0, cdf(-1.0));
     }
 
     #[test]
+    fn test_neg_sf() {
+        let sf = |arg: f64| move |x: Chi| x.sf(arg);
+        test_case(1.0, 1.0, sf(-1.0));
+    }
+
+    #[test]
     fn test_continuous() {
-        tests::check_continuous_distribution(&try_create(1.0), 0.0, 10.0);
-        tests::check_continuous_distribution(&try_create(2.0), 0.0, 10.0);
-        tests::check_continuous_distribution(&try_create(5.0), 0.0, 10.0);
+        test::check_continuous_distribution(&try_create(1.0), 0.0, 10.0);
+        test::check_continuous_distribution(&try_create(2.0), 0.0, 10.0);
+        test::check_continuous_distribution(&try_create(5.0), 0.0, 10.0);
     }
 }

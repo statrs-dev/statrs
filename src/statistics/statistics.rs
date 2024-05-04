@@ -28,14 +28,14 @@ pub trait Statistics<T> {
     /// use std::f64;
     /// use statrs::statistics::Statistics;
     ///
-    /// let x: [f64; 0] = [];
-    /// assert!(x.min().is_nan());
+    /// let x = &[];
+    /// assert!(Statistics::min(x).is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
-    /// assert!(y.min().is_nan());
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
+    /// assert!(Statistics::min(y).is_nan());
     ///
-    /// let z = [0.0, 3.0, -2.0];
-    /// assert_eq!(z.min(), -2.0);
+    /// let z = &[0.0, 3.0, -2.0];
+    /// assert_eq!(Statistics::min(z), -2.0);
     /// ```
     fn min(self) -> T;
 
@@ -51,14 +51,14 @@ pub trait Statistics<T> {
     /// use std::f64;
     /// use statrs::statistics::Statistics;
     ///
-    /// let x: [f64; 0] = [];
-    /// assert!(x.max().is_nan());
+    /// let x = &[];
+    /// assert!(Statistics::max(x).is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
-    /// assert!(y.max().is_nan());
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
+    /// assert!(Statistics::max(y).is_nan());
     ///
-    /// let z = [0.0, 3.0, -2.0];
-    /// assert_eq!(z.max(), 3.0);
+    /// let z = &[0.0, 3.0, -2.0];
+    /// assert_eq!(Statistics::max(z), 3.0);
     /// ```
     fn max(self) -> T;
 
@@ -74,13 +74,13 @@ pub trait Statistics<T> {
     /// use std::f64;
     /// use statrs::statistics::Statistics;
     ///
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.abs_min().is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
     /// assert!(y.abs_min().is_nan());
     ///
-    /// let z = [0.0, 3.0, -2.0];
+    /// let z = &[0.0, 3.0, -2.0];
     /// assert_eq!(z.abs_min(), 0.0);
     /// ```
     fn abs_min(self) -> T;
@@ -97,13 +97,13 @@ pub trait Statistics<T> {
     /// use std::f64;
     /// use statrs::statistics::Statistics;
     ///
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.abs_max().is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
     /// assert!(y.abs_max().is_nan());
     ///
-    /// let z = [0.0, 3.0, -2.0, -8.0];
+    /// let z = &[0.0, 3.0, -2.0, -8.0];
     /// assert_eq!(z.abs_max(), 8.0);
     /// ```
     fn abs_max(self) -> T;
@@ -125,13 +125,13 @@ pub trait Statistics<T> {
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.mean().is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
     /// assert!(y.mean().is_nan());
     ///
-    /// let z = [0.0, 3.0, -2.0];
+    /// let z = &[0.0, 3.0, -2.0];
     /// assert_almost_eq!(z.mean(), 1.0 / 3.0, 1e-15);
     /// # }
     /// ```
@@ -155,19 +155,19 @@ pub trait Statistics<T> {
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.geometric_mean().is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
     /// assert!(y.geometric_mean().is_nan());
     ///
-    /// let mut z = [0.0, 3.0, -2.0];
+    /// let mut z = &[0.0, 3.0, -2.0];
     /// assert!(z.geometric_mean().is_nan());
     ///
-    /// z = [0.0, 3.0, 2.0];
+    /// z = &[0.0, 3.0, 2.0];
     /// assert_eq!(z.geometric_mean(), 0.0);
     ///
-    /// z = [1.0, 2.0, 3.0];
+    /// z = &[1.0, 2.0, 3.0];
     /// // test value from online calculator, could be more accurate
     /// assert_almost_eq!(z.geometric_mean(), 1.81712, 1e-5);
     /// # }
@@ -194,19 +194,19 @@ pub trait Statistics<T> {
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.harmonic_mean().is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
     /// assert!(y.harmonic_mean().is_nan());
     ///
-    /// let mut z = [0.0, 3.0, -2.0];
+    /// let mut z = &[0.0, 3.0, -2.0];
     /// assert!(z.harmonic_mean().is_nan());
     ///
-    /// z = [0.0, 3.0, 2.0];
+    /// z = &[0.0, 3.0, 2.0];
     /// assert_eq!(z.harmonic_mean(), 0.0);
     ///
-    /// z = [1.0, 2.0, 3.0];
+    /// z = &[1.0, 2.0, 3.0];
     /// // test value from online calculator, could be more accurate
     /// assert_almost_eq!(z.harmonic_mean(), 1.63636, 1e-5);
     /// # }
@@ -229,13 +229,13 @@ pub trait Statistics<T> {
     /// use std::f64;
     /// use statrs::statistics::Statistics;
     ///
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.variance().is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
     /// assert!(y.variance().is_nan());
     ///
-    /// let z = [0.0, 3.0, -2.0];
+    /// let z = &[0.0, 3.0, -2.0];
     /// assert_eq!(z.variance(), 19.0 / 3.0);
     /// ```
     fn variance(self) -> T;
@@ -257,13 +257,13 @@ pub trait Statistics<T> {
     /// use std::f64;
     /// use statrs::statistics::Statistics;
     ///
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.std_dev().is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
     /// assert!(y.std_dev().is_nan());
     ///
-    /// let z = [0.0, 3.0, -2.0];
+    /// let z = &[0.0, 3.0, -2.0];
     /// assert_eq!(z.std_dev(), (19f64 / 3.0).sqrt());
     /// ```
     fn std_dev(self) -> T;
@@ -283,13 +283,13 @@ pub trait Statistics<T> {
     /// use std::f64;
     /// use statrs::statistics::Statistics;
     ///
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.population_variance().is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
     /// assert!(y.population_variance().is_nan());
     ///
-    /// let z = [0.0, 3.0, -2.0];
+    /// let z = &[0.0, 3.0, -2.0];
     /// assert_eq!(z.population_variance(), 38.0 / 9.0);
     /// ```
     fn population_variance(self) -> T;
@@ -309,13 +309,13 @@ pub trait Statistics<T> {
     /// use std::f64;
     /// use statrs::statistics::Statistics;
     ///
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.population_std_dev().is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
     /// assert!(y.population_std_dev().is_nan());
     ///
-    /// let z = [0.0, 3.0, -2.0];
+    /// let z = &[0.0, 3.0, -2.0];
     /// assert_eq!(z.population_std_dev(), (38f64 / 9.0).sqrt());
     /// ```
     fn population_std_dev(self) -> T;
@@ -345,16 +345,16 @@ pub trait Statistics<T> {
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.covariance(&[]).is_nan());
     ///
-    /// let y1 = [0.0, f64::NAN, 3.0, -2.0];
-    /// let y2 = [-5.0, 4.0, 10.0, f64::NAN];
-    /// assert!(y1.covariance(&y2).is_nan());
+    /// let y1 = &[0.0, f64::NAN, 3.0, -2.0];
+    /// let y2 = &[-5.0, 4.0, 10.0, f64::NAN];
+    /// assert!(y1.covariance(y2).is_nan());
     ///
-    /// let z1 = [0.0, 3.0, -2.0];
-    /// let z2 = [-5.0, 4.0, 10.0];
-    /// assert_almost_eq!(z1.covariance(&z2), -5.5, 1e-14);
+    /// let z1 = &[0.0, 3.0, -2.0];
+    /// let z2 = &[-5.0, 4.0, 10.0];
+    /// assert_almost_eq!(z1.covariance(z2), -5.5, 1e-14);
     /// # }
     /// ```
     fn covariance(self, other: Self) -> T;
@@ -382,16 +382,16 @@ pub trait Statistics<T> {
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.population_covariance(&[]).is_nan());
     ///
-    /// let y1 = [0.0, f64::NAN, 3.0, -2.0];
-    /// let y2 = [-5.0, 4.0, 10.0, f64::NAN];
-    /// assert!(y1.population_covariance(&y2).is_nan());
+    /// let y1 = &[0.0, f64::NAN, 3.0, -2.0];
+    /// let y2 = &[-5.0, 4.0, 10.0, f64::NAN];
+    /// assert!(y1.population_covariance(y2).is_nan());
     ///
-    /// let z1 = [0.0, 3.0, -2.0];
-    /// let z2 = [-5.0, 4.0, 10.0];
-    /// assert_almost_eq!(z1.population_covariance(&z2), -11.0 / 3.0, 1e-14);
+    /// let z1 = &[0.0, 3.0, -2.0];
+    /// let z2 = &[-5.0, 4.0, 10.0];
+    /// assert_almost_eq!(z1.population_covariance(z2), -11.0 / 3.0, 1e-14);
     /// # }
     /// ```
     fn population_covariance(self, other: Self) -> T;
@@ -412,13 +412,13 @@ pub trait Statistics<T> {
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
-    /// let x = [];
+    /// let x = &[];
     /// assert!(x.quadratic_mean().is_nan());
     ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
+    /// let y = &[0.0, f64::NAN, 3.0, -2.0];
     /// assert!(y.quadratic_mean().is_nan());
     ///
-    /// let z = [0.0, 3.0, -2.0];
+    /// let z = &[0.0, 3.0, -2.0];
     /// // test value from online calculator, could be more accurate
     /// assert_almost_eq!(z.quadratic_mean(), 2.08167, 1e-5);
     /// # }

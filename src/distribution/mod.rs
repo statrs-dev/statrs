@@ -22,6 +22,7 @@ pub use self::gamma::Gamma;
 pub use self::geometric::Geometric;
 pub use self::hypergeometric::Hypergeometric;
 pub use self::inverse_gamma::InverseGamma;
+pub use self::laplace::Laplace;
 pub use self::log_normal::LogNormal;
 pub use self::multinomial::Multinomial;
 pub use self::multivariate_normal::MultivariateNormal;
@@ -51,8 +52,10 @@ mod fisher_snedecor;
 mod gamma;
 mod geometric;
 mod hypergeometric;
+#[macro_use]
 mod internal;
 mod inverse_gamma;
+mod laplace;
 mod log_normal;
 mod multinomial;
 mod multivariate_normal;
@@ -85,12 +88,31 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
     /// assert_eq!(0.5, n.cdf(0.5));
     /// ```
     fn cdf(&self, x: K) -> T;
+
+    /// Returns the survival function calculated
+    /// at `x` for a given distribution. May panic depending
+    /// on the implementor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::{ContinuousCDF, Uniform};
+    ///
+    /// let n = Uniform::new(0.0, 1.0).unwrap();
+    /// assert_eq!(0.5, n.sf(0.5));
+    /// ```
+    fn sf(&self, x: K) -> T {
+        T::one() - self.cdf(x)
+    }
+
     /// Due to issues with rounding and floating-point accuracy the default
     /// implementation may be ill-behaved.
     /// Specialized inverse cdfs should be used whenever possible.
     /// Performs a binary search on the domain of `cdf` to obtain an approximation
     /// of `F^-1(p) := inf { x | F(x) >= p }`. Needless to say, performance may
     /// may be lacking.
+    #[doc(alias = "quantile function")]
+    #[doc(alias = "quantile")]
     fn inverse_cdf(&self, p: T) -> K {
         if p == T::zero() {
             return self.min();
@@ -131,12 +153,28 @@ pub trait DiscreteCDF<K: Bounded + Clone + Num, T: Float>: Min<K> + Max<K> {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::{ContinuousCDF, Uniform};
+    /// use statrs::distribution::{DiscreteCDF, DiscreteUniform};
     ///
-    /// let n = Uniform::new(0.0, 1.0).unwrap();
-    /// assert_eq!(0.5, n.cdf(0.5));
+    /// let n = DiscreteUniform::new(1, 10).unwrap();
+    /// assert_eq!(0.6, n.cdf(6));
     /// ```
     fn cdf(&self, x: K) -> T;
+
+    /// Returns the survival function calculated at `x` for
+    /// a given distribution. May panic depending on the implementor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::{DiscreteCDF, DiscreteUniform};
+    ///
+    /// let n = DiscreteUniform::new(1, 10).unwrap();
+    /// assert_eq!(0.4, n.sf(6));
+    /// ```
+    fn sf(&self, x: K) -> T {
+        T::one() - self.cdf(x)
+    }
+
     /// Due to issues with rounding and floating-point accuracy the default implementation may be ill-behaved
     /// Specialized inverse cdfs should be used whenever possible.
     fn inverse_cdf(&self, p: T) -> K {

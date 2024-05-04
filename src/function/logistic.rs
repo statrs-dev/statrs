@@ -24,7 +24,7 @@ pub fn logit(p: f64) -> f64 {
 ///
 /// If `p < 0.0` or `p > 1.0`
 pub fn checked_logit(p: f64) -> Result<f64> {
-    if p < 0.0 || p > 1.0 {
+    if !(0.0..=1.0).contains(&p) {
         Err(StatsError::ArgIntervalIncl("p", 0.0, 1.0))
     } else {
         Ok((p / (1.0 - p)).ln())
