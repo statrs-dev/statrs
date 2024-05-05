@@ -3,6 +3,7 @@
 //! concrete implementations for a variety of distributions.
 use super::statistics::{Max, Min};
 use ::num_traits::{float::Float, Bounded, Num};
+use ::nalgebra::DVector;
 
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::Beta;
@@ -26,6 +27,7 @@ pub use self::laplace::Laplace;
 pub use self::log_normal::LogNormal;
 pub use self::multinomial::Multinomial;
 pub use self::multivariate_normal::MultivariateNormal;
+pub use self::multivariate_uniform::MultivariateUniform;
 pub use self::negative_binomial::NegativeBinomial;
 pub use self::normal::Normal;
 pub use self::pareto::Pareto;
@@ -59,6 +61,7 @@ mod laplace;
 mod log_normal;
 mod multinomial;
 mod multivariate_normal;
+mod multivariate_uniform;
 mod negative_binomial;
 mod normal;
 mod pareto;
@@ -279,4 +282,39 @@ pub trait Discrete<K, T> {
     /// assert!(prec::almost_eq(n.ln_pmf(5), (0.24609375f64).ln(), 1e-15));
     /// ```
     fn ln_pmf(&self, x: K) -> T;
+}
+
+/// The `ContinuousMultivariateCDF` trait is used to specify and interface
+/// for univariate distributions for which cdf DVector float arguments are
+/// sensible
+pub trait ContinuousMultivariateCDF<K: Float, T: Float> {
+    /// Returns the cumulative distribution function calculated
+    /// at `x` for a given multivariate distribution. May panic depending
+    /// on the implementor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::{ContinuousMultivariateCDF, MultivariateNormal};
+    /// use nalgebra::DVector;
+    ///
+    /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(0.25, mvn.cdf(DVector::from_vec(vec![0., 0.,])));
+    /// ```
+    fn cdf(&self, x: DVector<K>) -> T;
+
+    /// Returns the survival function calculated
+    /// at `x` for a given distribution. May panic depending
+    /// on the implementor.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::{ContinuousMultivariateCDF, MultivariateNormal};
+    /// use nalgebra::DVector;
+    ///
+    /// let mvs = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(0., mvs.sf(DVector::from_vec(vec![f64::INFINITY, f64::INFINITY])));
+    /// ```
+    fn sf(&self, x: DVector<K>) -> T;
 }

@@ -1,5 +1,6 @@
-use crate::distribution::Continuous;
-use crate::distribution::Normal;
+use crate::distribution::{
+    Continuous, ContinuousCDF, ContinuousMultivariateCDF, MultivariateUniform, Normal,
+};
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
 use crate::{Result, StatsError};
 use nalgebra::{
@@ -7,6 +8,8 @@ use nalgebra::{
     LU, U1,
 };
 use nalgebra::{DMatrix, DVector};
+use primes::{PrimeSet, Sieve};
+use rand::distributions::Distribution;
 use rand::Rng;
 use std::f64;
 use std::f64::consts::{E, PI};
@@ -111,6 +114,142 @@ impl MultivariateNormal {
                 .ln(),
         )
     }
+
+    /// Returns the lower triangular cholesky decomposition of
+    /// self.cov wrt. switching of rows and columns of the matrix as well as mutating
+    /// the input `a` and `b` with the row switches
+    ///
+    /// Algorithm explained in 4.1.3 in ´Computation of Multivariate
+    /// Normal and t Probabilities´, Alan Genz.
+    fn chol_chrows(&self, a: &mut DVector<f64>, b: &mut DVector<f64>) -> DMatrix<f64> {
+        let mut cov = self.cov.clone();
+        let mut chol_lower: DMatrix<f64> = DMatrix::zeros(self.dim, self.dim);
+        let mut y: DVector<f64> = DVector::zeros(self.dim);
+
+        let std_normal = Normal::new(0., 1.).unwrap();
+        for i in 0..self.dim {
+            let mut cdf_diff = f64::INFINITY;
+            let mut new_i = i;
+            let mut a_tilde = a[i];
+            let mut b_tilde = b[i];
+            // Find the index of which to switch rows with
+            for j in i..self.dim {
+                let mut num = 0.;
+                let mut den = cov[(j, j)].sqrt();
+                if i > 0 {
+                    // Numerator:
+                    // -Σ lᵢₘyₘ, sum from m=1 to i-1
+                    num = (chol_lower.index((j, ..i)) * y.index((..i, 0)))[0];
+                    // Denominator:
+                    // √(σᵢᵢ - Σ lᵢₘ²), sum from m=1 to i-1
+                    den = (cov[(j, j)]
+                        - (chol_lower.index((j, ..i)).transpose() * chol_lower.index((j, ..i)))[0])
+                        .sqrt();
+                }
+                let pot_a_tilde = (a[j] - num) / den;
+                let pot_b_tilde = (b[j] - num) / den;
+                let cdf_a = std_normal.cdf(pot_a_tilde);
+                let cdf_b = std_normal.cdf(pot_b_tilde);
+
+                let pot_cdf_diff = cdf_b - cdf_a; // Potential minimum
+                if pot_cdf_diff < cdf_diff {
+                    new_i = j;
+                    cdf_diff = pot_cdf_diff;
+                    a_tilde = pot_a_tilde;
+                    b_tilde = pot_b_tilde;
+                }
+            }
+            if i != new_i {
+                cov.swap_rows(i, new_i);
+                cov.swap_columns(i, new_i);
+                a.swap_rows(i, new_i);
+                b.swap_rows(i, new_i);
+                chol_lower.swap_rows(i, new_i);
+                chol_lower.swap_columns(i, new_i);
+            }
+
+            // Get the expected values:
+            // yᵢ = 1 / (Ψ(bᵢ) - Ψ(𝑎ᵢ)) * ∫_𝑎ᵢ^𝑏ᵢ sψ(s) ds
+            y[i] = ((-a_tilde.powi(2) / 2.).exp() - (-b_tilde.powi(2) / 2.).exp())
+                / ((2. * PI).sqrt() * cdf_diff);
+
+            // Cholesky decomposition algorithm with the new changed row
+            let mut ids = chol_lower.index_mut((.., ..i + 1)); // Get only the relevant indices
+            ids[(i, i)] =
+                (cov[(i, i)] - (ids.index((i, ..i)) * ids.index((i, ..i)).transpose())[0]).sqrt();
+            for j in i + 1..self.dim {
+                ids[(j, i)] = (cov[(j, i)]
+                    - (ids.index((i, ..i)) * ids.index((j, ..i)).transpose())[0])
+                    / ids[(i, i)];
+            }
+        }
+        chol_lower
+    }
+
+    /// Uses the algorithm as explained in
+    /// 'Computation of Multivariate Normal and t Probabilites', Section 4.2.2,
+    /// by Alan Genz.
+    fn integrate_pdf(&self, a: &mut DVector<f64>, b: &mut DVector<f64>) -> (f64, f64) {
+        let chol_lower = self.chol_chrows(a, b);
+
+        // Generate first `dim` primes, Ricthmyer generators
+        // Could write function in crate for this instead if we
+        // want less imports. Efficiency here does not matter much
+        let mut sqrt_primes = DVector::zeros(self.dim);
+        let mut pset = Sieve::new();
+        for (i, n) in pset.iter().enumerate().take(self.dim) {
+            sqrt_primes[i] = (n as f64).sqrt();
+        }
+
+        let n_samples = 15;
+        let n_points = 1000 * self.dim;
+        let mvu = MultivariateUniform::standard(self.dim).unwrap();
+        let std_normal = Normal::new(0., 1.).unwrap();
+        let mut rng = rand::thread_rng();
+
+        let one = DVector::from_vec(vec![1.; self.dim]);
+        let mut y: DVector<f64> = DVector::zeros(self.dim - 1);
+
+        let alpha = 3.;
+        let mut err = 0.;
+        let mut err_help = 0.;
+        let mut p = 0.; // The cdf probability
+        for i in 0..n_samples {
+            let rnd_points = mvu.sample(&mut rng).unwrap();
+            let mut sum_i = 0.;
+            for j in 0..n_points {
+                let w =
+                    (2. * DVector::from_vec(
+                        ((j as f64) * &sqrt_primes + &rnd_points)
+                            .iter()
+                            .map(|x| x % 1.)
+                            .collect::<Vec<f64>>(),
+                    ) - &one)
+                        .abs();
+                let mut di = std_normal.cdf(a[0] / chol_lower[(0, 0)]);
+                let mut ei = std_normal.cdf(b[0] / chol_lower[(0, 0)]);
+                let mut fi = ei - di;
+                for m in 1..self.dim {
+                    y[m - 1] = std_normal.inverse_cdf(di + w[m - 1] * (ei - di));
+                    let mut num = (chol_lower.index((m, ..m)) * y.index((..m, 0)))[0];
+                    let den = chol_lower[(m, m)];
+                    if num.is_nan() {
+                        // Either -inf, 0 or inf, comes when yᵢ = -inf and chol_lowerₘᵢ = 0
+                        num = 0.;
+                    }
+                    di = std_normal.cdf((a[m] - num) / den);
+                    ei = std_normal.cdf((b[m] - num) / den);
+                    fi *= ei - di;
+                }
+                sum_i += (fi - sum_i) / ((j + 1) as f64);
+            }
+            let delta = (sum_i - p) / ((i + 1) as f64);
+            p += delta;
+            err_help = (((i - 1) as f64) * err_help / ((i + 1) as f64)) + delta.powi(2);
+            err = alpha * err_help.sqrt()
+        }
+        return (p, err);
+    }
 }
 
 impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateNormal {
@@ -129,6 +268,28 @@ impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateNormal {
         let d = Normal::new(0., 1.).unwrap();
         let z = DVector::<f64>::from_distribution(self.dim, &d, rng);
         (&self.cov_chol_decomp * z) + &self.mu
+    }
+}
+
+impl ContinuousMultivariateCDF<f64, f64> for MultivariateNormal {
+    /// Returns the cumulative distribution function at `x` for the
+    /// multivariate normal distribution
+    fn cdf(&self, mut x: DVector<f64>) -> f64 {
+        // Shift integration limit wrt. mean
+        x -= &self.mu;
+        let (p, _) = self.integrate_pdf(
+            &mut DVector::from_vec(vec![f64::NEG_INFINITY; self.dim]),
+            &mut x,
+        );
+        p
+    }
+
+    /// Returns the survival function at `x` for the
+    /// multivariate normal distribution, using approximation with
+    /// `N` points.
+    fn sf(&self, x: DVector<f64>) -> f64 {
+        // Shift integration limit wrt. mean
+        1. - self.cdf(x)
     }
 }
 
@@ -296,10 +457,26 @@ mod tests  {
         assert_almost_eq!(expected, x, acc);
     }
 
+    fn identity_vec(dim: usize) -> Vec<f64> {
+        let id: DMatrix<f64> = DMatrix::identity(dim,dim);
+        return id.data.into();
+    }
+
+    fn cov_matrix(dim: usize, diag_factor: f64, off_diag_factor: f64) -> Vec<f64> {
+        let id = DMatrix::from_diagonal_element(dim,dim,diag_factor);
+        let rho = DMatrix::repeat(dim, dim, off_diag_factor);
+        return (id - DMatrix::identity(dim,dim)*off_diag_factor + rho).data.into()
+    }
+
     use super::*;
 
     macro_rules! dvec {
-        ($($x:expr),*) => (DVector::from_vec(vec![$($x),*]));
+        ($($x:expr),*) => {
+            DVector::from_vec(vec![$($x),*])
+        };
+        ($($x:expr)?;$($y:expr)?) => {
+            DVector::from_vec(vec![$($x)?;$($y)?])
+        };
     }
 
     macro_rules! mat2 {
@@ -389,5 +566,22 @@ mod tests  {
         test_almost(vec![0.5, -0.2], vec![2.0, 0.3, 0.3, 0.5],  (0.0013075203140666656f64).ln(), 1e-15, ln_pdf(dvec![2., 2.]));
         test_case(vec![0., 0.], vec![f64::INFINITY, 0., 0., f64::INFINITY], f64::NEG_INFINITY, ln_pdf(dvec![10., 10.]));
         test_case(vec![0., 0.], vec![f64::INFINITY, 0., 0., f64::INFINITY], f64::NEG_INFINITY, ln_pdf(dvec![100., 100.]));
+    }
+
+    #[test]
+    fn test_cdf() {
+        let cdf = |arg: DVector<_>| move |x: MultivariateNormal| x.cdf(arg);
+        test_case(vec![0., 0., 0.], identity_vec(3), 0., cdf(dvec![f64::NEG_INFINITY; 3]));
+        test_case(vec![0., 0., 0.], identity_vec(3), 1., cdf(dvec![f64::INFINITY; 3]));
+        test_case(vec![1., -1., 10.], identity_vec(3), 1., cdf(dvec![f64::INFINITY; 3]));
+        test_almost(vec![0., 0., 0.], cov_matrix(3, 1., 0.1), 0.119415222, 1e-5, cdf(dvec![-0.1; 3]));
+        test_almost(vec![-5., 0., 5.], cov_matrix(3, 1., 0.5), 0.23397186, 1e-5, cdf(dvec![-2., 1., 4.3]));
+        test_almost(vec![1., 0., 2.], cov_matrix(3, 1., 0.9), 0.0663303, 1e-5, cdf(dvec![0.5; 3]));
+        test_almost(vec![-0.5, 1.1], cov_matrix(2, 1., 0.2), 0.700540224, 1e-5, cdf(dvec![0.5, 2.]));
+        test_almost(vec![10., 10., 10.], cov_matrix(3, 5., 1.5), 0.5945585970, 1e-5, cdf(dvec![12.; 3]));
+        test_almost(vec![1.; 4], cov_matrix(4, 2., 0.5), 0.1264796225, 1e-5, cdf(dvec![1.; 4]));
+        test_almost(vec![1.; 15], cov_matrix(15, 2., 0.5), 0.011545573, 1e-5, cdf(dvec![1.; 15]));
+        test_almost(vec![-100., -150., 150.], vec![1., 0.2, 0.9, 0.2, 1., 0.3, 0.9, 0.3, 1.], 0.999999713, 1e-5, cdf(dvec![-90., -140., 155.]));
+        test_almost(vec![0.5,0.2,1.1], vec![1., 0.2, 0.9, 0.2, 1., 0.3, 0.9, 0.3, 1.], 0.07532228836, 1e-5, cdf(dvec![-0.9, 1.3, 2.2]));
     }
 }
