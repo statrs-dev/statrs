@@ -51,6 +51,26 @@ impl Normal {
             Ok(Normal { mean, std_dev })
         }
     }
+
+    ///  Constructs a new standard normal distribution with a mean of 0
+    /// and a standard deviation of 1.
+    ///
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Normal;
+    ///
+    /// let mut result = Normal::standard();
+    /// ```
+    pub fn new() -> Normal {
+        let mean: f64 = 0.0;
+        let std_dev: f64 = 1.0;
+        Normal {
+            mean,
+            std_dev
+        }
+    }
 }
 
 impl ::rand::distributions::Distribution<f64> for Normal {
