@@ -63,7 +63,7 @@ impl Normal {
     ///
     /// let mut result = Normal::standard();
     /// ```
-    pub fn new() -> Normal {
+    pub fn standard() -> Normal {
         let mean: f64 = 0.0;
         let std_dev: f64 = 1.0;
         Normal {
