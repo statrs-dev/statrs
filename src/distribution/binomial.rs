@@ -573,16 +573,6 @@ mod tests {
     }
 
     #[test]
-    fn test_inverse_cdf_is_infimum() {
-        let invcdf = |arg: f64| move |x: Binomial| x.inverse_cdf(arg);
-        let a = 0.2592;
-        let b = 0.3456;
-        test_case(0.4, 5, 1, invcdf(a));
-        test_case(0.4, 5, 1, invcdf((a+b)/2.0));
-        test_case(0.4, 5, 2, invcdf(b));
-    }
-
-    #[test]
     fn test_cdf_inverse_cdf() {
         let cdf_invcdf = |arg: u64| move |x: Binomial| x.inverse_cdf(x.cdf(arg));
         test_case(0.3, 10, 3, cdf_invcdf(3));

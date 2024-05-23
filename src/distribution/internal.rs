@@ -54,7 +54,7 @@ pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
 #[macro_use]
 #[cfg(all(test, feature = "nightly"))]
 pub mod test {
-    use super::is_valid_multinomial;
+    use super::*;
     use crate::consts::ACC;
     use crate::distribution::{Continuous, ContinuousCDF, Discrete, DiscreteCDF};
 
@@ -234,5 +234,27 @@ pub mod test {
     fn test_is_valid_multinomial_no_zero() {
         let invalid = [5.2, 0.0, 1e-15, 1000000.12];
         assert!(!is_valid_multinomial(&invalid, false));
+    }
+
+    #[test]
+    fn test_integer_bisection() {
+        fn search(z: usize, data: &Vec<usize>) -> Option<usize> {
+            integral_bisection_search(|idx: &usize| data[*idx], z, 0, data.len() - 1)
+        }
+
+        let needle = 3;
+        let data = (0..5)
+            .map(|n| if n >= needle { n + 1 } else { n })
+            .collect::<Vec<_>>();
+
+        for i in 0..(data.len()) {
+            assert_eq!(search(data[i], &data), Some(i),)
+        }
+        {
+            let infimum = search(needle, &data);
+            let found_element = search(needle + 1, &data); // 4 > needle && member of range
+            assert_eq!(found_element, Some(needle));
+            assert_eq!(infimum, found_element)
+        }
     }
 }
