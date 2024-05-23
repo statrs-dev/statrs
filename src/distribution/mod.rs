@@ -2,7 +2,8 @@
 //! and provides
 //! concrete implementations for a variety of distributions.
 use super::statistics::{Max, Min};
-use ::num_traits::{Float, PrimInt};
+use ::num_traits::{Bounded, Float, Num};
+use num_traits::{NumAssign, NumAssignOps, NumAssignRef};
 
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::Beta;
@@ -145,7 +146,9 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
 
 /// The `DiscreteCDF` trait is used to specify an interface for univariate
 /// discrete distributions.
-pub trait DiscreteCDF<K: PrimInt, T: Float>: Min<K> + Max<K> {
+pub trait DiscreteCDF<K: Sized + Num + Ord + Clone + NumAssignOps, T: Float>:
+    Min<K> + Max<K>
+{
     /// Returns the cumulative distribution function calculated
     /// at `x` for a given distribution. May panic depending
     /// on the implementor.
@@ -178,27 +181,25 @@ pub trait DiscreteCDF<K: PrimInt, T: Float>: Min<K> + Max<K> {
     /// Due to issues with rounding and floating-point accuracy the default implementation may be ill-behaved
     /// Specialized inverse cdfs should be used whenever possible.
     ///
-    /// # Panics, for the default impl
-    ///
-    /// If `x <= 0.0` or `x >= 1.0`
+    /// # Panics
+    /// this default impl panics if provided `p` not on interval [0.0, 1.0]
     fn inverse_cdf(&self, p: T) -> K {
-        // TODO: fix integer implementation
         if p == T::zero() {
             return self.min();
         } else if p == T::one() {
             return self.max();
         } else if !(T::zero()..=T::one()).contains(&p) {
-            panic!("p must be in [0, 1]")
+            panic!("p must be on [0, 1]")
         }
 
         let two = K::one() + K::one();
-        let mut high = two;
-        let low = self.min();
-        while self.cdf(high) < p {
-            high = two * high;
+        let mut ub = two.clone();
+        let lb = self.min();
+        while self.cdf(ub.clone()) < p {
+            ub *= two.clone();
         }
 
-        internal::integral_bisection_search(|p| self.cdf(p), p, low, high).unwrap()
+        internal::integral_bisection_search(|p| self.cdf(p.clone()), p, lb, ub).unwrap()
     }
 }
 

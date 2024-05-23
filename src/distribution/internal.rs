@@ -1,4 +1,4 @@
-use num_traits::{Float, PrimInt};
+use num_traits::{Bounded, Float, Num};
 
 /// Returns true if there are no elements in `x` in `arr`
 /// such that `x <= 0.0` or `x` is `f64::NAN` and `sum(arr) > 0.0`.
@@ -14,32 +14,36 @@ pub fn is_valid_multinomial(arr: &[f64], incl_zero: bool) -> bool {
     sum != 0.0
 }
 
-/// implements univariate function bisection search with infimum
-/// if `None`, either the function was found not semi-monotone on the interval
-/// or the provided bounds did not map to a range containing `z`
-/// if `Some(k)`, then the condition below is met
+/// Implements univariate function bisection searching for criteria
 /// ```text
 /// smallest k such that f(k) >= z
 /// ```
-pub fn integral_bisection_search<K: PrimInt, T: Float>(
-    f: impl Fn(K) -> T, z: T, lb: K, ub: K,
+/// Evaluates to `None` if
+/// - provided interval has lower bound greater than upper bound
+/// - function found not semi-monotone on the provided interval containing `z`
+/// Evaluates to `Some(k)`, where `k` satisfies the search criteria
+pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
+    f: impl Fn(&K) -> T, z: T, lb: K, ub: K,
 ) -> Option<K> {
-    if lb > ub || !(f(lb)..=f(ub)).contains(&z) {
+    if !(f(&lb)..=f(&ub)).contains(&z) {
         return None;
     }
     let two = K::one() + K::one();
     let mut lb = lb;
     let mut ub = ub;
     loop {
-        let mid = (lb + ub) / two;
-        if !(f(lb)..=f(ub)).contains(&f(mid)) {
-            // if f found to not be monotone on the interval
+        let mid = (lb.clone() + ub.clone()) / two.clone();
+        if !(f(&lb)..=f(&ub)).contains(&f(&mid)) {
+            // if f found not monotone on the interval
             return None;
-        } else if (lb..=lb + K::one()).contains(&ub) {
-            // if ub \in [lb, lb+1]
+        } else if f(&lb) == z {
+            return Some(lb);
+        } else if f(&ub) == z {
             return Some(ub);
-        } else if f(mid) >= z {
-            // implies mid >= z
+        } else if (lb.clone() + K::one()) == ub {
+            // no more elements to search
+            return Some(ub);
+        } else if f(&mid) >= z {
             ub = mid;
         } else {
             lb = mid;
