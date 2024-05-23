@@ -63,7 +63,7 @@ impl Normal {
     ///
     /// let mut result = Normal::standard();
     /// ```
-    fn standard() -> Normal {
+    pub fn standard() -> Normal {
         Normal {
             mean: 0.0,
             std_dev: 1.0,
@@ -534,5 +534,18 @@ mod tests {
         test_almost(5.0, 2.0, 6.0, 1e-14, inverse_cdf(0.69146246127401310363770461060833773988360217555457859));
         test_almost(5.0, 2.0, 10.0, 1e-14, inverse_cdf(0.9937903346742238648330218954258077788721022530769078));
         test_case(5.0, 2.0, f64::INFINITY, inverse_cdf(1.0));
+    }
+
+    #[test]
+    fn test_default() {
+        let n = Normal::default();
+
+        n_mean = n.mean().unwrap();
+        n_std  = n.std_dev().unwrap();
+
+        // Check that the mean of the distribution is close to 0
+        assert_almost_eq!(n_mean, 0.0, 1e-15);
+        // Check that the standard deviation of the distribution is close to 1
+        assert_almost_eq!(n_std, 1.0, 1e-15);
     }
 }
