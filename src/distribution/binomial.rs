@@ -566,6 +566,24 @@ mod tests {
     }
 
     #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: Binomial| x.inverse_cdf(arg);
+        test_case(0.4, 5, 2, invcdf(0.3456));
+
+        // cases in issue #185
+        test_case(0.018, 465, 1, invcdf(3.472e-4));
+        test_case(0.5, 6, 4, invcdf(0.75));
+    }
+
+    #[test]
+    fn test_cdf_inverse_cdf() {
+        let cdf_invcdf = |arg: u64| move |x: Binomial| x.inverse_cdf(x.cdf(arg));
+        test_case(0.3, 10, 3, cdf_invcdf(3));
+        test_case(0.3, 10, 4, cdf_invcdf(4));
+        test_case(0.5, 6, 4, cdf_invcdf(4));
+    }
+
+    #[test]
     fn test_discrete() {
         test::check_discrete_distribution(&try_create(0.3, 5), 5);
         test::check_discrete_distribution(&try_create(0.7, 10), 10);

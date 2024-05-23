@@ -1,3 +1,5 @@
+use num_traits::{Bounded, Float, Num};
+
 /// Returns true if there are no elements in `x` in `arr`
 /// such that `x <= 0.0` or `x` is `f64::NAN` and `sum(arr) > 0.0`.
 /// IF `incl_zero` is true, it tests for `x < 0.0` instead of `x <= 0.0`
@@ -12,10 +14,47 @@ pub fn is_valid_multinomial(arr: &[f64], incl_zero: bool) -> bool {
     sum != 0.0
 }
 
+/// Implements univariate function bisection searching for criteria
+/// ```text
+/// smallest k such that f(k) >= z
+/// ```
+/// Evaluates to `None` if
+/// - provided interval has lower bound greater than upper bound
+/// - function found not semi-monotone on the provided interval containing `z`
+/// Evaluates to `Some(k)`, where `k` satisfies the search criteria
+pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
+    f: impl Fn(&K) -> T, z: T, lb: K, ub: K,
+) -> Option<K> {
+    if !(f(&lb)..=f(&ub)).contains(&z) {
+        return None;
+    }
+    let two = K::one() + K::one();
+    let mut lb = lb;
+    let mut ub = ub;
+    loop {
+        let mid = (lb.clone() + ub.clone()) / two.clone();
+        if !(f(&lb)..=f(&ub)).contains(&f(&mid)) {
+            // if f found not monotone on the interval
+            return None;
+        } else if f(&lb) == z {
+            return Some(lb);
+        } else if f(&ub) == z {
+            return Some(ub);
+        } else if (lb.clone() + K::one()) == ub {
+            // no more elements to search
+            return Some(ub);
+        } else if f(&mid) >= z {
+            ub = mid;
+        } else {
+            lb = mid;
+        }
+    }
+}
+
 #[macro_use]
 #[cfg(all(test, feature = "nightly"))]
 pub mod test {
-    use super::is_valid_multinomial;
+    use super::*;
     use crate::consts::ACC;
     use crate::distribution::{Continuous, ContinuousCDF, Discrete, DiscreteCDF};
 
@@ -195,5 +234,27 @@ pub mod test {
     fn test_is_valid_multinomial_no_zero() {
         let invalid = [5.2, 0.0, 1e-15, 1000000.12];
         assert!(!is_valid_multinomial(&invalid, false));
+    }
+
+    #[test]
+    fn test_integer_bisection() {
+        fn search(z: usize, data: &Vec<usize>) -> Option<usize> {
+            integral_bisection_search(|idx: &usize| data[*idx], z, 0, data.len() - 1)
+        }
+
+        let needle = 3;
+        let data = (0..5)
+            .map(|n| if n >= needle { n + 1 } else { n })
+            .collect::<Vec<_>>();
+
+        for i in 0..(data.len()) {
+            assert_eq!(search(data[i], &data), Some(i),)
+        }
+        {
+            let infimum = search(needle, &data);
+            let found_element = search(needle + 1, &data); // 4 > needle && member of range
+            assert_eq!(found_element, Some(needle));
+            assert_eq!(infimum, found_element)
+        }
     }
 }
