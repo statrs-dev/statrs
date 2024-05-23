@@ -1,45 +1,51 @@
 # statrs
 
-![tests](https://github.com/statrs-dev/statrs/actions/workflows/test.yml/badge.svg)
-[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE.md)]
-[![Crate](https://img.shields.io/crates/v/statrs.svg)](https://crates.io/crates/statrs)
-![docs.rs](https://img.shields.io/docsrs/statrs?style=for-the-badge).
-[![codecov](https://codecov.io/gh/statrs-dev/statrs/graph/badge.svg?token=XtMSMYXvIf)](https://codecov.io/gh/statrs-dev/statrs)
+![tests][actions-test-badge]
+[![MIT licensed][license-badge]](./LICENSE.md)
+[![Crate][crates-badge]][crates-url]
+[![docs.rs](https://img.shields.io/docsrs/statrs)][docs-url]
+[![codecov][codecov-badge]][codecov-url]
 
-## Current Version: v0.16.0
-
-Should work for both nightly and stable Rust.
-
-**NOTE:** While I will try to maintain backwards compatibility as much as possible, since this is still a 0.x.x project the API is not considered stable and thus subject to possible breaking changes up until v1.0.0
-
-## Description
+[actions-test-badge]: https://github.com/statrs-dev/statrs/actions/workflows/test.yml/badge.svg
+[crates-badge]: https://img.shields.io/crates/v/statrs.svg
+[crates-url]: https://crates.io/crates/statrs
+[license-badge]: https://img.shields.io/badge/license-MIT-blue.svg
+[docsrs-badge]: https://img.shields.io/docsrs/statrs
+[docs-url]: https://docs.rs/statrs/*/statrs
+[codecov-badge]: https://codecov.io/gh/statrs-dev/statrs/graph/badge.svg?token=XtMSMYXvIf
+[codecov-url]: https://codecov.io/gh/statrs-dev/statrs
 
 Statrs provides a host of statistical utilities for Rust scientific computing.
+
 Included are a number of common distributions that can be sampled (i.e. Normal, Exponential, Student's T, Gamma, Uniform, etc.) plus common statistical functions like the gamma function, beta function, and error function.
 
-This library is a work-in-progress port of the statistical capabilities in the C# Math.NET library.
+This library began as port of the statistical capabilities in the C# Math.NET library.
 All unit tests in the library borrowed from Math.NET when possible and filled-in when not.
-
-This library is a work-in-progress and not complete.
 Planned for future releases are continued implementations of distributions as well as porting over more statistical utilities.
 
-Please check out the documentation [here](https://docs.rs/statrs/*/statrs/).
+Please check out the documentation [here][docs-url].
 
 ## Usage
 
 Add the most recent release to your `Cargo.toml`
 
-```Rust
+```toml
 [dependencies]
-statrs = "0.16"
+statrs = "*" # replace * by the latest version of the crate.
 ```
 
-For examples, view the docs hosted on ![docs.rs](https://img.shields.io/docsrs/statrs?style=for-the-badge).
+For examples, view [the docs](https://docs.rs/statrs/*/statrs/).
 
 ## Contributing
 
-Want to contribute?
-Check out some of the issues marked [help wanted](https://github.com/statrs-dev/statrs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+Thanks for your help to improve the project!
+**No contribution is too small and all contributions are valued.**
+
+Suggestions if you don't know where to start,
+- documentation is a great place to start, as you'll be able to identify the value of existing documentation better than its authors.
+- tests are valuable in demonstrating correct behavior, you can review test coverage on the [CodeCov Report][codecov-url]*, not live until [#229](https://github.com/statrs-dev/statrs/pull/229) merged.
+- check out some of the issues marked [help wanted](https://github.com/statrs-dev/statrs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+- look at what's not included from Math.NET's [Distributions](https://github.com/mathnet/mathnet-numerics/tree/master/src/Numerics/Distributions), [Statistics](https://github.com/mathnet/mathnet-numerics/tree/master/src/Numerics/Statistics), or related.
 
 ### How to contribute
 
