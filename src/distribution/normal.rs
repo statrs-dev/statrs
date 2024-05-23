@@ -52,7 +52,7 @@ impl Normal {
         }
     }
 
-    ///  Constructs a new standard normal distribution with a mean of 0
+    /// Constructs a new standard normal distribution with a mean of 0
     /// and a standard deviation of 1.
     ///
     ///
@@ -63,12 +63,10 @@ impl Normal {
     ///
     /// let mut result = Normal::standard();
     /// ```
-    pub fn standard() -> Normal {
-        let mean: f64 = 0.0;
-        let std_dev: f64 = 1.0;
+    fn standard() -> Normal {
         Normal {
-            mean,
-            std_dev
+            mean: 0.0,
+            std_dev: 1.0,
         }
     }
 }
@@ -306,6 +304,15 @@ pub fn ln_pdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
 /// draws a sample from a normal distribution using the Box-Muller algorithm
 pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, mean: f64, std_dev: f64) -> f64 {
     mean + std_dev * ziggurat::sample_std_normal(rng)
+}
+
+
+impl std::default::Default for Normal {
+    /// Returns the standard normal distribution with a mean of 0
+    /// and a standard deviation of 1.
+    fn default() -> Self {
+        Self::standard()
+    }
 }
 
 #[rustfmt::skip]
