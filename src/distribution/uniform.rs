@@ -140,6 +140,7 @@ impl Distribution<f64> for Uniform {
     fn mean(&self) -> Option<f64> {
         Some((self.min + self.max) / 2.0)
     }
+
     /// Returns the variance for the continuous uniform distribution
     ///
     /// # Formula
@@ -150,6 +151,7 @@ impl Distribution<f64> for Uniform {
     fn variance(&self) -> Option<f64> {
         Some((self.max - self.min) * (self.max - self.min) / 12.0)
     }
+
     /// Returns the entropy for the continuous uniform distribution
     ///
     /// # Formula
@@ -160,6 +162,7 @@ impl Distribution<f64> for Uniform {
     fn entropy(&self) -> Option<f64> {
         Some((self.max - self.min).ln())
     }
+
     /// Returns the skewness for the continuous uniform distribution
     ///
     /// # Formula

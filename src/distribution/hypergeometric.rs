@@ -258,6 +258,7 @@ impl Distribution<f64> for Hypergeometric {
             Some(self.successes as f64 * self.draws as f64 / self.population as f64)
         }
     }
+
     /// Returns the variance of the hypergeometric distribution
     ///
     /// # None
@@ -281,6 +282,7 @@ impl Distribution<f64> for Hypergeometric {
             Some(val)
         }
     }
+
     /// Returns the skewness of the hypergeometric distribution
     ///
     /// # None

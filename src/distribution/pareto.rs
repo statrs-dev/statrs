@@ -188,6 +188,7 @@ impl Distribution<f64> for Pareto {
             Some((self.shape * self.scale) / (self.shape - 1.0))
         }
     }
+
     /// Returns the variance of the Pareto distribution
     ///
     /// # Formula
@@ -209,6 +210,7 @@ impl Distribution<f64> for Pareto {
             Some(a * a * self.shape / (self.shape - 2.0))
         }
     }
+
     /// Returns the entropy for the Pareto distribution
     ///
     /// # Formula
@@ -221,6 +223,7 @@ impl Distribution<f64> for Pareto {
     fn entropy(&self) -> Option<f64> {
         Some(self.shape.ln() - self.scale.ln() - (1.0 / self.shape) - 1.0)
     }
+
     /// Returns the skewness of the Pareto distribution
     ///
     /// # Panics

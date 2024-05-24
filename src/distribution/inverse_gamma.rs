@@ -190,6 +190,7 @@ impl Distribution<f64> for InverseGamma {
             Some(self.rate / (self.shape - 1.0))
         }
     }
+
     /// Returns the variance of the inverse gamma distribution
     ///
     /// # None
@@ -212,6 +213,7 @@ impl Distribution<f64> for InverseGamma {
             Some(val)
         }
     }
+
     /// Returns the entropy of the inverse gamma distribution
     ///
     /// # Formula
@@ -227,6 +229,7 @@ impl Distribution<f64> for InverseGamma {
             - (1.0 + self.shape) * gamma::digamma(self.shape);
         Some(entr)
     }
+
     /// Returns the skewness of the inverse gamma distribution
     ///
     /// # None

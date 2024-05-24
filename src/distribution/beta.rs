@@ -155,7 +155,7 @@ impl ContinuousCDF<f64, f64> for Beta {
         } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
             1. - x
         } else {
-            beta::beta_reg(self.shape_b, self.shape_a, 1.0 - x) 
+            beta::beta_reg(self.shape_b, self.shape_a, 1.0 - x)
         }
     }
 }
@@ -208,6 +208,7 @@ impl Distribution<f64> for Beta {
         };
         Some(mean)
     }
+
     /// Returns the variance of the beta distribution
     ///
     /// # Remarks
@@ -230,6 +231,7 @@ impl Distribution<f64> for Beta {
         };
         Some(var)
     }
+
     /// Returns the entropy of the beta distribution
     ///
     /// # Formula
@@ -251,6 +253,7 @@ impl Distribution<f64> for Beta {
         };
         Some(entr)
     }
+
     /// Returns the skewness of the Beta distribution
     ///
     /// # Formula

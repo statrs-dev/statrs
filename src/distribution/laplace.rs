@@ -193,6 +193,7 @@ impl Distribution<f64> for Laplace {
     fn mean(&self) -> Option<f64> {
         Some(self.location)
     }
+
     /// Returns the variance of the laplace distribution
     ///
     /// # Formula
@@ -205,6 +206,7 @@ impl Distribution<f64> for Laplace {
     fn variance(&self) -> Option<f64> {
         Some(2. * self.scale * self.scale)
     }
+
     /// Returns the entropy of the laplace distribution
     ///
     /// # Formula
@@ -217,6 +219,7 @@ impl Distribution<f64> for Laplace {
     fn entropy(&self) -> Option<f64> {
         Some((2. * self.scale).ln() + 1.)
     }
+
     /// Returns the skewness of the laplace distribution
     ///
     /// # Formula
@@ -386,7 +389,13 @@ mod tests {
     #[test]
     fn test_entropy() {
         let entropy = |x: Laplace| x.entropy().unwrap();
-        test_almost(f64::NEG_INFINITY, 0.1, (2.0 * f64::consts::E * 0.1).ln(), 1E-12, entropy);
+        test_almost(
+            f64::NEG_INFINITY,
+            0.1,
+            (2.0 * f64::consts::E * 0.1).ln(),
+            1E-12,
+            entropy,
+        );
         test_almost(-6.0, 1.0, (2.0 * f64::consts::E).ln(), 1E-12, entropy);
         test_almost(1.0, 7.0, (2.0 * f64::consts::E * 7.0).ln(), 1E-12, entropy);
         test_almost(5., 10., (2. * f64::consts::E * 10.).ln(), 1E-12, entropy);

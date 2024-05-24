@@ -177,6 +177,7 @@ impl Distribution<f64> for ChiSquared {
     fn mean(&self) -> Option<f64> {
         self.g.mean()
     }
+
     /// Returns the variance of the chi-squared distribution
     ///
     /// # Formula
@@ -189,6 +190,7 @@ impl Distribution<f64> for ChiSquared {
     fn variance(&self) -> Option<f64> {
         self.g.variance()
     }
+
     /// Returns the entropy of the chi-squared distribution
     ///
     /// # Formula
@@ -202,6 +204,7 @@ impl Distribution<f64> for ChiSquared {
     fn entropy(&self) -> Option<f64> {
         self.g.entropy()
     }
+
     /// Returns the skewness of the chi-squared distribution
     ///
     /// # Formula

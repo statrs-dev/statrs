@@ -148,6 +148,7 @@ impl Distribution<f64> for Poisson {
     fn mean(&self) -> Option<f64> {
         Some(self.lambda)
     }
+
     /// Returns the variance of the poisson distribution
     ///
     /// # Formula
@@ -160,6 +161,7 @@ impl Distribution<f64> for Poisson {
     fn variance(&self) -> Option<f64> {
         Some(self.lambda)
     }
+
     /// Returns the entropy of the poisson distribution
     ///
     /// # Formula
@@ -177,6 +179,7 @@ impl Distribution<f64> for Poisson {
                 - 19.0 / (360.0 * self.lambda * self.lambda * self.lambda),
         )
     }
+
     /// Returns the skewness of the poisson distribution
     ///
     /// # Formula

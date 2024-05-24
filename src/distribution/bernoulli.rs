@@ -101,7 +101,7 @@ impl DiscreteCDF<u64, f64> for Bernoulli {
         self.b.cdf(x)
     }
 
-    /// Calculates the survival function for the 
+    /// Calculates the survival function for the
     /// bernoulli distribution at `x`.
     ///
     /// # Formula
@@ -158,6 +158,7 @@ impl Distribution<f64> for Bernoulli {
     fn mean(&self) -> Option<f64> {
         self.b.mean()
     }
+
     /// Returns the variance of the bernoulli
     /// distribution
     ///
@@ -169,6 +170,7 @@ impl Distribution<f64> for Bernoulli {
     fn variance(&self) -> Option<f64> {
         self.b.variance()
     }
+
     /// Returns the entropy of the bernoulli
     /// distribution
     ///
@@ -181,6 +183,7 @@ impl Distribution<f64> for Bernoulli {
     fn entropy(&self) -> Option<f64> {
         self.b.entropy()
     }
+
     /// Returns the skewness of the bernoulli
     /// distribution
     ///

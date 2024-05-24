@@ -12,9 +12,6 @@ use_small_heuristics = "Default"
 # TODO: single line functions only where short, please?
 # https://github.com/rust-lang/rustfmt/issues/3358
 fn_single_line = false
-fn_params_layout = "Compressed"
-overflow_delimited_expr = true
-where_single_line = true
 
 # enum_discrim_align_threshold = 20
 # struct_field_align_threshold = 20
@@ -23,7 +20,6 @@ where_single_line = true
 edition = "2021"
 
 # Misc:
-inline_attribute_width = 80
 blank_lines_upper_bound = 2
 reorder_impl_items = true
 # report_todo = "Unnumbered"

@@ -204,7 +204,6 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64> {
 }
 
 /// Computes the inverse of the regularized incomplete beta function
-//
 // This code is based on the implementation in the ["special"][1] crate,
 // which in turn is based on a [C implementation][2] by John Burkardt. The
 // original algorithm was published in Applied Statistics and is known as

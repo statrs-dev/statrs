@@ -166,6 +166,7 @@ impl Distribution<f64> for Erlang {
     fn mean(&self) -> Option<f64> {
         self.g.mean()
     }
+
     /// Returns the variance of the erlang distribution
     ///
     /// # Formula
@@ -178,6 +179,7 @@ impl Distribution<f64> for Erlang {
     fn variance(&self) -> Option<f64> {
         self.g.variance()
     }
+
     /// Returns the entropy of the erlang distribution
     ///
     /// # Formula
@@ -191,6 +193,7 @@ impl Distribution<f64> for Erlang {
     fn entropy(&self) -> Option<f64> {
         self.g.entropy()
     }
+
     /// Returns the skewness of the erlang distribution
     ///
     /// # Formula
