@@ -540,8 +540,8 @@ mod tests {
     fn test_default() {
         let n = Normal::default();
 
-        n_mean = n.mean().unwrap();
-        n_std  = n.std_dev().unwrap();
+        let n_mean = n.mean().unwrap();
+        let n_std  = n.std_dev().unwrap();
 
         // Check that the mean of the distribution is close to 0
         assert_almost_eq!(n_mean, 0.0, 1e-15);
