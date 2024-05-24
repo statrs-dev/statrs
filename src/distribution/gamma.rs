@@ -133,17 +133,13 @@ impl ContinuousCDF<f64, f64> for Gamma {
     fn sf(&self, x: f64) -> f64 {
         if x <= 0.0 {
             1.0
-        }
-        else if ulps_eq!(x, self.shape) && self.rate.is_infinite() {
+        } else if ulps_eq!(x, self.shape) && self.rate.is_infinite() {
             0.0
-        }
-        else if self.rate.is_infinite() {
+        } else if self.rate.is_infinite() {
             1.0
-        }
-        else if x.is_infinite() {
+        } else if x.is_infinite() {
             0.0
-        }
-        else {
+        } else {
             gamma::gamma_ur(self.shape, x * self.rate)
         }
     }
@@ -502,7 +498,11 @@ mod tests {
         for &(arg, res) in test.iter() {
             test_case_special(arg, res, 10e-6, f);
         }
-        let test = [((10.0, 10.0), 0.9), ((10.0, 1.0), 9.0), ((10.0, f64::INFINITY), 0.0)];
+        let test = [
+            ((10.0, 10.0), 0.9),
+            ((10.0, 1.0), 9.0),
+            ((10.0, f64::INFINITY), 0.0),
+        ];
         for &(arg, res) in test.iter() {
             test_case(arg, res, f);
         }
@@ -624,6 +624,13 @@ mod tests {
                 let p = 10.0f64.powi(n);
                 test_case(param, p, f(p));
             }
+        }
+
+        // test case from issue #200
+        {
+            let x = 20.5567;
+            let f = |x: f64| move |g: Gamma| g.inverse_cdf(g.cdf(x));
+            test_case((3.0, 0.5), x, f(x))
         }
     }
 
