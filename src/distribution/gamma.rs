@@ -145,7 +145,6 @@ impl ContinuousCDF<f64, f64> for Gamma {
     }
 
     fn inverse_cdf(&self, p: f64) -> f64 {
-        const MAX_ITERS: (u16, u16) = (8, 4);
         if !(0.0..=1.0).contains(&p) {
             panic!("default inverse_cdf implementation should be provided probability on [0,1]")
         }
@@ -167,7 +166,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
         }
         let mut x_0 = (high + low) / 2.0;
 
-        for _ in 0..MAX_ITERS.0 {
+        for _ in 0..8 {
             if self.cdf(x_0) >= p {
                 high = x_0;
             } else {
@@ -178,8 +177,8 @@ impl ContinuousCDF<f64, f64> for Gamma {
             }
         }
 
-        // NR method, guarantee at least one step
-        for _ in 0..MAX_ITERS.1 {
+        // Newton Raphson, for at least one step
+        for _ in 0..4 {
             let x_next = x_0 - (self.cdf(x_0) - p) / self.pdf(x_0);
             if prec::convergence(&mut x_0, x_next) {
                 break;
