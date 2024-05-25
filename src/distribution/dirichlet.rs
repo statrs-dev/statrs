@@ -301,7 +301,7 @@ fn is_valid_alpha(a: &[f64]) -> bool {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use super::*;
     use nalgebra::{DVector};

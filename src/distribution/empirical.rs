@@ -206,7 +206,7 @@ impl ContinuousCDF<f64, f64> for Empirical {
     }
 }
 
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]

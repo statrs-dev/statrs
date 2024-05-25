@@ -291,7 +291,7 @@ impl Continuous<f64, f64> for Laplace {
     }
 }
 
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use super::*;
     use rand::thread_rng;

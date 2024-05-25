@@ -257,7 +257,7 @@ impl Discrete<u64, f64> for Bernoulli {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod testing {
     use std::fmt::Debug;
     use crate::distribution::DiscreteCDF;
