@@ -114,7 +114,7 @@ impl ContinuousCDF<f64, f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// -ln(1 - p) / λ
     /// ```
     ///

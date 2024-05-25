@@ -123,7 +123,7 @@ impl ContinuousCDF<f64, f64> for LogNormal {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ - σ * sqrt(2) * erfc_inv(2p)
     /// ```
     ///
