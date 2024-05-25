@@ -113,6 +113,7 @@ impl ContinuousCDF<f64, f64> for LogNormal {
             0.5 * erf::erfc((x.ln() - self.location) / (self.scale * f64::consts::SQRT_2))
         }
     }
+
     /// Calculates the inverse cumulative distribution function for the
     /// log-normal distribution at `p`
     ///

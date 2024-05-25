@@ -23,7 +23,10 @@ pub fn is_valid_multinomial(arr: &[f64], incl_zero: bool) -> bool {
 /// - function found not semi-monotone on the provided interval containing `z`
 /// Evaluates to `Some(k)`, where `k` satisfies the search criteria
 pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
-    f: impl Fn(&K) -> T, z: T, lb: K, ub: K,
+    f: impl Fn(&K) -> T,
+    z: T,
+    lb: K,
+    ub: K,
 ) -> Option<K> {
     if !(f(&lb)..=f(&ub)).contains(&z) {
         return None;
