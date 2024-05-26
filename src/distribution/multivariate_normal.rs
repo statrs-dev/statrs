@@ -246,7 +246,6 @@ impl Continuous<Vec<f64>, f64> for MultivariateNormal {
 mod tests  {
     use crate::distribution::{Continuous, MultivariateNormal};
     use crate::statistics::*;
-    use crate::consts::ACC;
     use core::fmt::Debug;
     use nalgebra::base::allocator::Allocator;
     use nalgebra::{

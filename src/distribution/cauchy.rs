@@ -231,7 +231,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Cauchy};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(location: f64, scale: f64) -> Cauchy {
         let n = Cauchy::new(location, scale);

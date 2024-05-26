@@ -58,7 +58,6 @@ pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::consts::ACC;
     use crate::distribution::{Continuous, ContinuousCDF, Discrete, DiscreteCDF};
 
     #[macro_export]
@@ -89,7 +88,7 @@ pub mod test {
                 T: ::core::fmt::Debug + ::approx::RelativeEq<Epsilon = f64>,
             {
                 let x = get_value($($arg_name),+, eval);
-                assert_relative_eq!(expected, x, max_relative = ACC);
+                assert_relative_eq!(expected, x, max_relative = $crate::consts::ACC);
             }
 
             #[allow(dead_code)] // This is not used by all distributions.

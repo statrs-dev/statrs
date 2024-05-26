@@ -405,7 +405,6 @@ impl Continuous<f64, f64> for Beta {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consts::ACC;
     use super::super::internal::*;
     use crate::statistics::*;
     use crate::testing_boiler;

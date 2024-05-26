@@ -288,7 +288,6 @@ mod tests {
     use crate::statistics::Median;
     use crate::distribution::ChiSquared;
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(freedom: f64) -> ChiSquared {
         let n = ChiSquared::new(freedom);

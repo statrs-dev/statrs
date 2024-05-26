@@ -302,7 +302,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{DiscreteCDF, Discrete, Poisson};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(lambda: f64) -> Poisson {
         let n = Poisson::new(lambda);

@@ -310,7 +310,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, InverseGamma};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(shape: f64, rate: f64) -> InverseGamma {
         let n = InverseGamma::new(shape, rate);

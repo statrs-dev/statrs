@@ -330,7 +330,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Weibull};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(shape: f64, scale: f64) -> Weibull {
         let n = Weibull::new(shape, scale);

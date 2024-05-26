@@ -350,7 +350,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{Categorical, Discrete, DiscreteCDF};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(prob_mass: &[f64]) -> Categorical {
         let n = Categorical::new(prob_mass);

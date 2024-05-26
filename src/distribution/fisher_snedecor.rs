@@ -360,7 +360,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, FisherSnedecor};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(freedom_1: f64, freedom_2: f64) -> FisherSnedecor {
         let n = FisherSnedecor::new(freedom_1, freedom_2);

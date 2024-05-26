@@ -260,7 +260,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Uniform};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(min: f64, max: f64) -> Uniform {
         let n = Uniform::new(min, max);

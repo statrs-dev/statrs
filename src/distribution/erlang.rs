@@ -274,7 +274,6 @@ impl Continuous<f64, f64> for Erlang {
 mod tests {
     use crate::distribution::Erlang;
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(shape: u64, rate: f64) -> Erlang {
         let n = Erlang::new(shape, rate);

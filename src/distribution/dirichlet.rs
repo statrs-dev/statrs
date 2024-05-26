@@ -308,7 +308,6 @@ mod tests {
     use crate::function::gamma;
     use crate::statistics::*;
     use crate::distribution::{Continuous, Dirichlet};
-    use crate::consts::ACC;
 
     #[test]
     fn test_is_valid_alpha() {

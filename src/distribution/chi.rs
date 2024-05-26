@@ -323,7 +323,6 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::distribution::{Chi, Continuous, ContinuousCDF};
     use crate::statistics::*;
-    use crate::consts::ACC;
 
     fn try_create(freedom: f64) -> Chi {
         let n = Chi::new(freedom);

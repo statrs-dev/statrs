@@ -189,7 +189,6 @@ impl Mode<Option<f64>> for Dirac {
 mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Dirac};
-    use crate::consts::ACC;
 
     fn try_create(v: f64) -> Dirac {
         let d = Dirac::new(v);

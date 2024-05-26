@@ -271,7 +271,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{DiscreteCDF, Discrete, Geometric};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(p: f64) -> Geometric {
         let n = Geometric::new(p);

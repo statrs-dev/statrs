@@ -317,7 +317,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Triangular};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(min: f64, max: f64, mode: f64) -> Triangular {
         let n = Triangular::new(min, max, mode);

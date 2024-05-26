@@ -289,7 +289,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{DiscreteCDF, Discrete, NegativeBinomial};
     use crate::distribution::internal::test;
-    use crate::consts::ACC;
 
     fn try_create(r: f64, p: f64) -> NegativeBinomial {
         let r = NegativeBinomial::new(r, p);

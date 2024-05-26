@@ -333,7 +333,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Pareto};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(scale: f64, shape: f64) -> Pareto {
         let p = Pareto::new(scale, shape);

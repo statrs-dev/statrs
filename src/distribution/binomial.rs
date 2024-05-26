@@ -327,7 +327,6 @@ mod tests {
     use crate::statistics::*;
     use crate::distribution::{DiscreteCDF, Discrete, Binomial};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(p: f64, n: u64) -> Binomial {
         let n = Binomial::new(p, n);
