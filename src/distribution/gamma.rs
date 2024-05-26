@@ -405,7 +405,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!((f64, f64), Gamma);
+    testing_boiler!(shape: f64, rate: f64; Gamma);
 
     #[test]
     fn test_create() {
@@ -417,8 +417,8 @@ mod tests {
             (10.0, f64::INFINITY),
         ];
 
-        for &arg in valid.iter() {
-            try_create(arg);
+        for (s, r) in valid {
+            try_create(s, r);
         }
     }
 
@@ -432,8 +432,8 @@ mod tests {
             (-1.0, -1.0),
             (-1.0, f64::NAN),
         ];
-        for &arg in invalid.iter() {
-            bad_create_case(arg);
+        for (s, r) in invalid {
+            bad_create_case(s, r);
         }
     }
 
@@ -447,8 +447,8 @@ mod tests {
             ((10.0, 1.0), 10.0),
             ((10.0, f64::INFINITY), 0.0),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_case(s, r, res, f);
         }
     }
 
@@ -462,8 +462,8 @@ mod tests {
             ((10.0, 1.0), 10.0),
             ((10.0, f64::INFINITY), 0.0),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_case(s, r, res, f);
         }
     }
 
@@ -477,8 +477,8 @@ mod tests {
             ((10.0, 1.0), 2.53605417848097964238061239),
             ((10.0, f64::INFINITY), f64::NEG_INFINITY),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_case(s, r, res, f);
         }
     }
 
@@ -492,8 +492,8 @@ mod tests {
             ((10.0, 1.0), 0.63245553203367586639977870),
             ((10.0, f64::INFINITY), 0.6324555320336758),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_case(s, r, res, f);
         }
     }
 
@@ -501,16 +501,16 @@ mod tests {
     fn test_mode() {
         let f = |x: Gamma| x.mode().unwrap();
         let test = [((1.0, 0.1), 0.0), ((1.0, 1.0), 0.0)];
-        for &(arg, res) in test.iter() {
-            test_case_special(arg, res, 10e-6, f);
+        for &((s, r), res) in test.iter() {
+            test_case_special(s, r, res, 10e-6, f);
         }
         let test = [
             ((10.0, 10.0), 0.9),
             ((10.0, 1.0), 9.0),
             ((10.0, f64::INFINITY), 0.0),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_case(s, r, res, f);
         }
     }
 
@@ -524,8 +524,8 @@ mod tests {
             ((10.0, 1.0), 0.0),
             ((10.0, f64::INFINITY), 0.0),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_case(s, r, res, f);
         }
         let f = |x: Gamma| x.max();
         let test = [
@@ -535,8 +535,8 @@ mod tests {
             ((10.0, 1.0), f64::INFINITY),
             ((10.0, f64::INFINITY), f64::INFINITY),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_case(s, r, res, f);
         }
     }
 
@@ -553,8 +553,8 @@ mod tests {
             ((10.0, 1.0), 1.0, 0.000001013777119630297402),
             ((10.0, 1.0), 10.0, 0.125110035721133298984764),
         ];
-        for &(arg, x, res) in test.iter() {
-            test_case(arg, res, f(x));
+        for ((s, r), x, res) in test {
+            test_case(s, r, res, f(x));
         }
         // TODO: test special
         // test_is_nan((10.0, f64::INFINITY), pdf(1.0)); // is this really the behavior we want?
@@ -564,8 +564,8 @@ mod tests {
 
     #[test]
     fn test_pdf_at_zero() {
-        test_case((1.0, 0.1), 0.1, |x| x.pdf(0.0));
-        test_case((1.0, 0.1), 0.1f64.ln(), |x| x.ln_pdf(0.0));
+        test_case(1.0, 0.1, 0.1, |x| x.pdf(0.0));
+        test_case(1.0, 0.1, 0.1f64.ln(), |x| x.ln_pdf(0.0));
     }
 
     #[test]
@@ -582,8 +582,8 @@ mod tests {
             ((10.0, 1.0), 10.0, -2.07856164313505845504579),
             ((10.0, f64::INFINITY), f64::INFINITY, f64::NEG_INFINITY),
         ];
-        for &(arg, x, res) in test.iter() {
-            test_case(arg, res, f(x));
+        for ((s, r), x, res) in test {
+            test_case(s, r, res, f(x));
         }
         // TODO: test special
         // test_is_nan((10.0, f64::INFINITY), f(1.0)); // is this really the behavior we want?
@@ -604,14 +604,14 @@ mod tests {
             ((10.0, f64::INFINITY), 1.0, 0.0),
             ((10.0, f64::INFINITY), 10.0, 1.0),
         ];
-        for &(arg, x, res) in test.iter() {
-            test_case(arg, res, f(x));
+        for ((s, r), x, res) in test {
+            test_case(s, r, res, f(x));
         }
     }
 
     #[test]
     fn test_cdf_at_zero() {
-        test_case((1.0, 0.1), 0.0, |x| x.cdf(0.0));
+        test_case(1.0, 0.1, 0.0, |x| x.cdf(0.0));
     }
 
     #[test]
@@ -625,10 +625,10 @@ mod tests {
             (100.0, 200.0),
         ];
 
-        for param in params {
+        for (s, r) in params {
             for n in -5..0 {
                 let p = 10.0f64.powi(n);
-                test_case(param, p, f(p));
+                test_case(s, r, p, f(p));
             }
         }
 
@@ -636,7 +636,7 @@ mod tests {
         {
             let x = 20.5567;
             let f = |x: f64| move |g: Gamma| g.inverse_cdf(g.cdf(x));
-            test_case((3.0, 0.5), x, f(x))
+            test_case(3.0, 0.5, x, f(x))
         }
     }
 
@@ -655,19 +655,19 @@ mod tests {
             ((10.0, f64::INFINITY), 1.0, 1.0),
             ((10.0, f64::INFINITY), 10.0, 0.0),
         ];
-        for &(arg, x, res) in test.iter() {
-            test_case(arg, res, f(x));
+        for ((s, r), x, res) in test {
+            test_case(s, r, res, f(x));
         }
     }
 
     #[test]
     fn test_sf_at_zero() {
-        test_case((1.0, 0.1), 1.0, |x| x.sf(0.0));
+        test_case(1.0, 0.1, 1.0, |x| x.sf(0.0));
     }
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&try_create((1.0, 0.5)), 0.0, 20.0);
-        test::check_continuous_distribution(&try_create((9.0, 2.0)), 0.0, 20.0);
+        test::check_continuous_distribution(&try_create(1.0, 0.5), 0.0, 20.0);
+        test::check_continuous_distribution(&try_create(9.0, 2.0), 0.0, 20.0);
     }
 }
