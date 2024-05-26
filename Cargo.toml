@@ -17,9 +17,6 @@ include = ["CHANGELOG.md", "LICENSE.md", "src/"]
 name = "statrs"
 path = "src/lib.rs"
 
-[features]
-nightly = []
-
 [dependencies]
 rand = "0.8"
 nalgebra = { version = "0.32", features = ["rand"] }

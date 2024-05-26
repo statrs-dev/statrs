@@ -55,7 +55,7 @@ pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
 }
 
 #[macro_use]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 pub mod test {
     use super::*;
     use crate::consts::ACC;

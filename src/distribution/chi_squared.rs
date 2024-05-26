@@ -283,7 +283,7 @@ impl Continuous<f64, f64> for ChiSquared {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use crate::statistics::Median;
     use crate::distribution::ChiSquared;

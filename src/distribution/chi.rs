@@ -317,7 +317,7 @@ impl Continuous<f64, f64> for Chi {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use std::f64;
     use crate::distribution::internal::*;

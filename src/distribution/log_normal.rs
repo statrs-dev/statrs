@@ -297,7 +297,7 @@ impl Continuous<f64, f64> for LogNormal {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, LogNormal};

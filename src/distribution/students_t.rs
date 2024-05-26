@@ -414,7 +414,7 @@ impl Continuous<f64, f64> for StudentsT {
     }
 }
 
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use crate::consts::ACC;
     use crate::distribution::internal::*;

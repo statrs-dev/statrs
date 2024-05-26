@@ -305,7 +305,7 @@ impl Continuous<f64, f64> for InverseGamma {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, InverseGamma};
