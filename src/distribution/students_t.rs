@@ -548,7 +548,7 @@ mod tests {
     #[test]
     fn test_pdf() {
         let pdf = |arg: f64| move |x: StudentsT| x.pdf(arg);
-        test_case(0.0, 1.0, 1.0, 0.318309886183791, pdf(0.0));
+        test_case(0.0, 1.0, 1.0, std::f64::consts::FRAC_1_PI, pdf(0.0));
         test_case(0.0, 1.0, 1.0, 0.159154943091895, pdf(1.0));
         test_case(0.0, 1.0, 1.0, 0.159154943091895, pdf(-1.0));
         test_case(0.0, 1.0, 1.0, 0.063661977236758, pdf(2.0));
@@ -768,6 +768,8 @@ mod tests {
         test(0.9, 011.0, 1.363);
         test(0.95, 011.0, 1.796);
         test(0.975, 011.0, 2.201);
+        // 2.718 is roughly equal to E
+        #[allow(clippy::approx_constant)]
         test(0.99, 011.0, 2.718);
         test(0.995, 011.0, 3.106);
         test(0.9975, 011.0, 3.497);
@@ -1152,12 +1154,12 @@ mod tests {
     #[test]
     fn test_inv_cdf_p0() {
         let d = StudentsT::new(0.0, 1.0, 12.0).unwrap();
-        assert_eq!(d.inverse_cdf(0.0), std::f64::NEG_INFINITY);
+        assert_eq!(d.inverse_cdf(0.0), f64::NEG_INFINITY);
     }
 
     #[test]
     fn test_inv_cdf_p1() {
         let d = StudentsT::new(0.0, 1.0, 12.0).unwrap();
-        assert_eq!(d.inverse_cdf(1.0), std::f64::INFINITY);
+        assert_eq!(d.inverse_cdf(1.0), f64::INFINITY);
     }
 }

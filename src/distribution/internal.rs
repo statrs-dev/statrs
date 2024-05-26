@@ -240,7 +240,7 @@ pub mod test {
 
     #[test]
     fn test_integer_bisection() {
-        fn search(z: usize, data: &Vec<usize>) -> Option<usize> {
+        fn search(z: usize, data: &[usize]) -> Option<usize> {
             integral_bisection_search(|idx: &usize| data[*idx], z, 0, data.len() - 1)
         }
 

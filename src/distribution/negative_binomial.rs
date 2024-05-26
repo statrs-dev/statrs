@@ -395,7 +395,7 @@ mod tests {
         let min = |x: NegativeBinomial| x.min();
         let max = |x: NegativeBinomial| x.max();
         test_case(1.0, 0.5, 0, min);
-        test_case(1.0, 0.3, std::u64::MAX, max);
+        test_case(1.0, 0.3, u64::MAX, max);
     }
 
     #[test]
