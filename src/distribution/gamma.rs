@@ -283,12 +283,16 @@ impl Mode<Option<f64>> for Gamma {
     /// # Formula
     ///
     /// ```text
-    /// (α - 1) / β
+    /// (α - 1) / β, where α≥1
     /// ```
     ///
     /// where `α` is the shape and `β` is the rate
     fn mode(&self) -> Option<f64> {
-        Some((self.shape - 1.0) / self.rate)
+        if self.shape < 1.0 {
+            None
+        } else {
+            Some((self.shape - 1.0) / self.rate)
+        }
     }
 }
 
