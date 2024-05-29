@@ -4,7 +4,6 @@
 [![MIT licensed][license-badge]](./LICENSE.md)
 [![Crate][crates-badge]][crates-url]
 [![docs.rs](https://img.shields.io/docsrs/statrs)][docs-url]
-[![codecov][codecov-badge]][codecov-url]
 
 [actions-test-badge]: https://github.com/statrs-dev/statrs/actions/workflows/test.yml/badge.svg
 [crates-badge]: https://img.shields.io/crates/v/statrs.svg
