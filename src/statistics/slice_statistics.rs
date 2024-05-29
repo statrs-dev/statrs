@@ -2,8 +2,33 @@ use crate::statistics::*;
 use core::ops::{Index, IndexMut};
 use rand::prelude::SliceRandom;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Data<D>(D);
+
+impl<D, I> std::fmt::Display for Data<D>
+where
+    D: Clone + IntoIterator<Item = I>,
+    I: Clone + std::fmt::Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut tee = self.0.clone().into_iter();
+        write!(f, "Data([")?;
+
+        if let Some(v) = tee.next() {
+            write!(f, "{}", v)?;
+        }
+        for _ in 1..5 {
+            if let Some(v) = tee.next() {
+                write!(f, ", {}", v)?;
+            }
+        }
+        if tee.next().is_some() {
+            write!(f, "...")?;
+        }
+
+        write!(f, "])")
+    }
+}
 
 impl<D: AsRef<[f64]>> Index<usize> for Data<D> {
     type Output = f64;

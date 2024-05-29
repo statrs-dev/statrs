@@ -1,6 +1,6 @@
 /// Enumeration of possible tie-breaking strategies
 /// when computing ranks
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum RankTieBreaker {
     /// Replaces ties with their mean
     Average,

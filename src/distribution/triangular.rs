@@ -18,7 +18,7 @@ use std::f64;
 /// assert_eq!(n.mean().unwrap(), 7.5 / 3.0);
 /// assert_eq!(n.pdf(2.5), 5.0 / 12.5);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Triangular {
     min: f64,
     max: f64,
@@ -56,6 +56,12 @@ impl Triangular {
             return Err(StatsError::BadParams);
         }
         Ok(Triangular { min, max, mode })
+    }
+}
+
+impl std::fmt::Display for Triangular {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Triangular([{},{}], {})", self.min, self.max, self.mode)
     }
 }
 

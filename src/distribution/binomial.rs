@@ -21,7 +21,7 @@ use std::f64;
 /// assert_eq!(n.pmf(0), 0.03125);
 /// assert_eq!(n.pmf(3), 0.3125);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Binomial {
     p: f64,
     n: u64,
@@ -84,6 +84,12 @@ impl Binomial {
     /// ```
     pub fn n(&self) -> u64 {
         self.n
+    }
+}
+
+impl std::fmt::Display for Binomial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Bin({},{})", self.p, self.n)
     }
 }
 

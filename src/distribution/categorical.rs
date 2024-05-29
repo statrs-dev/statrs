@@ -21,7 +21,7 @@ use std::f64;
 /// assert!(prec::almost_eq(n.mean().unwrap(), 5.0 / 3.0, 1e-15));
 /// assert_eq!(n.pmf(1), 1.0 / 3.0);
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Categorical {
     norm_pmf: Vec<f64>,
     cdf: Vec<f64>,
@@ -74,6 +74,12 @@ impl Categorical {
 
     fn cdf_max(&self) -> f64 {
         *self.cdf.last().unwrap()
+    }
+}
+
+impl std::fmt::Display for Categorical {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Cat({:#?})", self.norm_pmf)
     }
 }
 

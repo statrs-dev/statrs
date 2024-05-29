@@ -26,7 +26,7 @@ use std::f64;
 /// assert_eq!(n.mean().unwrap(), DVector::from_vec(vec![1.0 / 6.0, 1.0 / 3.0, 0.5]));
 /// assert_eq!(n.pdf(&DVector::from_vec(vec![0.33333, 0.33333, 0.33333])), 2.222155556222205);
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Dirichlet {
     alpha: DVector<f64>,
 }
@@ -134,6 +134,12 @@ impl Dirichlet {
         let entr =
             -gamma::ln_gamma(sum) + (sum - self.alpha.len() as f64) * gamma::digamma(sum) - num;
         Some(entr)
+    }
+}
+
+impl std::fmt::Display for Dirichlet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Dir({}, {})", self.alpha.len(), &self.alpha)
     }
 }
 

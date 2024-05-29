@@ -20,7 +20,7 @@ use std::f64;
 /// assert_eq!(n.mean().unwrap(), 0.0);
 /// assert!(prec::almost_eq(n.pdf(0.0), 0.353553390593274, 1e-15));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct StudentsT {
     location: f64,
     scale: f64,
@@ -101,6 +101,12 @@ impl StudentsT {
     /// ```
     pub fn freedom(&self) -> f64 {
         self.freedom
+    }
+}
+
+impl std::fmt::Display for StudentsT {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "t_{}({},{})", self.freedom, self.location, self.scale)
     }
 }
 

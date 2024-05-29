@@ -20,7 +20,7 @@ use rand::Rng;
 /// assert_eq!(n.pmf(0), 0.5);
 /// assert_eq!(n.pmf(1), 0.5);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Bernoulli {
     b: Binomial,
 }
@@ -77,6 +77,12 @@ impl Bernoulli {
     /// ```
     pub fn n(&self) -> u64 {
         1
+    }
+}
+
+impl std::fmt::Display for Bernoulli {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Bernoulli({})", self.p())
     }
 }
 

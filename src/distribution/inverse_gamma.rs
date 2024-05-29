@@ -20,7 +20,7 @@ use std::f64;
 /// assert!(prec::almost_eq(n.mean().unwrap(), 1.0, 1e-14));
 /// assert_eq!(n.pdf(1.0), 0.07554920138253064);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct InverseGamma {
     shape: f64,
     rate: f64,
@@ -84,6 +84,12 @@ impl InverseGamma {
     /// ```
     pub fn rate(&self) -> f64 {
         self.rate
+    }
+}
+
+impl std::fmt::Display for InverseGamma {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Inv-Gamma({}, {})", self.shape, self.rate)
     }
 }
 

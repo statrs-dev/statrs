@@ -17,7 +17,7 @@ use rand::Rng;
 /// assert_eq!(n.mean().unwrap(), 2.5);
 /// assert_eq!(n.pmf(3), 1.0 / 6.0);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct DiscreteUniform {
     min: i64,
     max: i64,
@@ -48,6 +48,12 @@ impl DiscreteUniform {
         } else {
             Ok(DiscreteUniform { min, max })
         }
+    }
+}
+
+impl std::fmt::Display for DiscreteUniform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Uni([{}, {}])", self.min, self.max)
     }
 }
 

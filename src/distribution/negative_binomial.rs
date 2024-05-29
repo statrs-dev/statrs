@@ -35,7 +35,7 @@ use std::f64;
 /// assert!(almost_eq(r.pmf(0), 0.0625, 1e-8));
 /// assert!(almost_eq(r.pmf(3), 0.15625, 1e-8));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct NegativeBinomial {
     r: f64,
     p: f64,
@@ -101,6 +101,12 @@ impl NegativeBinomial {
     /// ```
     pub fn r(&self) -> f64 {
         self.r
+    }
+}
+
+impl std::fmt::Display for NegativeBinomial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "NB({},{})", self.r, self.p)
     }
 }
 

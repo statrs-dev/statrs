@@ -21,7 +21,7 @@ use std::f64;
 /// assert_eq!(n.mean().unwrap(), 3.0);
 /// assert!(prec::almost_eq(n.pdf(4.0), 0.107981933026376103901, 1e-15));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct ChiSquared {
     freedom: f64,
     g: Gamma,
@@ -93,6 +93,12 @@ impl ChiSquared {
     /// ```
     pub fn rate(&self) -> f64 {
         self.g.rate()
+    }
+}
+
+impl std::fmt::Display for ChiSquared {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "χ^2_{}", self.freedom)
     }
 }
 

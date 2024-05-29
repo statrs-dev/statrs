@@ -6,7 +6,7 @@ use core::cmp::Ordering;
 use rand::Rng;
 use std::collections::BTreeMap;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 struct NonNan<T>(T);
 
 impl<T: PartialEq> Eq for NonNan<T> {}
@@ -37,7 +37,7 @@ impl<T: PartialOrd> Ord for NonNan<T> {
 /// let empirical = Empirical::from_vec(samples);
 /// assert_eq!(empirical.mean().unwrap(), 5.0);
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Empirical {
     sum: f64,
     mean_and_var: Option<(f64, f64)>,
@@ -151,6 +151,30 @@ impl Empirical {
     }
 }
 
+impl std::fmt::Display for Empirical {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some((&NonNan(x), _)) = self.data.first_key_value() {
+            write!(f, "Empirical([{:.3e}", x)?;
+        } else {
+            return write!(f, "Empirical(∅)");
+        }
+
+        let mut enumerated_values = self
+            .data
+            .iter()
+            .flat_map(|(&NonNan(x), &count)| std::iter::repeat(x).take(count as usize))
+            .skip(1);
+
+        for val in enumerated_values.by_ref().take(4) {
+            write!(f, ", {:.3e}", val)?;
+        }
+        if enumerated_values.next().is_some() {
+            write!(f, ", ...")?;
+        }
+        write!(f, "])")
+    }
+}
+
 impl ::rand::distributions::Distribution<f64> for Empirical {
     fn sample<R: ?Sized + Rng>(&self, rng: &mut R) -> f64 {
         let uniform = Uniform::new(0.0, 1.0).unwrap();
@@ -203,6 +227,10 @@ impl ContinuousCDF<f64, f64> for Empirical {
             sum += values;
         }
         sum as f64 / self.sum
+    }
+
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        self.__inverse_cdf(p)
     }
 }
 
@@ -263,5 +291,32 @@ mod tests {
         // because of rounding errors, this doesn't hold in general
         // due to the mean and variance being calculated in a streaming way
         assert_eq!(unchanged, empirical);
+    }
+
+    #[test]
+    fn test_display() {
+        let mut e = Empirical::new().unwrap();
+        assert_eq!(e.to_string(), "Empirical(∅)");
+        e.add(1.0);
+        assert_eq!(e.to_string(), "Empirical([1.000e0])");
+        e.add(1.0);
+        assert_eq!(e.to_string(), "Empirical([1.000e0, 1.000e0])");
+        e.add(2.0);
+        assert_eq!(e.to_string(), "Empirical([1.000e0, 1.000e0, 2.000e0])");
+        e.add(2.0);
+        assert_eq!(
+            e.to_string(),
+            "Empirical([1.000e0, 1.000e0, 2.000e0, 2.000e0])"
+        );
+        e.add(5.0);
+        assert_eq!(
+            e.to_string(),
+            "Empirical([1.000e0, 1.000e0, 2.000e0, 2.000e0, 5.000e0])"
+        );
+        e.add(5.0);
+        assert_eq!(
+            e.to_string(),
+            "Empirical([1.000e0, 1.000e0, 2.000e0, 2.000e0, 5.000e0, ...])"
+        );
     }
 }

@@ -17,7 +17,7 @@ use std::f64;
 /// assert_eq!(n.mode().unwrap(), 0.0);
 /// assert_eq!(n.pdf(1.0), 0.18393972058572117);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Laplace {
     location: f64,
     scale: f64,
@@ -76,6 +76,12 @@ impl Laplace {
     /// ```
     pub fn scale(&self) -> f64 {
         self.scale
+    }
+}
+
+impl std::fmt::Display for Laplace {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Laplace({}, {})", self.location, self.scale)
     }
 }
 

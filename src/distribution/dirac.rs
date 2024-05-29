@@ -45,6 +45,12 @@ impl Dirac {
     }
 }
 
+impl std::fmt::Display for Dirac {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "δ_{}", self.0)
+    }
+}
+
 impl ::rand::distributions::Distribution<f64> for Dirac {
     fn sample<R: Rng + ?Sized>(&self, _: &mut R) -> f64 {
         self.0

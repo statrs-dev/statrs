@@ -21,7 +21,7 @@ use std::f64;
 /// 0.95135076986687318362924871772654021925505786260884, 1e-15));
 /// assert_eq!(n.pdf(1.0), 3.6787944117144232159552377016146086744581113103177);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Weibull {
     shape: f64,
     scale: f64,
@@ -87,6 +87,12 @@ impl Weibull {
     /// ```
     pub fn scale(&self) -> f64 {
         self.scale
+    }
+}
+
+impl std::fmt::Display for Weibull {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Weibull({},{})", self.scale, self.shape)
     }
 }
 

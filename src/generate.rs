@@ -29,6 +29,7 @@ pub fn log_spaced(length: usize, start_exp: f64, stop_exp: f64) -> Vec<f64> {
 }
 
 /// Infinite iterator returning floats that form a periodic wave
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct InfinitePeriodic {
     amplitude: f64,
     step: f64,
@@ -80,6 +81,12 @@ impl InfinitePeriodic {
     }
 }
 
+impl std::fmt::Display for InfinitePeriodic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", self)
+    }
+}
+
 impl Iterator for InfinitePeriodic {
     type Item = f64;
 
@@ -96,6 +103,7 @@ impl Iterator for InfinitePeriodic {
 }
 
 /// Infinite iterator returning floats that form a sinusoidal wave
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InfiniteSinusoidal {
     amplitude: f64,
     mean: f64,
@@ -159,6 +167,12 @@ impl InfiniteSinusoidal {
     }
 }
 
+impl std::fmt::Display for InfiniteSinusoidal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", &self)
+    }
+}
+
 impl Iterator for InfiniteSinusoidal {
     type Item = f64;
 
@@ -175,6 +189,7 @@ impl Iterator for InfiniteSinusoidal {
 
 /// Infinite iterator returning floats forming a square wave starting
 /// with the high phase
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InfiniteSquare {
     periodic: InfinitePeriodic,
     high_duration: f64,
@@ -212,6 +227,12 @@ impl InfiniteSquare {
     }
 }
 
+impl std::fmt::Display for InfiniteSquare {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", &self)
+    }
+}
+
 impl Iterator for InfiniteSquare {
     type Item = f64;
 
@@ -228,6 +249,7 @@ impl Iterator for InfiniteSquare {
 
 /// Infinite iterator returning floats forming a triangle wave starting with
 /// the raise phase from the lowest sample
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InfiniteTriangle {
     periodic: InfinitePeriodic,
     raise_duration: f64,
@@ -278,6 +300,12 @@ impl InfiniteTriangle {
     }
 }
 
+impl std::fmt::Display for InfiniteTriangle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", &self)
+    }
+}
+
 impl Iterator for InfiniteTriangle {
     type Item = f64;
 
@@ -294,6 +322,7 @@ impl Iterator for InfiniteTriangle {
 
 /// Infinite iterator returning floats forming a sawtooth wave
 /// starting with the lowest sample
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InfiniteSawtooth {
     periodic: InfinitePeriodic,
     low_value: f64,
@@ -325,6 +354,12 @@ impl InfiniteSawtooth {
             ),
             low_value,
         }
+    }
+}
+
+impl std::fmt::Display for InfiniteSawtooth {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", &self)
     }
 }
 

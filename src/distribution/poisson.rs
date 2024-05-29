@@ -19,7 +19,7 @@ use std::f64;
 /// assert_eq!(n.mean().unwrap(), 1.0);
 /// assert!(prec::almost_eq(n.pmf(1), 0.367879441171442, 1e-15));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Poisson {
     lambda: f64,
 }
@@ -63,6 +63,12 @@ impl Poisson {
     /// ```
     pub fn lambda(&self) -> f64 {
         self.lambda
+    }
+}
+
+impl std::fmt::Display for Poisson {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Pois({})", self.lambda)
     }
 }
 

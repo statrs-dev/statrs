@@ -17,7 +17,7 @@ use std::f64;
 /// assert_eq!(n.mode().unwrap(), 0.0);
 /// assert_eq!(n.pdf(1.0), 0.1591549430918953357689);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Cauchy {
     location: f64,
     scale: f64,
@@ -76,6 +76,12 @@ impl Cauchy {
     /// ```
     pub fn scale(&self) -> f64 {
         self.scale
+    }
+}
+
+impl std::fmt::Display for Cauchy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Cauchy({}, {})", self.location, self.scale)
     }
 }
 

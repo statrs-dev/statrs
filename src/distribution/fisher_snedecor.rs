@@ -89,6 +89,12 @@ impl FisherSnedecor {
     }
 }
 
+impl std::fmt::Display for FisherSnedecor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "F({},{})", self.freedom_1, self.freedom_2)
+    }
+}
+
 impl ::rand::distributions::Distribution<f64> for FisherSnedecor {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         (super::gamma::sample_unchecked(rng, self.freedom_1 / 2.0, 0.5) * self.freedom_2)

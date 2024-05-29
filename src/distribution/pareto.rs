@@ -19,7 +19,7 @@ use std::f64;
 /// assert_eq!(p.mean().unwrap(), 2.0);
 /// assert!(prec::almost_eq(p.pdf(2.0), 0.25, 1e-15));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Pareto {
     scale: f64,
     shape: f64,
@@ -80,6 +80,12 @@ impl Pareto {
     /// ```
     pub fn shape(&self) -> f64 {
         self.shape
+    }
+}
+
+impl std::fmt::Display for Pareto {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Pareto({},{})", self.scale, self.shape)
     }
 }
 

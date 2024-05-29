@@ -63,6 +63,12 @@ impl Uniform {
     }
 }
 
+impl std::fmt::Display for Uniform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Uni([{},{}])", self.min, self.max)
+    }
+}
+
 impl ::rand::distributions::Distribution<f64> for Uniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         let d = RandUniform::new_inclusive(self.min, self.max);

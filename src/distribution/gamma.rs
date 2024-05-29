@@ -19,7 +19,7 @@ use rand::Rng;
 /// assert_eq!(n.mean().unwrap(), 3.0);
 /// assert!(prec::almost_eq(n.pdf(2.0), 0.270670566473225383788, 1e-15));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Gamma {
     shape: f64,
     rate: f64,
@@ -83,6 +83,12 @@ impl Gamma {
     /// ```
     pub fn rate(&self) -> f64 {
         self.rate
+    }
+}
+
+impl std::fmt::Display for Gamma {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Γ({}, {})", self.shape, self.rate)
     }
 }
 

@@ -26,7 +26,7 @@ use std::f64::consts::{E, PI};
 /// assert_eq!(mvn.variance().unwrap(), DMatrix::from_vec(2, 2, vec![1., 0., 0., 1.]));
 /// assert_eq!(mvn.pdf(&DVector::from_vec(vec![1.,  1.])), 0.05854983152431917);
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct MultivariateNormal {
     dim: usize,
     cov_chol_decomp: DMatrix<f64>,
@@ -110,6 +110,12 @@ impl MultivariateNormal {
                 .determinant()
                 .ln(),
         )
+    }
+}
+
+impl std::fmt::Display for MultivariateNormal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "N({}, {})", &self.mu, &self.cov)
     }
 }
 

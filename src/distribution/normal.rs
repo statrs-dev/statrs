@@ -18,7 +18,7 @@ use std::f64;
 /// assert_eq!(n.mean().unwrap(), 0.0);
 /// assert_eq!(n.pdf(1.0), 0.2419707245191433497978);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Normal {
     mean: f64,
     std_dev: f64,
@@ -68,6 +68,12 @@ impl Normal {
             mean: 0.0,
             std_dev: 1.0,
         }
+    }
+}
+
+impl std::fmt::Display for Normal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "N({},{})", self.mean, self.std_dev)
     }
 }
 
@@ -316,7 +322,6 @@ pub fn ln_pdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
 pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, mean: f64, std_dev: f64) -> f64 {
     mean + std_dev * ziggurat::sample_std_normal(rng)
 }
-
 
 impl std::default::Default for Normal {
     /// Returns the standard normal distribution with a mean of 0

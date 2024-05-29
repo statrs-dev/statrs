@@ -20,7 +20,7 @@ use std::f64;
 /// assert_eq!(n.mean().unwrap(), 1.0);
 /// assert_eq!(n.pdf(1.0), 0.3678794411714423215955);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Exp {
     rate: f64,
 }
@@ -64,6 +64,12 @@ impl Exp {
     /// ```
     pub fn rate(&self) -> f64 {
         self.rate
+    }
+}
+
+impl std::fmt::Display for Exp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Exp({})", self.rate)
     }
 }
 

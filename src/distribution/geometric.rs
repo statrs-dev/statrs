@@ -20,7 +20,7 @@ use std::f64;
 /// assert_eq!(n.pmf(1), 0.3);
 /// assert_eq!(n.pmf(2), 0.21);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Geometric {
     p: f64,
 }
@@ -65,6 +65,12 @@ impl Geometric {
     /// ```
     pub fn p(&self) -> f64 {
         self.p
+    }
+}
+
+impl std::fmt::Display for Geometric {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Geom({})", self.p)
     }
 }
 

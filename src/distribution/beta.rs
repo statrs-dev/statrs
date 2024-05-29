@@ -19,7 +19,7 @@ use rand::Rng;
 /// assert_eq!(n.mean().unwrap(), 0.5);
 /// assert!(prec::almost_eq(n.pdf(0.5), 1.5, 1e-14));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Beta {
     shape_a: f64,
     shape_b: f64,
@@ -83,6 +83,12 @@ impl Beta {
     /// ```
     pub fn shape_b(&self) -> f64 {
         self.shape_b
+    }
+}
+
+impl std::fmt::Display for Beta {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Beta(a={}, b={})", self.shape_a, self.shape_b)
     }
 }
 

@@ -20,7 +20,7 @@ use std::f64;
 /// assert_eq!(n.mean().unwrap(), (0.5f64).exp());
 /// assert!(prec::almost_eq(n.pdf(1.0), 0.3989422804014326779399, 1e-16));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct LogNormal {
     location: f64,
     scale: f64,
@@ -52,6 +52,12 @@ impl LogNormal {
         } else {
             Ok(LogNormal { location, scale })
         }
+    }
+}
+
+impl std::fmt::Display for LogNormal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LogNormal({}, {}^2)", self.location, self.scale)
     }
 }
 

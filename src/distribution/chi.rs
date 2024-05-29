@@ -19,7 +19,7 @@ use std::f64;
 /// assert!(prec::almost_eq(n.mean().unwrap(), 1.25331413731550025121, 1e-14));
 /// assert!(prec::almost_eq(n.pdf(1.0), 0.60653065971263342360, 1e-15));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Chi {
     freedom: f64,
 }
@@ -65,6 +65,12 @@ impl Chi {
     /// ```
     pub fn freedom(&self) -> f64 {
         self.freedom
+    }
+}
+
+impl std::fmt::Display for Chi {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "χ_{}", self.freedom)
     }
 }
 
