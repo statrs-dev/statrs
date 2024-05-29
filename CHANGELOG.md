@@ -1,7 +1,49 @@
-Unreleased
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.17.0](https://github.com/statrs-dev/statrs/compare/v0.16.0...v0.17.0) - 2024-05-30
+
+### Added
+- specializes `inverse_cdf()` for Uniform (#166)
+- Add way to get standard normal distribution easily. (#228)
+- reject constructing Uniform of infinite support (#218)
+- extend `StatsError` for finiteness (#218)
+- default implementation of survival function with generics (#179)
+- update `MultivariateNormal` API
+  - construct from nalgebra with `MultivariateNormal::new_from_nalgebra` (#177)
+  - support `std::vec` vector input in addition to `nalgebra` vectors (#199)
+
+### Fixed
+- Update nalgebra to 0.32 (#187)
+- for Gamma with shape<1 there is no mode, returns `None` instead of some negative number (#212)
+- fix precision of <Gamma as ContinuousCDF>::inverse_cdf with some newton raphson steps (#227)
+  - adds test case from #200
+- fix integer bisection for default implementation of `<D as DiscreteCDF>::inverse_cdf` (#220)
+  - also add tests from (#185)
+
+### Other
+- Remove "nightly" feature and drop testing requirement for `nightly` (#234)
+- Allow some imprecision in specific test case (#215)
+- Update CI (#215)
+  - Check formatting in CI via rustfmt
+  - Expand CI test job
+  - Add clippy job to CI
+- update README with formatting and adding to "Contributing" (#213)
+- Add test asserting that `StatsError` is Sync & Send (#226)
+- Rename private struct NonNAN<T> to NonNan<T> (#222)
+- Remove `lazy-static` dependency and make FCACHE a proper const (#211)
+- crate examples shall be in docstrings instead of README (#213)
+- alias `inverse_cdf` as "quantile function" in docs (#213)
+- docstrings with math shall be `text` instead of `ignore` (#213)
 
 
-v0.16.0
+
+## [0.16.0]
 
 - Adds an `sf` method to the `ContinuousCDF` and `DiscreteCDF` traits
   - Calculates the survival function (CDF complement) for the distribution.
@@ -9,11 +51,11 @@ v0.16.0
   - See [PR description](https://github.com/statrs-dev/statrs/pull/172) for in-depth changes
 - update `nalgebra` to `0.29`
 
-v0.15.0
+## [v0.15.0](https://www.github.com/statrs-dev/statrs/compare/v0.15.0...v0.16.0)
 
 - upgrade `nalgebra` to `0.27.1` to avoid RUSTSEC-2021-0070
 
-v0.14.0
+## [v0.14.0](https://www.github.com/statrs-dev/statrs/compare/v0.14.0...v0.15.0)
 
 - upgrade `rand` dependency to `0.8`
 - fix inaccurate sampling of `Gamma`
@@ -27,28 +69,28 @@ v0.14.0
 - Moved to dynamic vectors in the MultivariateNormal distribution
 - Reduced a number of distribution-specific traits into the Distribution and DiscreteDistribution traits
 
-v0.13.0
+## [v0.13.0](https://www.github.com/statrs-dev/statrs/compare/v0.12.0...v0.13.0)
 
 - Implemented `MultivariateNormal` distribution (depends on `nalgebra 0.19`)
 - Implemented `Dirac` distribution
 - Implemented `Negative Binomial` distribution
 
-v0.12.0
+## [v0.12.0](https://www.github.com/statrs-dev/statrs/compare/v0.11.0...v0.12.0)
 
 - upgrade `rand` dependency to `0.7`
 
-v0.11.0
+## [v0.11.0](https://www.github.com/statrs-dev/statrs/compare/v0.10.0...v0.11.0)
 
 - upgrade `rand` dependency to `0.6`
 - Implement `CheckedInverseCDF` and `InverseCDF` for `Normal` distribution
 
-v0.10.0
+## [v0.10.0](https://www.github.com/statrs-dev/statrs/compare/v0.9.0...v0.10.0)
 
 - upgrade `rand` dependency to `0.5`
 - Removes the `Distribution` trait in favor of the `rand::distributions::Distribution` trait
 - Removed functions deprecated in `0.8.0` (`periodic`, `periodic_custom`, `sinusoidal`, `sinusoidal_custom`)
 
-v0.9.0
+## [v0.9.0](https://www.github.com/statrs-dev/statrs/compare/v0.16.0...v0.17.0)
 
 - implemented infinite sequence generator for periodic sequence
 - implemented infinite sequence generator for sinusoidal sequence
@@ -60,7 +102,7 @@ v0.9.0
 - Implemented `Entropy` trait for the `Categorical` distribution
 - Add a `checked_` interface to all distribution methods and functions that may panic
 
-v0.8.0
+## [v0.8.0](https://www.github.com/statrs-dev/statrs/compare/v0.16.0...v0.17.0)
 
 - `cdf(x)`, `pdf(x)` and `pmf(x)` now return the correct value instead of panicking when `x` is outside the range of values that the distribution can attain.
 - Fixed a bug in the `Uniform` distribution implementation where samples were drawn from range `[min, max + 1)` instead of `[min, max]`. The samples are now drawn correctly from the range `[min, max]`.
@@ -97,14 +139,14 @@ assert!(x.min().is_nan());
 
 Since the regression affects a very slim edge-case and the fix is very simple, no breaking changes to the `Statistics` API was deemed necessary
 
-v0.7.0
+## [v0.7.0](https://www.github.com/statrs-dev/statrs/compare/v0.6.0...v0.7.0)
 
 - Implemented `Categorical` distribution
 - Implemented `Erlang` distribution
 - Implemented `Multinomial` distribution
 - New `InverseCDF` trait for distributions that implement the inverse cdf function
 
-v0.6.0
+## [v0.6.0](https://www.github.com/statrs-dev/statrs/compare/v0.16.0...v0.17.0)
 
 - `gamma::gamma_ur`, `gamma::gamma_ui`, `gamma::gamma_lr`, and `gamma::gamma_li` now follow strict gamma function domain, panicking if `a` or `x` are not in `(0, +inf)`
 - `beta::beta_reg` no longer allows `0.0` for `a` or `b` arguments
@@ -135,11 +177,11 @@ v0.6.0
 - `Hypergeometric` now implements `Discrete<u64, f64>` rather than `Discrete<i64, f64>`
 - `Poisson` now implements `Discrete<u64, f64>` rather than `Discrete<i64, f64>`
 
-v0.5.1
+## [v0.5.1](https://www.github.com/statrs-dev/statrs/compare/v0.5.0...v0.5.1)
 
 - Fixed critical bug in `normal::sample_unchecked` where it was returning `NaN`
 
-v0.5.0
+## [v0.5.0](https://www.github.com/statrs-dev/statrs/compare/v0.4.0...v0.5.0)
 
 - Implemented the `logistic::logistic` special function
 - Implemented the `logistic::logit` special function
@@ -154,22 +196,22 @@ v0.5.0
 - `Binomial::pdf` and `Binomial::ln_pdf` now panic if `x > n` or `x < 0`
 - `Bernoulli::pdf` and `Bernoulli::ln_pdf` now panic if `x > 1` or `x < 0`
 
-v0.4.0
+## [v0.4.0]
 
 - Implemented the `exponential::integral` special function
 - Implemented the `Cauchy` (otherwise known as the `Lorenz`) distribution
 - Implemented the `Dirichlet` distribution
 - `Continuous` and `Discrete` traits no longer dependent on `Distribution` trait
 
-v0.3.2
+## [v0.3.2]
 
 - Implemented the `FisherSnedecor` (F) distribution
 
-v0.3.1
+## [v0.3.1]
 
 - Removed print statements from `ln_pdf` method in `Beta` distribution
 
-v0.3.0
+## [v0.3.0]
 
 - Moved methods `min` and `max` out of trait `Univariate` into their own respective traits `Min` and `Max`
 - Traits `Min`, `Max`, `Mean`, `Variance`, `Entropy`, `Skewness`, `Median`, and `Mode` moved from `distribution` module to `statistics` module
@@ -184,7 +226,7 @@ v0.3.0
 - `InplaceStatistics` renamed to `OrderStatistics`, all methods in `InplaceStatistics` have `_inplace` trimmed from method name.
 - Inverse DiGamma function implemented with signature `gamma::inv_digamma(x: f64) -> f64`
 
-v0.2.0
+## [v0.2.0]
 
 - Created `statistics` module and `Statistics` trait
 - `Statistics` trait implementation for `[f64]`
