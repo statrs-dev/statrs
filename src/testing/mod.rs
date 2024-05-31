@@ -11,6 +11,7 @@ use std::str;
 ///
 /// Panics if the file does not exist or could not be opened, or
 /// there was an error reading the file.
+#[cfg(test)]
 pub fn load_data(path: &str) -> Vec<f64> {
     // note: the copious use of unwrap is because this is a test helper and
     // if reading the data file fails, we want to panic immediately

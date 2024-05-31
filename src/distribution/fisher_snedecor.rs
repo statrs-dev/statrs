@@ -103,7 +103,7 @@ impl ContinuousCDF<f64, f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// I_((d1 * x) / (d1 * x + d2))(d1 / 2, d2 / 2)
     /// ```
     ///
@@ -123,6 +123,32 @@ impl ContinuousCDF<f64, f64> for FisherSnedecor {
             )
         }
     }
+
+    /// Calculates the survival function for the fisher-snedecor
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// I_(1 - ((d1 * x) / (d1 * x + d2))(d2 / 2, d1 / 2)
+    /// ```
+    ///
+    /// where `d1` is the first degree of freedom, `d2` is
+    /// the second degree of freedom, and `I` is the regularized incomplete
+    /// beta function
+    fn sf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            1.0
+        } else if x.is_infinite() {
+            0.0
+        } else {
+            beta::beta_reg(
+                self.freedom_2 / 2.0,
+                self.freedom_1 / 2.0,
+                1. - ((self.freedom_1 * x) / (self.freedom_1 * x + self.freedom_2)),
+            )
+        }
+    }
 }
 
 impl Min<f64> for FisherSnedecor {
@@ -132,7 +158,7 @@ impl Min<f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -147,8 +173,8 @@ impl Max<f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -168,7 +194,7 @@ impl Distribution<f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// d2 / (d2 - 2)
     /// ```
     ///
@@ -180,6 +206,7 @@ impl Distribution<f64> for FisherSnedecor {
             Some(self.freedom_2 / (self.freedom_2 - 2.0))
         }
     }
+
     /// Returns the variance of the fisher-snedecor distribution
     ///
     /// # Panics
@@ -192,7 +219,7 @@ impl Distribution<f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (2 * d2^2 * (d1 + d2 - 2)) / (d1 * (d2 - 2)^2 * (d2 - 4))
     /// ```
     ///
@@ -211,6 +238,7 @@ impl Distribution<f64> for FisherSnedecor {
             Some(val)
         }
     }
+
     /// Returns the skewness of the fisher-snedecor distribution
     ///
     /// # Panics
@@ -223,7 +251,7 @@ impl Distribution<f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ((2d1 + d2 - 2) * sqrt(8 * (d2 - 4))) / ((d2 - 6) * sqrt(d1 * (d1 + d2
     /// - 2)))
     /// ```
@@ -256,7 +284,7 @@ impl Mode<Option<f64>> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ((d1 - 2) / d1) * (d2 / (d2 + 2))
     /// ```
     ///
@@ -285,7 +313,7 @@ impl Continuous<f64, f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// sqrt(((d1 * x) ^ d1 * d2 ^ d2) / (d1 * x + d2) ^ (d1 + d2)) / (x * β(d1
     /// / 2, d2 / 2))
     /// ```
@@ -314,7 +342,7 @@ impl Continuous<f64, f64> for FisherSnedecor {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(sqrt(((d1 * x) ^ d1 * d2 ^ d2) / (d1 * x + d2) ^ (d1 + d2)) / (x *
     /// β(d1 / 2, d2 / 2)))
     /// ```
@@ -327,12 +355,11 @@ impl Continuous<f64, f64> for FisherSnedecor {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, FisherSnedecor};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(freedom_1: f64, freedom_2: f64) -> FisherSnedecor {
         let n = FisherSnedecor::new(freedom_1, freedom_2);
@@ -534,6 +561,29 @@ mod tests {
     fn test_cdf_lower_bound() {
         let cdf = |arg: f64| move |x: FisherSnedecor| x.cdf(arg);
         test_case(0.1, 0.1, 0.0, cdf(-1.0));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: FisherSnedecor| x.sf(arg);
+        test_almost(0.1, 0.1, 0.5528701396657489, 1e-12, sf(0.1));
+        test_almost(1.0, 0.1, 0.9184347790489533, 1e-12, sf(0.1));
+        test_almost(10.0, 0.1, 0.9668159942836896, 1e-12, sf(0.1));
+        test_almost(0.1, 1.0, 0.25621289082013654, 1e-12, sf(0.1));
+        test_almost(1.0, 1.0, 0.8050177709578634, 1e-12, sf(0.1));
+        test_almost(10.0, 1.0, 0.9898804402645662, 1e-12, sf(0.1));
+        test_almost(0.1, 0.1, 0.5, 1e-15, sf(1.0));
+        test_almost(1.0, 0.1, 0.8326564849905562, 1e-12, sf(1.0));
+        test_almost(10.0, 0.1, 0.8779243933525519, 1e-12, sf(1.0));
+        test_almost(0.1, 1.0, 0.16734351500944344, 1e-12, sf(1.0));
+        test_almost(1.0, 1.0, 0.5, 1e-12, sf(1.0));
+        test_almost(10.0, 1.0, 0.65910686769794, 1e-12, sf(1.0));
+    }
+
+    #[test]
+    fn test_sf_lower_bound() {
+        let sf = |arg: f64| move |x: FisherSnedecor| x.sf(arg);
+        test_case(0.1, 0.1, 1.0, sf(-1.0));
     }
 
     #[test]

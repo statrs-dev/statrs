@@ -56,12 +56,23 @@ impl ContinuousCDF<f64, f64> for Dirac {
     /// dirac distribution at `x`
     ///
     /// Where the value is 1 if x > `v`, 0 otherwise.
-    ///
     fn cdf(&self, x: f64) -> f64 {
         if x < self.0 {
             0.0
         } else {
             1.0
+        }
+    }
+
+    /// Calculates the survival function for the
+    /// dirac distribution at `x`
+    ///
+    /// Where the value is 0 if x > `v`, 1 otherwise.
+    fn sf(&self, x: f64) -> f64 {
+        if x < self.0 {
+            1.0
+        } else {
+            0.0
         }
     }
 }
@@ -72,7 +83,7 @@ impl Min<f64> for Dirac {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// v
     /// ```
     fn min(&self) -> f64 {
@@ -86,7 +97,7 @@ impl Max<f64> for Dirac {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// v
     /// ```
     fn max(&self) -> f64 {
@@ -104,11 +115,12 @@ impl Distribution<f64> for Dirac {
     fn mean(&self) -> Option<f64> {
         Some(self.0)
     }
+
     /// Returns the variance of the dirac distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     ///
@@ -116,11 +128,12 @@ impl Distribution<f64> for Dirac {
     fn variance(&self) -> Option<f64> {
         Some(0.0)
     }
+
     /// Returns the entropy of the dirac distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     ///
@@ -128,11 +141,12 @@ impl Distribution<f64> for Dirac {
     fn entropy(&self) -> Option<f64> {
         Some(0.0)
     }
+
     /// Returns the skewness of the dirac distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -145,7 +159,7 @@ impl Median<f64> for Dirac {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// v
     /// ```
     ///
@@ -160,7 +174,7 @@ impl Mode<Option<f64>> for Dirac {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// v
     /// ```
     ///
@@ -171,11 +185,10 @@ impl Mode<Option<f64>> for Dirac {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Dirac};
-    use crate::consts::ACC;
 
     fn try_create(v: f64) -> Dirac {
         let d = Dirac::new(v);
@@ -274,5 +287,14 @@ mod tests {
         test_case(3.0, 1.0, cdf(3.0));
         test_case(f64::INFINITY, 0.0, cdf(1.0));
         test_case(f64::INFINITY, 1.0, cdf(f64::INFINITY));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Dirac| x.sf(arg);
+        test_case(0.0, 0.0, sf(0.0));
+        test_case(3.0, 0.0, sf(3.0));
+        test_case(f64::INFINITY, 1.0, sf(1.0));
+        test_case(f64::INFINITY, 0.0, sf(f64::INFINITY));
     }
 }

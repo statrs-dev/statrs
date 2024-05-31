@@ -3,7 +3,6 @@ use crate::function::{beta, gamma};
 use crate::is_zero;
 use crate::statistics::*;
 use crate::{Result, StatsError};
-use core::f64::INFINITY as INF;
 use rand::Rng;
 
 /// Implements the [Beta](https://en.wikipedia.org/wiki/Beta_distribution)
@@ -103,7 +102,7 @@ impl ContinuousCDF<f64, f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// I_x(α, β)
     /// ```
     ///
@@ -128,6 +127,37 @@ impl ContinuousCDF<f64, f64> for Beta {
             beta::beta_reg(self.shape_a, self.shape_b, x)
         }
     }
+
+    /// Calculates the survival function for the beta
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// I_(1-x)(β, α)
+    /// ```
+    ///
+    /// where `α` is shapeA, `β` is shapeB, and `I_x` is the regularized
+    /// lower incomplete beta function
+    fn sf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            1.0
+        } else if x >= 1.0 {
+            0.0
+        } else if self.shape_a.is_infinite() {
+            if x < 1.0 {
+                1.0
+            } else {
+                0.0
+            }
+        } else if self.shape_b.is_infinite() {
+            0.0
+        } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
+            1. - x
+        } else {
+            beta::beta_reg(self.shape_b, self.shape_a, 1.0 - x)
+        }
+    }
 }
 
 impl Min<f64> for Beta {
@@ -137,7 +167,7 @@ impl Min<f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -152,7 +182,7 @@ impl Max<f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1
     /// ```
     fn max(&self) -> f64 {
@@ -165,7 +195,7 @@ impl Distribution<f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α / (α + β)
     /// ```
     ///
@@ -178,13 +208,14 @@ impl Distribution<f64> for Beta {
         };
         Some(mean)
     }
+
     /// Returns the variance of the beta distribution
     ///
     /// # Remarks
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (α * β) / ((α + β)^2 * (α + β + 1))
     /// ```
     ///
@@ -200,11 +231,12 @@ impl Distribution<f64> for Beta {
         };
         Some(var)
     }
+
     /// Returns the entropy of the beta distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(B(α, β)) - (α - 1)ψ(α) - (β - 1)ψ(β) + (α + β - 2)ψ(α + β)
     /// ```
     ///
@@ -221,11 +253,12 @@ impl Distribution<f64> for Beta {
         };
         Some(entr)
     }
+
     /// Returns the skewness of the Beta distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2(β - α) * sqrt(α + β + 1) / ((α + β + 2) * sqrt(αβ))
     /// ```
     ///
@@ -259,7 +292,7 @@ impl Mode<Option<f64>> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (α - 1) / (α + β - 2)
     /// ```
     ///
@@ -283,7 +316,7 @@ impl Continuous<f64, f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// let B(α, β) = Γ(α)Γ(β)/Γ(α + β)
     ///
     /// x^(α - 1) * (1 - x)^(β - 1) / B(α, β)
@@ -295,13 +328,13 @@ impl Continuous<f64, f64> for Beta {
             0.0
         } else if self.shape_a.is_infinite() {
             if ulps_eq!(x, 1.0) {
-                INF
+                f64::INFINITY
             } else {
                 0.0
             }
         } else if self.shape_b.is_infinite() {
             if is_zero(x) {
-                INF
+                f64::INFINITY
             } else {
                 0.0
             }
@@ -321,7 +354,7 @@ impl Continuous<f64, f64> for Beta {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// let B(α, β) = Γ(α)Γ(β)/Γ(α + β)
     ///
     /// ln(x^(α - 1) * (1 - x)^(β - 1) / B(α, β))
@@ -330,18 +363,18 @@ impl Continuous<f64, f64> for Beta {
     /// where `α` is shapeA, `β` is shapeB, and `Γ` is the gamma function
     fn ln_pdf(&self, x: f64) -> f64 {
         if !(0.0..=1.0).contains(&x) {
-            -INF
+            f64::NEG_INFINITY
         } else if self.shape_a.is_infinite() {
             if ulps_eq!(x, 1.0) {
-                INF
+                f64::INFINITY
             } else {
-                -INF
+                f64::NEG_INFINITY
             }
         } else if self.shape_b.is_infinite() {
             if is_zero(x) {
-                INF
+                f64::INFINITY
             } else {
-                -INF
+                f64::NEG_INFINITY
             }
         } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
             0.0
@@ -352,14 +385,14 @@ impl Continuous<f64, f64> for Beta {
             let bb = if ulps_eq!(self.shape_a, 1.0) && is_zero(x) {
                 0.0
             } else if is_zero(x) {
-                -INF
+                f64::NEG_INFINITY
             } else {
                 (self.shape_a - 1.0) * x.ln()
             };
             let cc = if ulps_eq!(self.shape_b, 1.0) && ulps_eq!(x, 1.0) {
                 0.0
             } else if ulps_eq!(x, 1.0) {
-                -INF
+                f64::NEG_INFINITY
             } else {
                 (self.shape_b - 1.0) * (1.0 - x).ln()
             };
@@ -369,21 +402,20 @@ impl Continuous<f64, f64> for Beta {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consts::ACC;
     use super::super::internal::*;
     use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!((f64, f64), Beta);
+    testing_boiler!(a: f64, b: f64; Beta);
 
     #[test]
     fn test_create() {
-        let valid = [(1.0, 1.0), (9.0, 1.0), (5.0, 100.0), (1.0, INF), (INF, 1.0)];
-        for &arg in valid.iter() {
-            try_create(arg);
+        let valid = [(1.0, 1.0), (9.0, 1.0), (5.0, 100.0), (1.0, f64::INFINITY), (f64::INFINITY, 1.0)];
+        for (a, b) in valid {
+            try_create(a, b);
         }
     }
 
@@ -393,18 +425,18 @@ mod tests {
             (0.0, 0.0),
             (0.0, 0.1),
             (1.0, 0.0),
-            (0.0, INF),
-            (INF, 0.0),
+            (0.0, f64::INFINITY),
+            (f64::INFINITY, 0.0),
             (f64::NAN, 1.0),
             (1.0, f64::NAN),
             (f64::NAN, f64::NAN),
             (1.0, -1.0),
             (-1.0, 1.0),
             (-1.0, -1.0),
-            (INF, INF),
+            (f64::INFINITY, f64::INFINITY),
         ];
-        for &arg in invalid.iter() {
-            bad_create_case(arg);
+        for (a, b) in invalid {
+            bad_create_case(a, b);
         }
     }
 
@@ -415,11 +447,11 @@ mod tests {
             ((1.0, 1.0), 0.5),
             ((9.0, 1.0), 0.9),
             ((5.0, 100.0), 0.047619047619047619047616),
-            ((1.0, INF), 0.0),
-            ((INF, 1.0), 1.0),
+            ((1.0, f64::INFINITY), 0.0),
+            ((f64::INFINITY, 1.0), 1.0),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((a, b), res) in test {
+            test_case(a, b, res, f);
         }
     }
 
@@ -430,11 +462,11 @@ mod tests {
             ((1.0, 1.0), 1.0 / 12.0),
             ((9.0, 1.0), 9.0 / 1100.0),
             ((5.0, 100.0), 500.0 / 1168650.0),
-            ((1.0, INF), 0.0),
-            ((INF, 1.0), 0.0),
+            ((1.0, f64::INFINITY), 0.0),
+            ((f64::INFINITY, 1.0), 0.0),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((a, b), res) in test {
+            test_case(a, b, res, f);
         }
     }
 
@@ -445,53 +477,53 @@ mod tests {
             ((9.0, 1.0), -1.3083356884473304939016015),
             ((5.0, 100.0), -2.52016231876027436794592),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((a, b), res) in test {
+            test_case(a, b, res, f);
         }
-        test_case_special((1.0, 1.0), 0.0, 1e-14, f);
+        test_case_special(1.0, 1.0, 0.0, 1e-14, f);
         let entropy = |x: Beta| x.entropy();
-        test_none((1.0, INF), entropy);
-        test_none((INF, 1.0), entropy);
+        test_none(1.0, f64::INFINITY, entropy);
+        test_none(f64::INFINITY, 1.0, entropy);
     }
 
     #[test]
     fn test_skewness() {
         let skewness = |x: Beta| x.skewness().unwrap();
-        test_case((1.0, 1.0), 0.0, skewness);
-        test_case((9.0, 1.0), -1.4740554623801777107177478829, skewness);
-        test_case((5.0, 100.0), 0.817594109275534303545831591, skewness);
-        test_case((1.0, INF), 2.0, skewness);
-        test_case((INF, 1.0), -2.0, skewness);
+        test_case(1.0, 1.0, 0.0, skewness);
+        test_case(9.0, 1.0, -1.4740554623801777107177478829, skewness);
+        test_case(5.0, 100.0, 0.817594109275534303545831591, skewness);
+        test_case(1.0, f64::INFINITY, 2.0, skewness);
+        test_case(f64::INFINITY, 1.0, -2.0, skewness);
     }
 
     #[test]
     fn test_mode() {
         let mode = |x: Beta| x.mode().unwrap();
-        test_case((5.0, 100.0), 0.038834951456310676243255386, mode);
-        test_case((92.0, INF), 0.0, mode);
-        test_case((INF, 2.0), 1.0, mode);
+        test_case(5.0, 100.0, 0.038834951456310676243255386, mode);
+        test_case(92.0, f64::INFINITY, 0.0, mode);
+        test_case(f64::INFINITY, 2.0, 1.0, mode);
     }
 
     #[test]
     #[should_panic]
     fn test_mode_shape_a_lte_1() {
         let mode = |x: Beta| x.mode().unwrap();
-        get_value((1.0, 5.0), mode);
+        get_value(1.0, 5.0, mode);
     }
 
     #[test]
     #[should_panic]
     fn test_mode_shape_b_lte_1() {
         let mode = |x: Beta| x.mode().unwrap();
-        get_value((5.0, 1.0), mode);
+        get_value(5.0, 1.0, mode);
     }
 
     #[test]
     fn test_min_max() {
         let min = |x: Beta| x.min();
         let max = |x: Beta| x.max();
-        test_case((1.0, 1.0), 0.0, min);
-        test_case((1.0, 1.0), 1.0, max);
+        test_case(1.0, 1.0, 0.0, min);
+        test_case(1.0, 1.0, 1.0, max);
     }
 
     #[test]
@@ -508,28 +540,28 @@ mod tests {
             ((5.0, 100.0), 0.5, 4.534102298350337661e-23),
             ((5.0, 100.0), 1.0, 0.0),
             ((5.0, 100.0), 1.0, 0.0),
-            ((1.0, INF), 0.0, INF),
-            ((1.0, INF), 0.5, 0.0),
-            ((1.0, INF), 1.0, 0.0),
-            ((INF, 1.0), 0.0, 0.0),
-            ((INF, 1.0), 0.5, 0.0),
-            ((INF, 1.0), 1.0, INF),
+            ((1.0, f64::INFINITY), 0.0, f64::INFINITY),
+            ((1.0, f64::INFINITY), 0.5, 0.0),
+            ((1.0, f64::INFINITY), 1.0, 0.0),
+            ((f64::INFINITY, 1.0), 0.0, 0.0),
+            ((f64::INFINITY, 1.0), 0.5, 0.0),
+            ((f64::INFINITY, 1.0), 1.0, f64::INFINITY),
         ];
-        for &(arg, x, expect) in test.iter() {
-            test_case(arg, expect, f(x));
+        for ((a, b), x, expect) in test {
+            test_case(a, b, expect, f(x));
         }
     }
 
     #[test]
     fn test_pdf_input_lt_0() {
         let pdf = |arg: f64| move |x: Beta| x.pdf(arg);
-        test_case((1.0, 1.0), 0.0, pdf(-1.0));
+        test_case(1.0, 1.0, 0.0, pdf(-1.0));
     }
 
     #[test]
     fn test_pdf_input_gt_0() {
         let pdf = |arg: f64| move |x: Beta| x.pdf(arg);
-        test_case((1.0, 1.0), 0.0, pdf(2.0));
+        test_case(1.0, 1.0, 0.0, pdf(2.0));
     }
 
     #[test]
@@ -539,34 +571,34 @@ mod tests {
             ((1.0, 1.0), 0.0, 0.0),
             ((1.0, 1.0), 0.5, 0.0),
             ((1.0, 1.0), 1.0, 0.0),
-            ((9.0, 1.0), 0.0, -INF),
+            ((9.0, 1.0), 0.0, f64::NEG_INFINITY),
             ((9.0, 1.0), 0.5, -3.347952867143343092547366497),
             ((9.0, 1.0), 1.0, 2.1972245773362193827904904738),
-            ((5.0, 100.0), 0.0, -INF),
+            ((5.0, 100.0), 0.0, f64::NEG_INFINITY),
             ((5.0, 100.0), 0.5, -51.447830024537682154565870),
-            ((5.0, 100.0), 1.0, -INF),
-            ((1.0, INF), 0.0, INF),
-            ((1.0, INF), 0.5, -INF),
-            ((1.0, INF), 1.0, -INF),
-            ((INF, 1.0), 0.0, -INF),
-            ((INF, 1.0), 0.5, -INF),
-            ((INF, 1.0), 1.0, INF),
+            ((5.0, 100.0), 1.0, f64::NEG_INFINITY),
+            ((1.0, f64::INFINITY), 0.0, f64::INFINITY),
+            ((1.0, f64::INFINITY), 0.5, f64::NEG_INFINITY),
+            ((1.0, f64::INFINITY), 1.0, f64::NEG_INFINITY),
+            ((f64::INFINITY, 1.0), 0.0, f64::NEG_INFINITY),
+            ((f64::INFINITY, 1.0), 0.5, f64::NEG_INFINITY),
+            ((f64::INFINITY, 1.0), 1.0, f64::INFINITY),
         ];
-        for &(arg, x, expect) in test.iter() {
-            test_case(arg, expect, f(x));
+        for ((a, b), x, expect) in test {
+            test_case(a, b, expect, f(x));
         }
     }
 
     #[test]
     fn test_ln_pdf_input_lt_0() {
         let ln_pdf = |arg: f64| move |x: Beta| x.ln_pdf(arg);
-        test_case((1.0, 1.0), -INF, ln_pdf(-1.0));
+        test_case(1.0, 1.0, f64::NEG_INFINITY, ln_pdf(-1.0));
     }
 
     #[test]
     fn test_ln_pdf_input_gt_1() {
         let ln_pdf = |arg: f64| move |x: Beta| x.ln_pdf(arg);
-        test_case((1.0, 1.0), -INF, ln_pdf(2.0));
+        test_case(1.0, 1.0, f64::NEG_INFINITY, ln_pdf(2.0));
     }
 
     #[test]
@@ -582,33 +614,70 @@ mod tests {
             ((5.0, 100.0), 0.0, 0.0),
             ((5.0, 100.0), 0.5, 1.0),
             ((5.0, 100.0), 1.0, 1.0),
-            ((1.0, INF), 0.0, 1.0),
-            ((1.0, INF), 0.5, 1.0),
-            ((1.0, INF), 1.0, 1.0),
-            ((INF, 1.0), 0.0, 0.0),
-            ((INF, 1.0), 0.5, 0.0),
-            ((INF, 1.0), 1.0, 1.0),
+            ((1.0, f64::INFINITY), 0.0, 1.0),
+            ((1.0, f64::INFINITY), 0.5, 1.0),
+            ((1.0, f64::INFINITY), 1.0, 1.0),
+            ((f64::INFINITY, 1.0), 0.0, 0.0),
+            ((f64::INFINITY, 1.0), 0.5, 0.0),
+            ((f64::INFINITY, 1.0), 1.0, 1.0),
         ];
-        for &(arg, x, expect) in test.iter() {
-            test_case(arg, expect, cdf(x));
+        for ((a, b), x, expect) in test {
+            test_case(a, b, expect, cdf(x));
+        }
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Beta| x.sf(arg);
+        let test = [
+            ((1.0, 1.0), 0.0, 1.0),
+            ((1.0, 1.0), 0.5, 0.5),
+            ((1.0, 1.0), 1.0, 0.0),
+            ((9.0, 1.0), 0.0, 1.0),
+            ((9.0, 1.0), 0.5, 0.998046875),
+            ((9.0, 1.0), 1.0, 0.0),
+            ((5.0, 100.0), 0.0, 1.0),
+            ((5.0, 100.0), 0.5, 0.0),
+            ((5.0, 100.0), 1.0, 0.0),
+            ((1.0, f64::INFINITY), 0.0, 0.0),
+            ((1.0, f64::INFINITY), 0.5, 0.0),
+            ((1.0, f64::INFINITY), 1.0, 0.0),
+            ((f64::INFINITY, 1.0), 0.0, 1.0),
+            ((f64::INFINITY, 1.0), 0.5, 1.0),
+            ((f64::INFINITY, 1.0), 1.0, 0.0),
+        ];
+        for ((a, b), x, expect) in test {
+            test_case(a, b, expect, sf(x));
         }
     }
 
     #[test]
     fn test_cdf_input_lt_0() {
         let cdf = |arg: f64| move |x: Beta| x.cdf(arg);
-        test_case((1.0, 1.0), 0.0, cdf(-1.0));
+        test_case(1.0, 1.0, 0.0, cdf(-1.0));
     }
 
     #[test]
     fn test_cdf_input_gt_1() {
         let cdf = |arg: f64| move |x: Beta| x.cdf(arg);
-        test_case((1.0, 1.0), 1.0, cdf(2.0));
+        test_case(1.0, 1.0, 1.0, cdf(2.0));
+    }
+
+    #[test]
+    fn test_sf_input_lt_0() {
+        let sf = |arg: f64| move |x: Beta| x.sf(arg);
+        test_case(1.0, 1.0, 1.0, sf(-1.0));
+    }
+
+    #[test]
+    fn test_sf_input_gt_1() {
+        let sf = |arg: f64| move |x: Beta| x.sf(arg);
+        test_case(1.0, 1.0, 0.0, sf(2.0));
     }
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&try_create((1.2, 3.4)), 0.0, 1.0);
-        test::check_continuous_distribution(&try_create((4.5, 6.7)), 0.0, 1.0);
+        test::check_continuous_distribution(&try_create(1.2, 3.4), 0.0, 1.0);
+        test::check_continuous_distribution(&try_create(4.5, 6.7), 0.0, 1.0);
     }
 }

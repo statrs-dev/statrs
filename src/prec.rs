@@ -25,3 +25,12 @@ pub fn almost_eq(a: f64, b: f64, acc: f64) -> bool {
 
     (a - b).abs() < acc
 }
+
+/// Compares if two floats are close via `approx::relative_eq!`
+/// and `crate::consts::ACC` relative precision.
+/// Updates first argument to value of second argument
+pub fn convergence(x: &mut f64, x_new: f64) -> bool {
+    let res = approx::relative_eq!(*x, x_new, max_relative = crate::consts::ACC);
+    *x = x_new;
+    res
+}

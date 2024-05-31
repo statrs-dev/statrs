@@ -4,7 +4,6 @@ use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
-use std::u64;
 
 /// Implements the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution)
 /// distribution
@@ -84,13 +83,27 @@ impl DiscreteCDF<u64, f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// 1 - P(x + 1, λ)
+    /// ```text
+    /// P(x + 1, λ)
+    /// ```
+    ///
+    /// where `λ` is the rate and `P` is the upper regularized gamma function
+    fn cdf(&self, x: u64) -> f64 {
+        gamma::gamma_ur(x as f64 + 1.0, self.lambda)
+    }
+
+    /// Calculates the survival function for the poisson
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// P(x + 1, λ)
     /// ```
     ///
     /// where `λ` is the rate and `P` is the lower regularized gamma function
-    fn cdf(&self, x: u64) -> f64 {
-        1.0 - gamma::gamma_lr(x as f64 + 1.0, self.lambda)
+    fn sf(&self, x: u64) -> f64 {
+        gamma::gamma_lr(x as f64 + 1.0, self.lambda)
     }
 }
 
@@ -100,7 +113,7 @@ impl Min<u64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> u64 {
@@ -114,7 +127,7 @@ impl Max<u64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2^63 - 1
     /// ```
     fn max(&self) -> u64 {
@@ -127,7 +140,7 @@ impl Distribution<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ
     /// ```
     ///
@@ -135,11 +148,12 @@ impl Distribution<f64> for Poisson {
     fn mean(&self) -> Option<f64> {
         Some(self.lambda)
     }
+
     /// Returns the variance of the poisson distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ
     /// ```
     ///
@@ -147,11 +161,12 @@ impl Distribution<f64> for Poisson {
     fn variance(&self) -> Option<f64> {
         Some(self.lambda)
     }
+
     /// Returns the entropy of the poisson distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * ln(2πeλ) - 1 / (12λ) - 1 / (24λ^2) - 19 / (360λ^3)
     /// ```
     ///
@@ -164,11 +179,12 @@ impl Distribution<f64> for Poisson {
                 - 19.0 / (360.0 * self.lambda * self.lambda * self.lambda),
         )
     }
+
     /// Returns the skewness of the poisson distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ^(-1/2)
     /// ```
     ///
@@ -183,7 +199,7 @@ impl Median<f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor(λ + 1 / 3 - 0.02 / λ)
     /// ```
     ///
@@ -198,7 +214,7 @@ impl Mode<Option<u64>> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor(λ)
     /// ```
     ///
@@ -214,13 +230,13 @@ impl Discrete<u64, f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// (λ^k * e^(-λ)) / x!
+    /// ```text
+    /// (λ^x * e^(-λ)) / x!
     /// ```
     ///
     /// where `λ` is the rate
     fn pmf(&self, x: u64) -> f64 {
-        (-self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x as u64)).exp()
+        (-self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x)).exp()
     }
 
     /// Calculates the log probability mass function for the poisson
@@ -229,13 +245,13 @@ impl Discrete<u64, f64> for Poisson {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// ln((λ^k * e^(-λ)) / x!)
+    /// ```text
+    /// ln((λ^x * e^(-λ)) / x!)
     /// ```
     ///
     /// where `λ` is the rate
     fn ln_pmf(&self, x: u64) -> f64 {
-        -self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x as u64)
+        -self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x)
     }
 }
 /// Generates one sample from the Poisson distribution either by
@@ -280,13 +296,12 @@ pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, lambda: f64) -> f64 {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use std::fmt::Debug;
     use crate::statistics::*;
     use crate::distribution::{DiscreteCDF, Discrete, Poisson};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(lambda: f64) -> Poisson {
         let n = Poisson::new(lambda);
@@ -441,6 +456,20 @@ mod tests {
         test_almost(10.8, 0.0002407141402518290000, 1e-16, cdf(1));
         test_almost(10.8, 0.4839692359955690000000, 1e-15, cdf(10));
         test_almost(10.8, 0.9961800769608090000000, 1e-15, cdf(20));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: u64| move |x: Poisson| x.sf(arg);
+        test_almost(1.5, 0.44217459962892536, 1e-15, sf(1));
+        test_almost(1.5, 0.0000005517532358246565, 1e-15, sf(10));
+        test_almost(1.5, 2.3372210700347092e-17, 1e-15, sf(20));
+        test_almost(5.4, 0.971093881967279, 1e-16, sf(1));
+        test_almost(5.4, 0.022513699310235582, 1e-15, sf(10));
+        test_almost(5.4, 0.0000002800071708975261, 1e-15, sf(20));
+        test_almost(10.8, 0.9997592858597482, 1e-16, sf(1));
+        test_almost(10.8, 0.5160307640044303, 1e-15, sf(10));
+        test_almost(10.8, 0.003819923039191422, 1e-15, sf(20));
     }
 
     #[test]

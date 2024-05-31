@@ -79,7 +79,7 @@ impl ContinuousCDF<f64, f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - e^(-λ * x)
     /// ```
     ///
@@ -91,6 +91,37 @@ impl ContinuousCDF<f64, f64> for Exp {
             1.0 - (-self.rate * x).exp()
         }
     }
+
+    /// Calculates the cumulative distribution function for the
+    /// exponential distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// e^(-λ * x)
+    /// ```
+    ///
+    /// where `λ` is the rate
+    fn sf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            1.0
+        } else {
+            (-self.rate * x).exp()
+        }
+    }
+
+    /// Calculates the inverse cumulative distribution function.
+    ///
+    /// # Formula
+    ///
+    /// ```ignore
+    /// -ln(1 - p) / λ
+    /// ```
+    ///
+    /// where `p` is the probability and `λ` is the rate
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        -(-p).ln_1p() / self.rate
+    }
 }
 
 impl Min<f64> for Exp {
@@ -99,7 +130,7 @@ impl Min<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -113,8 +144,8 @@ impl Max<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -126,7 +157,7 @@ impl Distribution<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / λ
     /// ```
     ///
@@ -134,11 +165,12 @@ impl Distribution<f64> for Exp {
     fn mean(&self) -> Option<f64> {
         Some(1.0 / self.rate)
     }
+
     /// Returns the variance of the exponential distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / λ^2
     /// ```
     ///
@@ -146,11 +178,12 @@ impl Distribution<f64> for Exp {
     fn variance(&self) -> Option<f64> {
         Some(1.0 / (self.rate * self.rate))
     }
+
     /// Returns the entropy of the exponential distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - ln(λ)
     /// ```
     ///
@@ -158,11 +191,12 @@ impl Distribution<f64> for Exp {
     fn entropy(&self) -> Option<f64> {
         Some(1.0 - self.rate.ln())
     }
+
     /// Returns the skewness of the exponential distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -175,7 +209,7 @@ impl Median<f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / λ) * ln2
     /// ```
     ///
@@ -190,7 +224,7 @@ impl Mode<Option<f64>> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn mode(&self) -> Option<f64> {
@@ -204,7 +238,7 @@ impl Continuous<f64, f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// λ * e^(-λ * x)
     /// ```
     ///
@@ -222,7 +256,7 @@ impl Continuous<f64, f64> for Exp {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(λ * e^(-λ * x))
     /// ```
     ///
@@ -237,13 +271,12 @@ impl Continuous<f64, f64> for Exp {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use std::f64;
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Exp};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(rate: f64) -> Exp {
         let n = Exp::new(rate);
@@ -440,9 +473,49 @@ mod tests {
     }
 
     #[test]
+    fn test_inverse_cdf() {
+        let distribution = Exp::new(0.42).unwrap();
+        assert_eq!(distribution.median(), distribution.inverse_cdf(0.5));
+
+        let distribution = Exp::new(0.042).unwrap();
+        assert_eq!(distribution.median(), distribution.inverse_cdf(0.5));
+
+        let distribution = Exp::new(0.0042).unwrap();
+        assert_eq!(distribution.median(), distribution.inverse_cdf(0.5));
+
+        let distribution = Exp::new(0.33).unwrap();
+        assert_eq!(distribution.median(), distribution.inverse_cdf(0.5));
+
+        let distribution = Exp::new(0.033).unwrap();
+        assert_eq!(distribution.median(), distribution.inverse_cdf(0.5));
+
+        let distribution = Exp::new(0.0033).unwrap();
+        assert_eq!(distribution.median(), distribution.inverse_cdf(0.5));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Exp| x.sf(arg);
+        test_case(0.1, 1.0, sf(0.0));
+        test_case(1.0, 1.0, sf(0.0));
+        test_case(10.0, 1.0, sf(0.0));
+        test_is_nan(f64::INFINITY, sf(0.0));
+        test_almost(0.1, 0.9900498337491681, 1e-16, sf(0.1));
+        test_almost(1.0, 0.9048374180359595, 1e-16, sf(0.1));
+        test_almost(10.0, 0.36787944117144233, 1e-15, sf(0.1));
+        test_case(f64::INFINITY, 0.0, sf(0.1));
+    }
+
+    #[test]
     fn test_neg_cdf() {
         let cdf = |arg: f64| move |x: Exp| x.cdf(arg);
         test_case(0.1, 0.0, cdf(-1.0));
+    }
+
+    #[test]
+    fn test_neg_sf() {
+        let sf = |arg: f64| move |x: Exp| x.sf(arg);
+        test_case(0.1, 1.0, sf(-1.0));
     }
 
     #[test]

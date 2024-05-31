@@ -91,13 +91,29 @@ impl ContinuousCDF<f64, f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / π) * arctan((x - x_0) / γ) + 0.5
     /// ```
     ///
     /// where `x_0` is the location and `γ` is the scale
     fn cdf(&self, x: f64) -> f64 {
         (1.0 / f64::consts::PI) * ((x - self.location) / self.scale).atan() + 0.5
+    }
+
+    /// Calculates the survival function for the
+    /// cauchy distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (1 / π) * arctan(-(x - x_0) / γ) + 0.5
+    /// ```
+    ///
+    /// where `x_0` is the location and `γ` is the scale.
+    /// note that this is identical to the cdf except for
+    /// the negative argument to the arctan function
+    fn sf(&self, x: f64) -> f64 {
+        (1.0 / f64::consts::PI) * ((self.location - x) / self.scale).atan() + 0.5
     }
 }
 
@@ -107,7 +123,7 @@ impl Min<f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// NEG_INF
     /// ```
     fn min(&self) -> f64 {
@@ -121,8 +137,8 @@ impl Max<f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -134,7 +150,7 @@ impl Distribution<f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(γ) + ln(4π)
     /// ```
     ///
@@ -149,7 +165,7 @@ impl Median<f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// x_0
     /// ```
     ///
@@ -164,7 +180,7 @@ impl Mode<Option<f64>> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// x_0
     /// ```
     ///
@@ -180,7 +196,7 @@ impl Continuous<f64, f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / (πγ * (1 + ((x - x_0) / γ)^2))
     /// ```
     ///
@@ -196,7 +212,7 @@ impl Continuous<f64, f64> for Cauchy {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(1 / (πγ * (1 + ((x - x_0) / γ)^2)))
     /// ```
     ///
@@ -210,12 +226,11 @@ impl Continuous<f64, f64> for Cauchy {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Cauchy};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(location: f64, scale: f64) -> Cauchy {
         let n = Cauchy::new(location, scale);
@@ -408,6 +423,41 @@ mod tests {
         test_case(f64::INFINITY, 1.0, 0.0, cdf(0.0));
         test_case(f64::INFINITY, 1.0, 0.0, cdf(1.0));
         test_case(f64::INFINITY, 1.0, 0.0, cdf(5.0));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Cauchy| x.sf(arg);
+        test_almost(0.0, 0.1, 0.9936346508990272, 1e-16, sf(-5.0));
+        test_almost(0.0, 0.1, 0.9682744825694465, 1e-16, sf(-1.0));
+        test_case(0.0, 0.1, 0.5, sf(0.0));
+        test_almost(0.0, 0.1, 0.03172551743055352, 1e-16, sf(1.0));
+        test_case(0.0, 0.1, 0.006365349100972806, sf(5.0));
+        test_almost(0.0, 1.0, 0.9371670418109989, 1e-16, sf(-5.0));
+        test_case(0.0, 1.0, 0.75, sf(-1.0));
+        test_case(0.0, 1.0, 0.5, sf(0.0));
+        test_case(0.0, 1.0, 0.25, sf(1.0));
+        test_case(0.0, 1.0, 0.06283295818900114, sf(5.0));
+        test_case(0.0, 10.0, 0.6475836176504333, sf(-5.0));
+        test_case(0.0, 10.0, 0.5317255174305535, sf(-1.0));
+        test_case(0.0, 10.0, 0.5, sf(0.0));
+        test_case(0.0, 10.0, 0.4682744825694464, sf(1.0));
+        test_case(0.0, 10.0, 0.35241638234956674, sf(5.0));
+        test_case(-5.0, 100.0, 0.5, sf(-5.0));
+        test_case(-5.0, 100.0, 0.4872743886520082, sf(-1.0));
+        test_case(-5.0, 100.0, 0.4840977487438236, sf(0.0));
+        test_case(-5.0, 100.0, 0.48092427576416374, sf(1.0));
+        test_case(-5.0, 100.0, 0.4682744825694464, sf(5.0));
+        test_case(0.0, f64::INFINITY, 0.5, sf(-5.0));
+        test_case(0.0, f64::INFINITY, 0.5, sf(-1.0));
+        test_case(0.0, f64::INFINITY, 0.5, sf(0.0));
+        test_case(0.0, f64::INFINITY, 0.5, sf(1.0));
+        test_case(0.0, f64::INFINITY, 0.5, sf(5.0));
+        test_case(f64::INFINITY, 1.0, 1.0, sf(-5.0));
+        test_case(f64::INFINITY, 1.0, 1.0, sf(-1.0));
+        test_case(f64::INFINITY, 1.0, 1.0, sf(0.0));
+        test_case(f64::INFINITY, 1.0, 1.0, sf(1.0));
+        test_case(f64::INFINITY, 1.0, 1.0, sf(5.0));
     }
 
     #[test]

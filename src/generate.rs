@@ -323,7 +323,7 @@ impl InfiniteSawtooth {
                 0.0,
                 delay,
             ),
-            low_value: low_value as f64,
+            low_value,
         }
     }
 }

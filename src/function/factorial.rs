@@ -4,7 +4,6 @@
 use crate::error::StatsError;
 use crate::function::gamma;
 use crate::Result;
-use core::f64::INFINITY as INF;
 
 /// The maximum factorial representable
 /// by a 64-bit floating point without
@@ -20,7 +19,7 @@ pub const MAX_FACTORIAL: usize = 170;
 /// Returns `f64::INFINITY` if `x > 170`
 pub fn factorial(x: u64) -> f64 {
     let x = x as usize;
-    FCACHE.get(x).map_or(INF, |&fac| fac)
+    FCACHE.get(x).map_or(f64::INFINITY, |&fac| fac)
 }
 
 /// Computes the logarithmic factorial function `x -> ln(x!)`
@@ -91,25 +90,33 @@ pub fn checked_multinomial(n: u64, ni: &[u64]) -> Result<f64> {
 
 // Initialization for pre-computed cache of 171 factorial
 // values 0!...170!
-lazy_static! {
-    static ref FCACHE: [f64; MAX_FACTORIAL + 1] = {
-        let mut fcache = [1.0; MAX_FACTORIAL + 1];
-        fcache
-            .iter_mut()
-            .enumerate()
-            .skip(1)
-            .fold(1.0, |acc, (i, elt)| {
-                let fac = acc * i as f64;
-                *elt = fac;
-                fac
-            });
-        fcache
-    };
-}
+const FCACHE: [f64; MAX_FACTORIAL + 1] = {
+    let mut fcache = [1.0; MAX_FACTORIAL + 1];
+
+    // `const` only allow while loops
+    let mut i = 1;
+    while i < MAX_FACTORIAL + 1 {
+        fcache[i] = fcache[i - 1] * i as f64;
+        i += 1;
+    }
+
+    fcache
+};
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_fcache() {
+        assert!((FCACHE[0] - 1.0).abs() < f64::EPSILON);
+        assert!((FCACHE[1] - 1.0).abs() < f64::EPSILON);
+        assert!((FCACHE[2] - 2.0).abs() < f64::EPSILON);
+        assert!((FCACHE[3] - 6.0).abs() < f64::EPSILON);
+        assert!((FCACHE[4] - 24.0).abs() < f64::EPSILON);
+        assert!((FCACHE[70] - 1197857166996989e85).abs() < f64::EPSILON);
+        assert!((FCACHE[170] - 7257415615307994e291).abs() < f64::EPSILON);
+    }
 
     #[test]
     fn test_factorial_and_ln_factorial() {
@@ -124,8 +131,8 @@ mod tests {
 
     #[test]
     fn test_factorial_overflow() {
-        assert_eq!(factorial(172), INF);
-        assert_eq!(factorial(u64::MAX), INF);
+        assert_eq!(factorial(172), f64::INFINITY);
+        assert_eq!(factorial(u64::MAX), f64::INFINITY);
     }
 
     #[test]

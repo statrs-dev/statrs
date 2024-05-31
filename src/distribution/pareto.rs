@@ -97,7 +97,7 @@ impl ContinuousCDF<f64, f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < x_m {
     ///     0
     /// } else {
@@ -113,6 +113,28 @@ impl ContinuousCDF<f64, f64> for Pareto {
             1.0 - (self.scale / x).powf(self.shape)
         }
     }
+
+    /// Calculates the survival function for the Pareto
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// if x < x_m {
+    ///     1
+    /// } else {
+    ///     (x_m/x)^α
+    /// }
+    /// ```
+    ///
+    /// where `x_m` is the scale and `α` is the shape
+    fn sf(&self, x: f64) -> f64 {
+        if x < self.scale {
+            1.0
+        } else {
+            (self.scale / x).powf(self.shape)
+        }
+    }
 }
 
 impl Min<f64> for Pareto {
@@ -121,7 +143,7 @@ impl Min<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// x_m
     /// ```
     ///
@@ -137,8 +159,8 @@ impl Max<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -150,9 +172,9 @@ impl Distribution<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if α <= 1 {
-    ///     INF
+    ///     f64::INFINITY
     /// } else {
     ///     (α * x_m)/(α - 1)
     /// }
@@ -166,13 +188,14 @@ impl Distribution<f64> for Pareto {
             Some((self.shape * self.scale) / (self.shape - 1.0))
         }
     }
+
     /// Returns the variance of the Pareto distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if α <= 2 {
-    ///     INF
+    ///     f64::INFINITY
     /// } else {
     ///     (x_m/(α - 1))^2 * (α/(α - 2))
     /// }
@@ -187,11 +210,12 @@ impl Distribution<f64> for Pareto {
             Some(a * a * self.shape / (self.shape - 2.0))
         }
     }
+
     /// Returns the entropy for the Pareto distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(α/x_m) - 1/α - 1
     /// ```
     ///
@@ -199,6 +223,7 @@ impl Distribution<f64> for Pareto {
     fn entropy(&self) -> Option<f64> {
         Some(self.shape.ln() - self.scale.ln() - (1.0 / self.shape) - 1.0)
     }
+
     /// Returns the skewness of the Pareto distribution
     ///
     /// # Panics
@@ -209,7 +234,7 @@ impl Distribution<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     ///     (2*(α + 1)/(α - 3))*sqrt((α - 2)/α)
     /// ```
     ///
@@ -231,7 +256,7 @@ impl Median<f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// x_m*2^(1/α)
     /// ```
     ///
@@ -246,7 +271,7 @@ impl Mode<Option<f64>> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// x_m
     /// ```
     ///
@@ -262,7 +287,7 @@ impl Continuous<f64, f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < x_m {
     ///     0
     /// } else {
@@ -284,9 +309,9 @@ impl Continuous<f64, f64> for Pareto {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < x_m {
-    ///     -INF
+    ///     f64::NEG_INFINITY
     /// } else {
     ///     ln(α) + α*ln(x_m) - (α + 1)*ln(x)
     /// }
@@ -303,12 +328,11 @@ impl Continuous<f64, f64> for Pareto {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use crate::statistics::*;
     use crate::distribution::{ContinuousCDF, Continuous, Pareto};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(scale: f64, shape: f64) -> Pareto {
         let p = Pareto::new(scale, shape);
@@ -485,6 +509,19 @@ mod tests {
         test_case(5.0, 1.0, 0.5, cdf(10.0));
         test_case(3.0, 10.0, 1023.0/1024.0, cdf(6.0));
         test_case(1.0, 1.0, 1.0, cdf(f64::INFINITY));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |arg: f64| move |x: Pareto| x.sf(arg);
+        test_case(0.1, 0.1, 1.0, sf(0.1));
+        test_case(1.0, 1.0, 1.0, sf(1.0));
+        test_case(5.0, 5.0, 1.0, sf(2.0));
+        test_almost(7.0, 7.0, 0.08235429999999999, 1e-14, sf(10.0));
+        test_almost(10.0, 10.0, 0.16150558288984573, 1e14, sf(12.0));
+        test_case(5.0, 1.0, 0.5, sf(10.0));
+        test_almost(3.0, 10.0, 0.0009765625, 1e-14, sf(6.0));
+        test_case(1.0, 1.0, 0.0, sf(f64::INFINITY));
     }
 
     #[test]

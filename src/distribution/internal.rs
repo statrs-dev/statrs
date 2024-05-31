@@ -1,3 +1,5 @@
+use num_traits::{Bounded, Float, Num};
+
 /// Returns true if there are no elements in `x` in `arr`
 /// such that `x <= 0.0` or `x` is `f64::NAN` and `sum(arr) > 0.0`.
 /// IF `incl_zero` is true, it tests for `x < 0.0` instead of `x <= 0.0`
@@ -12,61 +14,100 @@ pub fn is_valid_multinomial(arr: &[f64], incl_zero: bool) -> bool {
     sum != 0.0
 }
 
+/// Implements univariate function bisection searching for criteria
+/// ```text
+/// smallest k such that f(k) >= z
+/// ```
+/// Evaluates to `None` if
+/// - provided interval has lower bound greater than upper bound
+/// - function found not semi-monotone on the provided interval containing `z`
+/// Evaluates to `Some(k)`, where `k` satisfies the search criteria
+pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
+    f: impl Fn(&K) -> T,
+    z: T,
+    lb: K,
+    ub: K,
+) -> Option<K> {
+    if !(f(&lb)..=f(&ub)).contains(&z) {
+        return None;
+    }
+    let two = K::one() + K::one();
+    let mut lb = lb;
+    let mut ub = ub;
+    loop {
+        let mid = (lb.clone() + ub.clone()) / two.clone();
+        if !(f(&lb)..=f(&ub)).contains(&f(&mid)) {
+            // if f found not monotone on the interval
+            return None;
+        } else if f(&lb) == z {
+            return Some(lb);
+        } else if f(&ub) == z {
+            return Some(ub);
+        } else if (lb.clone() + K::one()) == ub {
+            // no more elements to search
+            return Some(ub);
+        } else if f(&mid) >= z {
+            ub = mid;
+        } else {
+            lb = mid;
+        }
+    }
+}
+
 #[macro_use]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 pub mod test {
-    use super::is_valid_multinomial;
-    use crate::consts::ACC;
+    use super::*;
     use crate::distribution::{Continuous, ContinuousCDF, Discrete, DiscreteCDF};
 
     #[macro_export]
     macro_rules! testing_boiler {
-        ($arg:ty, $dist:ty) => {
-            fn try_create(arg: $arg) -> $dist {
-                let n = <$dist>::new.call_once(arg);
+        ($($arg_name:ident: $arg_ty:ty),+; $dist:ty) => {
+            fn try_create($($arg_name: $arg_ty),+) -> $dist {
+                let n = <$dist>::new($($arg_name),+);
                 assert!(n.is_ok());
                 n.unwrap()
             }
 
-            fn bad_create_case(arg: $arg) {
-                let n = <$dist>::new.call(arg);
+            fn bad_create_case($($arg_name: $arg_ty),+) {
+                let n = <$dist>::new($($arg_name),+);
                 assert!(n.is_err());
             }
 
-            fn get_value<F, T>(arg: $arg, eval: F) -> T
+            fn get_value<F, T>($($arg_name: $arg_ty),+, eval: F) -> T
             where
                 F: Fn($dist) -> T,
             {
-                let n = try_create(arg);
+                let n = try_create($($arg_name),+);
                 eval(n)
             }
 
-            fn test_case<F, T>(arg: $arg, expected: T, eval: F)
+            fn test_case<F, T>($($arg_name: $arg_ty),+, expected: T, eval: F)
             where
                 F: Fn($dist) -> T,
                 T: ::core::fmt::Debug + ::approx::RelativeEq<Epsilon = f64>,
             {
-                let x = get_value(arg, eval);
-                assert_relative_eq!(expected, x, max_relative = ACC);
+                let x = get_value($($arg_name),+, eval);
+                assert_relative_eq!(expected, x, max_relative = $crate::consts::ACC);
             }
 
             #[allow(dead_code)] // This is not used by all distributions.
-            fn test_case_special<F, T>(arg: $arg, expected: T, acc: f64, eval: F)
+            fn test_case_special<F, T>($($arg_name: $arg_ty),+, expected: T, acc: f64, eval: F)
             where
                 F: Fn($dist) -> T,
                 T: ::core::fmt::Debug + ::approx::AbsDiffEq<Epsilon = f64>,
             {
-                let x = get_value(arg, eval);
+                let x = get_value($($arg_name),+, eval);
                 assert_abs_diff_eq!(expected, x, epsilon = acc);
             }
 
             #[allow(dead_code)] // This is not used by all distributions.
-            fn test_none<F, T>(arg: $arg, eval: F)
+            fn test_none<F, T>($($arg_name: $arg_ty),+, eval: F)
             where
                 F: Fn($dist) -> Option<T>,
                 T: ::core::cmp::PartialEq + ::core::fmt::Debug,
             {
-                let x = get_value(arg, eval);
+                let x = get_value($($arg_name),+, eval);
                 assert_eq!(None, x);
             }
         };
@@ -195,5 +236,27 @@ pub mod test {
     fn test_is_valid_multinomial_no_zero() {
         let invalid = [5.2, 0.0, 1e-15, 1000000.12];
         assert!(!is_valid_multinomial(&invalid, false));
+    }
+
+    #[test]
+    fn test_integer_bisection() {
+        fn search(z: usize, data: &[usize]) -> Option<usize> {
+            integral_bisection_search(|idx: &usize| data[*idx], z, 0, data.len() - 1)
+        }
+
+        let needle = 3;
+        let data = (0..5)
+            .map(|n| if n >= needle { n + 1 } else { n })
+            .collect::<Vec<_>>();
+
+        for i in 0..(data.len()) {
+            assert_eq!(search(data[i], &data), Some(i),)
+        }
+        {
+            let infimum = search(needle, &data);
+            let found_element = search(needle + 1, &data); // 4 > needle && member of range
+            assert_eq!(found_element, Some(needle));
+            assert_eq!(infimum, found_element)
+        }
     }
 }

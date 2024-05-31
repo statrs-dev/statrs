@@ -91,7 +91,7 @@ impl ContinuousCDF<f64, f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// γ(k, λx)  (k - 1)!
     /// ```
     ///
@@ -99,6 +99,22 @@ impl ContinuousCDF<f64, f64> for Erlang {
     /// incomplete gamma function
     fn cdf(&self, x: f64) -> f64 {
         self.g.cdf(x)
+    }
+
+    /// Calculates the cumulative distribution function for the erlang
+    /// distribution
+    /// at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// γ(k, λx)  (k - 1)!
+    /// ```
+    ///
+    /// where `k` is the shape, `λ` is the rate, and `γ` is the upper
+    /// incomplete gamma function
+    fn sf(&self, x: f64) -> f64 {
+        self.g.sf(x)
     }
 }
 
@@ -109,7 +125,7 @@ impl Min<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -124,8 +140,8 @@ impl Max<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         self.g.max()
@@ -142,7 +158,7 @@ impl Distribution<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k / λ
     /// ```
     ///
@@ -150,11 +166,12 @@ impl Distribution<f64> for Erlang {
     fn mean(&self) -> Option<f64> {
         self.g.mean()
     }
+
     /// Returns the variance of the erlang distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k / λ^2
     /// ```
     ///
@@ -162,11 +179,12 @@ impl Distribution<f64> for Erlang {
     fn variance(&self) -> Option<f64> {
         self.g.variance()
     }
+
     /// Returns the entropy of the erlang distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k - ln(λ) + ln(Γ(k)) + (1 - k) * ψ(k)
     /// ```
     ///
@@ -175,11 +193,12 @@ impl Distribution<f64> for Erlang {
     fn entropy(&self) -> Option<f64> {
         self.g.entropy()
     }
+
     /// Returns the skewness of the erlang distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2 / sqrt(k)
     /// ```
     ///
@@ -199,7 +218,7 @@ impl Mode<Option<f64>> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (k - 1) / λ
     /// ```
     ///
@@ -220,7 +239,7 @@ impl Continuous<f64, f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (λ^k / Γ(k)) * x^(k - 1) * e^(-λ * x)
     /// ```
     ///
@@ -240,7 +259,7 @@ impl Continuous<f64, f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((λ^k / Γ(k)) * x^(k - 1) * e ^(-λ * x))
     /// ```
     ///
@@ -251,11 +270,10 @@ impl Continuous<f64, f64> for Erlang {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use crate::distribution::Erlang;
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(shape: u64, rate: f64) -> Erlang {
         let n = Erlang::new(shape, rate);

@@ -49,7 +49,7 @@ impl Binomial {
     /// assert!(result.is_err());
     /// ```
     pub fn new(p: f64, n: u64) -> Result<Binomial> {
-        if p.is_nan() || p < 0.0 || p > 1.0 {
+        if p.is_nan() || !(0.0..=1.0).contains(&p) {
             Err(StatsError::BadParams)
         } else {
             Ok(Binomial { p, n })
@@ -106,7 +106,7 @@ impl DiscreteCDF<u64, f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// I_(1 - p)(n - x, 1 + x)
     /// ```
     ///
@@ -119,6 +119,25 @@ impl DiscreteCDF<u64, f64> for Binomial {
             beta::beta_reg((self.n - k) as f64, k as f64 + 1.0, 1.0 - self.p)
         }
     }
+
+    /// Calculates the survival function for the
+    /// binomial distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// I_(p)(x + 1, n - x)
+    /// ```
+    ///
+    /// where `I_(x)(a, b)` is the regularized incomplete beta function
+    fn sf(&self, x: u64) -> f64 {
+        if x >= self.n {
+            0.0
+        } else {
+            let k = x;
+            beta::beta_reg(k as f64 + 1.0, (self.n - k) as f64, self.p)
+        }
+    }
 }
 
 impl Min<u64> for Binomial {
@@ -128,7 +147,7 @@ impl Min<u64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> u64 {
@@ -143,7 +162,7 @@ impl Max<u64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// n
     /// ```
     fn max(&self) -> u64 {
@@ -156,27 +175,29 @@ impl Distribution<f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// p * n
     /// ```
     fn mean(&self) -> Option<f64> {
         Some(self.p * self.n as f64)
     }
+
     /// Returns the variance of the binomial distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// n * p * (1 - p)
     /// ```
     fn variance(&self) -> Option<f64> {
         Some(self.p * (1.0 - self.p) * self.n as f64)
     }
+
     /// Returns the entropy of the binomial distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * ln (2 * π * e * n * p * (1 - p))
     /// ```
     fn entropy(&self) -> Option<f64> {
@@ -190,11 +211,12 @@ impl Distribution<f64> for Binomial {
         };
         Some(entr)
     }
+
     /// Returns the skewness of the binomial distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 - 2p) / sqrt(n * p * (1 - p)))
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -207,7 +229,7 @@ impl Median<f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor(n * p)
     /// ```
     fn median(&self) -> f64 {
@@ -220,7 +242,7 @@ impl Mode<Option<u64>> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// floor((n + 1) * p)
     /// ```
     fn mode(&self) -> Option<u64> {
@@ -241,7 +263,7 @@ impl Discrete<u64, f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (n choose k) * p^k * (1 - p)^(n - k)
     /// ```
     fn pmf(&self, x: u64) -> f64 {
@@ -260,7 +282,7 @@ impl Discrete<u64, f64> for Binomial {
                 0.0
             }
         } else {
-            (factorial::ln_binomial(self.n as u64, x as u64)
+            (factorial::ln_binomial(self.n, x)
                 + x as f64 * self.p.ln()
                 + (self.n - x) as f64 * (1.0 - self.p).ln())
             .exp()
@@ -272,7 +294,7 @@ impl Discrete<u64, f64> for Binomial {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((n choose k) * p^k * (1 - p)^(n - k))
     /// ```
     fn ln_pmf(&self, x: u64) -> f64 {
@@ -291,7 +313,7 @@ impl Discrete<u64, f64> for Binomial {
                 f64::NEG_INFINITY
             }
         } else {
-            factorial::ln_binomial(self.n as u64, x as u64)
+            factorial::ln_binomial(self.n, x)
                 + x as f64 * self.p.ln()
                 + (self.n - x) as f64 * (1.0 - self.p).ln()
         }
@@ -299,13 +321,12 @@ impl Discrete<u64, f64> for Binomial {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use std::fmt::Debug;
     use crate::statistics::*;
     use crate::distribution::{DiscreteCDF, Discrete, Binomial};
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
 
     fn try_create(p: f64, n: u64) -> Binomial {
         let n = Binomial::new(p, n);
@@ -337,6 +358,7 @@ mod tests {
               F: Fn(Binomial) -> T
     {
         let x = get_value(p, n, eval);
+        println!("{} {} {:?}", p, n, expected);
         assert_eq!(expected, x);
     }
 
@@ -505,9 +527,62 @@ mod tests {
     }
 
     #[test]
+    fn test_sf() {
+        let sf = |arg: u64| move |x: Binomial| x.sf(arg);
+        test_case(0.0, 1, 0.0, sf(0));
+        test_case(0.0, 1, 0.0, sf(1));
+        test_case(0.0, 3, 0.0, sf(0));
+        test_case(0.0, 3, 0.0, sf(1));
+        test_case(0.0, 3, 0.0, sf(3));
+        test_case(0.0, 10, 0.0, sf(0));
+        test_case(0.0, 10, 0.0, sf(1));
+        test_case(0.0, 10, 0.0, sf(10));
+        test_almost(0.3, 1, 0.3, 1e-15, sf(0));
+        test_case(0.3, 1, 0.0, sf(1));
+        test_almost(0.3, 3, 0.657, 1e-14, sf(0));
+        test_almost(0.3, 3, 0.216, 1e-15, sf(1));
+        test_case(0.3, 3, 0.0, sf(3));
+        test_almost(0.3, 10, 0.9717524751000001, 1e-16, sf(0));
+        test_almost(0.3, 10, 0.850691654100002, 1e-14, sf(1));
+        test_case(0.3, 10, 0.0, sf(10));
+        test_case(1.0, 1, 1.0, sf(0));
+        test_case(1.0, 1, 0.0, sf(1));
+        test_case(1.0, 3, 1.0, sf(0));
+        test_case(1.0, 3, 1.0, sf(1));
+        test_case(1.0, 3, 0.0, sf(3));
+        test_case(1.0, 10, 1.0, sf(0));
+        test_case(1.0, 10, 1.0, sf(1));
+        test_case(1.0, 10, 0.0, sf(10));
+    }
+
+    #[test]
     fn test_cdf_upper_bound() {
         let cdf = |arg: u64| move |x: Binomial| x.cdf(arg);
         test_case(0.5, 3, 1.0, cdf(5));
+    }
+
+    #[test]
+    fn test_sf_upper_bound() {
+        let sf = |arg: u64| move |x: Binomial| x.sf(arg);
+        test_case(0.5, 3, 0.0, sf(5));
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: Binomial| x.inverse_cdf(arg);
+        test_case(0.4, 5, 2, invcdf(0.3456));
+
+        // cases in issue #185
+        test_case(0.018, 465, 1, invcdf(3.472e-4));
+        test_case(0.5, 6, 4, invcdf(0.75));
+    }
+
+    #[test]
+    fn test_cdf_inverse_cdf() {
+        let cdf_invcdf = |arg: u64| move |x: Binomial| x.inverse_cdf(x.cdf(arg));
+        test_case(0.3, 10, 3, cdf_invcdf(3));
+        test_case(0.3, 10, 4, cdf_invcdf(4));
+        test_case(0.5, 6, 4, cdf_invcdf(4));
     }
 
     #[test]
