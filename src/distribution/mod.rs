@@ -171,29 +171,27 @@ pub trait DiscreteCDF<K: Bounded + Clone + Num, T: Float>: Min<K> + Max<K> {
 
     /// Due to issues with rounding and floating-point accuracy the default implementation may be ill-behaved
     /// Specialized inverse cdfs should be used whenever possible.
+    ///
+    /// # Panics
+    /// this default impl panics if provided `p` not on interval [0.0, 1.0]
     fn inverse_cdf(&self, p: T) -> K {
         // TODO: fix integer implementation
         if p == T::zero() {
             return self.min();
-        };
-        if p == T::one() {
+        } else if p == T::one() {
             return self.max();
-        };
+        } else if !(T::zero()..=T::one()).contains(&p) {
+            panic!("p must be on [0, 1]")
+        }
+
         let two = K::one() + K::one();
-        let mut high = two.clone();
-        let mut low = K::min_value();
-        while self.cdf(high.clone()) < p {
-            high = high.clone() + high.clone();
+        let mut ub = two.clone();
+        let lb = self.min();
+        while self.cdf(ub.clone()) < p {
+            ub = ub * two.clone();
         }
-        while high != low {
-            let mid = (high.clone() + low.clone()) / two.clone();
-            if self.cdf(mid.clone()) >= p {
-                high = mid;
-            } else {
-                low = mid;
-            }
-        }
-        high
+
+        internal::integral_bisection_search(|p| self.cdf(p.clone()), p, lb, ub).unwrap()
     }
 }
 
