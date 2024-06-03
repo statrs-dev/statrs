@@ -280,3 +280,27 @@ pub trait Discrete<K, T> {
     /// ```
     fn ln_pmf(&self, x: K) -> T;
 }
+
+/// `ConvolutionWith` is an interface for creating distribution from convolutions
+/// of other implemented distributions
+///
+/// See also:
+/// - [`PowerConvolve`](crate::distribution::PowerConvolve) is an
+///   similar trait for repeatedly convolving a single distribution
+#[cfg(feature = "nightly")]
+pub trait ConvolveWith<Rhs = Self> {
+    type Output;
+
+    /// outputs the convolution distribution where possible
+    fn convolve_with(&self, other: &Rhs) -> Result<Self::Output>;
+}
+
+/// `PowerConvolve` is an interface for creating distribution from convolving
+/// a distribution with itself
+#[cfg(feature = "nightly")]
+pub trait PowerConvolve<T: Num> {
+    type Output;
+
+    /// outputs the n-fold convolution distribution
+    fn power_convolve(&self, count: usize) -> Result<Self::Output>;
+}
