@@ -12,6 +12,9 @@ pub const DEFAULT_F64_ACC: f64 = 0.0000000000000011102230246251565;
 /// Compares if two floats are close via `approx::abs_diff_eq`
 /// using a maximum absolute difference (epsilon) of `acc`.
 pub fn almost_eq(a: f64, b: f64, acc: f64) -> bool {
+    if a.is_infinite() && b.is_infinite() {
+        return true;
+    }
     a.abs_diff_eq(&b, acc)
 }
 
