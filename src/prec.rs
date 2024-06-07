@@ -13,7 +13,7 @@ pub const DEFAULT_F64_ACC: f64 = 0.0000000000000011102230246251565;
 /// using a maximum absolute difference (epsilon) of `acc`.
 pub fn almost_eq(a: f64, b: f64, acc: f64) -> bool {
     if a.is_infinite() && b.is_infinite() {
-        return true;
+        return a == b;
     }
     a.abs_diff_eq(&b, acc)
 }
