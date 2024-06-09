@@ -193,6 +193,13 @@ impl Distribution<f64> for Normal {
         Some(self.std_dev * self.std_dev)
     }
 
+    /// Returns the standard deviation of the normal distribution
+    /// # Remarks
+    /// This is the same standard deviation used to construct the distribution
+    fn std_dev(&self) -> Option<f64> {
+        Some(self.std_dev)
+    }
+
     /// Returns the entropy of the normal distribution
     ///
     /// # Formula
