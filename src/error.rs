@@ -1,51 +1,32 @@
 use std::error::Error;
 use std::fmt;
+use std::ops::Bound;
 
 /// Enumeration of possible errors thrown within the `statrs` library
 #[derive(Clone, PartialEq, Debug)]
 pub enum StatsError {
     /// Generic bad input parameter error
     BadParams,
-    /// An argument must be finite
-    ArgFinite(&'static str),
-    /// An argument should have been positive and was not
-    ArgMustBePositive(&'static str),
-    /// An argument should have been non-negative and was not
-    ArgNotNegative(&'static str),
-    /// An argument should have fallen between an inclusive range but didn't
-    ArgIntervalIncl(&'static str, f64, f64),
-    /// An argument should have fallen between an exclusive range but didn't
-    ArgIntervalExcl(&'static str, f64, f64),
-    /// An argument should have fallen in a range excluding the min but didn't
-    ArgIntervalExclMin(&'static str, f64, f64),
-    /// An argument should have falled in a range excluding the max but didn't
-    ArgIntervalExclMax(&'static str, f64, f64),
-    /// An argument must have been greater than a value but wasn't
-    ArgGt(&'static str, f64),
-    /// An argument must have been greater than another argument but wasn't
-    ArgGtArg(&'static str, &'static str),
-    /// An argument must have been greater than or equal to a value but wasn't
-    ArgGte(&'static str, f64),
-    /// An argument must have been greater than or equal to another argument
-    /// but wasn't
-    ArgGteArg(&'static str, &'static str),
-    /// An argument must have been less than a value but wasn't
-    ArgLt(&'static str, f64),
-    /// An argument must have been less than another argument but wasn't
-    ArgLtArg(&'static str, &'static str),
-    /// An argument must have been less than or equal to a value but wasn't
-    ArgLte(&'static str, f64),
-    /// An argument must have been less than or equal to another argument but
-    /// wasn't
-    ArgLteArg(&'static str, &'static str),
+    /// value must not be NAN
+    NotNan,
+    /// value must be finite and must not be NAN
+    Finite(f64),
+    /// value must be finite, non negative and must not be NAN
+    FiniteNonNegative(f64),
+    /// value must be within specified bounds
+    Bounded((Bound<f64>, Bound<f64>), f64),
+    /// first value must be within bounds defined by second value
+    ParametrizedBounded((Bound<f64>, Bound<f64>), f64, f64),
+    /// Expected one iterator to not exhaust before another
+    IteratorExhaustedEarly,
     /// Containers of the same length were expected
-    ContainersMustBeSameLength,
+    ContainersMustBeSameLength(usize),
     /// Computation failed to converge,
-    ComputationFailedToConverge,
+    FailedConvergence(f64, f64),
     /// Elements in a container were expected to sum to a value but didn't
-    ContainerExpectedSum(&'static str, f64),
+    ContainerExpectedSum(f64, f64),
     /// Elements in a container were expected to sum to a variable but didn't
-    ContainerExpectedSumVar(&'static str, &'static str),
+    ContainerExpectedSumVar(f64, f64),
     /// Special case exception
     SpecialCase(&'static str),
 }
@@ -55,49 +36,30 @@ impl Error for StatsError {}
 impl fmt::Display for StatsError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            StatsError::BadParams => write!(f, "Bad distribution parameters"),
-            StatsError::ArgFinite(s) => write!(f, "Argument {} must be finite", s),
-            StatsError::ArgMustBePositive(s) => write!(f, "Argument {} must be positive", s),
-            StatsError::ArgNotNegative(s) => write!(f, "Argument {} must be non-negative", s),
-            StatsError::ArgIntervalIncl(s, min, max) => {
-                write!(f, "Argument {} not within interval [{}, {}]", s, min, max)
+            StatsError::BadParams => write!(f, "Bad parameters, unspecified"),
+            StatsError::NotNan => write!(f, "value must not be NAN"),
+            StatsError::Finite(x) => write!(f, "given `{}`, but must be finite and not NAN", x),
+            StatsError::FiniteNonNegative(x) => write!(f, "given `{}`, but must be finite, non-negative and not NAN", x),
+            StatsError::Bounded(bound, x) => {
+                write!(f, "given `{}`, but must be on interval {:?}", x, bound)
             }
-            StatsError::ArgIntervalExcl(s, min, max) => {
-                write!(f, "Argument {} not within interval ({}, {})", s, min, max)
-            }
-            StatsError::ArgIntervalExclMin(s, min, max) => {
-                write!(f, "Argument {} not within interval ({}, {}]", s, min, max)
-            }
-            StatsError::ArgIntervalExclMax(s, min, max) => {
-                write!(f, "Argument {} not within interval [{}, {})", s, min, max)
-            }
-            StatsError::ArgGt(s, val) => write!(f, "Argument {} must be greater than {}", s, val),
-            StatsError::ArgGtArg(s, val) => {
-                write!(f, "Argument {} must be greater than {}", s, val)
-            }
-            StatsError::ArgGte(s, val) => {
-                write!(f, "Argument {} must be greater than or equal to {}", s, val)
-            }
-            StatsError::ArgGteArg(s, val) => {
-                write!(f, "Argument {} must be greater than or equal to {}", s, val)
-            }
-            StatsError::ArgLt(s, val) => write!(f, "Argument {} must be less than {}", s, val),
-            StatsError::ArgLtArg(s, val) => write!(f, "Argument {} must be less than {}", s, val),
-            StatsError::ArgLte(s, val) => {
-                write!(f, "Argument {} must be less than or equal to {}", s, val)
-            }
-            StatsError::ArgLteArg(s, val) => {
-                write!(f, "Argument {} must be less than or equal to {}", s, val)
-            }
-            StatsError::ContainersMustBeSameLength => {
-                write!(f, "Expected containers of same length")
-            }
-            StatsError::ComputationFailedToConverge => write!(f, "Computation failed to converge"),
+            StatsError::ParametrizedBounded(bound, x, y) => write!(
+                f,
+                "given `{}`, but another value {} requires it be on {:?}",
+                x, y, bound
+            ),
+            StatsError::ContainersMustBeSameLength(size) => write!(
+                f,
+                "Expected containers of same length, found only one of size `{}`",
+                size
+            ),
+            StatsError::FailedConvergence(x,prec) => write!(f, "Computation failed to converge, last iteration reached `{}` but stepped relative prec `{}`", x, prec),
+            StatsError::IteratorExhaustedEarly => write!(f, "Iterator exhausted earlier than expected"),
             StatsError::ContainerExpectedSum(s, sum) => {
-                write!(f, "Elements in container {} expected to sum to {}", s, sum)
+                write!(f, "sum found to be {}, expected {}", s, sum)
             }
             StatsError::ContainerExpectedSumVar(s, sum) => {
-                write!(f, "Elements in container {} expected to sum to {}", s, sum)
+                write!(f, "sum found to be {}, but other value specifies should be {}", s, sum)
             }
             StatsError::SpecialCase(s) => write!(f, "{}", s),
         }

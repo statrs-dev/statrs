@@ -1,6 +1,8 @@
 //! Provides the [logistic](http://en.wikipedia.org/wiki/Logistic_function) and
 //! related functions
 
+use std::ops::Bound;
+
 use crate::error::StatsError;
 use crate::Result;
 
@@ -25,7 +27,10 @@ pub fn logit(p: f64) -> f64 {
 /// If `p < 0.0` or `p > 1.0`
 pub fn checked_logit(p: f64) -> Result<f64> {
     if !(0.0..=1.0).contains(&p) {
-        Err(StatsError::ArgIntervalIncl("p", 0.0, 1.0))
+        Err(StatsError::Bounded(
+            (Bound::Included(0.0), Bound::Included(1.0)),
+            p,
+        ))
     } else {
         Ok((p / (1.0 - p)).ln())
     }

@@ -7,6 +7,7 @@ use crate::is_zero;
 use crate::prec;
 use crate::Result;
 use std::f64;
+use std::ops::Bound;
 
 /// Computes the natural logarithm
 /// of the beta function
@@ -32,9 +33,15 @@ pub fn ln_beta(a: f64, b: f64) -> f64 {
 /// if `a <= 0.0` or `b <= 0.0`
 pub fn checked_ln_beta(a: f64, b: f64) -> Result<f64> {
     if a <= 0.0 {
-        Err(StatsError::ArgMustBePositive("a"))
+        Err(StatsError::Bounded(
+            (Bound::Excluded(0.0), Bound::Unbounded),
+            a,
+        ))
     } else if b <= 0.0 {
-        Err(StatsError::ArgMustBePositive("b"))
+        Err(StatsError::Bounded(
+            (Bound::Excluded(0.0), Bound::Unbounded),
+            b,
+        ))
     } else {
         Ok(gamma::ln_gamma(a) + gamma::ln_gamma(b) - gamma::ln_gamma(a + b))
     }
@@ -112,11 +119,20 @@ pub fn beta_reg(a: f64, b: f64, x: f64) -> f64 {
 /// if `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
 pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64> {
     if a <= 0.0 {
-        Err(StatsError::ArgMustBePositive("a"))
+        Err(StatsError::Bounded(
+            (Bound::Excluded(0.0), Bound::Unbounded),
+            a,
+        ))
     } else if b <= 0.0 {
-        Err(StatsError::ArgMustBePositive("b"))
+        Err(StatsError::Bounded(
+            (Bound::Excluded(0.0), Bound::Unbounded),
+            b,
+        ))
     } else if !(0.0..=1.0).contains(&x) {
-        Err(StatsError::ArgIntervalIncl("x", 0.0, 1.0))
+        Err(StatsError::Bounded(
+            (Bound::Included(0.0), Bound::Included(1.0)),
+            a,
+        ))
     } else {
         let bt = if is_zero(x) || ulps_eq!(x, 1.0) {
             0.0

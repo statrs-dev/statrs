@@ -82,7 +82,7 @@ pub fn checked_multinomial(n: u64, ni: &[u64]) -> Result<f64> {
         (acc.0 + x, acc.1 - ln_factorial(x))
     });
     if sum != n {
-        Err(StatsError::ContainerExpectedSumVar("ni", "n"))
+        Err(StatsError::ContainerExpectedSumVar(sum as f64, n as f64))
     } else {
         Ok((0.5 + ret.exp()).floor())
     }

@@ -175,7 +175,7 @@ where
         for x in self {
             let borrow = *x.borrow();
             let borrow2 = match iter.next() {
-                None => panic!("{}", StatsError::ContainersMustBeSameLength),
+                None => panic!("{}", StatsError::IteratorExhaustedEarly),
                 Some(x) => *x.borrow(),
             };
             let old_mean2 = mean2;
@@ -185,7 +185,7 @@ where
             comoment += (borrow - mean1) * (borrow2 - old_mean2);
         }
         if iter.next().is_some() {
-            panic!("{}", StatsError::ContainersMustBeSameLength);
+            panic!("{}", StatsError::IteratorExhaustedEarly)
         }
 
         if n > 1.0 {
@@ -205,7 +205,7 @@ where
         for x in self {
             let borrow = *x.borrow();
             let borrow2 = match iter.next() {
-                None => panic!("{}", StatsError::ContainersMustBeSameLength),
+                None => panic!("{}", StatsError::IteratorExhaustedEarly),
                 Some(x) => *x.borrow(),
             };
             let old_mean2 = mean2;
@@ -215,7 +215,7 @@ where
             comoment += (borrow - mean1) * (borrow2 - old_mean2);
         }
         if iter.next().is_some() {
-            panic!("{}", StatsError::ContainersMustBeSameLength)
+            panic!("{}", StatsError::IteratorExhaustedEarly)
         }
         if n > 0.0 {
             comoment / n
@@ -245,7 +245,7 @@ where
 mod tests {
     use std::f64::consts;
     use rand::rngs::StdRng;
-    use rand::{SeedableRng};
+    use rand::SeedableRng;
     use rand::distributions::Distribution;
     use crate::distribution::Normal;
     use crate::statistics::Statistics;

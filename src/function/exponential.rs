@@ -64,7 +64,10 @@ pub fn integral(x: f64, n: u64) -> Result<f64> {
                 return Ok(h * (-x).exp());
             }
         }
-        Err(StatsError::ComputationFailedToConverge)
+        Err(StatsError::FailedConvergence(
+            h * (-x).exp(),
+            ((c * d - 1.0) / h * (-x).exp()).abs(),
+        ))
     } else {
         let mut factorial = 1.0;
         let mut result = if n - 1 != 0 {
@@ -88,7 +91,10 @@ pub fn integral(x: f64, n: u64) -> Result<f64> {
                 return Ok(result);
             }
         }
-        Err(StatsError::ComputationFailedToConverge)
+        Err(StatsError::FailedConvergence(
+            result,
+            (-factorial / (max_iter as f64 - nf64 + 1.0) / result).abs(),
+        ))
     }
 }
 
