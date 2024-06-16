@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 /// Enumeration of possible errors thrown within the `statrs` library
-#[derive(Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum StatsError {
     /// Generic bad input parameter error
     BadParams,
@@ -50,11 +50,7 @@ pub enum StatsError {
     SpecialCase(&'static str),
 }
 
-impl Error for StatsError {
-    fn description(&self) -> &str {
-        "Error performing statistical calculation"
-    }
-}
+impl Error for StatsError {}
 
 impl fmt::Display for StatsError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
