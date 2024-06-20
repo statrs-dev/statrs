@@ -68,14 +68,20 @@ impl Geometric {
     }
 }
 
-impl ::rand::distributions::Distribution<f64> for Geometric {
-    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+impl ::rand::distributions::Distribution<u64> for Geometric {
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> u64 {
         if ulps_eq!(self.p, 1.0) {
-            1.0
+            1
         } else {
             let x: f64 = r.sample(OpenClosed01);
-            x.log(1.0 - self.p).ceil()
+            x.log(1.0 - self.p).ceil() as u64
         }
+    }
+}
+
+impl ::rand::distributions::Distribution<f64> for Geometric {
+    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        r.sample::<u64, _>(self) as f64
     }
 }
 
