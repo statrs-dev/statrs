@@ -1,5 +1,5 @@
 use crate::distribution::Continuous;
-use crate::distribution::Normal;
+use crate::distribution::{MultivariateStudent, Normal};
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
 use crate::{Result, StatsError};
 use nalgebra::{
@@ -110,6 +110,26 @@ impl MultivariateNormal {
                 .determinant()
                 .ln(),
         )
+    }
+
+    /// Constructs a new multivariate normal distribution from a
+    /// multivariate students t distribution, which have equal variables
+    /// when `mvs.freedom == f64::INFINITY`
+    pub fn from_students(mvs: MultivariateStudent) -> Result<Self> {
+        let mu = mvs.location();
+        let scale = mvs.scale();
+        let cov_det = scale.determinant();
+        let pdf_const = ((2. * PI).powi(mu.nrows() as i32) * cov_det.abs())
+            .recip()
+            .sqrt();
+        Ok(MultivariateNormal {
+            dim: mvs.dim(),
+            cov_chol_decomp: mvs.scale_chol_decomp(),
+            mu: mvs.location(),
+            cov: mvs.scale(),
+            precision: mvs.precision(),
+            pdf_const,
+        })
     }
 }
 
@@ -390,5 +410,12 @@ mod tests  {
         test_almost(vec![0.5, -0.2], vec![2.0, 0.3, 0.3, 0.5],  (0.0013075203140666656f64).ln(), 1e-15, ln_pdf(dvec![2., 2.]));
         test_case(vec![0., 0.], vec![f64::INFINITY, 0., 0., f64::INFINITY], f64::NEG_INFINITY, ln_pdf(dvec![10., 10.]));
         test_case(vec![0., 0.], vec![f64::INFINITY, 0., 0., f64::INFINITY], f64::NEG_INFINITY, ln_pdf(dvec![100., 100.]));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_pdf_mismatched_arg_size() {
+        let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.,]).unwrap();
+        mvn.pdf(&dvec![1.]); // x.size != mu.size
     }
 }
