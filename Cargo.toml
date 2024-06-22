@@ -25,3 +25,4 @@ num-traits = "0.2.14"
 
 [dev-dependencies]
 criterion = "0.3.3"
+anyhow = "1.0"
