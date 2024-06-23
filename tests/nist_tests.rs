@@ -1,4 +1,3 @@
-// #![cfg(test)]
 use anyhow::Result;
 use approx::assert_relative_eq;
 use statrs::statistics::Statistics;
@@ -35,9 +34,7 @@ impl std::fmt::Display for CertifiedValues {
     }
 }
 
-#[cfg(test)]
 const NIST_DATA_DIR_ENV: &str = "STATRS_NIST_DATA_DIR";
-#[cfg(test)]
 const FILENAMES: [&str; 7] = [
     "Lottery.dat",
     "Lew.dat",

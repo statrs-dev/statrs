@@ -21,7 +21,6 @@ process_file() {
       -e "${CERTIFIED_VALUES_START},${CERTIFIED_VALUES_END}p" \
       -e "${DATA_START},${DATA_END}p" \
       $FILENAME
-  # sed -n -i -e "${CERTIFIED_VALUES_START},${CERTIFIED_VALUES_END}s/\(exact\)//p" $FILENAME
 
 }
 
