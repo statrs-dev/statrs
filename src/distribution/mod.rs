@@ -72,37 +72,14 @@ mod weibull;
 mod ziggurat;
 mod ziggurat_tables;
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, thiserror::Error)]
 pub enum DistributionError {
-    InvalidConstruction(StatsError),
+    #[error("provided value does not specify valid distribution")]
+    InvalidConstruction(#[source] StatsError),
+    #[error("provided value represents degenerate distribution, see statrs-dev/statrs#102")]
     DegenerateConstruction(f64),
+    #[error("expected probability, got {:.3e}", .0)]
     ExpectedProbability(f64),
-}
-
-impl std::fmt::Display for DistributionError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::InvalidConstruction(_) => {
-                write!(f, "provided value does not specify valid distribution")
-            }
-            Self::DegenerateConstruction(_) => write!(
-                f,
-                "provided value represents degenerate distribution, see statrs-dev/statrs#102"
-            ),
-            Self::ExpectedProbability(p) => write!(f, "expected probability, got {p:.3e}"),
-        }
-    }
-}
-
-impl std::error::Error for DistributionError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        use core::ops::Bound::Included;
-        match self {
-            Self::InvalidConstruction(e) => Some(e),
-            Self::DegenerateConstruction(_) => None,
-            Self::ExpectedProbability(_) => None,
-        }
-    }
 }
 
 /// The `ContinuousCDF` trait is used to specify an interface for univariate

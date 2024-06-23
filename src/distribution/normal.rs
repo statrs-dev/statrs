@@ -26,31 +26,12 @@ pub struct Normal {
     std_dev: f64,
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, thiserror::Error)]
 pub enum Error {
-    InvalidMean(DistrError),
-    InvalidStdDev(DistrError),
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::InvalidMean(_) => write!(f, "expected finite and not nan mean"),
-            Self::InvalidStdDev(_) => write!(
-                f,
-                "expected finite, positive, and not nan standard deviation"
-            ),
-        }
-    }
-}
-
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        Some(match self {
-            Self::InvalidMean(e) => e,
-            Self::InvalidStdDev(e) => e,
-        })
-    }
+    #[error("expected finite and not nan mean")]
+    InvalidMean(#[source] DistrError),
+    #[error("expected finite, positive, and not nan standard deviation")]
+    InvalidStdDev(#[source] DistrError),
 }
 
 type Result<T> = std::result::Result<T, Error>;
