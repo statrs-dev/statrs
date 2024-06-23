@@ -11,7 +11,7 @@ homepage = "https://github.com/statrs-dev/statrs"
 repository = "https://github.com/statrs-dev/statrs"
 edition = "2018"
 
-include = ["CHANGELOG.md", "LICENSE.md", "src/"]
+include = ["CHANGELOG.md", "LICENSE.md", "src/", "tests/"]
 
 [lib]
 name = "statrs"
