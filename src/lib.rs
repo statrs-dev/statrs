@@ -82,9 +82,6 @@ pub(crate) fn is_zero(x: f64) -> bool {
     ulps_eq!(x, 0.0, max_ulps = 0)
 }
 
-// #[cfg(test)]
-mod testing;
-
 pub use crate::error::StatsError;
 
 /// Result type for the statrs library package that returns

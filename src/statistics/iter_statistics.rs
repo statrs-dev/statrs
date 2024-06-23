@@ -245,12 +245,11 @@ where
 mod tests {
     use std::f64::consts;
     use rand::rngs::StdRng;
-    use rand::{SeedableRng};
+    use rand::SeedableRng;
     use rand::distributions::Distribution;
     use crate::distribution::Normal;
     use crate::statistics::Statistics;
     use crate::generate::{InfinitePeriodic, InfiniteSinusoidal};
-    use crate::testing;
 
     #[test]
     fn test_empty_data_returns_nan() {
