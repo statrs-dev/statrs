@@ -2,6 +2,7 @@
 //! and provides
 //! concrete implementations for a variety of distributions.
 use super::statistics::{Max, Min};
+use crate::StatsError;
 use ::num_traits::{Bounded, Float, Num};
 use num_traits::{NumAssign, NumAssignOps, NumAssignRef};
 
@@ -71,7 +72,15 @@ mod weibull;
 mod ziggurat;
 mod ziggurat_tables;
 
-use crate::Result;
+#[derive(Copy, Clone, PartialEq, Debug, thiserror::Error)]
+pub enum DistributionError {
+    #[error("provided value does not specify valid distribution")]
+    InvalidConstruction(#[source] StatsError),
+    #[error("provided value represents degenerate distribution, see statrs-dev/statrs#102")]
+    DegenerateConstruction(f64),
+    #[error("expected probability, got {:.3e}", .0)]
+    ExpectedProbability(f64),
+}
 
 /// The `ContinuousCDF` trait is used to specify an interface for univariate
 /// distributions for which cdf float arguments are sensible.

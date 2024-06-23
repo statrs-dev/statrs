@@ -4,6 +4,7 @@ use crate::{Result, StatsError};
 use rand::distributions::Uniform as RandUniform;
 use rand::Rng;
 use std::f64;
+use std::ops::Bound;
 
 /// Implements the [Continuous
 /// Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous))
@@ -50,14 +51,17 @@ impl Uniform {
     /// ```
     pub fn new(min: f64, max: f64) -> Result<Uniform> {
         if min.is_nan() || max.is_nan() {
-            return Err(StatsError::BadParams);
+            return Err(StatsError::NotNan);
         }
 
         match (min.is_finite(), max.is_finite(), min < max) {
-            (false, false, _) => Err(StatsError::ArgFinite("min and max")),
-            (false, true, _) => Err(StatsError::ArgFinite("min")),
-            (true, false, _) => Err(StatsError::ArgFinite("max")),
-            (true, true, false) => Err(StatsError::ArgLteArg("min", "max")),
+            (false, _, _) => Err(StatsError::Finite(min)),
+            (_, false, _) => Err(StatsError::Finite(max)),
+            (true, true, false) => Err(StatsError::ParametrizedBounded(
+                (Bound::Unbounded, Bound::Excluded(min)),
+                max,
+                min,
+            )),
             (true, true, true) => Ok(Uniform { min, max }),
         }
     }

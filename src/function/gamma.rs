@@ -7,6 +7,7 @@ use crate::is_zero;
 use crate::prec;
 use crate::Result;
 use std::f64;
+use std::ops::Bound;
 
 /// Auxiliary variable when evaluating the `gamma_ln` function
 const GAMMA_R: f64 = 10.900511;
@@ -168,10 +169,10 @@ pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64> {
         return Ok(f64::NAN);
     }
     if a <= 0.0 || a == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("a", 0.0, f64::INFINITY));
+        return Err(StatsError::FiniteNonNegative(a));
     }
     if x <= 0.0 || x == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("x", 0.0, f64::INFINITY));
+        return Err(StatsError::FiniteNonNegative(x));
     }
 
     let eps = 0.000000000000001;
@@ -262,10 +263,10 @@ pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64> {
         return Ok(f64::NAN);
     }
     if a <= 0.0 || a == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("a", 0.0, f64::INFINITY));
+        return Err(StatsError::FiniteNonNegative(a));
     }
     if x <= 0.0 || x == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("x", 0.0, f64::INFINITY));
+        return Err(StatsError::FiniteNonNegative(x));
     }
 
     let eps = 0.000000000000001;
