@@ -1,9 +1,11 @@
+use super::DistributionError as DistrError;
 use crate::distribution::{ziggurat, Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
-use crate::{consts, Result, StatsError};
+use crate::{consts, StatsError};
 use rand::Rng;
 use std::f64;
+use std::ops::Bound;
 
 /// Implements the [Normal](https://en.wikipedia.org/wiki/Normal_distribution)
 /// distribution
@@ -23,6 +25,36 @@ pub struct Normal {
     mean: f64,
     std_dev: f64,
 }
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum Error {
+    InvalidMean(DistrError),
+    InvalidStdDev(DistrError),
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidMean(_) => write!(f, "expected finite and not nan mean"),
+            Self::InvalidStdDev(_) => write!(
+                f,
+                "expected finite, positive, and not nan standard deviation"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(match self {
+            Self::InvalidMean(e) => e,
+            Self::InvalidStdDev(e) => e,
+        })
+    }
+}
+
+type Result<T> = std::result::Result<T, Error>;
+const POSITIVE_RANGE: (Bound<f64>, Bound<f64>) = (Bound::Excluded(0.0), Bound::Unbounded);
 
 impl Normal {
     ///  Constructs a new normal distribution with a mean of `mean`
@@ -45,8 +77,22 @@ impl Normal {
     /// assert!(result.is_err());
     /// ```
     pub fn new(mean: f64, std_dev: f64) -> Result<Normal> {
-        if mean.is_nan() || std_dev.is_nan() || std_dev <= 0.0 {
-            Err(StatsError::BadParams)
+        if mean.is_nan() {
+            Err(Error::InvalidMean(DistrError::InvalidConstruction(
+                StatsError::Finite(mean),
+            )))
+        } else if std_dev.is_nan() {
+            Err(Error::InvalidStdDev(DistrError::InvalidConstruction(
+                StatsError::NotNan,
+            )))
+        } else if std_dev == 0.0 {
+            Err(Error::InvalidStdDev(DistrError::DegenerateConstruction(
+                0.0,
+            )))
+        } else if std_dev < 0.0 {
+            Err(Error::InvalidStdDev(DistrError::InvalidConstruction(
+                StatsError::Bounded(POSITIVE_RANGE, std_dev),
+            )))
         } else {
             Ok(Normal { mean, std_dev })
         }

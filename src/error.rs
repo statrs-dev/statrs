@@ -3,7 +3,7 @@ use std::fmt;
 use std::ops::Bound;
 
 /// Enumeration of possible errors thrown within the `statrs` library
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum StatsError {
     /// Generic bad input parameter error
     BadParams,
