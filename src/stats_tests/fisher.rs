@@ -177,7 +177,7 @@ pub fn fishers_exact(table: &[u64; 4], alternative: Alternative) -> Result<f64, 
                 let dist = Hypergeometric::new(population, successes, draws)?;
 
                 let p_exact = dist.pmf(table[0]);
-                let mode = ((n + 1) * (n1 + 1)) / (n1 + n2 + 2) as u64;
+                let mode = ((n + 1) * (n1 + 1)) / (n1 + n2 + 2);
                 let p_mode = dist.pmf(mode);
 
                 if (p_exact - p_mode).abs() / p_exact.max(p_mode) <= 1.0 - EPSILON {
@@ -342,7 +342,7 @@ mod tests {
             .iter()
             .zip(vec![less_expected, greater_expected, two_sided_expected])
             {
-                let p_value = fishers_exact(&table, *alternative).unwrap();
+                let p_value = fishers_exact(table, *alternative).unwrap();
                 assert!(prec::almost_eq(p_value, *expected, 1e-12));
             }
         }
