@@ -45,32 +45,34 @@ const FILENAMES: [&str; 7] = [
     "NumAcc3.dat",
 ];
 
+fn get_path(fname: &str, prefix: Option<&str>) -> PathBuf {
+    if let Some(prefix) = prefix {
+        [prefix, fname].iter().collect()
+    } else {
+        ["tests", fname].iter().collect()
+    }
+}
+
 #[test]
 #[ignore = "NIST tests should not run from typical `cargo test` calls"]
 fn nist_strd_univariate_mean() {
-    let path_prefix = env::var(NIST_DATA_DIR_ENV).unwrap_or_else(|e| panic!("{}", e));
-
     for fname in FILENAMES {
-        let case = parse_file([&path_prefix, fname].iter().collect::<PathBuf>())
-            .unwrap_or_else(|e| panic!("failed parsing file {} with {:?}", fname, e));
-        assert_relative_eq!(
-            case.values.iter().mean(),
-            case.certified.mean,
-            epsilon = 1e-12
-        );
+        let filepath = get_path(fname, env::var(NIST_DATA_DIR_ENV).ok().as_deref());
+        let case = parse_file(filepath)
+            .unwrap_or_else(|e| panic!("failed parsing file {} with `{:?}`", fname, e));
+        assert_relative_eq!(case.values.mean(), case.certified.mean, epsilon = 1e-12);
     }
 }
 
 #[test]
 #[ignore]
 fn nist_strd_univariate_std_dev() {
-    let path_prefix = env::var(NIST_DATA_DIR_ENV).unwrap_or_else(|e| panic!("{}", e));
-
     for fname in FILENAMES {
-        let case = parse_file([&path_prefix, fname].iter().collect::<PathBuf>())
-            .unwrap_or_else(|e| panic!("failed parsing file {} with {:?}", fname, e));
+        let filepath = get_path(fname, env::var(NIST_DATA_DIR_ENV).ok().as_deref());
+        let case = parse_file(filepath)
+            .unwrap_or_else(|e| panic!("failed parsing file {} with `{:?}`", fname, e));
         assert_relative_eq!(
-            case.values.iter().std_dev(),
+            case.values.std_dev(),
             case.certified.std_dev,
             epsilon = 1e-10
         );
