@@ -1,3 +1,20 @@
+//! This test relies on data that is reusable but not distributable by statrs as
+//! such, the data will need to be downloaded from the relevant NIST StRD dataset
+//! the parsing for testing assumes data to be of form,
+//! ```text
+//!     sample mean       : <possibly signed float for mean>
+//!     sample std_dev    : <possibly signed float for standard deviation>
+//!     sample correlation: <possibly signed float for correlation coefficient>
+//!     [zero or more blank lines]
+//!     data0
+//!     data1
+//!     data2
+//!     ...
+//! ```
+//! This test can be run on it's own from the shell from this folder as
+//! ```sh
+//!     ./gather_nist_data.sh && cargo test -- --ignored nist_
+//! ```
 use anyhow::Result;
 use approx::assert_relative_eq;
 use statrs::statistics::Statistics;

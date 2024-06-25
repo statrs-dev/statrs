@@ -35,6 +35,19 @@ statrs = "*" # replace * by the latest version of the crate.
 
 For examples, view [the docs](https://docs.rs/statrs/*/statrs/).
 
+### Running tests
+
+If you'd like to run all suggested tests, you'll need to download some data from
+NIST, we have a script for this and formatting the data in the `tests/` folder.
+
+```sh
+cargo test
+./tests/gather_nist_data.sh && cargo test -- --include-ignored nist_
+```
+
+If you'd like to modify where the data is downloaded, you can use the environment variable,
+`STATRS_NIST_DATA_DIR` for running the script and the tests.
+
 ## Contributing
 
 Thanks for your help to improve the project!
