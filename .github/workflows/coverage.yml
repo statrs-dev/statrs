@@ -1,0 +1,38 @@
+name: Coverage
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Collect coverage
+        run: |
+          cargo llvm-cov --no-report nextest
+          cargo llvm-cov report --lcov --output-path lcov.info
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          token: ${{secrets.CODECOV_TOKEN}}
+          fail_ci_if_error: false
