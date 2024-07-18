@@ -109,8 +109,8 @@ fn binary_search(
 /// # Examples
 ///
 /// ```
-/// use statrs::statis_tests::fishers_exact;
-/// use statrs::statis_tests::Alternative;
+/// use statrs::stats_tests::fishers_exact_with_odds_ratio;
+/// use statrs::stats_tests::Alternative;
 /// let table = [3, 5, 4, 50];
 /// let (odds_ratio, p_value) = fishers_exact_with_odds_ratio(&table, Alternative::Less).unwrap();
 /// ```
@@ -142,8 +142,8 @@ pub fn fishers_exact_with_odds_ratio(
 /// # Examples
 ///
 /// ```
-/// use statrs::statis_tests::fishers_exact;
-/// use statrs::statis_tests::Alternative;
+/// use statrs::stats_tests::fishers_exact;
+/// use statrs::stats_tests::Alternative;
 /// let table = [3, 5, 4, 50];
 /// let p_value = fishers_exact(&table, Alternative::Less).unwrap();
 /// ```
@@ -209,9 +209,8 @@ pub fn fishers_exact(table: &[u64; 4], alternative: Alternative) -> Result<f64, 
 
 #[cfg(test)]
 mod tests {
-    use super::fishers_exact;
+    use super::*;
     use crate::prec;
-    use crate::stats_tests::fisher::{fishers_exact_with_odds_ratio, Alternative};
 
     /// Test fishers_exact by comparing against values from scipy.
     #[test]
