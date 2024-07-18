@@ -113,10 +113,11 @@ pub fn fishers_exact_with_odds_ratio(
     table: &[u64; 4],
     alternative: Alternative,
 ) -> Result<(f64, f64), StatsError> {
-    // Calculate fisher's exact test with the odds ratio
-    if (table[0] == 0 && table[2] == 0) || (table[1] == 0 && table[3] == 0) {
-        // If both values in a row or column are zero, p-value is 1 and odds ratio is NaN.
-        return Ok((f64::NAN, 1.0));
+    // If both values in a row or column are zero, p-value is 1 and odds ratio is NaN.
+    match table {
+        [0, _, 0, _] | [_, 0, _, 0] => return Ok((f64::NAN, 1.0)), // both 0 in a row
+        [0, 0, _, _] | [_, _, 0, 0] => return Ok((f64::NAN, 1.0)), // both 0 in a column
+        _ => (),                                                   // continue
     }
 
     let odds_ratio = {
@@ -145,8 +146,10 @@ pub fn fishers_exact_with_odds_ratio(
 /// ```
 pub fn fishers_exact(table: &[u64; 4], alternative: Alternative) -> Result<f64, StatsError> {
     // If both values in a row or column are zero, the p-value is 1 and the odds ratio is NaN.
-    if (table[0] == 0 && table[2] == 0) || (table[1] == 0 && table[3] == 0) {
-        return Ok(1.0);
+    match table {
+        [0, _, 0, _] | [_, 0, _, 0] => return Ok(1.0), // both 0 in a row
+        [0, 0, _, _] | [_, _, 0, 0] => return Ok(1.0), // both 0 in a column
+        _ => (),                                       // continue
     }
 
     let n1 = table[0] + table[1];
