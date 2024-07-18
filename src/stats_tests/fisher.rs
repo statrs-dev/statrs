@@ -99,7 +99,8 @@ fn binary_search(
 
 /// Perform a Fisher exact test on a 2x2 contingency table.
 /// Based on scipy's fisher test: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fisher_exact.html#scipy-stats-fisher-exact
-/// Returns the odds ratio and p_value
+/// Expects a table in row-major order
+/// Returns the [odds ratio](https://en.wikipedia.org/wiki/Odds_ratio) and p_value
 /// # Examples
 ///
 /// ```
@@ -132,6 +133,7 @@ pub fn fishers_exact_with_odds_ratio(
 
 /// Perform a Fisher exact test on a 2x2 contingency table.
 /// Based on scipy's fisher test: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fisher_exact.html#scipy-stats-fisher-exact
+/// Expects a table in row-major order
 /// Returns only the p_value
 /// # Examples
 ///
