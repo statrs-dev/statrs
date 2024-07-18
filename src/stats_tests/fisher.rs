@@ -342,6 +342,16 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_fishers_exact_for_trivial() {
+        let cases = [[0, 0, 1, 2], [1, 2, 0, 0], [1, 0, 2, 0], [0, 1, 0, 2]];
+
+        for table in cases.iter() {
+            assert_eq!(fishers_exact(table, Alternative::Less).unwrap(), 1.0)
+        }
+    }
+
     #[test]
     fn test_fishers_exact_with_odds() {
         let table = [3, 5, 4, 50];
