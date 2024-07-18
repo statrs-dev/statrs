@@ -1,12 +1,6 @@
+use super::Alternative;
 use crate::distribution::{Discrete, DiscreteCDF, Hypergeometric};
 use crate::StatsError;
-
-#[derive(Debug, Copy, Clone)]
-pub enum Alternative {
-    TwoSided,
-    Less,
-    Greater,
-}
 
 const EPSILON: f64 = 1.0 - 1e-4;
 

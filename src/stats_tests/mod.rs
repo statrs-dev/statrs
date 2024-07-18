@@ -1,4 +1,10 @@
 pub mod fisher;
 
-pub use fisher::Alternative;
+#[derive(Debug, Copy, Clone)]
+pub enum Alternative {
+    TwoSided,
+    Less,
+    Greater,
+}
+
 pub use fisher::{fishers_exact, fishers_exact_with_odds_ratio};
