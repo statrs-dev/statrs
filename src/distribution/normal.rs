@@ -1,9 +1,9 @@
+use crate::consts;
 use crate::distribution::{
     ziggurat, Continuous, ContinuousCDF, ParametrizationError as ParamError,
 };
 use crate::function::erf;
 use crate::statistics::*;
-use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
 use thiserror::Error;
@@ -57,9 +57,23 @@ impl Normal {
     /// result = Normal::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(mean: f64, std_dev: f64) -> Result<Normal> {
-        if mean.is_nan() || std_dev.is_nan() || std_dev <= 0.0 {
-            Err(StatsError::BadParams)
+    pub fn new(mean: f64, std_dev: f64) -> Result<Normal, NormalError> {
+        if mean.is_nan() {
+            Err(NormalError::InvalidLocation(ParamError::ExpectedNotNan))
+        } else if std_dev.is_nan() {
+            Err(NormalError::InvalidStandardDeviation(
+                ParamError::ExpectedNotNan,
+            ))
+        } else if std_dev < 0.0 {
+            Err(NormalError::InvalidStandardDeviation(
+                ParamError::ExpectedPositive(std_dev),
+            ))
+        } else if std_dev == 0.0 || std_dev.is_infinite() {
+            Err(NormalError::DegenerateVariance(std_dev))
+        } else if mean.is_infinite() {
+            Err(NormalError::InvalidLocation(ParamError::ExpectedFinite(
+                mean,
+            )))
         } else {
             Ok(Normal { mean, std_dev })
         }

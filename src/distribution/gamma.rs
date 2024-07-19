@@ -2,7 +2,6 @@ use crate::distribution::{Continuous, ContinuousCDF, ParametrizationError as Par
 use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use thiserror::Error;
 
@@ -33,7 +32,44 @@ impl From<super::negative_binomial::NegativeBinomialError> for GammaError {
             InvalidSuccessCount(e) => Self::InvalidRate(e.into()),
             DegenerateMean(m) => Self::DegenerateShape(m),
             DegenerateProbability(p) => Self::DegenerateRate(p / (1.0 - p)),
-            DegenerateSuccessCount(r) => Self::DegenerateRate(r),
+            DegenerateSuccessCount => Self::DegenerateRate(0.0),
+        }
+    }
+}
+
+/// holds a valid parametrization of the gamma distribution in shape and rate.
+pub struct Parameters {
+    shape: f64,
+    rate: f64,
+}
+
+impl Parameters {
+    pub fn new(shape: f64, rate: f64) -> Result<Self, GammaError> {
+        if shape.is_nan() {
+            Err(GammaError::InvalidShape(ParamError::ExpectedNotNan))
+        } else if rate.is_nan() {
+            Err(GammaError::InvalidRate(ParamError::ExpectedNotNan))
+        } else if rate <= 0.0 {
+            Err(GammaError::InvalidRate(ParamError::ExpectedPositive(rate)))
+        } else if shape <= 0.0 {
+            Err(GammaError::InvalidShape(ParamError::ExpectedPositive(
+                shape,
+            )))
+        } else if rate.is_infinite() {
+            Err(GammaError::DegenerateRate(rate))
+        } else if shape.is_infinite() {
+            Err(GammaError::DegenerateShape(shape))
+        } else {
+            Ok(Self { shape, rate })
+        }
+    }
+}
+
+impl From<Parameters> for Gamma {
+    fn from(value: Parameters) -> Self {
+        Gamma {
+            shape: value.shape,
+            rate: value.rate,
         }
     }
 }
@@ -78,16 +114,8 @@ impl Gamma {
     /// result = Gamma::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(shape: f64, rate: f64) -> Result<Gamma> {
-        if shape.is_nan()
-            || rate.is_nan()
-            || shape.is_infinite() && rate.is_infinite()
-            || shape <= 0.0
-            || rate <= 0.0
-        {
-            return Err(StatsError::BadParams);
-        }
-        Ok(Gamma { shape, rate })
+    pub fn new(shape: f64, rate: f64) -> Result<Gamma, GammaError> {
+        Ok(Parameters::new(shape, rate)?.into())
     }
 
     /// Returns the shape (α) of the gamma distribution

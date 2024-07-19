@@ -84,13 +84,19 @@ pub enum ParametrizationError<N: Num> {
     ExpectedNotNan,
 }
 
-impl Into<ParametrizationError<f64>> for ParametrizationError<u64> {
-    fn into(self) -> ParametrizationError<f64> {
-        match self {
-            Self::ExpectedPositive(x) => ParametrizationError::ExpectedPositive(x.as_()),
-            Self::ExpectedNotNegative(x) => ParametrizationError::ExpectedNotNegative(x.as_()),
-            Self::ExpectedFinite(x) => ParametrizationError::ExpectedFinite(x.as_()),
-            Self::ExpectedNotNan => ParametrizationError::ExpectedNotNan,
+impl From<ParametrizationError<u64>> for ParametrizationError<f64> {
+    fn from(val: ParametrizationError<u64>) -> Self {
+        match val {
+            ParametrizationError::ExpectedPositive(x) => {
+                ParametrizationError::ExpectedPositive(x.as_())
+            }
+            ParametrizationError::ExpectedNotNegative(x) => {
+                ParametrizationError::ExpectedNotNegative(x.as_())
+            }
+            ParametrizationError::ExpectedFinite(x) => {
+                ParametrizationError::ExpectedFinite(x.as_())
+            }
+            ParametrizationError::ExpectedNotNan => ParametrizationError::ExpectedNotNan,
         }
     }
 }

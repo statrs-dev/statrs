@@ -3,7 +3,6 @@ use crate::distribution::{
 };
 use crate::function::{beta, gamma};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 use thiserror::Error;
@@ -18,10 +17,43 @@ pub enum NegativeBinomialError {
     InvalidProbability(f64),
     #[error("mean of {0} is degenerate")]
     DegenerateMean(f64),
-    #[error("success_count, `r`, of {0} is degenerate")]
-    DegenerateSuccessCount(f64),
+    #[error("success_count, `r`, of 0 is degenerate")]
+    DegenerateSuccessCount,
     #[error("probability of {0} is degenerate")]
     DegenerateProbability(f64),
+}
+
+/// holds a valid parametrization of the gamma distribution in shape and rate.
+pub struct Parameters {
+    r: u64,
+    p: f64,
+}
+
+impl Parameters {
+    pub fn new(p: f64, r: u64) -> Result<Self, NegativeBinomialError> {
+        if p.is_nan() || !((0.0..=1.0).contains(&p)) {
+            Err(NegativeBinomialError::InvalidProbability(p))
+        } else if r == 0 {
+            Err(NegativeBinomialError::InvalidSuccessCount(
+                ParamError::ExpectedPositive(0),
+            ))
+        } else if p == 0.0 || p == 1.0 {
+            Err(NegativeBinomialError::DegenerateProbability(p))
+        } else if r == 0 {
+            Err(NegativeBinomialError::DegenerateSuccessCount)
+        } else {
+            Ok(Self { p, r })
+        }
+    }
+}
+
+impl From<Parameters> for NegativeBinomial {
+    fn from(value: Parameters) -> Self {
+        Self {
+            r: value.r as f64,
+            p: value.p,
+        }
+    }
 }
 
 /// Implements the
@@ -49,7 +81,7 @@ pub enum NegativeBinomialError {
 /// use statrs::statistics::DiscreteDistribution;
 /// use statrs::prec::almost_eq;
 ///
-/// let r = NegativeBinomial::new(4.0, 0.5).unwrap();
+/// let r = NegativeBinomial::new(4, 0.5).unwrap();
 /// assert_eq!(r.mean().unwrap(), 4.0);
 /// assert!(almost_eq(r.pmf(0), 0.0625, 1e-8));
 /// assert!(almost_eq(r.pmf(3), 0.15625, 1e-8));
@@ -77,17 +109,14 @@ impl NegativeBinomial {
     /// ```
     /// use statrs::distribution::NegativeBinomial;
     ///
-    /// let mut result = NegativeBinomial::new(4.0, 0.5);
+    /// let mut result = NegativeBinomial::new(4, 0.5);
     /// assert!(result.is_ok());
-    ///
-    /// result = NegativeBinomial::new(-0.5, 5.0);
-    /// assert!(result.is_err());
     /// ```
-    pub fn new(r: f64, p: f64) -> Result<NegativeBinomial> {
-        if p.is_nan() || !(0.0..=1.0).contains(&p) || r.is_nan() || r < 0.0 {
-            Err(StatsError::BadParams)
+    pub fn new(r: u64, p: f64) -> Result<NegativeBinomial, NegativeBinomialError> {
+        if p.is_nan() || !(0.0..=1.0).contains(&p) {
+            Err(NegativeBinomialError::InvalidProbability(p))
         } else {
-            Ok(NegativeBinomial { r, p })
+            Ok(Parameters::new(p, r)?.into())
         }
     }
 
@@ -100,7 +129,7 @@ impl NegativeBinomial {
     /// ```
     /// use statrs::distribution::NegativeBinomial;
     ///
-    /// let r = NegativeBinomial::new(5.0, 0.5).unwrap();
+    /// let r = NegativeBinomial::new(5, 0.5).unwrap();
     /// assert_eq!(r.p(), 0.5);
     /// ```
     pub fn p(&self) -> f64 {
@@ -115,11 +144,11 @@ impl NegativeBinomial {
     /// ```
     /// use statrs::distribution::NegativeBinomial;
     ///
-    /// let r = NegativeBinomial::new(5.0, 0.5).unwrap();
-    /// assert_eq!(r.r(), 5.0);
+    /// let r = NegativeBinomial::new(5, 0.5).unwrap();
+    /// assert_eq!(r.r(), 5);
     /// ```
-    pub fn r(&self) -> f64 {
-        self.r
+    pub fn r(&self) -> u64 {
+        self.r as u64
     }
 }
 
@@ -315,24 +344,24 @@ mod tests {
     use crate::distribution::{DiscreteCDF, Discrete, NegativeBinomial};
     use crate::distribution::internal::test;
 
-    fn try_create(r: f64, p: f64) -> NegativeBinomial {
+    fn try_create(r: u64, p: f64) -> NegativeBinomial {
         let r = NegativeBinomial::new(r, p);
-        assert!(r.is_ok());
+        assert!(r.is_ok(), "r = {:?}", r);
         r.unwrap()
     }
 
-    fn create_case(r: f64, p: f64) {
+    fn create_case(r: u64, p: f64) {
         let dist = try_create(r, p);
         assert_eq!(p, dist.p());
         assert_eq!(r, dist.r());
     }
 
-    fn bad_create_case(r: f64, p: f64) {
+    fn bad_create_case(r: u64, p: f64) {
         let r = NegativeBinomial::new(r, p);
-        assert!(r.is_err());
+        assert!(r.is_err(), "r = {:?}", r);
     }
 
-    fn get_value<T, F>(r: f64, p: f64, eval: F) -> T
+    fn get_value<T, F>(r: u64, p: f64, eval: F) -> T
         where T: PartialEq + Debug,
                 F: Fn(NegativeBinomial) -> T
     {
@@ -340,7 +369,7 @@ mod tests {
         eval(r)
     }
 
-    fn test_case<T, F>(r: f64, p: f64, expected: T, eval: F)
+    fn test_case<T, F>(r: u64, p: f64, expected: T, eval: F)
         where T: PartialEq + Debug,
                 F: Fn(NegativeBinomial) -> T
     {
@@ -349,7 +378,7 @@ mod tests {
     }
 
 
-    fn test_case_or_nan<F>(r: f64, p: f64, expected: f64, eval: F)
+    fn test_case_or_nan<F>(r: u64, p: f64, expected: f64, eval: F)
         where F: Fn(NegativeBinomial) -> f64
     {
         let x = get_value(r, p, eval);
@@ -360,7 +389,7 @@ mod tests {
             assert_eq!(expected, x);
         }
     }
-    fn test_almost<F>(r: f64, p: f64, expected: f64, acc: f64, eval: F)
+    fn test_almost<F>(r: u64, p: f64, expected: f64, acc: f64, eval: F)
         where F: Fn(NegativeBinomial) -> f64
     {
         let x = get_value(r, p, eval);
@@ -369,163 +398,162 @@ mod tests {
 
     #[test]
     fn test_create() {
-        create_case(0.0, 0.0);
-        create_case(0.3, 0.4);
-        create_case(1.0, 0.3);
+        create_case(0, 0.0);
+        // create_case(0.3, 0.4); // one should instead use Gamma directly
+        create_case(1, 0.3);
     }
 
     #[test]
     fn test_bad_create() {
-        bad_create_case(f64::NAN, 1.0);
-        bad_create_case(0.0, f64::NAN);
-        bad_create_case(-1.0, 1.0);
-        bad_create_case(2.0, 2.0);
+        bad_create_case(0, f64::NAN);
+        bad_create_case(2, 2.0);
+        bad_create_case(0, 1.0);
     }
 
     #[test]
     fn test_mean() {
         let mean = |x: NegativeBinomial| x.mean().unwrap();
-        test_case(4.0, 0.0, f64::INFINITY, mean);
-        test_almost(3.0, 0.3, 7.0, 1e-15 , mean);
-        test_case(2.0, 1.0, 0.0, mean);
+        test_case(4, 0.0, f64::INFINITY, mean);
+        test_almost(3, 0.3, 7.0, 1e-15 , mean);
+        test_case(2, 1.0, 0.0, mean);
     }
 
     #[test]
     fn test_variance() {
         let variance = |x: NegativeBinomial| x.variance().unwrap();
-        test_case(4.0, 0.0, f64::INFINITY, variance);
-        test_almost(3.0, 0.3, 23.333333333333, 1e-12, variance);
-        test_case(2.0, 1.0, 0.0, variance);
+        test_case(4, 0.0, f64::INFINITY, variance);
+        test_almost(3, 0.3, 23.333333333333, 1e-12, variance);
+        test_case(2, 1.0, 0.0, variance);
     }
 
     #[test]
     fn test_skewness() {
         let skewness = |x: NegativeBinomial| x.skewness().unwrap();
-        test_case(0.0, 0.0, f64::INFINITY, skewness);
-        test_almost(0.1, 0.3, 6.425396041, 1e-09, skewness);
-        test_case(1.0, 1.0, f64::INFINITY, skewness);
+        test_case(0, 0.0, f64::INFINITY, skewness);
+        test_almost(0, 0.3, 6.425396041, 1e-09, skewness);
+        test_case(1, 1.0, f64::INFINITY, skewness);
     }
 
     #[test]
     fn test_mode() {
         let mode = |x: NegativeBinomial| x.mode().unwrap();
-        test_case(0.0, 0.0, 0.0, mode);
-        test_case(0.3, 0.0, 0.0, mode);
-        test_case(1.0, 1.0, 0.0, mode);
-        test_case(10.0, 0.01, 891.0, mode);
+        test_case(0, 0.0, 0.0, mode);
+        test_case(0, 0.0, 0.0, mode);
+        test_case(1, 1.0, 0.0, mode);
+        test_case(10, 0.01, 891.0, mode);
     }
 
     #[test]
     fn test_min_max() {
         let min = |x: NegativeBinomial| x.min();
         let max = |x: NegativeBinomial| x.max();
-        test_case(1.0, 0.5, 0, min);
-        test_case(1.0, 0.3, u64::MAX, max);
+        test_case(1, 0.5, 0, min);
+        test_case(1, 0.3, u64::MAX, max);
     }
 
     #[test]
     fn test_pmf() {
         let pmf = |arg: u64| move |x: NegativeBinomial| x.pmf(arg);
-        test_almost(4.0, 0.5, 0.0625, 1e-8, pmf(0));
-        test_almost(4.0, 0.5, 0.15625, 1e-8, pmf(3));
-        test_case(1.0, 0.0, 0.0, pmf(0));
-        test_case(1.0, 0.0, 0.0, pmf(1));
-        test_almost(3.0, 0.2, 0.008, 1e-15, pmf(0));
-        test_almost(3.0, 0.2, 0.0192, 1e-15, pmf(1));
-        test_almost(3.0, 0.2, 0.04096, 1e-15, pmf(3));
-        test_almost(10.0, 0.2, 1.024e-07, 1e-07, pmf(0));
-        test_almost(10.0, 0.2, 8.192e-07, 1e-07, pmf(1));
-        test_almost(10.0, 0.2, 0.001015706852, 1e-07, pmf(10));
-        test_almost(1.0, 0.3, 0.3, 1e-15,  pmf(0));
-        test_almost(1.0, 0.3, 0.21, 1e-15, pmf(1));
-        test_almost(3.0, 0.3, 0.027, 1e-15, pmf(0));
-        test_case(0.3, 1.0, 0.0, pmf(1));
-        test_case(0.3, 1.0, 0.0, pmf(3));
-        test_case_or_nan(0.3, 1.0, f64::NAN, pmf(0));
-        test_case(0.3, 1.0, 0.0, pmf(1));
-        test_case(0.3, 1.0, 0.0, pmf(10));
-        test_case_or_nan(1.0, 1.0, f64::NAN, pmf(0));
-        test_case(1.0, 1.0, 0.0, pmf(1));
-        test_case_or_nan(3.0, 1.0, f64::NAN, pmf(0));
-        test_case(3.0, 1.0, 0.0, pmf(1));
-        test_case(3.0, 1.0, 0.0, pmf(3));
-        test_case_or_nan(10.0, 1.0, f64::NAN, pmf(0));
-        test_case(10.0, 1.0, 0.0, pmf(1));
-        test_case(10.0, 1.0, 0.0, pmf(10));
+        test_almost(4, 0.5, 0.0625, 1e-8, pmf(0));
+        test_almost(4, 0.5, 0.15625, 1e-8, pmf(3));
+        test_case(1, 0.0, 0.0, pmf(0));
+        test_case(1, 0.0, 0.0, pmf(1));
+        test_almost(3, 0.2, 0.008, 1e-15, pmf(0));
+        test_almost(3, 0.2, 0.0192, 1e-15, pmf(1));
+        test_almost(3, 0.2, 0.04096, 1e-15, pmf(3));
+        test_almost(10, 0.2, 1.024e-07, 1e-07, pmf(0));
+        test_almost(10, 0.2, 8.192e-07, 1e-07, pmf(1));
+        test_almost(10, 0.2, 0.001015706852, 1e-07, pmf(10));
+        test_almost(1, 0.3, 0.3, 1e-15,  pmf(0));
+        test_almost(1, 0.3, 0.21, 1e-15, pmf(1));
+        test_almost(3, 0.3, 0.027, 1e-15, pmf(0));
+        test_case(0, 1.0, 0.0, pmf(1));
+        test_case(0, 1.0, 0.0, pmf(3));
+        test_case_or_nan(0, 1.0, f64::NAN, pmf(0));
+        test_case(0, 1.0, 0.0, pmf(1));
+        test_case(0, 1.0, 0.0, pmf(10));
+        test_case_or_nan(1, 1.0, f64::NAN, pmf(0));
+        test_case(1, 1.0, 0.0, pmf(1));
+        test_case_or_nan(3, 1.0, f64::NAN, pmf(0));
+        test_case(3, 1.0, 0.0, pmf(1));
+        test_case(3, 1.0, 0.0, pmf(3));
+        test_case_or_nan(10, 1.0, f64::NAN, pmf(0));
+        test_case(10, 1.0, 0.0, pmf(1));
+        test_case(10, 1.0, 0.0, pmf(10));
     }
 
     #[test]
     fn test_ln_pmf() {
         let ln_pmf = |arg: u64| move |x: NegativeBinomial| x.ln_pmf(arg);
-        test_case(1.0, 0.0, f64::NEG_INFINITY, ln_pmf(0));
-        test_case(1.0, 0.0, f64::NEG_INFINITY, ln_pmf(1));
-        test_almost(3.0, 0.2, -4.828313737, 1e-08, ln_pmf(0));
-        test_almost(3.0, 0.2, -3.952845, 1e-08, ln_pmf(1));
-        test_almost(3.0, 0.2, -3.195159298, 1e-08, ln_pmf(3));
-        test_almost(10.0, 0.2, -16.09437912, 1e-08, ln_pmf(0));
-        test_almost(10.0, 0.2, -14.01493758, 1e-08, ln_pmf(1));
-        test_almost(10.0, 0.2, -6.892170503, 1e-08, ln_pmf(10));
-        test_almost(1.0, 0.3, -1.203972804, 1e-08,  ln_pmf(0));
-        test_almost(1.0, 0.3, -1.560647748, 1e-08, ln_pmf(1));
-        test_almost(3.0, 0.3, -3.611918413, 1e-08, ln_pmf(0));
-        test_case(0.3, 1.0, f64::NEG_INFINITY, ln_pmf(1));
-        test_case(0.3, 1.0, f64::NEG_INFINITY, ln_pmf(3));
-        test_case_or_nan(0.3, 1.0, f64::NAN, ln_pmf(0));
-        test_case(0.3, 1.0, f64::NEG_INFINITY, ln_pmf(1));
-        test_case(0.3, 1.0, f64::NEG_INFINITY, ln_pmf(10));
-        test_case_or_nan(1.0, 1.0, f64::NAN, ln_pmf(0));
-        test_case(1.0, 1.0, f64::NEG_INFINITY, ln_pmf(1));
-        test_case_or_nan(3.0, 1.0, f64::NAN, ln_pmf(0));
-        test_case(3.0, 1.0, f64::NEG_INFINITY, ln_pmf(1));
-        test_case(3.0, 1.0, f64::NEG_INFINITY, ln_pmf(3));
-        test_case_or_nan(10.0, 1.0, f64::NAN, ln_pmf(0));
-        test_case(10.0, 1.0, f64::NEG_INFINITY, ln_pmf(1));
-        test_case(10.0, 1.0, f64::NEG_INFINITY, ln_pmf(10));
+        test_case(1, 0.0, f64::NEG_INFINITY, ln_pmf(0));
+        test_case(1, 0.0, f64::NEG_INFINITY, ln_pmf(1));
+        test_almost(3, 0.2, -4.828313737, 1e-08, ln_pmf(0));
+        test_almost(3, 0.2, -3.952845, 1e-08, ln_pmf(1));
+        test_almost(3, 0.2, -3.195159298, 1e-08, ln_pmf(3));
+        test_almost(10, 0.2, -16.09437912, 1e-08, ln_pmf(0));
+        test_almost(10, 0.2, -14.01493758, 1e-08, ln_pmf(1));
+        test_almost(10, 0.2, -6.892170503, 1e-08, ln_pmf(10));
+        test_almost(1, 0.3, -1.203972804, 1e-08,  ln_pmf(0));
+        test_almost(1, 0.3, -1.560647748, 1e-08, ln_pmf(1));
+        test_almost(3, 0.3, -3.611918413, 1e-08, ln_pmf(0));
+        test_case(0, 1.0, f64::NEG_INFINITY, ln_pmf(1));
+        test_case(0, 1.0, f64::NEG_INFINITY, ln_pmf(3));
+        test_case_or_nan(0, 1.0, f64::NAN, ln_pmf(0));
+        test_case(0, 1.0, f64::NEG_INFINITY, ln_pmf(1));
+        test_case(0, 1.0, f64::NEG_INFINITY, ln_pmf(10));
+        test_case_or_nan(1, 1.0, f64::NAN, ln_pmf(0));
+        test_case(1, 1.0, f64::NEG_INFINITY, ln_pmf(1));
+        test_case_or_nan(3, 1.0, f64::NAN, ln_pmf(0));
+        test_case(3, 1.0, f64::NEG_INFINITY, ln_pmf(1));
+        test_case(3, 1.0, f64::NEG_INFINITY, ln_pmf(3));
+        test_case_or_nan(10, 1.0, f64::NAN, ln_pmf(0));
+        test_case(10, 1.0, f64::NEG_INFINITY, ln_pmf(1));
+        test_case(10, 1.0, f64::NEG_INFINITY, ln_pmf(10));
     }
 
     #[test]
     fn test_cdf() {
         let cdf = |arg: u64| move |x: NegativeBinomial| x.cdf(arg);
-        test_almost(1.0, 0.3, 0.3, 1e-08, cdf(0));
-        test_almost(1.0, 0.3, 0.51, 1e-08, cdf(1));
-        test_almost(1.0, 0.3, 0.83193, 1e-08, cdf(4));
-        test_almost(1.0, 0.3, 0.9802267326, 1e-08, cdf(10));
-        test_case(1.0, 1.0, 1.0, cdf(0));
-        test_case(1.0, 1.0, 1.0, cdf(1));
-        test_almost(10.0, 0.75, 0.05631351471, 1e-08, cdf(0));
-        test_almost(10.0, 0.75, 0.1970973015, 1e-08, cdf(1));
-        test_almost(10.0, 0.75, 0.9960578583, 1e-08, cdf(10));
+        test_almost(1, 0.3, 0.3, 1e-08, cdf(0));
+        test_almost(1, 0.3, 0.51, 1e-08, cdf(1));
+        test_almost(1, 0.3, 0.83193, 1e-08, cdf(4));
+        test_almost(1, 0.3, 0.9802267326, 1e-08, cdf(10));
+        test_case(1, 1.0, 1.0, cdf(0));
+        test_case(1, 1.0, 1.0, cdf(1));
+        test_almost(10, 0.75, 0.05631351471, 1e-08, cdf(0));
+        test_almost(10, 0.75, 0.1970973015, 1e-08, cdf(1));
+        test_almost(10, 0.75, 0.9960578583, 1e-08, cdf(10));
     }
 
     #[test]
     fn test_sf() {
         let sf = |arg: u64| move |x: NegativeBinomial| x.sf(arg);
-        test_almost(1.0, 0.3, 0.7, 1e-08, sf(0));
-        test_almost(1.0, 0.3, 0.49, 1e-08, sf(1));
-        test_almost(1.0, 0.3, 0.1680699999999986, 1e-08, sf(4));
-        test_almost(1.0, 0.3, 0.019773267430000074, 1e-08, sf(10));
-        test_case(1.0, 1.0, 0.0, sf(0));
-        test_case(1.0, 1.0, 0.0, sf(1));
-        test_almost(10.0, 0.75, 0.9436864852905275, 1e-08, sf(0));
-        test_almost(10.0, 0.75, 0.8029026985168456, 1e-08, sf(1));
-        test_almost(10.0, 0.75, 0.003942141664083465, 1e-08, sf(10));
+        test_almost(1, 0.3, 0.7, 1e-08, sf(0));
+        test_almost(1, 0.3, 0.49, 1e-08, sf(1));
+        test_almost(1, 0.3, 0.1680699999999986, 1e-08, sf(4));
+        test_almost(1, 0.3, 0.019773267430000074, 1e-08, sf(10));
+        test_case(1, 1.0, 0.0, sf(0));
+        test_case(1, 1.0, 0.0, sf(1));
+        test_almost(10, 0.75, 0.9436864852905275, 1e-08, sf(0));
+        test_almost(10, 0.75, 0.8029026985168456, 1e-08, sf(1));
+        test_almost(10, 0.75, 0.003942141664083465, 1e-08, sf(10));
     }
 
     #[test]
     fn test_cdf_upper_bound() {
         let cdf = |arg: u64| move |x: NegativeBinomial| x.cdf(arg);
-        test_case(3.0, 0.5, 1.0, cdf(100));
+        test_case(3, 0.5, 1.0, cdf(100));
     }
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&try_create(5.0, 0.3), 35);
-        test::check_discrete_distribution(&try_create(10.0, 0.7), 21);
+        test::check_discrete_distribution(&try_create(5, 0.3), 35);
+        test::check_discrete_distribution(&try_create(10, 0.7), 21);
     }
     
     #[test]
     fn test_sf_upper_bound() {
         let sf = |arg: u64| move |x: NegativeBinomial| x.sf(arg);
-        test_almost(3.0, 0.5, 5.282409836586059e-28, 1e-28, sf(100));
+        test_almost(3, 0.5, 5.282409836586059e-28, 1e-28, sf(100));
     }
 }

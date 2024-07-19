@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt;
 
-#[deprecated(since = "0.18", note = "dropping for less general error variants")]
+#[deprecated(since = "0.18.0", note = "dropping for less general error variants")]
 /// Enumeration of possible errors thrown within the `statrs` library
 #[derive(Clone, PartialEq, Debug)]
 pub enum StatsError {
