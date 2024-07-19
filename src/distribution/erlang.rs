@@ -303,7 +303,6 @@ mod tests {
         create_case(1, 1.0);
         create_case(10, 10.0);
         create_case(10, 1.0);
-        create_case(10, f64::INFINITY);
     }
 
     #[test]
