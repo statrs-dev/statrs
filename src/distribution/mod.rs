@@ -3,7 +3,8 @@
 //! concrete implementations for a variety of distributions.
 use super::statistics::{Max, Min};
 use ::num_traits::{Bounded, Float, Num};
-use num_traits::{NumAssign, NumAssignOps, NumAssignRef};
+use num_traits::{AsPrimitive, NumAssign, NumAssignOps, NumAssignRef};
+use thiserror::Error;
 
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::Beta;
@@ -19,7 +20,7 @@ pub use self::empirical::Empirical;
 pub use self::erlang::Erlang;
 pub use self::exponential::Exp;
 pub use self::fisher_snedecor::FisherSnedecor;
-pub use self::gamma::Gamma;
+pub use self::gamma::{Gamma, GammaError};
 pub use self::geometric::Geometric;
 pub use self::hypergeometric::Hypergeometric;
 pub use self::inverse_gamma::InverseGamma;
@@ -27,8 +28,8 @@ pub use self::laplace::Laplace;
 pub use self::log_normal::LogNormal;
 pub use self::multinomial::Multinomial;
 pub use self::multivariate_normal::MultivariateNormal;
-pub use self::negative_binomial::NegativeBinomial;
-pub use self::normal::Normal;
+pub use self::negative_binomial::{NegativeBinomial, NegativeBinomialError};
+pub use self::normal::{Normal, NormalError};
 pub use self::pareto::Pareto;
 pub use self::poisson::Poisson;
 pub use self::students_t::StudentsT;
@@ -70,6 +71,29 @@ mod uniform;
 mod weibull;
 mod ziggurat;
 mod ziggurat_tables;
+
+#[derive(Clone, PartialEq, Debug, Error)]
+pub enum ParametrizationError<N: Num> {
+    #[error("expected positive, got {0}")]
+    ExpectedPositive(N),
+    #[error("expected non-negative, got {0}")]
+    ExpectedNotNegative(N),
+    #[error("expected finite, {0}")]
+    ExpectedFinite(N),
+    #[error("expected not-NAN")]
+    ExpectedNotNan,
+}
+
+impl Into<ParametrizationError<f64>> for ParametrizationError<u64> {
+    fn into(self) -> ParametrizationError<f64> {
+        match self {
+            Self::ExpectedPositive(x) => ParametrizationError::ExpectedPositive(x.as_()),
+            Self::ExpectedNotNegative(x) => ParametrizationError::ExpectedNotNegative(x.as_()),
+            Self::ExpectedFinite(x) => ParametrizationError::ExpectedFinite(x.as_()),
+            Self::ExpectedNotNan => ParametrizationError::ExpectedNotNan,
+        }
+    }
+}
 
 use crate::Result;
 

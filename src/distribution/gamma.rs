@@ -1,9 +1,42 @@
-use crate::distribution::{Continuous, ContinuousCDF};
+use crate::distribution::{Continuous, ContinuousCDF, ParametrizationError as ParamError};
 use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
+use thiserror::Error;
+
+#[derive(Clone, PartialEq, Debug, Error)]
+pub enum GammaError {
+    #[error("shape must be finite, positive, and not nan")]
+    InvalidShape(#[source] ParamError<f64>),
+    #[error("shape must be finite, positive, and not nan")]
+    InvalidRate(#[source] ParamError<f64>),
+    #[error("rate of {0} is degenerate")]
+    DegenerateRate(f64),
+    #[error("shape of {0} is degenerate")]
+    DegenerateShape(f64),
+}
+
+impl From<super::negative_binomial::NegativeBinomialError> for GammaError {
+    fn from(value: super::negative_binomial::NegativeBinomialError) -> Self {
+        use super::negative_binomial::NegativeBinomialError::*;
+        match value {
+            InvalidMean(e) => Self::InvalidShape(e),
+            InvalidProbability(p) => {
+                if p.is_nan() {
+                    Self::InvalidRate(ParamError::ExpectedNotNan)
+                } else {
+                    Self::InvalidRate(ParamError::ExpectedPositive(p / (1.0 - p)))
+                }
+            }
+            InvalidSuccessCount(e) => Self::InvalidRate(e.into()),
+            DegenerateMean(m) => Self::DegenerateShape(m),
+            DegenerateProbability(p) => Self::DegenerateRate(p / (1.0 - p)),
+            DegenerateSuccessCount(r) => Self::DegenerateRate(r),
+        }
+    }
+}
 
 /// Implements the [Gamma](https://en.wikipedia.org/wiki/Gamma_distribution)
 /// distribution

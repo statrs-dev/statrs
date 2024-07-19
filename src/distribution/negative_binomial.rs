@@ -1,9 +1,28 @@
-use crate::distribution::{self, poisson, Discrete, DiscreteCDF};
+use crate::distribution::{
+    self, poisson, Discrete, DiscreteCDF, ParametrizationError as ParamError,
+};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
+use thiserror::Error;
+
+#[derive(Clone, PartialEq, Debug, Error)]
+pub enum NegativeBinomialError {
+    #[error("mean must be finite, positive, and not nan")]
+    InvalidMean(#[source] ParamError<f64>),
+    #[error("success_count, `r`, must be positive")]
+    InvalidSuccessCount(#[source] ParamError<u64>),
+    #[error("sample probability, `p`, must represent a probability")]
+    InvalidProbability(f64),
+    #[error("mean of {0} is degenerate")]
+    DegenerateMean(f64),
+    #[error("success_count, `r`, of {0} is degenerate")]
+    DegenerateSuccessCount(f64),
+    #[error("probability of {0} is degenerate")]
+    DegenerateProbability(f64),
+}
 
 /// Implements the
 /// [negative binomial](http://en.wikipedia.org/wiki/Negative_binomial_distribution)

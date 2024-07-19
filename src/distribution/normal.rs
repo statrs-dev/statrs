@@ -1,9 +1,22 @@
-use crate::distribution::{ziggurat, Continuous, ContinuousCDF};
+use crate::distribution::{
+    ziggurat, Continuous, ContinuousCDF, ParametrizationError as ParamError,
+};
 use crate::function::erf;
 use crate::statistics::*;
 use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
+use thiserror::Error;
+
+#[derive(Clone, PartialEq, Debug, Error)]
+pub enum NormalError {
+    #[error("variance must be positive and not nan")]
+    InvalidStandardDeviation(#[source] ParamError<f64>),
+    #[error("location must be finite and not nan")]
+    InvalidLocation(#[source] ParamError<f64>),
+    #[error("variance of {0} is degenerate")]
+    DegenerateVariance(f64),
+}
 
 /// Implements the [Normal](https://en.wikipedia.org/wiki/Normal_distribution)
 /// distribution
