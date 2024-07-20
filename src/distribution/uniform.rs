@@ -61,6 +61,23 @@ impl Uniform {
             (true, true, true) => Ok(Uniform { min, max }),
         }
     }
+
+    /// Constructs a new standard uniform distribution with 
+    /// a lower bound 0 and an upper bound of 1.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Uniform;
+    ///
+    /// let uniform = Uniform::standard();
+    /// ```
+    pub fn standard() -> Self {
+        Self {
+            min: 0.0,
+            max: 1.0,
+        }
+    }
 }
 
 impl std::fmt::Display for Uniform {
