@@ -19,7 +19,7 @@ path = "src/lib.rs"
 
 [dependencies]
 rand = "0.8"
-nalgebra = { version = "0.32", features = ["rand"] }
+nalgebra = { version = "0.33", features = ["rand"] }
 approx = "0.5.0"
 num-traits = "0.2.14"
 
