@@ -21,6 +21,7 @@ pub fn is_valid_multinomial(arr: &[f64], incl_zero: bool) -> bool {
 /// Evaluates to `None` if
 /// - provided interval has lower bound greater than upper bound
 /// - function found not semi-monotone on the provided interval containing `z`
+///
 /// Evaluates to `Some(k)`, where `k` satisfies the search criteria
 pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
     f: impl Fn(&K) -> T,

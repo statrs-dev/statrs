@@ -19,11 +19,11 @@ path = "src/lib.rs"
 
 [dependencies]
 rand = "0.8"
-nalgebra = { version = "0.32", default_features = false, features = ["rand", "std"] }
+nalgebra = { version = "0.32", default-features = false, features = ["rand", "std"] }
 approx = "0.5.0"
 num-traits = "0.2.14"
 
 [dev-dependencies]
 criterion = "0.3.3"
 anyhow = "1.0"
-nalgebra = { version = "0.32", default_features = false, features = ["macros"] }
+nalgebra = { version = "0.32", default-features = false, features = ["macros"] }
