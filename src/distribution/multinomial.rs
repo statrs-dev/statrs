@@ -2,7 +2,7 @@ use crate::distribution::Discrete;
 use crate::function::factorial;
 use crate::statistics::*;
 use crate::Result;
-use nalgebra::{Const, DMatrix, DVector, Dim, Dyn, OVector};
+use nalgebra::{Const, DVector, Dim, Dyn, OMatrix, OVector};
 use rand::Rng;
 
 /// Implements the
@@ -51,14 +51,14 @@ impl Multinomial<Dyn> {
     /// ```
     /// use statrs::distribution::Multinomial;
     ///
-    /// let mut result = Multinomial::new(&[0.0, 1.0, 2.0], 3);
+    /// let mut result = Multinomial::new(vec![0.0, 1.0, 2.0], 3);
     /// assert!(result.is_ok());
     ///
-    /// result = Multinomial::new(&[0.0, -1.0, 2.0], 3);
+    /// result = Multinomial::new(vec![0.0, -1.0, 2.0], 3);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(p: &[f64], n: u64) -> Result<Self> {
-        Self::new_from_nalgebra(p.to_vec().into(), n)
+    pub fn new(p: Vec<f64>, n: u64) -> Result<Self> {
+        Self::new_from_nalgebra(p.into(), n)
     }
 }
 
@@ -70,7 +70,10 @@ where
     pub fn new_from_nalgebra(mut p: OVector<f64, D>, n: u64) -> Result<Self> {
         match super::internal::check_multinomial(&p, true) {
             Err(e) => Err(e),
-            Ok(_) => Ok(Self { p, n }),
+            Ok(_) => {
+                p.unscale_mut(p.lp_norm(1));
+                Ok(Self { p, n })
+            }
         }
     }
 
@@ -154,10 +157,11 @@ where
     }
 }
 
-impl<D> VarianceN<DMatrix<f64>> for Multinomial<D>
+impl<D> VarianceN<OMatrix<f64, D, D>> for Multinomial<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator:
+        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
 {
     /// Returns the variance of the multinomial distribution
     ///
@@ -169,13 +173,21 @@ where
     ///
     /// where `n` is the number of trials, `p_i` is the `i`th probability,
     /// and `k` is the total number of probabilities
-    fn variance(&self) -> Option<DMatrix<f64>> {
-        let cov: Vec<_> = self
-            .p
-            .iter()
-            .map(|x| x * self.n as f64 * (1.0 - x))
-            .collect();
-        Some(DMatrix::from_diagonal(&DVector::from_vec(cov)))
+    fn variance(&self) -> Option<OMatrix<f64, D, D>> {
+        let mut cov = OMatrix::from_diagonal(&self.p.map(|x| x * (1.0 - x)));
+        let mut offdiag = |x: usize, y: usize| {
+            let elt = -self.p[x] * self.p[y];
+            // cov[(x, y)] = elt;
+            cov[(y, x)] = elt;
+        };
+
+        for i in 0..self.p.len() {
+            for j in 0..i {
+                offdiag(i, j);
+            }
+        }
+        cov.fill_lower_triangle_with_upper_triangle();
+        Some(cov.scale(self.n as f64))
     }
 }
 
@@ -200,10 +212,11 @@ where
 //     }
 // }
 
-impl<'a, D> Discrete<&'a [u64], f64> for Multinomial<D>
+impl<'a, D> Discrete<&'a OVector<u64, D>, f64> for Multinomial<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator:
+        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
 {
     /// Calculates the probability mass function for the multinomial
     /// distribution
@@ -212,8 +225,7 @@ where
     ///
     /// # Panics
     ///
-    /// If the elements in `x` do not sum to `n` or if the length of `x` is not
-    /// equivalent to the length of `p`
+    /// If length of `x` is not equal to length of `p`
     ///
     /// # Formula
     ///
@@ -224,14 +236,14 @@ where
     /// where `n` is the number of trials, `p_i` is the `i`th probability,
     /// `x_i` is the `i`th `x` value, and `k` is the total number of
     /// probabilities
-    fn pmf(&self, x: &[u64]) -> f64 {
+    fn pmf(&self, x: &OVector<u64, D>) -> f64 {
         if self.p.len() != x.len() {
             panic!("Expected x and p to have equal lengths.");
         }
         if x.iter().sum::<u64>() != self.n {
             return 0.0;
         }
-        let coeff = factorial::multinomial(self.n, x);
+        let coeff = factorial::multinomial(self.n, x.as_slice());
         let val = coeff
             * self
                 .p
@@ -248,8 +260,7 @@ where
     ///
     /// # Panics
     ///
-    /// If the elements in `x` do not sum to `n` or if the length of `x` is not
-    /// equivalent to the length of `p`
+    /// If length of `x` is not equal to length of `p`
     ///
     /// # Formula
     ///
@@ -260,14 +271,14 @@ where
     /// where `n` is the number of trials, `p_i` is the `i`th probability,
     /// `x_i` is the `i`th `x` value, and `k` is the total number of
     /// probabilities
-    fn ln_pmf(&self, x: &[u64]) -> f64 {
+    fn ln_pmf(&self, x: &OVector<u64, D>) -> f64 {
         if self.p.len() != x.len() {
             panic!("Expected x and p to have equal lengths.");
         }
         if x.iter().sum::<u64>() != self.n {
             return f64::NEG_INFINITY;
         }
-        let coeff = factorial::multinomial(self.n, x).ln();
+        let coeff = factorial::multinomial(self.n, x.as_slice()).ln();
         let val = coeff
             + self
                 .p
