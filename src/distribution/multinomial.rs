@@ -290,142 +290,210 @@ where
     }
 }
 
-// TODO: fix tests
-// #[rustfmt::skip]
-// #[cfg(test)]
-// mod tests {
-//     use crate::statistics::*;
-//     use crate::distribution::{Discrete, Multinomial};
+#[rustfmt::skip]
+#[cfg(test)]
+mod tests {
+    use crate::{
+        distribution::{Discrete, Multinomial},
+        statistics::{MeanN, VarianceN},
+    };
+    use nalgebra::{dmatrix, dvector, vector, DimMin, Dyn, OVector};
+    use std::fmt::{Debug, Display};
 
-//     fn try_create(p: &[f64], n: u64) -> Multinomial {
-//         let dist = Multinomial::new(p, n);
-//         assert!(dist.is_ok());
-//         dist.unwrap()
-//     }
+    fn try_create<D>(p: OVector<f64, D>, n: u64) -> Multinomial<D>
+    where
+        D: DimMin<D, Output = D>,
+        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    {
+        let mvn = Multinomial::new_from_nalgebra(p, n);
+        assert!(mvn.is_ok());
+        mvn.unwrap()
+    }
 
-//     fn create_case(p: &[f64], n: u64) {
-//         let dist = try_create(p, n);
-//         assert_eq!(dist.p(), p);
-//         assert_eq!(dist.n(), n);
-//     }
+    fn bad_create_case<D>(p: OVector<f64, D>, n: u64) -> crate::StatsError
+    where
+        D: DimMin<D, Output = D>,
+        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    {
+        let dd = Multinomial::new_from_nalgebra(p, n);
+        assert!(dd.is_err());
+        dd.unwrap_err()
+    }
 
-//     fn bad_create_case(p: &[f64], n: u64) {
-//         let dist = Multinomial::new(p, n);
-//         assert!(dist.is_err());
-//     }
+    fn test_almost<F, T, D>(p: OVector<f64, D>, n: u64, expected: T, acc: f64, eval: F)
+    where
+        T: Debug + Display + approx::RelativeEq<Epsilon = f64>,
+        F: FnOnce(Multinomial<D>) -> T,
+        D: DimMin<D, Output = D>,
+        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    {
+        let dd = try_create(p, n);
+        let x = eval(dd);
+        assert_relative_eq!(expected, x, epsilon = acc);
+    }
 
-//     fn test_case<F>(p: &[f64], n: u64, expected: &[f64], eval: F)
-//         where F: Fn(Multinomial) -> Vec<f64>
-//     {
-//         let dist = try_create(p, n);
-//         let x = eval(dist);
-//         assert_eq!(*expected, *x);
-//     }
+    #[test]
+    fn test_create() {
+        assert_relative_eq!(
+            *try_create(vector![1.0, 1.0, 1.0], 4).p(),
+            vector![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]
+        );
+        try_create(dvector![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 4);
+    }
 
-//     fn test_almost<F>(p: &[f64], n: u64, expected: &[f64], acc: f64, eval: F)
-//         where F: Fn(Multinomial) -> Vec<f64>
-//     {
-//         let dist = try_create(p, n);
-//         let x = eval(dist);
-//         assert_eq!(expected.len(), x.len());
-//         for i in 0..expected.len() {
-//             assert_almost_eq!(expected[i], x[i], acc);
-//         }
-//     }
+    #[test]
+    fn test_bad_create() {
+        assert_eq!(
+            bad_create_case(vector![-1.0, 2.0], 4),
+            crate::StatsError::BadParams
+        );
 
-//     fn test_almost_sr<F>(p: &[f64], n: u64, expected: f64, acc:f64, eval: F)
-//         where F: Fn(Multinomial) -> f64
-//     {
-//         let dist = try_create(p, n);
-//         let x = eval(dist);
-//         assert_almost_eq!(expected, x, acc);
-//     }
+        assert_eq!(
+            bad_create_case(vector![0.0, 0.0], 4),
+            crate::StatsError::BadParams
+        );
+        assert_eq!(
+            bad_create_case(vector![1.0, f64::NAN], 4),
+            crate::StatsError::BadParams
+        );
+    }
 
-//     #[test]
-//     fn test_create() {
-//         create_case(&[1.0, 1.0, 1.0], 4);
-//         create_case(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 4);
-//     }
+    #[test]
+    fn test_mean() {
+        let mean = |x: Multinomial<_>| x.mean().unwrap();
+        test_almost(dvector![0.3, 0.7], 5, dvector![1.5, 3.5], 1e-12, mean);
+        test_almost(
+            dvector![0.1, 0.3, 0.6],
+            10,
+            dvector![1.0, 3.0, 6.0],
+            1e-12,
+            mean,
+        );
+        test_almost(
+            dvector![1.0, 3.0, 6.0],
+            10,
+            dvector![1.0, 3.0, 6.0],
+            1e-12,
+            mean,
+        );
+        test_almost(
+            dvector![0.15, 0.35, 0.3, 0.2],
+            20,
+            dvector![3.0, 7.0, 6.0, 4.0],
+            1e-12,
+            mean,
+        );
+    }
 
-//     #[test]
-//     fn test_bad_create() {
-//         bad_create_case(&[-1.0, 1.0], 4);
-//         bad_create_case(&[0.0, 0.0], 4);
-//     }
+    #[test]
+    fn test_variance() {
+        let variance = |x: Multinomial<_>| x.variance().unwrap();
+        test_almost(
+            dvector![0.3, 0.7],
+            5,
+            dmatrix![1.05, -1.05; 
+                    -1.05,  1.05],
+            1e-15,
+            variance,
+        );
+        test_almost(
+            dvector![0.1, 0.3, 0.6],
+            10,
+            dmatrix![0.9, -0.3, -0.6;
+                    -0.3,  2.1, -1.8;
+                    -0.6, -1.8,  2.4;
+            ],
+            1e-15,
+            variance,
+        );
+        test_almost(
+            dvector![0.15, 0.35, 0.3, 0.2],
+            20,
+            dmatrix![2.55, -1.05, -0.90, -0.60;
+                    -1.05,  4.55, -2.10, -1.40;
+                    -0.90, -2.10,  4.20, -1.20;
+                    -0.60, -1.40, -1.20,  3.20;
+            ],
+            1e-15,
+            variance,
+        );
+    }
 
-//     #[test]
-//     fn test_mean() {
-//         let mean = |x: Multinomial| x.mean().unwrap();
-//         test_case(&[0.3, 0.7], 5, &[1.5, 3.5], mean);
-//         test_case(&[0.1, 0.3, 0.6], 10, &[1.0, 3.0, 6.0], mean);
-//         test_case(&[0.15, 0.35, 0.3, 0.2], 20, &[3.0, 7.0, 6.0, 4.0], mean);
-//     }
+    //     // #[test]
+    //     // fn test_skewness() {
+    //     //     let skewness = |x: Multinomial| x.skewness().unwrap();
+    //     //     test_almost(&[0.3, 0.7], 5, &[0.390360029179413, -0.390360029179413], 1e-15, skewness);
+    //     //     test_almost(&[0.1, 0.3, 0.6], 10, &[0.843274042711568, 0.276026223736942, -0.12909944487358], 1e-15, skewness);
+    //     //     test_almost(&[0.15, 0.35, 0.3, 0.2], 20, &[0.438357003759605, 0.140642169281549, 0.195180014589707, 0.335410196624968], 1e-15, skewness);
+    //     // }
 
-//     #[test]
-//     fn test_variance() {
-//         let variance = |x: Multinomial| x.variance().unwrap();
-//         test_almost(&[0.3, 0.7], 5, &[1.05, 1.05], 1e-15, variance);
-//         test_almost(&[0.1, 0.3, 0.6], 10, &[0.9, 2.1, 2.4], 1e-15, variance);
-//         test_almost(&[0.15, 0.35, 0.3, 0.2], 20, &[2.55, 4.55, 4.2, 3.2], 1e-15, variance);
-//     }
+    #[test]
+    fn test_pmf() {
+        let pmf = |arg: OVector<u64, Dyn>| move |x: Multinomial<_>| x.pmf(&arg);
+        test_almost(
+            dvector![0.3, 0.7],
+            10,
+            0.121060821,
+            1e-15,
+            pmf(dvector![1, 9]),
+        );
+        test_almost(
+            dvector![0.1, 0.3, 0.6],
+            10,
+            0.105815808,
+            1e-15,
+            pmf(dvector![1, 3, 6]),
+        );
+        test_almost(
+            dvector![0.15, 0.35, 0.3, 0.2],
+            10,
+            0.000145152,
+            1e-15,
+            pmf(dvector![1, 1, 1, 7]),
+        );
+    }
 
-//     // #[test]
-//     // fn test_skewness() {
-//     //     let skewness = |x: Multinomial| x.skewness().unwrap();
-//     //     test_almost(&[0.3, 0.7], 5, &[0.390360029179413, -0.390360029179413], 1e-15, skewness);
-//     //     test_almost(&[0.1, 0.3, 0.6], 10, &[0.843274042711568, 0.276026223736942, -0.12909944487358], 1e-15, skewness);
-//     //     test_almost(&[0.15, 0.35, 0.3, 0.2], 20, &[0.438357003759605, 0.140642169281549, 0.195180014589707, 0.335410196624968], 1e-15, skewness);
-//     // }
+    //     #[test]
+    //     #[should_panic]
+    //     fn test_pmf_x_wrong_length() {
+    //         let pmf = |arg: &[u64]| move |x: Multinomial| x.pmf(arg);
+    //         let n = Multinomial::new(&[0.3, 0.7], 10).unwrap();
+    //         n.pmf(&[1]);
+    //     }
 
-//     #[test]
-//     fn test_pmf() {
-//         let pmf = |arg: &[u64]| move |x: Multinomial| x.pmf(arg);
-//         test_almost_sr(&[0.3, 0.7], 10, 0.121060821, 1e-15, pmf(&[1, 9]));
-//         test_almost_sr(&[0.1, 0.3, 0.6], 10, 0.105815808, 1e-15, pmf(&[1, 3, 6]));
-//         test_almost_sr(&[0.15, 0.35, 0.3, 0.2], 10, 0.000145152, 1e-15, pmf(&[1, 1, 1, 7]));
-//     }
+    //     #[test]
+    //     #[should_panic]
+    //     fn test_pmf_x_wrong_sum() {
+    //         let pmf = |arg: &[u64]| move |x: Multinomial| x.pmf(arg);
+    //         let n = Multinomial::new(&[0.3, 0.7], 10).unwrap();
+    //         n.pmf(&[1, 3]);
+    //     }
 
-//     #[test]
-//     #[should_panic]
-//     fn test_pmf_x_wrong_length() {
-//         let pmf = |arg: &[u64]| move |x: Multinomial| x.pmf(arg);
-//         let n = Multinomial::new(&[0.3, 0.7], 10).unwrap();
-//         n.pmf(&[1]);
-//     }
+    //     #[test]
+    //     fn test_ln_pmf() {
+    //         let large_p = &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
+    //         let n = Multinomial::new(large_p, 45).unwrap();
+    //         let x = &[1, 2, 3, 4, 5, 6, 7, 8, 9];
+    //         assert_almost_eq!(n.pmf(x).ln(), n.ln_pmf(x), 1e-13);
+    //         let n2 = Multinomial::new(large_p, 18).unwrap();
+    //         let x2 = &[1, 1, 1, 2, 2, 2, 3, 3, 3];
+    //         assert_almost_eq!(n2.pmf(x2).ln(), n2.ln_pmf(x2), 1e-13);
+    //         let n3 = Multinomial::new(large_p, 51).unwrap();
+    //         let x3 = &[5, 6, 7, 8, 7, 6, 5, 4, 3];
+    //         assert_almost_eq!(n3.pmf(x3).ln(), n3.ln_pmf(x3), 1e-13);
+    //     }
 
-//     #[test]
-//     #[should_panic]
-//     fn test_pmf_x_wrong_sum() {
-//         let pmf = |arg: &[u64]| move |x: Multinomial| x.pmf(arg);
-//         let n = Multinomial::new(&[0.3, 0.7], 10).unwrap();
-//         n.pmf(&[1, 3]);
-//     }
+    //     #[test]
+    //     #[should_panic]
+    //     fn test_ln_pmf_x_wrong_length() {
+    //         let n = Multinomial::new(&[0.3, 0.7], 10).unwrap();
+    //         n.ln_pmf(&[1]);
+    //     }
 
-//     #[test]
-//     fn test_ln_pmf() {
-//         let large_p = &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
-//         let n = Multinomial::new(large_p, 45).unwrap();
-//         let x = &[1, 2, 3, 4, 5, 6, 7, 8, 9];
-//         assert_almost_eq!(n.pmf(x).ln(), n.ln_pmf(x), 1e-13);
-//         let n2 = Multinomial::new(large_p, 18).unwrap();
-//         let x2 = &[1, 1, 1, 2, 2, 2, 3, 3, 3];
-//         assert_almost_eq!(n2.pmf(x2).ln(), n2.ln_pmf(x2), 1e-13);
-//         let n3 = Multinomial::new(large_p, 51).unwrap();
-//         let x3 = &[5, 6, 7, 8, 7, 6, 5, 4, 3];
-//         assert_almost_eq!(n3.pmf(x3).ln(), n3.ln_pmf(x3), 1e-13);
-//     }
-
-//     #[test]
-//     #[should_panic]
-//     fn test_ln_pmf_x_wrong_length() {
-//         let n = Multinomial::new(&[0.3, 0.7], 10).unwrap();
-//         n.ln_pmf(&[1]);
-//     }
-
-//     #[test]
-//     #[should_panic]
-//     fn test_ln_pmf_x_wrong_sum() {
-//         let n = Multinomial::new(&[0.3, 0.7], 10).unwrap();
-//         n.ln_pmf(&[1, 3]);
-//     }
-// }
+    //     #[test]
+    //     #[should_panic]
+    //     fn test_ln_pmf_x_wrong_sum() {
+    //         let n = Multinomial::new(&[0.3, 0.7], 10).unwrap();
+    //         n.ln_pmf(&[1, 3]);
+    //     }
+}
