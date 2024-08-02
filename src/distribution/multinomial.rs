@@ -16,10 +16,10 @@ use rand::Rng;
 /// ```
 /// use statrs::distribution::Multinomial;
 /// use statrs::statistics::MeanN;
-/// use nalgebra::DVector;
+/// use nalgebra::vector;
 ///
-/// let n = Multinomial::new(&[0.3, 0.7], 5).unwrap();
-/// assert_eq!(n.mean().unwrap(), DVector::from_vec(vec![1.5, 3.5]));
+/// let n = Multinomial::new_from_nalgebra(vector![0.3, 0.7], 5).unwrap();
+/// assert_eq!(n.mean().unwrap(), (vector![1.5, 3.5]));
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct Multinomial<D>
@@ -84,9 +84,10 @@ where
     ///
     /// ```
     /// use statrs::distribution::Multinomial;
+    /// use nalgebra::dvector;
     ///
-    /// let n = Multinomial::new(&[0.0, 1.0, 2.0], 3).unwrap();
-    /// assert_eq!(n.p(), [0.0, 1.0, 2.0]);
+    /// let n = Multinomial::new(vec![0.0, 1.0, 2.0], 3).unwrap();
+    /// assert_eq!(*n.p(), dvector![0.0, 1.0/3.0, 2.0/3.0]);
     /// ```
     pub fn p(&self) -> &OVector<f64, D> {
         &self.p
@@ -100,7 +101,7 @@ where
     /// ```
     /// use statrs::distribution::Multinomial;
     ///
-    /// let n = Multinomial::new(&[0.0, 1.0, 2.0], 3).unwrap();
+    /// let n = Multinomial::new(vec![0.0, 1.0, 2.0], 3).unwrap();
     /// assert_eq!(n.n(), 3);
     /// ```
     pub fn n(&self) -> u64 {
