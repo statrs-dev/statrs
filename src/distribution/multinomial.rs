@@ -1,8 +1,8 @@
 use crate::distribution::Discrete;
 use crate::function::factorial;
 use crate::statistics::*;
-use crate::{Result, StatsError};
-use ::nalgebra::{DMatrix, DVector};
+use crate::Result;
+use nalgebra::{Const, DMatrix, DVector, Dim, Dyn, OVector};
 use rand::Rng;
 
 /// Implements the
@@ -22,12 +22,18 @@ use rand::Rng;
 /// assert_eq!(n.mean().unwrap(), DVector::from_vec(vec![1.5, 3.5]));
 /// ```
 #[derive(Debug, Clone, PartialEq)]
-pub struct Multinomial {
-    p: Vec<f64>,
+pub struct Multinomial<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+{
+    /// normalized probabilities for each species
+    p: OVector<f64, D>,
+    /// count of trials
     n: u64,
 }
 
-impl Multinomial {
+impl Multinomial<Dyn> {
     /// Constructs a new multinomial distribution with probabilities `p`
     /// and `n` number of trials.
     ///
@@ -51,11 +57,20 @@ impl Multinomial {
     /// result = Multinomial::new(&[0.0, -1.0, 2.0], 3);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(p: &[f64], n: u64) -> Result<Multinomial> {
-        if !super::internal::is_valid_multinomial(p, true) {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(Multinomial { p: p.to_vec(), n })
+    pub fn new(p: &[f64], n: u64) -> Result<Self> {
+        Self::new_from_nalgebra(p.to_vec().into(), n)
+    }
+}
+
+impl<D> Multinomial<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+{
+    pub fn new_from_nalgebra(mut p: OVector<f64, D>, n: u64) -> Result<Self> {
+        match super::internal::check_multinomial(&p, true) {
+            Err(e) => Err(e),
+            Ok(_) => Ok(Self { p, n }),
         }
     }
 
@@ -70,7 +85,7 @@ impl Multinomial {
     /// let n = Multinomial::new(&[0.0, 1.0, 2.0], 3).unwrap();
     /// assert_eq!(n.p(), [0.0, 1.0, 2.0]);
     /// ```
-    pub fn p(&self) -> &[f64] {
+    pub fn p(&self) -> &OVector<f64, D> {
         &self.p
     }
 
@@ -90,16 +105,24 @@ impl Multinomial {
     }
 }
 
-impl std::fmt::Display for Multinomial {
+impl<D> std::fmt::Display for Multinomial<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Multinom({:#?},{})", self.p, self.n)
     }
 }
 
-impl ::rand::distributions::Distribution<Vec<f64>> for Multinomial {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Vec<f64> {
-        let p_cdf = super::categorical::prob_mass_to_cdf(self.p());
-        let mut res = vec![0.0; self.p.len()];
+impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for Multinomial<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+{
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
+        let p_cdf = super::categorical::prob_mass_to_cdf(self.p().as_slice());
+        let mut res = OVector::zeros_generic(self.p.shape_generic().0, Const::<1>);
         for _ in 0..self.n {
             let i = super::categorical::sample_unchecked(rng, &p_cdf);
             let el = res.get_mut(i as usize).unwrap();
@@ -109,7 +132,11 @@ impl ::rand::distributions::Distribution<Vec<f64>> for Multinomial {
     }
 }
 
-impl MeanN<DVector<f64>> for Multinomial {
+impl<D> MeanN<DVector<f64>> for Multinomial<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+{
     /// Returns the mean of the multinomial distribution
     ///
     /// # Formula
@@ -127,7 +154,11 @@ impl MeanN<DVector<f64>> for Multinomial {
     }
 }
 
-impl VarianceN<DMatrix<f64>> for Multinomial {
+impl<D> VarianceN<DMatrix<f64>> for Multinomial<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+{
     /// Returns the variance of the multinomial distribution
     ///
     /// # Formula
@@ -169,7 +200,11 @@ impl VarianceN<DMatrix<f64>> for Multinomial {
 //     }
 // }
 
-impl<'a> Discrete<&'a [u64], f64> for Multinomial {
+impl<'a, D> Discrete<&'a [u64], f64> for Multinomial<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+{
     /// Calculates the probability mass function for the multinomial
     /// distribution
     /// with the given `x`'s corresponding to the probabilities for this

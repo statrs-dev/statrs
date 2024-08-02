@@ -1,4 +1,7 @@
+use nalgebra::{Dim, OVector};
 use num_traits::Num;
+
+use crate::StatsError;
 
 /// Returns true if there are no elements in `x` in `arr`
 /// such that `x <= 0.0` or `x` is `f64::NAN` and `sum(arr) > 0.0`.
@@ -12,6 +15,36 @@ pub fn is_valid_multinomial(arr: &[f64], incl_zero: bool) -> bool {
         sum += elt;
     }
     sum != 0.0
+}
+
+pub fn check_multinomial<D>(arr: &OVector<f64, D>, accept_zeroes: bool) -> crate::Result<()>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+{
+    if arr.len() < 2 {
+        return Err(StatsError::BadParams);
+    }
+    let mut sum = 0.0;
+    for &x in arr.iter() {
+        if x.is_nan() {
+            return Err(StatsError::BadParams);
+        } else if x.is_infinite() {
+            return Err(StatsError::BadParams);
+        } else if x < 0.0 {
+            return Err(StatsError::BadParams);
+        } else if x == 0.0 && !accept_zeroes {
+            return Err(StatsError::BadParams);
+        } else {
+            sum += x;
+        }
+    }
+
+    if sum != 0.0 {
+        Ok(())
+    } else {
+        Err(StatsError::BadParams)
+    }
 }
 
 /// Implements univariate function bisection searching for criteria
@@ -225,12 +258,16 @@ pub mod test {
 
         let invalid = [1.0, f64::NAN, 3.0];
         assert!(!is_valid_multinomial(&invalid, true));
+        assert!(check_multinomial(&invalid.to_vec().into(), true).is_err());
         let invalid2 = [-2.0, 5.0, 1.0, 6.2];
         assert!(!is_valid_multinomial(&invalid2, true));
+        assert!(check_multinomial(&invalid2.to_vec().into(), true).is_err());
         let invalid3 = [0.0, 0.0, 0.0];
         assert!(!is_valid_multinomial(&invalid3, true));
+        assert!(check_multinomial(&invalid3.to_vec().into(), true).is_err());
         let valid = [5.2, 0.0, 1e-15, 1000000.12];
         assert!(is_valid_multinomial(&valid, true));
+        assert!(check_multinomial(&valid.to_vec().into(), true).is_ok());
     }
 
     #[test]
