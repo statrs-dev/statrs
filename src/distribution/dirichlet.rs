@@ -348,14 +348,15 @@ fn is_valid_alpha(a: &[f64]) -> bool {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use core::fmt::Debug;
+    use std::fmt::{Debug, Display};
 
-    use crate::function::gamma;
-    use nalgebra::{dmatrix, dvector, matrix, vector, DimMin, OMatrix, OVector};
+    use nalgebra::{
+        dmatrix, dvector, matrix, vector, Const, DimMin, Dyn, Matrix, OMatrix, OVector, VecStorage,
+    };
 
-    use super::*;
+    use super::is_valid_alpha;
     use crate::{
-        distribution::Continuous,
+        distribution::{Continuous, Dirichlet},
         statistics::{Max, MeanN, Min, Mode, VarianceN},
     };
 
@@ -378,15 +379,16 @@ mod tests {
         assert!(dd.is_err());
     }
 
-    fn test_almost<F, D>(alpha: OVector<f64, D>, expected: f64, acc: f64, eval: F)
+    fn test_almost<F, T, D>(alpha: OVector<f64, D>, expected: T, acc: f64, eval: F)
     where
-        F: FnOnce(Dirichlet<D>) -> f64,
+        T: Debug + Display + approx::RelativeEq<Epsilon = f64>,
+        F: FnOnce(Dirichlet<D>) -> T,
         D: DimMin<D, Output = D>,
         nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
     {
         let dd = try_create(alpha);
         let x = eval(dd);
-        assert_almost_eq!(expected, x, acc);
+        assert_relative_eq!(expected, x, epsilon = acc);
     }
 
     #[test]
@@ -415,26 +417,51 @@ mod tests {
         bad_create_case(vector![0.001, f64::INFINITY, 3756.0]); // moved to bad case as this is degenerate
     }
 
-    // #[test]
-    // fn test_mean() {
-    //     let n = Dirichlet::new_with_param(0.3, 5).unwrap();
-    //     let res = n.mean();
-    //     for x in res {
-    //         assert_eq!(x, 0.3 / 1.5);
-    //     }
-    // }
+    #[test]
+    fn test_mean() {
+        let mean = |dd: Dirichlet<_>| dd.mean().unwrap();
 
-    // #[test]
-    // fn test_variance() {
-    //     let alpha = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
-    //     let sum = alpha.iter().fold(0.0, |acc, x| acc + x);
-    //     let n = Dirichlet::new(&alpha).unwrap();
-    //     let res = n.variance();
-    //     for i in 1..11 {
-    //         let f = i as f64;
-    //         assert_almost_eq!(res[i-1], f * (sum - f) / (sum * sum * (sum + 1.0)), 1e-15);
-    //     }
-    // }
+        test_almost(vec![0.5; 5].into(), vec![1.0 / 5.0; 5].into(), 1e-15, mean);
+
+        test_almost(
+            dvector![0.1, 0.2, 0.3, 0.4],
+            dvector![0.1, 0.2, 0.3, 0.4],
+            1e-15,
+            mean,
+        );
+
+        test_almost(
+            dvector![1.0, 2.0, 3.0, 4.0],
+            dvector![0.1, 0.2, 0.3, 0.4],
+            1e-15,
+            mean,
+        );
+    }
+
+    #[test]
+    fn test_variance() {
+        let variance = |dd: Dirichlet<_>| dd.variance().unwrap();
+
+        test_almost(
+            dvector![1.0, 2.0],
+            dmatrix![0.055555555555555, -0.055555555555555;
+                    -0.055555555555555,  0.055555555555555;
+            ],
+            1e-15,
+            variance,
+        );
+
+        test_almost(
+            dvector![0.1, 0.2, 0.3, 0.4],
+            dmatrix![0.045, -0.010, -0.015, -0.020;
+                    -0.010,  0.080, -0.030, -0.040;
+                    -0.015, -0.030,  0.105, -0.060;
+                    -0.020, -0.040, -0.060,  0.120;
+            ],
+            1e-15,
+            variance,
+        );
+    }
 
     // #[test]
     // fn test_std_dev() {
