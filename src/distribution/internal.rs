@@ -27,6 +27,7 @@ where
     }
     let mut sum = 0.0;
     for &x in arr.iter() {
+        #[allow(clippy::if_same_then_else)]
         if x.is_nan() {
             return Err(StatsError::BadParams);
         } else if x.is_infinite() {
