@@ -4,6 +4,7 @@ use crate::{Result, StatsError};
 use rand::distributions::Uniform as RandUniform;
 use rand::Rng;
 use std::f64;
+use std::fmt::Debug;
 
 /// Implements the [Continuous
 /// Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous))
@@ -62,7 +63,7 @@ impl Uniform {
         }
     }
 
-    /// Constructs a new standard uniform distribution with 
+    /// Constructs a new standard uniform distribution with
     /// a lower bound 0 and an upper bound of 1.
     ///
     /// # Examples
@@ -73,10 +74,13 @@ impl Uniform {
     /// let uniform = Uniform::standard();
     /// ```
     pub fn standard() -> Self {
-        Self {
-            min: 0.0,
-            max: 1.0,
-        }
+        Self { min: 0.0, max: 1.0 }
+    }
+}
+
+impl Default for Uniform {
+    fn default() -> Self {
+        Self::standard()
     }
 }
 
@@ -513,5 +517,18 @@ mod tests {
             .map(|_| n.sample::<StdRng>(&mut r))
             .all(|v| (min <= v) && (v < max))
         );
+    }
+
+    #[test]
+    fn test_default() {
+        let n = Uniform::default();
+
+        let n_mean = n.mean().unwrap();
+        let n_std  = n.std_dev().unwrap();
+
+        // Check that the mean of the distribution is close to 1 / 2
+        assert_almost_eq!(n_mean, 0.5, 1e-15);
+        // Check that the standard deviation of the distribution is close to 1 / sqrt(12)
+        assert_almost_eq!(n_std, 0.288_675_134_594_812_9, 1e-15);
     }
 }
