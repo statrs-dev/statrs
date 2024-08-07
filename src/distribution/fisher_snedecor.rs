@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::beta;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -41,17 +40,17 @@ impl FisherSnedecor {
     /// use statrs::distribution::FisherSnedecor;
     ///
     /// let mut result = FisherSnedecor::new(1.0, 1.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = FisherSnedecor::new(0.0, 0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(freedom_1: f64, freedom_2: f64) -> Result<FisherSnedecor> {
+    pub fn new(freedom_1: f64, freedom_2: f64) -> Option<FisherSnedecor> {
         if !freedom_1.is_finite() || freedom_1 <= 0.0 || !freedom_2.is_finite() || freedom_2 <= 0.0
         {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(FisherSnedecor {
+            Some(FisherSnedecor {
                 freedom_1,
                 freedom_2,
             })
@@ -369,7 +368,7 @@ mod tests {
 
     fn try_create(freedom_1: f64, freedom_2: f64) -> FisherSnedecor {
         let n = FisherSnedecor::new(freedom_1, freedom_2);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -381,7 +380,7 @@ mod tests {
 
     fn bad_create_case(freedom_1: f64, freedom_2: f64) {
         let n = FisherSnedecor::new(freedom_1, freedom_2);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
      fn get_value<F>(freedom_1: f64, freedom_2: f64, eval: F) -> f64

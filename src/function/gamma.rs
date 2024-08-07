@@ -2,10 +2,8 @@
 //! related functions
 
 use crate::consts;
-use crate::error::StatsError;
 use crate::is_zero;
 use crate::prec;
-use crate::Result;
 use std::f64;
 
 /// Auxiliary variable when evaluating the `gamma_ln` function
@@ -105,7 +103,7 @@ pub fn gamma_ui(a: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// if `a` or `x` are not in `(0, +inf)`
-pub fn checked_gamma_ui(a: f64, x: f64) -> Result<f64> {
+pub fn checked_gamma_ui(a: f64, x: f64) -> Option<f64> {
     checked_gamma_ur(a, x).map(|x| x * gamma(a))
 }
 
@@ -131,7 +129,7 @@ pub fn gamma_li(a: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// if `a` or `x` are not in `(0, +inf)`
-pub fn checked_gamma_li(a: f64, x: f64) -> Result<f64> {
+pub fn checked_gamma_li(a: f64, x: f64) -> Option<f64> {
     checked_gamma_lr(a, x).map(|x| x * gamma(a))
 }
 
@@ -163,15 +161,15 @@ pub fn gamma_ur(a: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// if `a` or `x` are not in `(0, +inf)`
-pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64> {
+pub fn checked_gamma_ur(a: f64, x: f64) -> Option<f64> {
     if a.is_nan() || x.is_nan() {
-        return Ok(f64::NAN);
+        return Some(f64::NAN);
     }
     if a <= 0.0 || a == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("a", 0.0, f64::INFINITY));
+        return None;
     }
     if x <= 0.0 || x == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("x", 0.0, f64::INFINITY));
+        return None;
     }
 
     let eps = 0.000000000000001;
@@ -179,12 +177,12 @@ pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64> {
     let big_inv = 2.22044604925031308085e-16;
 
     if x < 1.0 || x <= a {
-        return Ok(1.0 - gamma_lr(a, x));
+        return Some(1.0 - gamma_lr(a, x));
     }
 
     let mut ax = a * x.ln() - x - ln_gamma(a);
     if ax < -709.78271289338399 {
-        return if a < x { Ok(0.0) } else { Ok(1.0) };
+        return if a < x { Some(0.0) } else { Some(1.0) };
     }
 
     ax = ax.exp();
@@ -226,7 +224,7 @@ pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64> {
             }
         }
     }
-    Ok(ans * ax)
+    Some(ans * ax)
 }
 
 /// Computes the lower incomplete regularized gamma function
@@ -257,15 +255,15 @@ pub fn gamma_lr(a: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// if `a` or `x` are not in `(0, +inf)`
-pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64> {
+pub fn checked_gamma_lr(a: f64, x: f64) -> Option<f64> {
     if a.is_nan() || x.is_nan() {
-        return Ok(f64::NAN);
+        return Some(f64::NAN);
     }
     if a <= 0.0 || a == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("a", 0.0, f64::INFINITY));
+        return None;
     }
     if x <= 0.0 || x == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("x", 0.0, f64::INFINITY));
+        return None;
     }
 
     let eps = 0.000000000000001;
@@ -273,18 +271,18 @@ pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64> {
     let big_inv = 2.22044604925031308085e-16;
 
     if prec::almost_eq(a, 0.0, prec::DEFAULT_F64_ACC) {
-        return Ok(1.0);
+        return Some(1.0);
     }
     if prec::almost_eq(x, 0.0, prec::DEFAULT_F64_ACC) {
-        return Ok(0.0);
+        return Some(0.0);
     }
 
     let ax = a * x.ln() - x - ln_gamma(a);
     if ax < -709.78271289338399 {
         if a < x {
-            return Ok(1.0);
+            return Some(1.0);
         }
-        return Ok(0.0);
+        return Some(0.0);
     }
     if x <= 1.0 || x <= a {
         let mut r2 = a;
@@ -299,7 +297,7 @@ pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64> {
                 break;
             }
         }
-        return Ok(ax.exp() * ans2 / a);
+        return Some(ax.exp() * ans2 / a);
     }
 
     let mut y = 1.0 - a;
@@ -343,7 +341,7 @@ pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64> {
             }
         }
     }
-    Ok(1.0 - ax.exp() * ans)
+    Some(1.0 - ax.exp() * ans)
 }
 
 /// Computes the Digamma function which is defined as the derivative of
@@ -546,22 +544,22 @@ mod tests {
 
     #[test]
     fn test_checked_gamma_lr_a_lower_bound() {
-        assert!(super::checked_gamma_lr(-1.0, 1.0).is_err());
+        assert!(super::checked_gamma_lr(-1.0, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_lr_a_upper_bound() {
-        assert!(super::checked_gamma_lr(f64::INFINITY, 1.0).is_err());
+        assert!(super::checked_gamma_lr(f64::INFINITY, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_lr_x_lower_bound() {
-        assert!(super::checked_gamma_lr(1.0, -1.0).is_err());
+        assert!(super::checked_gamma_lr(1.0, -1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_lr_x_upper_bound() {
-        assert!(super::checked_gamma_lr(1.0, f64::INFINITY).is_err());
+        assert!(super::checked_gamma_lr(1.0, f64::INFINITY).is_none());
     }
 
     #[test]
@@ -607,22 +605,22 @@ mod tests {
 
     #[test]
     fn test_checked_gamma_li_a_lower_bound() {
-        assert!(super::checked_gamma_li(-1.0, 1.0).is_err());
+        assert!(super::checked_gamma_li(-1.0, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_li_a_upper_bound() {
-        assert!(super::checked_gamma_li(f64::INFINITY, 1.0).is_err());
+        assert!(super::checked_gamma_li(f64::INFINITY, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_li_x_lower_bound() {
-        assert!(super::checked_gamma_li(1.0, -1.0).is_err());
+        assert!(super::checked_gamma_li(1.0, -1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_li_x_upper_bound() {
-        assert!(super::checked_gamma_li(1.0, f64::INFINITY).is_err());
+        assert!(super::checked_gamma_li(1.0, f64::INFINITY).is_none());
     }
 
     // TODO: precision testing could be more accurate, borrowed wholesale from Math.NET
@@ -685,22 +683,22 @@ mod tests {
 
     #[test]
     fn test_checked_gamma_ur_a_lower_bound() {
-        assert!(super::checked_gamma_ur(-1.0, 1.0).is_err());
+        assert!(super::checked_gamma_ur(-1.0, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_ur_a_upper_bound() {
-        assert!(super::checked_gamma_ur(f64::INFINITY, 1.0).is_err());
+        assert!(super::checked_gamma_ur(f64::INFINITY, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_ur_x_lower_bound() {
-        assert!(super::checked_gamma_ur(1.0, -1.0).is_err());
+        assert!(super::checked_gamma_ur(1.0, -1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_ur_x_upper_bound() {
-        assert!(super::checked_gamma_ur(1.0, f64::INFINITY).is_err());
+        assert!(super::checked_gamma_ur(1.0, f64::INFINITY).is_none());
     }
 
     #[test]
@@ -746,22 +744,22 @@ mod tests {
 
     #[test]
     fn test_checked_gamma_ui_a_lower_bound() {
-        assert!(super::checked_gamma_ui(-1.0, 1.0).is_err());
+        assert!(super::checked_gamma_ui(-1.0, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_ui_a_upper_bound() {
-        assert!(super::checked_gamma_ui(f64::INFINITY, 1.0).is_err());
+        assert!(super::checked_gamma_ui(f64::INFINITY, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_ui_x_lower_bound() {
-        assert!(super::checked_gamma_ui(1.0, -1.0).is_err());
+        assert!(super::checked_gamma_ui(1.0, -1.0).is_none());
     }
 
     #[test]
     fn test_checked_gamma_ui_x_upper_bound() {
-        assert!(super::checked_gamma_ui(1.0, f64::INFINITY).is_err());
+        assert!(super::checked_gamma_ui(1.0, f64::INFINITY).is_none());
     }
 
     // TODO: precision testing could be more accurate

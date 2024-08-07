@@ -2,7 +2,6 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
 use crate::is_zero;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 
 /// Implements the [Beta](https://en.wikipedia.org/wiki/Beta_distribution)
@@ -40,21 +39,21 @@ impl Beta {
     /// use statrs::distribution::Beta;
     ///
     /// let mut result = Beta::new(2.0, 2.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Beta::new(0.0, 0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(shape_a: f64, shape_b: f64) -> Result<Beta> {
+    pub fn new(shape_a: f64, shape_b: f64) -> Option<Beta> {
         if shape_a.is_nan()
             || shape_b.is_nan()
             || shape_a.is_infinite() && shape_b.is_infinite()
             || shape_a <= 0.0
             || shape_b <= 0.0
         {
-            return Err(StatsError::BadParams);
+            return None;
         };
-        Ok(Beta { shape_a, shape_b })
+        Some(Beta { shape_a, shape_b })
     }
 
     /// Returns the shapeA (α) of the beta distribution

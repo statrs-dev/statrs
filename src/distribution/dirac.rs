@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 
 /// Implements the [Dirac Delta](https://en.wikipedia.org/wiki/Dirac_delta_function#As_a_distribution)
@@ -31,16 +30,16 @@ impl Dirac {
     /// use statrs::distribution::Dirac;
     ///
     /// let mut result = Dirac::new(0.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Dirac::new(f64::NAN);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(v: f64) -> Result<Self> {
+    pub fn new(v: f64) -> Option<Self> {
         if v.is_nan() {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(Dirac(v))
+            Some(Dirac(v))
         }
     }
 }
@@ -198,7 +197,7 @@ mod tests {
 
     fn try_create(v: f64) -> Dirac {
         let d = Dirac::new(v);
-        assert!(d.is_ok());
+        assert!(d.is_some());
         d.unwrap()
     }
 
@@ -209,7 +208,7 @@ mod tests {
 
     fn bad_create_case(v: f64) {
         let d = Dirac::new(v);
-        assert!(d.is_err());
+        assert!(d.is_none());
     }
 
     fn test_case<F>(v: f64, expected: f64, eval: F)

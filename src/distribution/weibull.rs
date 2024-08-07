@@ -1,8 +1,8 @@
+use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::is_zero;
 use crate::statistics::*;
-use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -43,22 +43,25 @@ impl Weibull {
     /// use statrs::distribution::Weibull;
     ///
     /// let mut result = Weibull::new(10.0, 1.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Weibull::new(0.0, 0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(shape: f64, scale: f64) -> Result<Weibull> {
-        let is_nan = shape.is_nan() || scale.is_nan();
-        match (shape, scale, is_nan) {
-            (_, _, true) => Err(StatsError::BadParams),
-            (_, _, false) if shape <= 0.0 || scale <= 0.0 => Err(StatsError::BadParams),
-            (_, _, false) => Ok(Weibull {
-                shape,
-                scale,
-                scale_pow_shape_inv: scale.powf(-shape),
-            }),
+    pub fn new(shape: f64, scale: f64) -> Option<Weibull> {
+        if shape.is_nan() || scale.is_nan() {
+            return None;
         }
+
+        if shape <= 0.0 || scale <= 0.0 {
+            return None;
+        }
+
+        Some(Weibull {
+            shape,
+            scale,
+            scale_pow_shape_inv: scale.powf(-shape),
+        })
     }
 
     /// Returns the shape of the weibull distribution
@@ -339,7 +342,7 @@ mod tests {
 
     fn try_create(shape: f64, scale: f64) -> Weibull {
         let n = Weibull::new(shape, scale);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -351,7 +354,7 @@ mod tests {
 
     fn bad_create_case(shape: f64, scale: f64) {
         let n = Weibull::new(shape, scale);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<F>(shape: f64, scale: f64, eval: F) -> f64

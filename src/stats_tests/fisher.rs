@@ -1,6 +1,5 @@
 use super::Alternative;
 use crate::distribution::{Discrete, DiscreteCDF, Hypergeometric};
-use crate::StatsError;
 
 const EPSILON: f64 = 1.0 - 1e-4;
 
@@ -112,12 +111,12 @@ fn binary_search(
 pub fn fishers_exact_with_odds_ratio(
     table: &[u64; 4],
     alternative: Alternative,
-) -> Result<(f64, f64), StatsError> {
+) -> Option<(f64, f64)> {
     // If both values in a row or column are zero, p-value is 1 and odds ratio is NaN.
     match table {
-        [0, _, 0, _] | [_, 0, _, 0] => return Ok((f64::NAN, 1.0)), // both 0 in a row
-        [0, 0, _, _] | [_, _, 0, 0] => return Ok((f64::NAN, 1.0)), // both 0 in a column
-        _ => (),                                                   // continue
+        [0, _, 0, _] | [_, 0, _, 0] => return Some((f64::NAN, 1.0)), // both 0 in a row
+        [0, 0, _, _] | [_, _, 0, 0] => return Some((f64::NAN, 1.0)), // both 0 in a column
+        _ => (),                                                     // continue
     }
 
     let odds_ratio = {
@@ -129,7 +128,7 @@ pub fn fishers_exact_with_odds_ratio(
     };
 
     let p_value = fishers_exact(table, alternative)?;
-    Ok((odds_ratio, p_value))
+    Some((odds_ratio, p_value))
 }
 
 /// Perform a Fisher exact test on a 2x2 contingency table.
@@ -144,12 +143,12 @@ pub fn fishers_exact_with_odds_ratio(
 /// let table = [3, 5, 4, 50];
 /// let p_value = fishers_exact(&table, Alternative::Less).unwrap();
 /// ```
-pub fn fishers_exact(table: &[u64; 4], alternative: Alternative) -> Result<f64, StatsError> {
+pub fn fishers_exact(table: &[u64; 4], alternative: Alternative) -> Option<f64> {
     // If both values in a row or column are zero, the p-value is 1 and the odds ratio is NaN.
     match table {
-        [0, _, 0, _] | [_, 0, _, 0] => return Ok(1.0), // both 0 in a row
-        [0, 0, _, _] | [_, _, 0, 0] => return Ok(1.0), // both 0 in a column
-        _ => (),                                       // continue
+        [0, _, 0, _] | [_, 0, _, 0] => return Some(1.0), // both 0 in a row
+        [0, 0, _, _] | [_, _, 0, 0] => return Some(1.0), // both 0 in a column
+        _ => (),                                         // continue
     }
 
     let n1 = table[0] + table[1];
@@ -180,21 +179,21 @@ pub fn fishers_exact(table: &[u64; 4], alternative: Alternative) -> Result<f64, 
                 let p_mode = dist.pmf(mode);
 
                 if (p_exact - p_mode).abs() / p_exact.max(p_mode) <= 1.0 - EPSILON {
-                    return Ok(1.0);
+                    return Some(1.0);
                 }
 
                 if table[0] < mode {
                     let p_lower = dist.cdf(table[0]);
                     if dist.pmf(n) > p_exact / EPSILON {
-                        return Ok(p_lower);
+                        return Some(p_lower);
                     }
                     let guess = binary_search(n, n1, n2, mode, p_exact, EPSILON, true);
-                    return Ok(p_lower + 1.0 - dist.cdf(guess - 1));
+                    return Some(p_lower + 1.0 - dist.cdf(guess - 1));
                 }
 
                 let p_upper = 1.0 - dist.cdf(table[0] - 1);
                 if dist.pmf(0) > p_exact / EPSILON {
-                    return Ok(p_upper);
+                    return Some(p_upper);
                 }
 
                 let guess = binary_search(n, n1, n2, mode, p_exact, EPSILON, false);
@@ -203,7 +202,7 @@ pub fn fishers_exact(table: &[u64; 4], alternative: Alternative) -> Result<f64, 
         }
     };
 
-    Ok(p_value.min(1.0))
+    Some(p_value.min(1.0))
 }
 
 #[cfg(test)]

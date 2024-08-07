@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF, Gamma};
 use crate::statistics::*;
-use crate::Result;
 use rand::Rng;
 
 /// Implements the [Erlang](https://en.wikipedia.org/wiki/Erlang_distribution)
@@ -40,12 +39,12 @@ impl Erlang {
     /// use statrs::distribution::Erlang;
     ///
     /// let mut result = Erlang::new(3, 1.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Erlang::new(0, 0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(shape: u64, rate: f64) -> Result<Erlang> {
+    pub fn new(shape: u64, rate: f64) -> Option<Erlang> {
         Gamma::new(shape as f64, rate).map(|g| Erlang { g })
     }
 
@@ -283,7 +282,7 @@ mod tests {
 
     fn try_create(shape: u64, rate: f64) -> Erlang {
         let n = Erlang::new(shape, rate);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -295,7 +294,7 @@ mod tests {
 
     fn bad_create_case(shape: u64, rate: f64) {
         let n = Erlang::new(shape, rate);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     #[test]

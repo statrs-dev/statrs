@@ -1,7 +1,7 @@
+use crate::consts;
 use crate::distribution::{ziggurat, Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
-use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -39,16 +39,16 @@ impl Normal {
     /// use statrs::distribution::Normal;
     ///
     /// let mut result = Normal::new(0.0, 1.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Normal::new(0.0, 0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(mean: f64, std_dev: f64) -> Result<Normal> {
+    pub fn new(mean: f64, std_dev: f64) -> Option<Normal> {
         if mean.is_nan() || std_dev.is_nan() || std_dev <= 0.0 {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(Normal { mean, std_dev })
+            Some(Normal { mean, std_dev })
         }
     }
 
@@ -340,7 +340,7 @@ mod tests {
 
     fn try_create(mean: f64, std_dev: f64) -> Normal {
         let n = Normal::new(mean, std_dev);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -352,7 +352,7 @@ mod tests {
 
     fn bad_create_case(mean: f64, std_dev: f64) {
         let n = Normal::new(mean, std_dev);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn test_case<F>(mean: f64, std_dev: f64, expected: f64, eval: F)

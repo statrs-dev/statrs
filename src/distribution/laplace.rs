@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::{Distribution, Max, Median, Min, Mode};
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -37,16 +36,16 @@ impl Laplace {
     /// use statrs::distribution::Laplace;
     ///
     /// let mut result = Laplace::new(0.0, 1.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Laplace::new(0.0, -1.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(location: f64, scale: f64) -> Result<Laplace> {
+    pub fn new(location: f64, scale: f64) -> Option<Laplace> {
         if location.is_nan() || scale.is_nan() || scale <= 0.0 {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(Laplace { location, scale })
+            Some(Laplace { location, scale })
         }
     }
 
@@ -304,13 +303,13 @@ mod tests {
 
     fn try_create(location: f64, scale: f64) -> Laplace {
         let n = Laplace::new(location, scale);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
     fn bad_create_case(location: f64, scale: f64) {
         let n = Laplace::new(location, scale);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn test_case<F>(location: f64, scale: f64, expected: f64, eval: F)

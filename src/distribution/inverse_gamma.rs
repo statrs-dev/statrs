@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -41,20 +40,18 @@ impl InverseGamma {
     /// use statrs::distribution::InverseGamma;
     ///
     /// let mut result = InverseGamma::new(3.0, 1.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = InverseGamma::new(0.0, 0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(shape: f64, rate: f64) -> Result<InverseGamma> {
+    pub fn new(shape: f64, rate: f64) -> Option<InverseGamma> {
         let is_nan = shape.is_nan() || rate.is_nan();
         match (shape, rate, is_nan) {
-            (_, _, true) => Err(StatsError::BadParams),
-            (_, _, false) if shape <= 0.0 || rate <= 0.0 => Err(StatsError::BadParams),
-            (_, _, false) if shape.is_infinite() || rate.is_infinite() => {
-                Err(StatsError::BadParams)
-            }
-            (_, _, false) => Ok(InverseGamma { shape, rate }),
+            (_, _, true) => None,
+            (_, _, false) if shape <= 0.0 || rate <= 0.0 => None,
+            (_, _, false) if shape.is_infinite() || rate.is_infinite() => None,
+            (_, _, false) => Some(InverseGamma { shape, rate }),
         }
     }
 
@@ -319,7 +316,7 @@ mod tests {
 
     fn try_create(shape: f64, rate: f64) -> InverseGamma {
         let n = InverseGamma::new(shape, rate);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -331,7 +328,7 @@ mod tests {
 
     fn bad_create_case(shape: f64, rate: f64) {
         let n = InverseGamma::new(shape, rate);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<F>(shape: f64, rate: f64, eval: F) -> f64

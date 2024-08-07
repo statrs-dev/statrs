@@ -1,7 +1,7 @@
+use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
-use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -41,16 +41,16 @@ impl LogNormal {
     /// use statrs::distribution::LogNormal;
     ///
     /// let mut result = LogNormal::new(0.0, 1.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = LogNormal::new(0.0, 0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(location: f64, scale: f64) -> Result<LogNormal> {
+    pub fn new(location: f64, scale: f64) -> Option<LogNormal> {
         if location.is_nan() || scale.is_nan() || scale <= 0.0 {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(LogNormal { location, scale })
+            Some(LogNormal { location, scale })
         }
     }
 }
@@ -311,13 +311,13 @@ mod tests {
 
     fn try_create(mean: f64, std_dev: f64) -> LogNormal {
         let n = LogNormal::new(mean, std_dev);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
     fn bad_create_case(mean: f64, std_dev: f64) {
         let n = LogNormal::new(mean, std_dev);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<F>(mean: f64, std_dev: f64, eval: F) -> f64

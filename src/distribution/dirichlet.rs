@@ -1,7 +1,7 @@
 use crate::distribution::Continuous;
 use crate::function::gamma;
+use crate::prec;
 use crate::statistics::*;
-use crate::{prec, Result, StatsError};
 use nalgebra::DMatrix;
 use nalgebra::DVector;
 use nalgebra::{
@@ -48,18 +48,18 @@ impl Dirichlet {
     ///
     /// let alpha_ok = vec![1.0, 2.0, 3.0];
     /// let mut result = Dirichlet::new(alpha_ok);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// let alpha_err = vec![0.0];
     /// result = Dirichlet::new(alpha_err);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(alpha: Vec<f64>) -> Result<Dirichlet> {
+    pub fn new(alpha: Vec<f64>) -> Option<Dirichlet> {
         if !is_valid_alpha(&alpha) {
-            Err(StatsError::BadParams)
+            None
         } else {
             // let vec = alpha.to_vec();
-            Ok(Dirichlet {
+            Some(Dirichlet {
                 alpha: DVector::from_vec(alpha.to_vec()),
             })
         }
@@ -79,12 +79,12 @@ impl Dirichlet {
     /// use statrs::distribution::Dirichlet;
     ///
     /// let mut result = Dirichlet::new_with_param(1.0, 3);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Dirichlet::new_with_param(0.0, 1);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new_with_param(alpha: f64, n: usize) -> Result<Dirichlet> {
+    pub fn new_with_param(alpha: f64, n: usize) -> Option<Dirichlet> {
         Self::new(vec![alpha; n])
     }
 
@@ -324,7 +324,7 @@ mod tests {
     fn try_create(alpha: &[f64]) -> Dirichlet
     {
         let n = Dirichlet::new(alpha.to_vec());
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -340,7 +340,7 @@ mod tests {
     fn bad_create_case(alpha: &[f64])
     {
         let n = Dirichlet::new(alpha.to_vec());
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     #[test]

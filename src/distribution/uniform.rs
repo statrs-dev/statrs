@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::distributions::Uniform as RandUniform;
 use rand::Rng;
 use std::f64;
@@ -41,25 +40,23 @@ impl Uniform {
     /// use std::f64;
     ///
     /// let mut result = Uniform::new(0.0, 1.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Uniform::new(f64::NAN, f64::NAN);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     ///
     /// result = Uniform::new(f64::NEG_INFINITY, 1.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(min: f64, max: f64) -> Result<Uniform> {
-        if min.is_nan() || max.is_nan() {
-            return Err(StatsError::BadParams);
+    pub fn new(min: f64, max: f64) -> Option<Uniform> {
+        if !min.is_finite() || !max.is_finite() {
+            return None;
         }
 
-        match (min.is_finite(), max.is_finite(), min < max) {
-            (false, false, _) => Err(StatsError::ArgFinite("min and max")),
-            (false, true, _) => Err(StatsError::ArgFinite("min")),
-            (true, false, _) => Err(StatsError::ArgFinite("max")),
-            (true, true, false) => Err(StatsError::ArgLteArg("min", "max")),
-            (true, true, true) => Ok(Uniform { min, max }),
+        if min < max {
+            Some(Uniform { min, max })
+        } else {
+            None
         }
     }
 
@@ -290,7 +287,7 @@ mod tests {
 
     fn try_create(min: f64, max: f64) -> Uniform {
         let n = Uniform::new(min, max);
-        assert!(n.is_ok(), "failed create over interval [{}, {}]", min, max);
+        assert!(n.is_some(), "failed create over interval [{}, {}]", min, max);
         n.unwrap()
     }
 
@@ -302,7 +299,7 @@ mod tests {
 
     fn bad_create_case(min: f64, max: f64) {
         let n = Uniform::new(min, max);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<F>(min: f64, max: f64, eval: F) -> f64

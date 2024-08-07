@@ -1,6 +1,5 @@
 use crate::distribution::{Binomial, Discrete, DiscreteCDF};
 use crate::statistics::*;
-use crate::Result;
 use rand::Rng;
 
 /// Implements the
@@ -40,12 +39,12 @@ impl Bernoulli {
     /// use statrs::distribution::Bernoulli;
     ///
     /// let mut result = Bernoulli::new(0.5);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Bernoulli::new(-0.5);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(p: f64) -> Result<Bernoulli> {
+    pub fn new(p: f64) -> Option<Bernoulli> {
         Binomial::new(p, 1).map(|b| Bernoulli { b })
     }
 
@@ -271,7 +270,7 @@ mod testing {
 
     fn try_create(p: f64) -> Bernoulli {
         let n = Bernoulli::new(p);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -282,7 +281,7 @@ mod testing {
 
     fn bad_create_case(p: f64) {
         let n = Bernoulli::new(p);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<T, F>(p: f64, eval: F) -> T

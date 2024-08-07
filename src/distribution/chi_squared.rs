@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF, Gamma};
 use crate::statistics::*;
-use crate::Result;
 use rand::Rng;
 use std::f64;
 
@@ -43,12 +42,12 @@ impl ChiSquared {
     /// use statrs::distribution::ChiSquared;
     ///
     /// let mut result = ChiSquared::new(3.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = ChiSquared::new(0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(freedom: f64) -> Result<ChiSquared> {
+    pub fn new(freedom: f64) -> Option<ChiSquared> {
         Gamma::new(freedom / 2.0, 0.5).map(|g| ChiSquared { freedom, g })
     }
 
@@ -297,7 +296,7 @@ mod tests {
 
     fn try_create(freedom: f64) -> ChiSquared {
         let n = ChiSquared::new(freedom);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 

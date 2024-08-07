@@ -2,7 +2,6 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 
 /// Implements the [Gamma](https://en.wikipedia.org/wiki/Gamma_distribution)
@@ -40,21 +39,21 @@ impl Gamma {
     /// use statrs::distribution::Gamma;
     ///
     /// let mut result = Gamma::new(3.0, 1.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Gamma::new(0.0, 0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(shape: f64, rate: f64) -> Result<Gamma> {
+    pub fn new(shape: f64, rate: f64) -> Option<Gamma> {
         if shape.is_nan()
             || rate.is_nan()
             || shape.is_infinite() && rate.is_infinite()
             || shape <= 0.0
             || rate <= 0.0
         {
-            return Err(StatsError::BadParams);
+            return None;
         }
-        Ok(Gamma { shape, rate })
+        Some(Gamma { shape, rate })
     }
 
     /// Returns the shape (α) of the gamma distribution

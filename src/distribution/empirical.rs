@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF, Uniform};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use ::num_traits::float::Float;
 use core::cmp::Ordering;
 use rand::Rng;
@@ -55,10 +54,10 @@ impl Empirical {
     /// use statrs::distribution::Empirical;
     ///
     /// let mut result = Empirical::new();
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     /// ```
-    pub fn new() -> Result<Empirical> {
-        Ok(Empirical {
+    pub fn new() -> Option<Empirical> {
+        Some(Empirical {
             sum: 0.,
             mean_and_var: None,
             data: BTreeMap::new(),
