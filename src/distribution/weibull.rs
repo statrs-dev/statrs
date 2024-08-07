@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
-use crate::is_zero;
 use crate::statistics::*;
 use crate::{consts, Result, StatsError};
 use rand::Rng;
@@ -293,7 +292,7 @@ impl Continuous<f64, f64> for Weibull {
     fn pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if is_zero(x) && ulps_eq!(self.shape, 1.0) {
+        } else if x == 0.0 && ulps_eq!(self.shape, 1.0) {
             1.0 / self.scale
         } else if x.is_infinite() {
             0.0
@@ -318,7 +317,7 @@ impl Continuous<f64, f64> for Weibull {
     fn ln_pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             f64::NEG_INFINITY
-        } else if is_zero(x) && ulps_eq!(self.shape, 1.0) {
+        } else if x == 0.0 && ulps_eq!(self.shape, 1.0) {
             0.0 - self.scale.ln()
         } else if x.is_infinite() {
             f64::NEG_INFINITY

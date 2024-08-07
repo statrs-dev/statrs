@@ -3,7 +3,6 @@
 
 use crate::consts;
 use crate::error::StatsError;
-use crate::is_zero;
 use crate::prec;
 use crate::Result;
 use std::f64;
@@ -216,7 +215,7 @@ pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64> {
             qkm1 *= big_inv;
         }
 
-        if !is_zero(qk) {
+        if qk != 0.0 {
             let r = pk / qk;
             let t = ((ans - r) / r).abs();
             ans = r;
