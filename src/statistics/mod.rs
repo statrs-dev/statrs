@@ -1,6 +1,5 @@
 //! Provides traits for statistical computation
 
-pub use self::iter_statistics::*;
 pub use self::order_statistics::*;
 pub use self::slice_statistics::*;
 pub use self::statistics::*;

@@ -2,8 +2,8 @@
 //! and provides
 //! concrete implementations for a variety of distributions.
 use super::statistics::{Max, Min};
-use ::num_traits::{Bounded, Float, Num};
-use num_traits::{NumAssign, NumAssignOps, NumAssignRef};
+use ::num_traits::{Float, Num};
+use num_traits::NumAssignOps;
 
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::Beta;
@@ -70,8 +70,6 @@ mod uniform;
 mod weibull;
 mod ziggurat;
 mod ziggurat_tables;
-
-use crate::Result;
 
 /// The `ContinuousCDF` trait is used to specify an interface for univariate
 /// distributions for which cdf float arguments are sensible.

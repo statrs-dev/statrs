@@ -1,6 +1,3 @@
-use ::nalgebra::{
-    base::allocator::Allocator, base::dimension::DimName, DefaultAllocator, Dim, DimMin, U1,
-};
 use ::num_traits::float::Float;
 
 const STEPS: usize = 1_000;

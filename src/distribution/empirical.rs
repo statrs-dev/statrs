@@ -1,7 +1,6 @@
-use crate::distribution::{Continuous, ContinuousCDF, Uniform};
+use crate::distribution::{ContinuousCDF, Uniform};
 use crate::statistics::*;
-use crate::{Result, StatsError};
-use ::num_traits::float::Float;
+use crate::Result;
 use core::cmp::Ordering;
 use rand::Rng;
 use std::collections::BTreeMap;

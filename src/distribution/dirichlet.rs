@@ -4,9 +4,6 @@ use crate::statistics::*;
 use crate::{prec, Result, StatsError};
 use nalgebra::DMatrix;
 use nalgebra::DVector;
-use nalgebra::{
-    base::allocator::Allocator, base::dimension::DimName, DefaultAllocator, Dim, DimMin, U1,
-};
 use rand::Rng;
 use std::f64;
 
@@ -310,9 +307,6 @@ fn is_valid_alpha(a: &[f64]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nalgebra::{DVector};
-    use crate::function::gamma;
-    use crate::statistics::*;
     use crate::distribution::{Continuous, Dirichlet};
 
     #[test]

@@ -1,4 +1,4 @@
-use num_traits::{Bounded, Float, Num};
+use num_traits::Num;
 
 /// Returns true if there are no elements in `x` in `arr`
 /// such that `x <= 0.0` or `x` is `f64::NAN` and `sum(arr) > 0.0`.
