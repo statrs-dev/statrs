@@ -1,7 +1,6 @@
 use crate::distribution::Continuous;
 use crate::distribution::Normal;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
-use crate::{Result, StatsError};
 use nalgebra::{
     base::allocator::Allocator, Cholesky, Const, DMatrix, DVector, DefaultAllocator, Dim, DimMin,
     Dyn, OMatrix, OVector,
@@ -47,7 +46,7 @@ impl MultivariateNormal<Dyn> {
     ///
     /// Returns an error if the given covariance matrix is not
     /// symmetric or positive-definite
-    pub fn new(mean: Vec<f64>, cov: Vec<f64>) -> Result<Self> {
+    pub fn new(mean: Vec<f64>, cov: Vec<f64>) -> Option<Self> {
         let mean = DVector::from_vec(mean);
         let cov = DMatrix::from_vec(mean.len(), mean.len(), cov);
         MultivariateNormal::new_from_nalgebra(mean, cov)
@@ -69,7 +68,7 @@ where
     ///
     /// Returns an error if the given covariance matrix is not
     /// symmetric or positive-definite
-    pub fn new_from_nalgebra(mean: OVector<f64, D>, cov: OMatrix<f64, D, D>) -> Result<Self> {
+    pub fn new_from_nalgebra(mean: OVector<f64, D>, cov: OMatrix<f64, D, D>) -> Option<Self> {
         // Check that the provided covariance matrix is symmetric
         if cov.lower_triangle() != cov.upper_triangle().transpose()
         // Check that mean and covariance do not contain NaN
@@ -78,7 +77,7 @@ where
         // Check that the dimensions match
             || mean.nrows() != cov.nrows() || cov.nrows() != cov.ncols()
         {
-            return Err(StatsError::BadParams);
+            return None;
         }
         let cov_det = cov.determinant();
         let pdf_const = ((2. * PI).powi(mean.nrows() as i32) * cov_det.abs())
@@ -87,10 +86,10 @@ where
         // Store the Cholesky decomposition of the covariance matrix
         // for sampling
         match Cholesky::new(cov.clone()) {
-            None => Err(StatsError::BadParams),
+            None => None,
             Some(cholesky_decomp) => {
                 let precision = cholesky_decomp.inverse();
-                Ok(MultivariateNormal {
+                Some(MultivariateNormal {
                     cov_chol_decomp: cholesky_decomp.unpack(),
                     mu: mean,
                     cov,
@@ -313,7 +312,7 @@ mod tests  {
             + nalgebra::allocator::Allocator<(usize, usize), D>,
     {
         let mvn = MultivariateNormal::new_from_nalgebra(mean, covariance);
-        assert!(mvn.is_ok());
+        assert!(mvn.is_some());
         mvn.unwrap()
     }
 
@@ -337,7 +336,7 @@ mod tests  {
             + nalgebra::allocator::Allocator<(usize, usize), D>,
     {
         let mvn = MultivariateNormal::new_from_nalgebra(mean, covariance);
-        assert!(mvn.is_err());
+        assert!(mvn.is_none());
     }
 
     fn test_case<T, F, D>(

@@ -1,7 +1,6 @@
 use crate::distribution::{self, poisson, Discrete, DiscreteCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -59,16 +58,16 @@ impl NegativeBinomial {
     /// use statrs::distribution::NegativeBinomial;
     ///
     /// let mut result = NegativeBinomial::new(4.0, 0.5);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = NegativeBinomial::new(-0.5, 5.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(r: f64, p: f64) -> Result<NegativeBinomial> {
+    pub fn new(r: f64, p: f64) -> Option<NegativeBinomial> {
         if p.is_nan() || !(0.0..=1.0).contains(&p) || r.is_nan() || r < 0.0 {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(NegativeBinomial { r, p })
+            Some(NegativeBinomial { r, p })
         }
     }
 
@@ -298,7 +297,7 @@ mod tests {
 
     fn try_create(r: f64, p: f64) -> NegativeBinomial {
         let r = NegativeBinomial::new(r, p);
-        assert!(r.is_ok());
+        assert!(r.is_some());
         r.unwrap()
     }
 
@@ -310,7 +309,7 @@ mod tests {
 
     fn bad_create_case(r: f64, p: f64) {
         let r = NegativeBinomial::new(r, p);
-        assert!(r.is_err());
+        assert!(r.is_none());
     }
 
     fn get_value<T, F>(r: f64, p: f64, eval: F) -> T

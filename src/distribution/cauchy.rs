@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -37,16 +36,16 @@ impl Cauchy {
     /// use statrs::distribution::Cauchy;
     ///
     /// let mut result = Cauchy::new(0.0, 1.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Cauchy::new(0.0, -1.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(location: f64, scale: f64) -> Result<Cauchy> {
+    pub fn new(location: f64, scale: f64) -> Option<Cauchy> {
         if location.is_nan() || scale.is_nan() || scale <= 0.0 {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(Cauchy { location, scale })
+            Some(Cauchy { location, scale })
         }
     }
 
@@ -240,7 +239,7 @@ mod tests {
 
     fn try_create(location: f64, scale: f64) -> Cauchy {
         let n = Cauchy::new(location, scale);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -252,7 +251,7 @@ mod tests {
 
     fn bad_create_case(location: f64, scale: f64) {
         let n = Cauchy::new(location, scale);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn test_case<F>(location: f64, scale: f64, expected: f64, eval: F)

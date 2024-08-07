@@ -1,6 +1,5 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -48,14 +47,14 @@ impl Categorical {
     /// use statrs::distribution::Categorical;
     ///
     /// let mut result = Categorical::new(&[0.0, 1.0, 2.0]);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Categorical::new(&[0.0, -1.0, 2.0]);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(prob_mass: &[f64]) -> Result<Categorical> {
+    pub fn new(prob_mass: &[f64]) -> Option<Categorical> {
         if !super::internal::is_valid_multinomial(prob_mass, true) {
-            Err(StatsError::BadParams)
+            None
         } else {
             // extract un-normalized cdf
             let cdf = prob_mass_to_cdf(prob_mass);
@@ -68,7 +67,7 @@ impl Categorical {
                 .iter_mut()
                 .zip(prob_mass.iter())
                 .for_each(|(np, pm)| *np = *pm / sum);
-            Ok(Categorical { norm_pmf, cdf, sf })
+            Some(Categorical { norm_pmf, cdf, sf })
         }
     }
 
@@ -359,7 +358,7 @@ mod tests {
 
     fn try_create(prob_mass: &[f64]) -> Categorical {
         let n = Categorical::new(prob_mass);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -369,7 +368,7 @@ mod tests {
 
     fn bad_create_case(prob_mass: &[f64]) {
         let n = Categorical::new(prob_mass);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<T, F>(prob_mass: &[f64], eval: F) -> T

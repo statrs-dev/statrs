@@ -1,7 +1,6 @@
 use crate::distribution::Discrete;
 use crate::function::factorial;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use ::nalgebra::{DMatrix, DVector};
 use rand::Rng;
 
@@ -46,16 +45,16 @@ impl Multinomial {
     /// use statrs::distribution::Multinomial;
     ///
     /// let mut result = Multinomial::new(&[0.0, 1.0, 2.0], 3);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Multinomial::new(&[0.0, -1.0, 2.0], 3);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(p: &[f64], n: u64) -> Result<Multinomial> {
+    pub fn new(p: &[f64], n: u64) -> Option<Multinomial> {
         if !super::internal::is_valid_multinomial(p, true) {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(Multinomial { p: p.to_vec(), n })
+            Some(Multinomial { p: p.to_vec(), n })
         }
     }
 
@@ -253,7 +252,7 @@ impl<'a> Discrete<&'a [u64], f64> for Multinomial {
 
 //     fn try_create(p: &[f64], n: u64) -> Multinomial {
 //         let dist = Multinomial::new(p, n);
-//         assert!(dist.is_ok());
+//         assert!(dist.is_some());
 //         dist.unwrap()
 //     }
 
@@ -265,7 +264,7 @@ impl<'a> Discrete<&'a [u64], f64> for Multinomial {
 
 //     fn bad_create_case(p: &[f64], n: u64) {
 //         let dist = Multinomial::new(p, n);
-//         assert!(dist.is_err());
+//         assert!(dist.is_none());
 //     }
 
 //     fn test_case<F>(p: &[f64], n: u64, expected: &[f64], eval: F)

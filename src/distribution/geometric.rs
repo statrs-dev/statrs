@@ -1,6 +1,5 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::distributions::OpenClosed01;
 use rand::Rng;
 use std::f64;
@@ -39,16 +38,16 @@ impl Geometric {
     /// use statrs::distribution::Geometric;
     ///
     /// let mut result = Geometric::new(0.5);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Geometric::new(0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(p: f64) -> Result<Geometric> {
+    pub fn new(p: f64) -> Option<Geometric> {
         if p <= 0.0 || p > 1.0 || p.is_nan() {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(Geometric { p })
+            Some(Geometric { p })
         }
     }
 
@@ -280,7 +279,7 @@ mod tests {
 
     fn try_create(p: f64) -> Geometric {
         let n = Geometric::new(p);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -291,7 +290,7 @@ mod tests {
 
     fn bad_create_case(p: f64) {
         let n = Geometric::new(p);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<T, F>(p: f64, eval: F) -> T

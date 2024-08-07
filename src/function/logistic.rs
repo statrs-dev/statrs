@@ -1,9 +1,6 @@
 //! Provides the [logistic](http://en.wikipedia.org/wiki/Logistic_function) and
 //! related functions
 
-use crate::error::StatsError;
-use crate::Result;
-
 /// Computes the logistic function
 pub fn logistic(p: f64) -> f64 {
     1.0 / ((-p).exp() + 1.0)
@@ -23,11 +20,11 @@ pub fn logit(p: f64) -> f64 {
 /// # Errors
 ///
 /// If `p < 0.0` or `p > 1.0`
-pub fn checked_logit(p: f64) -> Result<f64> {
+pub fn checked_logit(p: f64) -> Option<f64> {
     if !(0.0..=1.0).contains(&p) {
-        Err(StatsError::ArgIntervalIncl("p", 0.0, 1.0))
+        None
     } else {
-        Ok((p / (1.0 - p)).ln())
+        Some((p / (1.0 - p)).ln())
     }
 }
 
@@ -76,11 +73,11 @@ mod tests {
 
     #[test]
     fn test_checked_logit_p_lt_0() {
-        assert!(super::checked_logit(-1.0).is_err());
+        assert!(super::checked_logit(-1.0).is_none());
     }
 
     #[test]
     fn test_checked_logit_p_gt_1() {
-        assert!(super::checked_logit(2.0).is_err());
+        assert!(super::checked_logit(2.0).is_none());
     }
 }

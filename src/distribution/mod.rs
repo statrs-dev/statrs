@@ -71,8 +71,6 @@ mod weibull;
 mod ziggurat;
 mod ziggurat_tables;
 
-use crate::Result;
-
 /// The `ContinuousCDF` trait is used to specify an interface for univariate
 /// distributions for which cdf float arguments are sensible.
 pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {

@@ -1,7 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{factorial, gamma};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -38,16 +37,16 @@ impl Poisson {
     /// use statrs::distribution::Poisson;
     ///
     /// let mut result = Poisson::new(1.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Poisson::new(0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(lambda: f64) -> Result<Poisson> {
+    pub fn new(lambda: f64) -> Option<Poisson> {
         if lambda.is_nan() || lambda <= 0.0 {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(Poisson { lambda })
+            Some(Poisson { lambda })
         }
     }
 
@@ -311,7 +310,7 @@ mod tests {
 
     fn try_create(lambda: f64) -> Poisson {
         let n = Poisson::new(lambda);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -322,7 +321,7 @@ mod tests {
 
     fn bad_create_case(lambda: f64) {
         let n = Poisson::new(lambda);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<T, F>(lambda: f64, eval: F) -> T

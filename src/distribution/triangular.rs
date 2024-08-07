@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -40,22 +39,22 @@ impl Triangular {
     /// use statrs::distribution::Triangular;
     ///
     /// let mut result = Triangular::new(0.0, 5.0, 2.5);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Triangular::new(2.5, 1.5, 0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(min: f64, max: f64, mode: f64) -> Result<Triangular> {
+    pub fn new(min: f64, max: f64, mode: f64) -> Option<Triangular> {
         if !min.is_finite() || !max.is_finite() || !mode.is_finite() {
-            return Err(StatsError::BadParams);
+            return None;
         }
         if max < mode || mode < min {
-            return Err(StatsError::BadParams);
+            return None;
         }
         if ulps_eq!(max, min, max_ulps = 0) {
-            return Err(StatsError::BadParams);
+            return None;
         }
-        Ok(Triangular { min, max, mode })
+        Some(Triangular { min, max, mode })
     }
 }
 
@@ -326,7 +325,7 @@ mod tests {
 
     fn try_create(min: f64, max: f64, mode: f64) -> Triangular {
         let n = Triangular::new(min, max, mode);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -339,7 +338,7 @@ mod tests {
 
     fn bad_create_case(min: f64, max: f64, mode: f64) {
         let n = Triangular::new(min, max, mode);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<T, F>(min: f64, max: f64, mode: f64, eval: F) -> T

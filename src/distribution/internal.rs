@@ -66,13 +66,13 @@ pub mod test {
         ($($arg_name:ident: $arg_ty:ty),+; $dist:ty) => {
             fn try_create($($arg_name: $arg_ty),+) -> $dist {
                 let n = <$dist>::new($($arg_name),+);
-                assert!(n.is_ok());
+                assert!(n.is_some());
                 n.unwrap()
             }
 
             fn bad_create_case($($arg_name: $arg_ty),+) {
                 let n = <$dist>::new($($arg_name),+);
-                assert!(n.is_err());
+                assert!(n.is_none());
             }
 
             fn get_value<F, T>($($arg_name: $arg_ty),+, eval: F) -> T

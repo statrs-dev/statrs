@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -39,16 +38,16 @@ impl Chi {
     /// use statrs::distribution::Chi;
     ///
     /// let mut result = Chi::new(2.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Chi::new(0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(freedom: f64) -> Result<Chi> {
+    pub fn new(freedom: f64) -> Option<Chi> {
         if freedom.is_nan() || freedom <= 0.0 {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(Chi { freedom })
+            Some(Chi { freedom })
         }
     }
 
@@ -332,7 +331,7 @@ mod tests {
 
     fn try_create(freedom: f64) -> Chi {
         let n = Chi::new(freedom);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -343,7 +342,7 @@ mod tests {
 
     fn bad_create_case(freedom: f64) {
         let n = Chi::new(freedom);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<F>(freedom: f64, eval: F) -> f64

@@ -15,7 +15,6 @@
 //! ```sh
 //!     ./gather_nist_data.sh && cargo test -- --ignored nist_
 //! ```
-use anyhow::Result;
 use approx::assert_relative_eq;
 use statrs::statistics::Statistics;
 
@@ -96,7 +95,7 @@ fn nist_strd_univariate_std_dev() {
     }
 }
 
-fn parse_certified_value(line: String) -> Result<f64> {
+fn parse_certified_value(line: String) -> f64 {
     line.chars()
         .skip_while(|&c| c != ':')
         .skip(1) // skip through ':' delimiter
@@ -104,7 +103,7 @@ fn parse_certified_value(line: String) -> Result<f64> {
         .take_while(|&c| matches!(c, '0'..='9' | '-' | '.'))
         .collect::<String>()
         .parse::<f64>()
-        .map_err(|e| e.into())
+        .expect("can parse value as f64")
 }
 
 fn parse_file(path: impl AsRef<std::path::Path>) -> anyhow::Result<TestCase> {
@@ -112,9 +111,9 @@ fn parse_file(path: impl AsRef<std::path::Path>) -> anyhow::Result<TestCase> {
     let reader = BufReader::new(f);
     let mut lines = reader.lines();
 
-    let mean = parse_certified_value(lines.next().expect("file should not be exhausted")?)?;
-    let std_dev = parse_certified_value(lines.next().expect("file should not be exhausted")?)?;
-    let corr = parse_certified_value(lines.next().expect("file should not be exhausted")?)?;
+    let mean = parse_certified_value(lines.next().expect("file should not be exhausted")?);
+    let std_dev = parse_certified_value(lines.next().expect("file should not be exhausted")?);
+    let corr = parse_certified_value(lines.next().expect("file should not be exhausted")?);
 
     Ok(TestCase {
         certified: CertifiedValues {

@@ -1,7 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::factorial;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::cmp;
 use std::f64;
@@ -37,16 +36,16 @@ impl Hypergeometric {
     /// use statrs::distribution::Hypergeometric;
     ///
     /// let mut result = Hypergeometric::new(2, 2, 2);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Hypergeometric::new(2, 3, 2);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(population: u64, successes: u64, draws: u64) -> Result<Hypergeometric> {
+    pub fn new(population: u64, successes: u64, draws: u64) -> Option<Hypergeometric> {
         if successes > population || draws > population {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(Hypergeometric {
+            Some(Hypergeometric {
                 population,
                 successes,
                 draws,
@@ -385,7 +384,7 @@ mod tests {
 
     fn try_create(population: u64, successes: u64, draws: u64) -> Hypergeometric {
         let n = Hypergeometric::new(population, successes, draws);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -398,7 +397,7 @@ mod tests {
 
     fn bad_create_case(population: u64, successes: u64, draws: u64) {
         let n = Hypergeometric::new(population, successes, draws);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<T, F>(population: u64, successes: u64, draws: u64, eval: F) -> T

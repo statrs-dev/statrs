@@ -1,6 +1,5 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 
 /// Implements the [Discrete
@@ -37,16 +36,16 @@ impl DiscreteUniform {
     /// use statrs::distribution::DiscreteUniform;
     ///
     /// let mut result = DiscreteUniform::new(0, 5);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = DiscreteUniform::new(5, 0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(min: i64, max: i64) -> Result<DiscreteUniform> {
+    pub fn new(min: i64, max: i64) -> Option<DiscreteUniform> {
         if max < min {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(DiscreteUniform { min, max })
+            Some(DiscreteUniform { min, max })
         }
     }
 }
@@ -262,7 +261,7 @@ mod tests {
 
     fn try_create(min: i64, max: i64) -> DiscreteUniform {
         let n = DiscreteUniform::new(min, max);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -274,7 +273,7 @@ mod tests {
 
     fn bad_create_case(min: i64, max: i64) {
         let n = DiscreteUniform::new(min, max);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<T, F>(min: i64, max: i64, eval: F) -> T

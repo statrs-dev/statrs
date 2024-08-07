@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::distributions::OpenClosed01;
 use rand::Rng;
 use std::f64;
@@ -40,17 +39,17 @@ impl Pareto {
     /// use statrs::distribution::Pareto;
     ///
     /// let mut result = Pareto::new(1.0, 2.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Pareto::new(0.0, 0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(scale: f64, shape: f64) -> Result<Pareto> {
+    pub fn new(scale: f64, shape: f64) -> Option<Pareto> {
         let is_nan = scale.is_nan() || shape.is_nan();
         if is_nan || scale <= 0.0 || shape <= 0.0 {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(Pareto { scale, shape })
+            Some(Pareto { scale, shape })
         }
     }
 
@@ -342,7 +341,7 @@ mod tests {
 
     fn try_create(scale: f64, shape: f64) -> Pareto {
         let p = Pareto::new(scale, shape);
-        assert!(p.is_ok());
+        assert!(p.is_some());
         p.unwrap()
     }
 
@@ -354,7 +353,7 @@ mod tests {
 
     fn bad_create_case(scale: f64, shape: f64) {
         let p = Pareto::new(scale, shape);
-        assert!(p.is_err());
+        assert!(p.is_none());
     }
 
     fn get_value<T, F>(scale: f64, shape: f64, eval: F) -> T

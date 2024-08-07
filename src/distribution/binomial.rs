@@ -2,7 +2,6 @@ use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, factorial};
 use crate::is_zero;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -43,16 +42,16 @@ impl Binomial {
     /// use statrs::distribution::Binomial;
     ///
     /// let mut result = Binomial::new(0.5, 5);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = Binomial::new(-0.5, 5);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(p: f64, n: u64) -> Result<Binomial> {
+    pub fn new(p: f64, n: u64) -> Option<Binomial> {
         if p.is_nan() || !(0.0..=1.0).contains(&p) {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(Binomial { p, n })
+            Some(Binomial { p, n })
         }
     }
 
@@ -336,7 +335,7 @@ mod tests {
 
     fn try_create(p: f64, n: u64) -> Binomial {
         let n = Binomial::new(p, n);
-        assert!(n.is_ok());
+        assert!(n.is_some());
         n.unwrap()
     }
 
@@ -348,7 +347,7 @@ mod tests {
 
     fn bad_create_case(p: f64, n: u64) {
         let n = Binomial::new(p, n);
-        assert!(n.is_err());
+        assert!(n.is_none());
     }
 
     fn get_value<T, F>(p: f64, n: u64, eval: F) -> T

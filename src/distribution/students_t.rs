@@ -2,7 +2,6 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
 use crate::is_zero;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -43,17 +42,17 @@ impl StudentsT {
     /// use statrs::distribution::StudentsT;
     ///
     /// let mut result = StudentsT::new(0.0, 1.0, 2.0);
-    /// assert!(result.is_ok());
+    /// assert!(result.is_some());
     ///
     /// result = StudentsT::new(0.0, 0.0, 0.0);
-    /// assert!(result.is_err());
+    /// assert!(result.is_none());
     /// ```
-    pub fn new(location: f64, scale: f64, freedom: f64) -> Result<StudentsT> {
+    pub fn new(location: f64, scale: f64, freedom: f64) -> Option<StudentsT> {
         let is_nan = location.is_nan() || scale.is_nan() || freedom.is_nan();
         if is_nan || scale <= 0.0 || freedom <= 0.0 {
-            Err(StatsError::BadParams)
+            None
         } else {
-            Ok(StudentsT {
+            Some(StudentsT {
                 location,
                 scale,
                 freedom,

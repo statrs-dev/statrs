@@ -1,11 +1,9 @@
 //! Provides the [beta](https://en.wikipedia.org/wiki/Beta_function) and related
 //! function
 
-use crate::error::StatsError;
 use crate::function::gamma;
 use crate::is_zero;
 use crate::prec;
-use crate::Result;
 use std::f64;
 
 /// Computes the natural logarithm
@@ -30,13 +28,11 @@ pub fn ln_beta(a: f64, b: f64) -> f64 {
 /// # Errors
 ///
 /// if `a <= 0.0` or `b <= 0.0`
-pub fn checked_ln_beta(a: f64, b: f64) -> Result<f64> {
-    if a <= 0.0 {
-        Err(StatsError::ArgMustBePositive("a"))
-    } else if b <= 0.0 {
-        Err(StatsError::ArgMustBePositive("b"))
+pub fn checked_ln_beta(a: f64, b: f64) -> Option<f64> {
+    if a <= 0.0 || b <= 0.0 {
+        None
     } else {
-        Ok(gamma::ln_gamma(a) + gamma::ln_gamma(b) - gamma::ln_gamma(a + b))
+        Some(gamma::ln_gamma(a) + gamma::ln_gamma(b) - gamma::ln_gamma(a + b))
     }
 }
 
@@ -60,7 +56,7 @@ pub fn beta(a: f64, b: f64) -> f64 {
 /// # Errors
 ///
 /// if `a <= 0.0` or `b <= 0.0`
-pub fn checked_beta(a: f64, b: f64) -> Result<f64> {
+pub fn checked_beta(a: f64, b: f64) -> Option<f64> {
     checked_ln_beta(a, b).map(|x| x.exp())
 }
 
@@ -84,7 +80,7 @@ pub fn beta_inc(a: f64, b: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
-pub fn checked_beta_inc(a: f64, b: f64, x: f64) -> Result<f64> {
+pub fn checked_beta_inc(a: f64, b: f64, x: f64) -> Option<f64> {
     checked_beta_reg(a, b, x).and_then(|x| checked_beta(a, b).map(|y| x * y))
 }
 
@@ -110,13 +106,9 @@ pub fn beta_reg(a: f64, b: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// if `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
-pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64> {
-    if a <= 0.0 {
-        Err(StatsError::ArgMustBePositive("a"))
-    } else if b <= 0.0 {
-        Err(StatsError::ArgMustBePositive("b"))
-    } else if !(0.0..=1.0).contains(&x) {
-        Err(StatsError::ArgIntervalIncl("x", 0.0, 1.0))
+pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Option<f64> {
+    if a <= 0.0 || b <= 0.0 || !(0.0..=1.0).contains(&x) {
+        None
     } else {
         let bt = if is_zero(x) || ulps_eq!(x, 1.0) {
             0.0
@@ -188,17 +180,17 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64> {
 
             if (del - 1.0).abs() <= eps {
                 return if symm_transform {
-                    Ok(1.0 - bt * h / a)
+                    Some(1.0 - bt * h / a)
                 } else {
-                    Ok(bt * h / a)
+                    Some(bt * h / a)
                 };
             }
         }
 
         if symm_transform {
-            Ok(1.0 - bt * h / a)
+            Some(1.0 - bt * h / a)
         } else {
-            Ok(bt * h / a)
+            Some(bt * h / a)
         }
     }
 }
@@ -424,12 +416,12 @@ mod tests {
 
     #[test]
     fn test_checked_ln_beta_a_lte_0() {
-        assert!(super::checked_ln_beta(0.0, 0.5).is_err());
+        assert!(super::checked_ln_beta(0.0, 0.5).is_none());
     }
 
     #[test]
     fn test_checked_ln_beta_b_lte_0() {
-        assert!(super::checked_ln_beta(0.5, 0.0).is_err());
+        assert!(super::checked_ln_beta(0.5, 0.0).is_none());
     }
 
     #[test]
@@ -446,12 +438,12 @@ mod tests {
 
     #[test]
     fn test_checked_beta_a_lte_0() {
-        assert!(super::checked_beta(0.0, 0.5).is_err());
+        assert!(super::checked_beta(0.0, 0.5).is_none());
     }
 
     #[test]
     fn test_checked_beta_b_lte_0() {
-        assert!(super::checked_beta(0.5, 0.0).is_err());
+        assert!(super::checked_beta(0.5, 0.0).is_none());
     }
 
     #[test]
@@ -515,22 +507,22 @@ mod tests {
 
     #[test]
     fn test_checked_beta_inc_a_lte_0() {
-        assert!(super::checked_beta_inc(0.0, 1.0, 1.0).is_err());
+        assert!(super::checked_beta_inc(0.0, 1.0, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_beta_inc_b_lte_0() {
-        assert!(super::checked_beta_inc(1.0, 0.0, 1.0).is_err());
+        assert!(super::checked_beta_inc(1.0, 0.0, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_beta_inc_x_lt_0() {
-        assert!(super::checked_beta_inc(1.0, 1.0, -1.0).is_err());
+        assert!(super::checked_beta_inc(1.0, 1.0, -1.0).is_none());
     }
 
     #[test]
     fn test_checked_beta_inc_x_gt_1() {
-        assert!(super::checked_beta_inc(1.0, 1.0, 2.0).is_err());
+        assert!(super::checked_beta_inc(1.0, 1.0, 2.0).is_none());
     }
 
     #[test]
@@ -581,21 +573,21 @@ mod tests {
 
     #[test]
     fn test_checked_beta_reg_a_lte_0() {
-        assert!(super::checked_beta_reg(0.0, 1.0, 1.0).is_err());
+        assert!(super::checked_beta_reg(0.0, 1.0, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_beta_reg_b_lte_0() {
-        assert!(super::checked_beta_reg(1.0, 0.0, 1.0).is_err());
+        assert!(super::checked_beta_reg(1.0, 0.0, 1.0).is_none());
     }
 
     #[test]
     fn test_checked_beta_reg_x_lt_0() {
-        assert!(super::checked_beta_reg(1.0, 1.0, -1.0).is_err());
+        assert!(super::checked_beta_reg(1.0, 1.0, -1.0).is_none());
     }
 
     #[test]
     fn test_checked_beta_reg_x_gt_1() {
-        assert!(super::checked_beta_reg(1.0, 1.0, 2.0).is_err());
+        assert!(super::checked_beta_reg(1.0, 1.0, 2.0).is_none());
     }
 }
