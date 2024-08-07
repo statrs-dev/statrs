@@ -1,9 +1,22 @@
-use crate::distribution::{ziggurat, Continuous, ContinuousCDF};
+use crate::consts;
+use crate::distribution::{
+    ziggurat, Continuous, ContinuousCDF, ParametrizationError as ParamError,
+};
 use crate::function::erf;
 use crate::statistics::*;
-use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
+use thiserror::Error;
+
+#[derive(Clone, PartialEq, Debug, Error)]
+pub enum NormalError {
+    #[error("variance must be positive and not nan")]
+    InvalidStandardDeviation(#[source] ParamError<f64>),
+    #[error("location must be finite and not nan")]
+    InvalidLocation(#[source] ParamError<f64>),
+    #[error("variance of {0} is degenerate")]
+    DegenerateVariance(f64),
+}
 
 /// Implements the [Normal](https://en.wikipedia.org/wiki/Normal_distribution)
 /// distribution
@@ -44,9 +57,23 @@ impl Normal {
     /// result = Normal::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(mean: f64, std_dev: f64) -> Result<Normal> {
-        if mean.is_nan() || std_dev.is_nan() || std_dev <= 0.0 {
-            Err(StatsError::BadParams)
+    pub fn new(mean: f64, std_dev: f64) -> Result<Normal, NormalError> {
+        if mean.is_nan() {
+            Err(NormalError::InvalidLocation(ParamError::ExpectedNotNan))
+        } else if std_dev.is_nan() {
+            Err(NormalError::InvalidStandardDeviation(
+                ParamError::ExpectedNotNan,
+            ))
+        } else if std_dev < 0.0 {
+            Err(NormalError::InvalidStandardDeviation(
+                ParamError::ExpectedPositive(std_dev),
+            ))
+        } else if std_dev == 0.0 || std_dev.is_infinite() {
+            Err(NormalError::DegenerateVariance(std_dev))
+        } else if mean.is_infinite() {
+            Err(NormalError::InvalidLocation(ParamError::ExpectedFinite(
+                mean,
+            )))
         } else {
             Ok(Normal { mean, std_dev })
         }
@@ -377,7 +404,6 @@ mod tests {
         create_case(-5.0, 1.0);
         create_case(0.0, 10.0);
         create_case(10.0, 100.0);
-        create_case(-5.0, f64::INFINITY);
     }
 
     #[test]
@@ -395,7 +421,6 @@ mod tests {
         test_case(0.0, 0.1, 0.1 * 0.1, variance);
         test_case(0.0, 1.0, 1.0, variance);
         test_case(0.0, 10.0, 100.0, variance);
-        test_case(0.0, f64::INFINITY, f64::INFINITY, variance);
     }
 
     #[test]
@@ -404,7 +429,6 @@ mod tests {
         test_almost(0.0, 0.1, -0.8836465597893729422377, 1e-15, entropy);
         test_case(0.0, 1.0, 1.41893853320467274178, entropy);
         test_case(0.0, 10.0, 3.721523626198718425798, entropy);
-        test_case(0.0, f64::INFINITY, f64::INFINITY, entropy);
     }
 
     #[test]
@@ -413,7 +437,6 @@ mod tests {
         test_case(0.0, 0.1, 0.0, skewness);
         test_case(4.0, 1.0, 0.0, skewness);
         test_case(0.3, 10.0, 0.0, skewness);
-        test_case(0.0, f64::INFINITY, 0.0, skewness);
     }
 
     #[test]
@@ -424,7 +447,6 @@ mod tests {
         test_case(0.1, 1.0, 0.1, mode);
         test_case(1.0, 1.0, 1.0, mode);
         test_case(-10.0, 1.0, -10.0, mode);
-        test_case(f64::INFINITY, 1.0, f64::INFINITY, mode);
     }
 
     #[test]
@@ -435,7 +457,6 @@ mod tests {
         test_case(0.1, 1.0, 0.1, median);
         test_case(1.0, 1.0, 1.0, median);
         test_case(-0.0, 1.0, -0.0, median);
-        test_case(f64::INFINITY, 1.0, f64::INFINITY, median);
     }
 
     #[test]
@@ -471,9 +492,6 @@ mod tests {
         test_case(10.0, 100.0, 0.003969525474770117655105, pdf(0.0));
         test_almost(10.0, 100.0, 0.002660852498987548218204, 1e-18, pdf(100.0));
         test_case(10.0, 100.0, 6.561581477467659126534E-4, pdf(200.0));
-        test_case(-5.0, f64::INFINITY, 0.0, pdf(-5.0));
-        test_case(-5.0, f64::INFINITY, 0.0, pdf(0.0));
-        test_case(-5.0, f64::INFINITY, 0.0, pdf(100.0));
     }
 
     #[test]
@@ -499,9 +517,6 @@ mod tests {
         test_almost(10.0, 100.0, (0.003969525474770117655105f64).ln(),1e-15, ln_pdf(0.0));
         test_almost(10.0, 100.0, (0.002660852498987548218204f64).ln(), 1e-15, ln_pdf(100.0));
         test_almost(10.0, 100.0, (6.561581477467659126534E-4f64).ln(), 1e-15, ln_pdf(200.0));
-        test_case(-5.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(-5.0));
-        test_case(-5.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(0.0));
-        test_case(-5.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(100.0));
     }
 
     #[test]
