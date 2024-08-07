@@ -1,6 +1,5 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, factorial};
-use crate::is_zero;
 use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
@@ -207,7 +206,7 @@ impl Distribution<f64> for Binomial {
     /// (1 / 2) * ln (2 * π * e * n * p * (1 - p))
     /// ```
     fn entropy(&self) -> Option<f64> {
-        let entr = if is_zero(self.p) || ulps_eq!(self.p, 1.0) {
+        let entr = if self.p == 0.0 || ulps_eq!(self.p, 1.0) {
             0.0
         } else {
             (0..self.n + 1).fold(0.0, |acc, x| {
@@ -252,7 +251,7 @@ impl Mode<Option<u64>> for Binomial {
     /// floor((n + 1) * p)
     /// ```
     fn mode(&self) -> Option<u64> {
-        let mode = if is_zero(self.p) {
+        let mode = if self.p == 0.0 {
             0
         } else if ulps_eq!(self.p, 1.0) {
             self.n
@@ -275,7 +274,7 @@ impl Discrete<u64, f64> for Binomial {
     fn pmf(&self, x: u64) -> f64 {
         if x > self.n {
             0.0
-        } else if is_zero(self.p) {
+        } else if self.p == 0.0 {
             if x == 0 {
                 1.0
             } else {
@@ -306,7 +305,7 @@ impl Discrete<u64, f64> for Binomial {
     fn ln_pmf(&self, x: u64) -> f64 {
         if x > self.n {
             f64::NEG_INFINITY
-        } else if is_zero(self.p) {
+        } else if self.p == 0.0 {
             if x == 0 {
                 0.0
             } else {

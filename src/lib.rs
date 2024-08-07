@@ -77,12 +77,6 @@ pub mod stats_tests;
 
 mod error;
 
-// function to silence clippy on the special case when comparing to zero.
-#[inline(always)]
-pub(crate) fn is_zero(x: f64) -> bool {
-    ulps_eq!(x, 0.0, max_ulps = 0)
-}
-
 pub use crate::error::StatsError;
 
 /// Result type for the statrs library package that returns

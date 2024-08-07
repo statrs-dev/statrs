@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
-use crate::is_zero;
 use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
@@ -339,7 +338,7 @@ impl Continuous<f64, f64> for Beta {
                 0.0
             }
         } else if self.shape_b.is_infinite() {
-            if is_zero(x) {
+            if x == 0.0 {
                 f64::INFINITY
             } else {
                 0.0
@@ -377,7 +376,7 @@ impl Continuous<f64, f64> for Beta {
                 f64::NEG_INFINITY
             }
         } else if self.shape_b.is_infinite() {
-            if is_zero(x) {
+            if x == 0.0 {
                 f64::INFINITY
             } else {
                 f64::NEG_INFINITY
@@ -388,9 +387,9 @@ impl Continuous<f64, f64> for Beta {
             let aa = gamma::ln_gamma(self.shape_a + self.shape_b)
                 - gamma::ln_gamma(self.shape_a)
                 - gamma::ln_gamma(self.shape_b);
-            let bb = if ulps_eq!(self.shape_a, 1.0) && is_zero(x) {
+            let bb = if ulps_eq!(self.shape_a, 1.0) && x == 0.0 {
                 0.0
-            } else if is_zero(x) {
+            } else if x == 0.0 {
                 f64::NEG_INFINITY
             } else {
                 (self.shape_a - 1.0) * x.ln()
