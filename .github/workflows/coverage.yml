@@ -14,7 +14,7 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           components: llvm-tools-preview
 
@@ -28,7 +28,8 @@ jobs:
       - name: Collect coverage
         run: |
           cargo llvm-cov --no-report nextest
-          cargo llvm-cov report --lcov --output-path lcov.info
+          cargo llvm-cov --no-report --doc
+          cargo llvm-cov report --doctests --lcov --output-path lcov.info
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v4
