@@ -2,10 +2,7 @@ use crate::distribution::Continuous;
 use crate::distribution::Normal;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
 use crate::{Result, StatsError};
-use nalgebra::{
-    base::allocator::Allocator, Cholesky, Const, DMatrix, DVector, DefaultAllocator, Dim, DimMin,
-    Dyn, OMatrix, OVector,
-};
+use nalgebra::{Cholesky, Const, DMatrix, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
 use rand::Rng;
 use std::f64;
 use std::f64::consts::{E, PI};

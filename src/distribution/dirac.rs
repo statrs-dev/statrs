@@ -1,4 +1,4 @@
-use crate::distribution::{Continuous, ContinuousCDF};
+use crate::distribution::ContinuousCDF;
 use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
@@ -194,7 +194,7 @@ impl Mode<Option<f64>> for Dirac {
 #[cfg(test)]
 mod tests {
     use crate::statistics::*;
-    use crate::distribution::{ContinuousCDF, Continuous, Dirac};
+    use crate::distribution::{ContinuousCDF, Dirac};
 
     fn try_create(v: f64) -> Dirac {
         let d = Dirac::new(v);

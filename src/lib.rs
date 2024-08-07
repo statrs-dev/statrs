@@ -47,7 +47,6 @@
 #![crate_name = "statrs"]
 #![allow(clippy::excessive_precision)]
 #![allow(clippy::many_single_char_names)]
-#![allow(unused_imports)]
 #![forbid(unsafe_code)]
 
 #[macro_use]
