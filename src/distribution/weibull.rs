@@ -139,6 +139,14 @@ impl ContinuousCDF<f64, f64> for Weibull {
             (-x.powf(self.shape) * self.scale_pow_shape_inv).exp()
         }
     }
+
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        if !(0.0..=1.0).contains(&p) {
+            panic!("x must be in [0, 1]");
+        } else {
+            ((-p).ln_1p() / self.scale_pow_shape_inv).powf(1.0 / self.shape)
+        }
+    }
 }
 
 impl Min<f64> for Weibull {

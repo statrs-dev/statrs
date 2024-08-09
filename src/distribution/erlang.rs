@@ -122,6 +122,10 @@ impl ContinuousCDF<f64, f64> for Erlang {
     fn sf(&self, x: f64) -> f64 {
         self.g.sf(x)
     }
+
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        self.g.inverse_cdf(p)
+    }
 }
 
 impl Min<f64> for Erlang {

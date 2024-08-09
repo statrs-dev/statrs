@@ -164,6 +164,14 @@ impl ContinuousCDF<f64, f64> for Beta {
             beta::beta_reg(self.shape_b, self.shape_a, 1.0 - x)
         }
     }
+
+    fn inverse_cdf(&self, x: f64) -> f64 {
+        if !(0.0..=1.0).contains(&x) {
+            panic!("x must be in [0, 1]");
+        } else {
+            beta::inv_beta_reg(self.shape_a, self.shape_b, x)
+        }
+    }
 }
 
 impl Min<f64> for Beta {
@@ -655,6 +663,18 @@ mod tests {
         for ((a, b), x, expect) in test {
             test_case(a, b, expect, sf(x));
         }
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        // let inverse_cdf = |arg: f64| move |x: Beta| x.inverse_cdf(arg);
+        let cdf = |arg: f64| move |x: Beta| x.inverse_cdf(x.cdf(arg));
+        [1.0, 2.0, 1.0, 0.6].iter()
+            .zip([1.0, 1.0, 5.0, 0.9].iter())
+            .zip([0.0, 0.1, 0.9, 1.0].iter())
+            .for_each(|((&a, &b), &val)| {
+            test_case(a, b, val, cdf(val));
+        });
     }
 
     #[test]

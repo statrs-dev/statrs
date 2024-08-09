@@ -141,6 +141,14 @@ impl ContinuousCDF<f64, f64> for Pareto {
             (self.scale / x).powf(self.shape)
         }
     }
+
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        if !(0.0..=1.0).contains(&p) {
+            panic!("x must be in [0, 1]");
+        } else {
+            self.scale / (1.0 - p).powf(1.0 / self.shape)
+        }
+    }
 }
 
 impl Min<f64> for Pareto {

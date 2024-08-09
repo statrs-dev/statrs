@@ -121,6 +121,14 @@ impl ContinuousCDF<f64, f64> for Cauchy {
     fn sf(&self, x: f64) -> f64 {
         (1.0 / f64::consts::PI) * ((self.location - x) / self.scale).atan() + 0.5
     }
+
+    fn inverse_cdf(&self, x: f64) -> f64 {
+        if !(0.0..=1.0).contains(&x) {
+            panic!("x must be in [0, 1]");
+        } else {
+            self.location + self.scale * (f64::consts::PI * (x - 0.5)).tan()
+        }
+    }
 }
 
 impl Min<f64> for Cauchy {
@@ -464,6 +472,12 @@ mod tests {
         test_case(f64::INFINITY, 1.0, 1.0, sf(0.0));
         test_case(f64::INFINITY, 1.0, 1.0, sf(1.0));
         test_case(f64::INFINITY, 1.0, 1.0, sf(5.0));
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let icdf = |arg: f64| move |x: Cauchy| x.inverse_cdf(arg);
+        test_case(0.0, 1.0, -3.077683537175253, icdf(0.1));
     }
 
     #[test]
