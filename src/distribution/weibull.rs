@@ -6,6 +6,8 @@ use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
 
+use super::FullContinuous;
+
 /// Implements the [Weibull](https://en.wikipedia.org/wiki/Weibull_distribution)
 /// distribution
 ///
@@ -337,6 +339,8 @@ impl Continuous<f64, f64> for Weibull {
         }
     }
 }
+
+impl FullContinuous<f64, f64> for Weibull {}
 
 #[rustfmt::skip]
 #[cfg(test)]

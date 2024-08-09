@@ -4,6 +4,8 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
+use super::FullContinuous;
+
 /// Implements the
 /// [Triangular](https://en.wikipedia.org/wiki/Triangular_distribution)
 /// distribution
@@ -306,6 +308,8 @@ impl Continuous<f64, f64> for Triangular {
         self.pdf(x).ln()
     }
 }
+
+impl FullContinuous<f64, f64> for Triangular {}
 
 fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, min: f64, max: f64, mode: f64) -> f64 {
     let f: f64 = rng.gen();

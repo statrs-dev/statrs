@@ -6,6 +6,8 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
+use super::FullDiscrete;
+
 /// Implements the
 /// [Binomial](https://en.wikipedia.org/wiki/Binomial_distribution)
 /// distribution
@@ -325,6 +327,8 @@ impl Discrete<u64, f64> for Binomial {
         }
     }
 }
+
+impl FullDiscrete<u64, f64> for Binomial {}
 
 #[rustfmt::skip]
 #[cfg(test)]

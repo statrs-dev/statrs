@@ -5,6 +5,8 @@ use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
 
+use super::FullContinuous;
+
 /// Implements the
 /// [Log-normal](https://en.wikipedia.org/wiki/Log-normal_distribution)
 /// distribution
@@ -301,6 +303,8 @@ impl Continuous<f64, f64> for LogNormal {
         }
     }
 }
+
+impl FullContinuous<f64, f64> for LogNormal {}
 
 #[rustfmt::skip]
 #[cfg(test)]

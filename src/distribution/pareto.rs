@@ -5,6 +5,8 @@ use rand::distributions::OpenClosed01;
 use rand::Rng;
 use std::f64;
 
+use super::FullContinuous;
+
 /// Implements the [Pareto](https://en.wikipedia.org/wiki/Pareto_distribution)
 /// distribution
 ///
@@ -340,6 +342,8 @@ impl Continuous<f64, f64> for Pareto {
         }
     }
 }
+
+impl FullContinuous<f64, f64> for Pareto {}
 
 #[rustfmt::skip]
 #[cfg(test)]

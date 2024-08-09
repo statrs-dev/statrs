@@ -3,6 +3,8 @@ use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
 
+use super::FullDiscrete;
+
 /// Implements the [Discrete
 /// Uniform](https://en.wikipedia.org/wiki/Discrete_uniform_distribution)
 /// distribution
@@ -252,6 +254,8 @@ impl Discrete<i64, f64> for DiscreteUniform {
         }
     }
 }
+
+impl FullDiscrete<i64, f64> for DiscreteUniform {}
 
 #[rustfmt::skip]
 #[cfg(test)]

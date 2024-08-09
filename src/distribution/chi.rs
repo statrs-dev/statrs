@@ -5,6 +5,8 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
+use super::FullContinuous;
+
 /// Implements the [Chi](https://en.wikipedia.org/wiki/Chi_distribution)
 /// distribution
 ///
@@ -321,6 +323,8 @@ impl Continuous<f64, f64> for Chi {
         }
     }
 }
+
+impl FullContinuous<f64, f64> for Chi {}
 
 #[rustfmt::skip]
 #[cfg(test)]

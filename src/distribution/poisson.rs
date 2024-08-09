@@ -5,6 +5,8 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
+use super::FullDiscrete;
+
 /// Implements the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution)
 /// distribution
 ///
@@ -260,6 +262,9 @@ impl Discrete<u64, f64> for Poisson {
         -self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x)
     }
 }
+
+impl FullDiscrete<u64, f64> for Poisson {}
+
 /// Generates one sample from the Poisson distribution either by
 /// Knuth's method if lambda < 30.0 or Rejection method PA by
 /// A. C. Atkinson from the Journal of the Royal Statistical Society

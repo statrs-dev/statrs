@@ -3,6 +3,8 @@ use crate::statistics::*;
 use crate::Result;
 use rand::Rng;
 
+use super::FullContinuous;
+
 /// Implements the [Erlang](https://en.wikipedia.org/wiki/Erlang_distribution)
 /// distribution
 /// which is a special case of the
@@ -278,6 +280,8 @@ impl Continuous<f64, f64> for Erlang {
         self.g.ln_pdf(x)
     }
 }
+
+impl FullContinuous<f64, f64> for Erlang {}
 
 #[rustfmt::skip]
 #[cfg(test)]

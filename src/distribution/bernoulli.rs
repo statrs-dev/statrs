@@ -3,6 +3,8 @@ use crate::statistics::*;
 use crate::Result;
 use rand::Rng;
 
+use super::FullDiscrete;
+
 /// Implements the
 /// [Bernoulli](https://en.wikipedia.org/wiki/Bernoulli_distribution)
 /// distribution which is a special case of the
@@ -261,6 +263,8 @@ impl Discrete<u64, f64> for Bernoulli {
         self.b.ln_pmf(x)
     }
 }
+
+impl FullDiscrete<u64, f64> for Bernoulli {}
 
 #[rustfmt::skip]
 #[cfg(test)]

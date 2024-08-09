@@ -5,6 +5,8 @@ use rand::distributions::OpenClosed01;
 use rand::Rng;
 use std::f64;
 
+use super::FullDiscrete;
+
 /// Implements the
 /// [Geometric](https://en.wikipedia.org/wiki/Geometric_distribution)
 /// distribution
@@ -269,6 +271,8 @@ impl Discrete<u64, f64> for Geometric {
         }
     }
 }
+
+impl FullDiscrete<u64, f64> for Geometric {}
 
 #[rustfmt::skip]
 #[cfg(test)]

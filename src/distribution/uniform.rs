@@ -6,6 +6,8 @@ use rand::Rng;
 use std::f64;
 use std::fmt::Debug;
 
+use super::FullContinuous;
+
 /// Implements the [Continuous
 /// Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous))
 /// distribution
@@ -280,6 +282,8 @@ impl Continuous<f64, f64> for Uniform {
         }
     }
 }
+
+impl FullContinuous<f64, f64> for Uniform {}
 
 #[rustfmt::skip]
 #[cfg(test)]

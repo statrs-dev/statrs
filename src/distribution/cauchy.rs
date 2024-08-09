@@ -4,6 +4,8 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
+use super::FullContinuous;
+
 /// Implements the [Cauchy](https://en.wikipedia.org/wiki/Cauchy_distribution)
 /// distribution, also known as the Lorentz distribution.
 ///
@@ -238,6 +240,8 @@ impl Continuous<f64, f64> for Cauchy {
             .ln()
     }
 }
+
+impl FullContinuous<f64, f64> for Cauchy {}
 
 #[rustfmt::skip]
 #[cfg(test)]

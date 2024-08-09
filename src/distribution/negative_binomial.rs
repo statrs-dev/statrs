@@ -5,6 +5,8 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
+use super::FullDiscrete;
+
 /// Implements the
 /// [negative binomial](http://en.wikipedia.org/wiki/Negative_binomial_distribution)
 /// distribution.
@@ -287,6 +289,8 @@ impl Discrete<u64, f64> for NegativeBinomial {
             + (k * (-self.p).ln_1p())
     }
 }
+
+impl FullDiscrete<u64, f64> for NegativeBinomial {}
 
 #[rustfmt::skip]
 #[cfg(test)]

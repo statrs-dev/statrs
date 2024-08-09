@@ -4,6 +4,8 @@ use crate::Result;
 use rand::Rng;
 use std::f64;
 
+use super::FullContinuous;
+
 /// Implements the
 /// [Chi-squared](https://en.wikipedia.org/wiki/Chi-squared_distribution)
 /// distribution which is a special case of the
@@ -291,6 +293,8 @@ impl Continuous<f64, f64> for ChiSquared {
         self.g.ln_pdf(x)
     }
 }
+
+impl FullContinuous<f64, f64> for ChiSquared {}
 
 #[rustfmt::skip]
 #[cfg(test)]

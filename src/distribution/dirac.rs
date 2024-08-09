@@ -3,6 +3,8 @@ use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
 
+use super::FullContinuous;
+
 /// Implements the [Dirac Delta](https://en.wikipedia.org/wiki/Dirac_delta_function#As_a_distribution)
 /// distribution
 ///

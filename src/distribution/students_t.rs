@@ -6,6 +6,8 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
+use super::FullContinuous;
+
 /// Implements the [Student's
 /// T](https://en.wikipedia.org/wiki/Student%27s_t-distribution) distribution
 ///
@@ -419,6 +421,8 @@ impl Continuous<f64, f64> for StudentsT {
         }
     }
 }
+
+impl FullContinuous<f64, f64> for StudentsT {}
 
 #[cfg(test)]
 mod tests {

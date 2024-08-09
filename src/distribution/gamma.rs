@@ -5,6 +5,8 @@ use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
 
+use super::FullContinuous;
+
 /// Implements the [Gamma](https://en.wikipedia.org/wiki/Gamma_distribution)
 /// distribution
 ///
@@ -363,6 +365,9 @@ impl Continuous<f64, f64> for Gamma {
         }
     }
 }
+
+impl FullContinuous<f64, f64> for Gamma {}
+
 /// Samples from a gamma distribution with a shape of `shape` and a
 /// rate of `rate` using `rng` as the source of randomness. Implementation from:
 /// <br />

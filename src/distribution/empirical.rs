@@ -6,6 +6,8 @@ use core::cmp::Ordering;
 use rand::Rng;
 use std::collections::BTreeMap;
 
+use super::FullContinuous;
+
 #[derive(Clone, PartialEq, Debug)]
 struct NonNan<T>(T);
 

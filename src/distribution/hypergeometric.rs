@@ -6,6 +6,8 @@ use rand::Rng;
 use std::cmp;
 use std::f64;
 
+use super::FullDiscrete;
+
 /// Implements the
 /// [Hypergeometric](http://en.wikipedia.org/wiki/Hypergeometric_distribution)
 /// distribution
@@ -374,6 +376,8 @@ impl Discrete<u64, f64> for Hypergeometric {
             - factorial::ln_binomial(self.population, self.draws)
     }
 }
+
+impl FullDiscrete<u64, f64> for Hypergeometric {}
 
 #[rustfmt::skip]
 #[cfg(test)]
