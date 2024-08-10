@@ -4,8 +4,6 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
-use super::FullContinuous;
-
 /// Implements the
 /// [Exp](https://en.wikipedia.org/wiki/Exp_distribution)
 /// distribution and is a special case of the
@@ -277,8 +275,6 @@ impl Continuous<f64, f64> for Exp {
         }
     }
 }
-
-impl FullContinuous<f64, f64> for Exp {}
 
 #[rustfmt::skip]
 #[cfg(test)]

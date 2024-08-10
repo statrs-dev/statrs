@@ -5,8 +5,6 @@ use crate::statistics::*;
 use crate::{Result, StatsError};
 use rand::Rng;
 
-use super::FullContinuous;
-
 /// Implements the [Beta](https://en.wikipedia.org/wiki/Beta_distribution)
 /// distribution
 ///
@@ -416,8 +414,6 @@ impl Continuous<f64, f64> for Beta {
         }
     }
 }
-
-impl FullContinuous<f64, f64> for Beta {}
 
 #[rustfmt::skip]
 #[cfg(test)]

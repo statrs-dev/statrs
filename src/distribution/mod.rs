@@ -280,7 +280,3 @@ pub trait Discrete<K, T> {
     /// ```
     fn ln_pmf(&self, x: K) -> T;
 }
-
-pub trait FullContinuous<K: Float, T: Float>: ContinuousCDF<K, T> + Continuous<K, T> {}
-
-pub trait FullDiscrete<K: Sized + Num + Ord + Clone + NumAssignOps, T: Float>: DiscreteCDF<K, T> + Discrete<K, T> {}

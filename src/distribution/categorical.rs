@@ -4,8 +4,6 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
-use super::FullDiscrete;
-
 /// Implements the
 /// [Categorical](https://en.wikipedia.org/wiki/Categorical_distribution)
 /// distribution, also known as the generalized Bernoulli or discrete
@@ -334,8 +332,6 @@ fn binary_index(search: &[f64], val: f64) -> usize {
     }
     cmp::min(search.len(), cmp::max(low, 0) as usize)
 }
-
-impl FullDiscrete<u64, f64> for Categorical {}
 
 #[test]
 fn test_prob_mass_to_cdf() {

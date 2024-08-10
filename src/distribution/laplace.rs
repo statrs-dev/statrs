@@ -4,8 +4,6 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
-use super::FullContinuous;
-
 /// Implements the [Laplace](https://en.wikipedia.org/wiki/Laplace_distribution)
 /// distribution.
 ///
@@ -298,8 +296,6 @@ impl Continuous<f64, f64> for Laplace {
         ((-(x - self.location).abs() / self.scale).exp() / (2. * self.scale)).ln()
     }
 }
-
-impl FullContinuous<f64, f64> for Laplace {}
 
 #[cfg(test)]
 mod tests {

@@ -5,8 +5,6 @@ use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
 
-use super::FullContinuous;
-
 /// Implements the [Normal](https://en.wikipedia.org/wiki/Normal_distribution)
 /// distribution
 ///
@@ -293,8 +291,6 @@ impl Continuous<f64, f64> for Normal {
         ln_pdf_unchecked(x, self.mean, self.std_dev)
     }
 }
-
-impl FullContinuous<f64, f64> for Normal {}
 
 /// performs an unchecked cdf calculation for a normal distribution
 /// with the given mean and standard deviation at x

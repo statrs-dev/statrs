@@ -5,8 +5,6 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
-use super::FullContinuous;
-
 /// Implements the
 /// [Fisher-Snedecor](https://en.wikipedia.org/wiki/F-distribution) distribution
 /// also commonly known as the F-distribution
@@ -374,8 +372,6 @@ impl Continuous<f64, f64> for FisherSnedecor {
         self.pdf(x).ln()
     }
 }
-
-impl FullContinuous<f64, f64> for FisherSnedecor {}
 
 #[rustfmt::skip]
 #[cfg(test)]

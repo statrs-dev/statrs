@@ -5,8 +5,6 @@ use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
-use super::FullContinuous;
-
 /// Implements the [Inverse
 /// Gamma](https://en.wikipedia.org/wiki/Inverse-gamma_distribution)
 /// distribution
@@ -311,8 +309,6 @@ impl Continuous<f64, f64> for InverseGamma {
         self.pdf(x).ln()
     }
 }
-
-impl FullContinuous<f64, f64> for InverseGamma {}
 
 #[rustfmt::skip]
 #[cfg(test)]
