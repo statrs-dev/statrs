@@ -165,6 +165,18 @@ impl ContinuousCDF<f64, f64> for Beta {
         }
     }
 
+    /// Calculates the inverse cumulative distribution function for the beta
+    /// distribution
+    /// at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// I^{-1}_x(α, β)
+    /// ```
+    ///
+    /// where `α` is shapeA, `β` is shapeB, and `I_x` is the inverse of the
+    /// regularized lower incomplete beta function
     fn inverse_cdf(&self, x: f64) -> f64 {
         if !(0.0..=1.0).contains(&x) {
             panic!("x must be in [0, 1]");
@@ -668,13 +680,22 @@ mod tests {
     #[test]
     fn test_inverse_cdf() {
         // let inverse_cdf = |arg: f64| move |x: Beta| x.inverse_cdf(arg);
-        let cdf = |arg: f64| move |x: Beta| x.inverse_cdf(x.cdf(arg));
-        [1.0, 2.0, 1.0, 0.6].iter()
-            .zip([1.0, 1.0, 5.0, 0.9].iter())
-            .zip([0.0, 0.1, 0.9, 1.0].iter())
-            .for_each(|((&a, &b), &val)| {
-            test_case(a, b, val, cdf(val));
-        });
+        let func = |arg: f64| move |x: Beta| x.inverse_cdf(x.cdf(arg));
+        let test = [
+            ((1.0, 1.0), 0.0, 0.0),
+            ((1.0, 1.0), 0.5, 0.5),
+            ((1.0, 1.0), 1.0, 1.0),
+            ((9.0, 1.0), 0.0, 0.0),
+            ((9.0, 1.0), 0.001953125, 0.001953125),
+            ((9.0, 1.0), 0.5, 0.5),
+            ((9.0, 1.0), 1.0, 1.0),
+            ((5.0, 100.0), 0.0, 0.0),
+            ((5.0, 100.0), 0.01, 0.01),
+            ((5.0, 100.0), 1.0, 1.0),
+        ];
+        for ((a, b), x, expect) in test {
+           test_case(a, b, expect, func(x));
+        };
     }
 
     #[test]

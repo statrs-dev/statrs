@@ -122,6 +122,16 @@ impl ContinuousCDF<f64, f64> for Cauchy {
         (1.0 / f64::consts::PI) * ((self.location - x) / self.scale).atan() + 0.5
     }
 
+    /// Calculates the inverse cumulative distribution function for the
+    /// cauchy distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// x_0 + γ tan((x - 0.5) π)
+    /// ```
+    ///
+    /// where `x_0` is the location and `γ` is the scale
     fn inverse_cdf(&self, x: f64) -> f64 {
         if !(0.0..=1.0).contains(&x) {
             panic!("x must be in [0, 1]");
@@ -476,8 +486,27 @@ mod tests {
 
     #[test]
     fn test_inverse_cdf() {
-        let icdf = |arg: f64| move |x: Cauchy| x.inverse_cdf(arg);
-        test_case(0.0, 1.0, -3.077683537175253, icdf(0.1));
+        let func = |arg: f64| move |x: Cauchy| x.inverse_cdf(x.cdf(arg));
+        test_almost(0.0, 0.1, -5.0, 1e-10, func(-5.0));
+        test_almost(0.0, 0.1, -1.0, 1e-14, func(-1.0));
+        test_case(0.0, 0.1, 0.0, func(0.0));
+        test_almost(0.0, 0.1, 1.0, 1e-14, func(1.0));
+        test_almost(0.0, 0.1, 5.0, 1e-10, func(5.0));
+        test_almost(0.0, 1.0, -5.0, 1e-14, func(-5.0));
+        test_almost(0.0, 1.0, -1.0, 1e-15, func(-1.0));
+        test_case(0.0, 1.0, 0.0, func(0.0));
+        test_almost(0.0, 1.0, 1.0, 1e-15, func(1.0));
+        test_almost(0.0, 1.0, 5.0, 1e-14, func(5.0));
+        test_almost(0.0, 10.0, -5.0, 1e-14, func(-5.0));
+        test_almost(0.0, 10.0, -1.0, 1e-14, func(-1.0));
+        test_case(0.0, 10.0, 0.0, func(0.0));
+        test_almost(0.0, 10.0, 1.0, 1e-14, func(1.0));
+        test_almost(0.0, 10.0, 5.0, 1e-14, func(5.0));
+        test_case(-5.0, 100.0, -5.0, func(-5.0));
+        test_almost(-5.0, 100.0, -1.0, 1e-10, func(-1.0));
+        test_almost(-5.0, 100.0, 0.0, 1e-14, func(0.0));
+        test_almost(-5.0, 100.0, 1.0, 1e-14, func(1.0));
+        test_almost(-5.0, 100.0, 5.0, 1e-10, func(5.0));
     }
 
     #[test]

@@ -140,12 +140,22 @@ impl ContinuousCDF<f64, f64> for Weibull {
         }
     }
 
+    /// Calculates the inverse cumulative distribution function for the weibull
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// λ (-ln(1 - x))^(1 / k)
+    /// ```
+    ///
+    /// where `k` is the shape and `λ` is the scale
     fn inverse_cdf(&self, p: f64) -> f64 {
         if !(0.0..=1.0).contains(&p) {
             panic!("x must be in [0, 1]");
-        } else {
-            ((-p).ln_1p() / self.scale_pow_shape_inv).powf(1.0 / self.shape)
         }
+
+        (-((-p).ln_1p() / self.scale_pow_shape_inv)).powf(1.0 / self.shape)
     }
 }
 
@@ -532,6 +542,21 @@ mod tests {
         test_case(10.0, 1.0, 1.0, sf(0.0));
         test_case(10.0, 1.0, 0.36787944117144233, sf(1.0));
         test_case(10.0, 1.0, 0.0, sf(10.0));
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let func = |arg: f64| move |x: Weibull| x.inverse_cdf(x.cdf(arg));
+        test_case(1.0, 0.1, 0.0, func(0.0));
+        test_almost(1.0, 0.1, 1.0, 1e-13, func(1.0));
+        test_case(1.0, 1.0, 0.0, func(0.0));
+        test_case(1.0, 1.0, 1.0, func(1.0));
+        test_almost(1.0, 1.0, 10.0, 1e-10, func(10.0));
+        test_case(10.0, 10.0, 0.0, func(0.0));
+        test_almost(10.0, 10.0, 1.0, 1e-5, func(1.0));
+        test_almost(10.0, 10.0, 10.0, 1e-10, func(10.0));
+        test_case(10.0, 1.0, 0.0, func(0.0));
+        test_case(10.0, 1.0, 1.0, func(1.0));
     }
 
     #[test]

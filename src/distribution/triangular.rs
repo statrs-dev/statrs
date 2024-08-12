@@ -84,7 +84,7 @@ impl ContinuousCDF<f64, f64> for Triangular {
     /// } if min < x <= mode {
     ///     (x - min)^2 / ((max - min) * (mode - min))
     /// } else if mode < x < max {
-    ///     1 - (max - min)^2 / ((max - min) * (max - mode))
+    ///     1 - (max - x)^2 / ((max - min) * (max - mode))
     /// } else {
     ///     1
     /// }
@@ -132,6 +132,34 @@ impl ContinuousCDF<f64, f64> for Triangular {
             (b - x) * (b - x) / ((b - a) * (b - c))
         } else {
             0.0
+        }
+    }
+
+    /// Calculates the inverse cumulative distribution function for the triangular
+    /// distribution
+    /// at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// if x < (mode - min) / (max - min) {
+    ///     min + ((max - min) * (mode - min) * x)^(1 / 2)
+    /// } else {
+    ///     max - (1 - (max - min) * (max - mode) * x)^(1 / 2)
+    /// }
+    /// ```
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        let a = self.min;
+        let b = self.max;
+        let c = self.mode;
+        if !(0.0..=1.0).contains(&p) {
+            panic!("x must be in [0, 1]");
+        }
+
+        if p < (c - a) / (b - a) {
+            a + ((c - a) * (b - a) * p).powf(0.5)
+        } else {
+            b - ((b - a) * (b - c) * (1.0 - p)).powf(0.5)
         }
     }
 }
@@ -536,6 +564,20 @@ mod tests {
     fn test_sf_upper_bound() {
         let sf = |arg: f64| move |x: Triangular| x.sf(arg);
         test_case(0.0, 3.0, 1.5, 0.0, sf(5.0));
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let func = |arg: f64| move |x: Triangular| x.inverse_cdf(x.cdf(arg));
+        test_almost(0.0, 1.0, 0.5, 0.25, 1e-15, func(0.25));
+        test_almost(0.0, 1.0, 0.5, 0.5, 1e-15, func(0.5));
+        test_almost(0.0, 1.0, 0.5, 0.75, 1e-15, func(0.75));
+        test_almost(-5.0, 8.0, -3.5, -4.0, 1e-15, func(-4.0));
+        test_almost(-5.0, 8.0, -3.5, -3.5, 1e-15, func(-3.5));
+        test_almost(-5.0, 8.0, -3.5, 4.0, 1e-15, func(4.0));
+        test_almost(-5.0, -3.0, -4.0, -4.5, 1e-15, func(-4.5));
+        test_almost(-5.0, -3.0, -4.0, -4.0, 1e-15, func(-4.0));
+        test_almost(-5.0, -3.0, -4.0, -3.5, 1e-15, func(-3.5));
     }
 
     #[test]

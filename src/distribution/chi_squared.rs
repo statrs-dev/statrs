@@ -139,6 +139,17 @@ impl ContinuousCDF<f64, f64> for ChiSquared {
         self.g.sf(x)
     }
 
+    /// Calculates the inverse cumulative distribution function for the
+    /// chi-squared distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (1 / Γ(k / 2)) * γ(k / 2, x / 2)
+    /// ```
+    ///
+    /// where `k` is the degrees of freedom, `Γ` is the gamma function,
+    /// and `γ` is the lower incomplete gamma function
     fn inverse_cdf(&self, p: f64) -> f64 {
         self.g.inverse_cdf(p)
     }

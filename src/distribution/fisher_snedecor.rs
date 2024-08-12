@@ -156,6 +156,18 @@ impl ContinuousCDF<f64, f64> for FisherSnedecor {
         }
     }
 
+    /// Calculates the inverse cumulative distribution function for the
+    /// fisher-snedecor distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// I_((d1 * x) / (d1 * x + d2))(d1 / 2, d2 / 2)
+    /// ```
+    ///
+    /// where `d1` is the first degree of freedom, `d2` is
+    /// the second degree of freedom, and `I` is the regularized incomplete
+    /// beta function
     fn inverse_cdf(&self, x: f64) -> f64 {
         if !(0.0..=1.0).contains(&x) {
             panic!("x must be in [0, 1]");
@@ -593,6 +605,23 @@ mod tests {
         test_almost(0.1, 1.0, 0.16734351500944344, 1e-12, sf(1.0));
         test_almost(1.0, 1.0, 0.5, 1e-12, sf(1.0));
         test_almost(10.0, 1.0, 0.65910686769794, 1e-12, sf(1.0));
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let func = |arg: f64| move |x: FisherSnedecor| x.inverse_cdf(x.cdf(arg));
+        test_almost(0.1, 0.1, 0.1, 1e-12, func(0.1));
+        test_almost(1.0, 0.1, 0.1, 1e-12, func(0.1));
+        test_almost(10.0, 0.1, 0.1, 1e-12, func(0.1));
+        test_almost(0.1, 1.0, 0.1, 1e-12, func(0.1));
+        test_almost(1.0, 1.0, 0.1, 1e-12, func(0.1));
+        test_almost(10.0, 1.0, 0.1, 1e-12, func(0.1));
+        test_almost(0.1, 0.1, 1.0, 1e-13, func(1.0));
+        test_almost(1.0, 0.1, 1.0, 1e-12, func(1.0));
+        test_almost(10.0, 0.1, 1.0, 1e-12, func(1.0));
+        test_almost(0.1, 1.0, 1.0, 1e-12, func(1.0));
+        test_almost(1.0, 1.0, 1.0, 1e-12, func(1.0));
+        test_almost(10.0, 1.0, 1.0, 1e-12, func(1.0));
     }
 
     #[test]

@@ -142,11 +142,21 @@ impl ContinuousCDF<f64, f64> for Pareto {
         }
     }
 
+    /// Calculates the inverse cumulative distribution function for the Pareto
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// x_m / (1 - x)^(1 / α)
+    /// ```
+    ///
+    /// where `x_m` is the scale and `α` is the shape
     fn inverse_cdf(&self, p: f64) -> f64 {
         if !(0.0..=1.0).contains(&p) {
             panic!("x must be in [0, 1]");
         } else {
-            self.scale / (1.0 - p).powf(1.0 / self.shape)
+            self.scale * (1.0 - p).powf(-1.0 / self.shape)
         }
     }
 }
@@ -532,10 +542,21 @@ mod tests {
         test_case(1.0, 1.0, 1.0, sf(1.0));
         test_case(5.0, 5.0, 1.0, sf(2.0));
         test_almost(7.0, 7.0, 0.08235429999999999, 1e-14, sf(10.0));
-        test_almost(10.0, 10.0, 0.16150558288984573, 1e14, sf(12.0));
+        test_almost(10.0, 10.0, 0.16150558288984573, 1e-14, sf(12.0));
         test_case(5.0, 1.0, 0.5, sf(10.0));
         test_almost(3.0, 10.0, 0.0009765625, 1e-14, sf(6.0));
         test_case(1.0, 1.0, 0.0, sf(f64::INFINITY));
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let func = |arg: f64| move |x: Pareto| x.inverse_cdf(x.cdf(arg));
+        test_case(0.1, 0.1, 0.1, func(0.1));
+        test_case(1.0, 1.0, 1.0, func(1.0));
+        test_case(7.0, 7.0, 10.0, func(10.0));
+        test_case(10.0, 10.0, 12.0, func(12.0));
+        test_case(5.0, 1.0, 10.0, func(10.0));
+        test_case(3.0, 10.0, 6.0, func(6.0));
     }
 
     #[test]
