@@ -160,11 +160,7 @@ impl ContinuousCDF<f64, f64> for FisherSnedecor {
         if !(0.0..=1.0).contains(&x) {
             panic!("x must be in [0, 1]");
         } else {
-            let z = beta::inv_beta_reg(
-                self.freedom_1 / 2.0,
-                self.freedom_2 / 2.0,
-                x,
-            );
+            let z = beta::inv_beta_reg(self.freedom_1 / 2.0, self.freedom_2 / 2.0, x);
             self.freedom_2 / (self.freedom_1 * (1.0 / z - 1.0))
         }
     }
