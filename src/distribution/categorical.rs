@@ -12,7 +12,7 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-///
+/// 
 /// use statrs::distribution::{Categorical, Discrete};
 /// use statrs::statistics::Distribution;
 /// use statrs::prec;
