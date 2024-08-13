@@ -145,7 +145,7 @@ impl ContinuousCDF<f64, f64> for Triangular {
     /// if x < (mode - min) / (max - min) {
     ///     min + ((max - min) * (mode - min) * x)^(1 / 2)
     /// } else {
-    ///     max - (1 - (max - min) * (max - mode) * x)^(1 / 2)
+    ///     max - ((max - min) * (max - mode) * (1 - x))^(1 / 2)
     /// }
     /// ```
     fn inverse_cdf(&self, p: f64) -> f64 {
@@ -157,9 +157,9 @@ impl ContinuousCDF<f64, f64> for Triangular {
         }
 
         if p < (c - a) / (b - a) {
-            a + ((c - a) * (b - a) * p).powf(0.5)
+            a + ((c - a) * (b - a) * p).sqrt()
         } else {
-            b - ((b - a) * (b - c) * (1.0 - p)).powf(0.5)
+            b - ((b - a) * (b - c) * (1.0 - p)).sqrt()
         }
     }
 }

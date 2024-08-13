@@ -162,7 +162,8 @@ impl ContinuousCDF<f64, f64> for FisherSnedecor {
     /// # Formula
     ///
     /// ```text
-    /// I_((d1 * x) / (d1 * x + d2))(d1 / 2, d2 / 2)
+    /// z = I^{-1}_(x)(d1 / 2, d2 / 2)
+    /// d2 / (d1 (1 / z - 1))
     /// ```
     ///
     /// where `d1` is the first degree of freedom, `d2` is

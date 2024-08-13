@@ -123,6 +123,17 @@ impl ContinuousCDF<f64, f64> for Erlang {
         self.g.sf(x)
     }
 
+    /// Calculates the inverse cumulative distribution function for the erlang
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// γ^{-1}(k, (k - 1)! x) / λ
+    /// ```
+    ///
+    /// where `k` is the shape, `λ` is the rate, and `γ` is the upper
+    /// incomplete gamma function
     fn inverse_cdf(&self, p: f64) -> f64 {
         self.g.inverse_cdf(p)
     }

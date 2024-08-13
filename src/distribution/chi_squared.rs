@@ -145,7 +145,7 @@ impl ContinuousCDF<f64, f64> for ChiSquared {
     /// # Formula
     ///
     /// ```text
-    /// (1 / Γ(k / 2)) * γ(k / 2, x / 2)
+    /// γ^{-1}(k / 2, x * Γ(k / 2) / 2)
     /// ```
     ///
     /// where `k` is the degrees of freedom, `Γ` is the gamma function,
