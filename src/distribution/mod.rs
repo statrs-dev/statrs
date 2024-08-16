@@ -6,40 +6,40 @@ use ::num_traits::{Float, Num};
 use num_traits::NumAssignOps;
 
 pub use self::bernoulli::Bernoulli;
-pub use self::beta::Beta;
-pub use self::binomial::Binomial;
-pub use self::categorical::Categorical;
-pub use self::cauchy::Cauchy;
-pub use self::chi::Chi;
+pub use self::beta::{Beta, BetaError};
+pub use self::binomial::{Binomial, BinomialError};
+pub use self::categorical::{Categorical, CategoricalError};
+pub use self::cauchy::{Cauchy, CauchyError};
+pub use self::chi::{Chi, ChiError};
 pub use self::chi_squared::ChiSquared;
-pub use self::dirac::Dirac;
+pub use self::dirac::{Dirac, DiracError};
 #[cfg(feature = "nalgebra")]
-pub use self::dirichlet::Dirichlet;
-pub use self::discrete_uniform::DiscreteUniform;
+pub use self::dirichlet::{Dirichlet, DirichletError};
+pub use self::discrete_uniform::{DiscreteUniform, DiscreteUniformError};
 pub use self::empirical::Empirical;
 pub use self::erlang::Erlang;
-pub use self::exponential::Exp;
-pub use self::fisher_snedecor::FisherSnedecor;
-pub use self::gamma::Gamma;
-pub use self::geometric::Geometric;
-pub use self::hypergeometric::Hypergeometric;
-pub use self::inverse_gamma::InverseGamma;
-pub use self::laplace::Laplace;
-pub use self::log_normal::LogNormal;
+pub use self::exponential::{Exp, ExpError};
+pub use self::fisher_snedecor::{FisherSnedecor, FisherSnedecorError};
+pub use self::gamma::{Gamma, GammaError};
+pub use self::geometric::{Geometric, GeometricError};
+pub use self::hypergeometric::{Hypergeometric, HypergeometricError};
+pub use self::inverse_gamma::{InverseGamma, InverseGammaError};
+pub use self::laplace::{Laplace, LaplaceError};
+pub use self::log_normal::{LogNormal, LogNormalError};
 #[cfg(feature = "nalgebra")]
-pub use self::multinomial::Multinomial;
+pub use self::multinomial::{Multinomial, MultinomialError};
 #[cfg(feature = "nalgebra")]
-pub use self::multivariate_normal::MultivariateNormal;
+pub use self::multivariate_normal::{MultivariateNormal, MultivariateNormalError};
 #[cfg(feature = "nalgebra")]
-pub use self::multivariate_students_t::MultivariateStudent;
-pub use self::negative_binomial::NegativeBinomial;
-pub use self::normal::Normal;
-pub use self::pareto::Pareto;
-pub use self::poisson::Poisson;
-pub use self::students_t::StudentsT;
-pub use self::triangular::Triangular;
-pub use self::uniform::Uniform;
-pub use self::weibull::Weibull;
+pub use self::multivariate_students_t::{MultivariateStudent, MultivariateStudentError};
+pub use self::negative_binomial::{NegativeBinomial, NegativeBinomialError};
+pub use self::normal::{Normal, NormalError};
+pub use self::pareto::{Pareto, ParetoError};
+pub use self::poisson::{Poisson, PoissonError};
+pub use self::students_t::{StudentsT, StudentsTError};
+pub use self::triangular::{Triangular, TriangularError};
+pub use self::uniform::{Uniform, UniformError};
+pub use self::weibull::{Weibull, WeibullError};
 
 mod bernoulli;
 mod beta;

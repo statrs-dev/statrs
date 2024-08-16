@@ -1,7 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, factorial};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -26,6 +25,24 @@ pub struct Binomial {
     n: u64,
 }
 
+/// Represents the errors that can occur when creating a [`Binomial`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum BinomialError {
+    /// The probability is NaN or not in `[0, 1]`.
+    ProbabilityInvalid,
+}
+
+impl std::fmt::Display for BinomialError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            BinomialError::ProbabilityInvalid => write!(f, "Probability is NaN or not in [0, 1]"),
+        }
+    }
+}
+
+impl std::error::Error for BinomialError {}
+
 impl Binomial {
     /// Constructs a new binomial distribution
     /// with a given `p` probability of success of `n`
@@ -47,9 +64,9 @@ impl Binomial {
     /// result = Binomial::new(-0.5, 5);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(p: f64, n: u64) -> Result<Binomial> {
+    pub fn new(p: f64, n: u64) -> Result<Binomial, BinomialError> {
         if p.is_nan() || !(0.0..=1.0).contains(&p) {
-            Err(StatsError::BadParams)
+            Err(BinomialError::ProbabilityInvalid)
         } else {
             Ok(Binomial { p, n })
         }
@@ -332,7 +349,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(p: f64, n: u64; Binomial; StatsError);
+    testing_boiler!(p: f64, n: u64; Binomial; BinomialError);
 
     #[test]
     fn test_create() {

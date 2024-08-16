@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -25,6 +24,42 @@ pub struct Triangular {
     mode: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Triangular`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum TriangularError {
+    /// The minimum is NaN or infinite.
+    MinInvalid,
+
+    /// The maximum is NaN or infinite.
+    MaxInvalid,
+
+    /// The mode is NaN or infinite.
+    ModeInvalid,
+
+    /// The mode is less than the minimum or greater than the maximum.
+    ModeOutOfRange,
+
+    /// The minimum equals the maximum.
+    MinEqualsMax,
+}
+
+impl std::fmt::Display for TriangularError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            TriangularError::MinInvalid => write!(f, "Minimum is NaN or infinite."),
+            TriangularError::MaxInvalid => write!(f, "Maximum is NaN or infinite."),
+            TriangularError::ModeInvalid => write!(f, "Mode is NaN or infinite."),
+            TriangularError::ModeOutOfRange => {
+                write!(f, "Mode is less than minimum or greater than maximum")
+            }
+            TriangularError::MinEqualsMax => write!(f, "Minimum equals Maximum"),
+        }
+    }
+}
+
+impl std::error::Error for TriangularError {}
+
 impl Triangular {
     /// Constructs a new triangular distribution with a minimum of `min`,
     /// maximum of `max`, and a mode of `mode`.
@@ -45,16 +80,27 @@ impl Triangular {
     /// result = Triangular::new(2.5, 1.5, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(min: f64, max: f64, mode: f64) -> Result<Triangular> {
-        if !min.is_finite() || !max.is_finite() || !mode.is_finite() {
-            return Err(StatsError::BadParams);
+    pub fn new(min: f64, max: f64, mode: f64) -> Result<Triangular, TriangularError> {
+        if !min.is_finite() {
+            return Err(TriangularError::MinInvalid);
         }
+
+        if !max.is_finite() {
+            return Err(TriangularError::MaxInvalid);
+        }
+
+        if !mode.is_finite() {
+            return Err(TriangularError::ModeInvalid);
+        }
+
         if max < mode || mode < min {
-            return Err(StatsError::BadParams);
+            return Err(TriangularError::ModeOutOfRange);
         }
-        if ulps_eq!(max, min, max_ulps = 0) {
-            return Err(StatsError::BadParams);
+
+        if min == max {
+            return Err(TriangularError::MinEqualsMax);
         }
+
         Ok(Triangular { min, max, mode })
     }
 }
@@ -351,7 +397,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(min: f64, max: f64, mode: f64; Triangular; StatsError);
+    testing_boiler!(min: f64, max: f64, mode: f64; Triangular; TriangularError);
 
     #[test]
     fn test_create() {
@@ -366,17 +412,23 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
-        create_err(0.0, 0.0, 0.0);
-        create_err(0.0, 1.0, -0.1);
-        create_err(0.0, 1.0, 1.1);
-        create_err(0.0, -1.0, 0.5);
-        create_err(2.0, 1.0, 1.5);
-        create_err(f64::NAN, 1.0, 0.5);
-        create_err(0.2, f64::NAN, 0.5);
-        create_err(0.5, 1.0, f64::NAN);
-        create_err(f64::NAN, f64::NAN, f64::NAN);
-        create_err(f64::NEG_INFINITY, 1.0, 0.5);
-        create_err(0.0, f64::INFINITY, 0.5);
+        let invalid = [
+            (0.0, 0.0, 0.0, TriangularError::MinEqualsMax),
+            (0.0, 1.0, -0.1, TriangularError::ModeOutOfRange),
+            (0.0, 1.0, 1.1, TriangularError::ModeOutOfRange),
+            (0.0, -1.0, 0.5, TriangularError::ModeOutOfRange),
+            (2.0, 1.0, 1.5, TriangularError::ModeOutOfRange),
+            (f64::NAN, 1.0, 0.5, TriangularError::MinInvalid),
+            (0.2, f64::NAN, 0.5, TriangularError::MaxInvalid),
+            (0.5, 1.0, f64::NAN, TriangularError::ModeInvalid),
+            (f64::NAN, f64::NAN, f64::NAN, TriangularError::MinInvalid),
+            (f64::NEG_INFINITY, 1.0, 0.5, TriangularError::MinInvalid),
+            (0.0, f64::INFINITY, 0.5, TriangularError::MaxInvalid),
+        ];
+
+        for (min, max, mode, err) in invalid {
+            test_create_err(min, max, mode, err);
+        }
     }
 
     #[test]

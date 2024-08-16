@@ -1,6 +1,5 @@
 use super::Alternative;
-use crate::distribution::{Discrete, DiscreteCDF, Hypergeometric};
-use crate::StatsError;
+use crate::distribution::{Discrete, DiscreteCDF, Hypergeometric, HypergeometricError};
 
 const EPSILON: f64 = 1.0 - 1e-4;
 
@@ -97,6 +96,34 @@ fn binary_search(
     guess
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum FishersExactTestError {
+    /// The table does not describe a valid [`Hypergeometric`] distribution.
+    /// Make sure that the contingency table stores the data in row-major order.
+    TableInvalidForHypergeometric(HypergeometricError),
+}
+
+impl std::fmt::Display for FishersExactTestError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            FishersExactTestError::TableInvalidForHypergeometric(hg_err) => {
+                writeln!(f, "Cannot create a Hypergeometric distribution from the data in the contingency table.")?;
+                writeln!(f, "Is it in row-major order?")?;
+                write!(f, "Inner error: '{}'", hg_err)
+            }
+        }
+    }
+}
+
+impl std::error::Error for FishersExactTestError {}
+
+impl From<HypergeometricError> for FishersExactTestError {
+    fn from(value: HypergeometricError) -> Self {
+        Self::TableInvalidForHypergeometric(value)
+    }
+}
+
 /// Perform a Fisher exact test on a 2x2 contingency table.
 /// Based on scipy's fisher test: <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fisher_exact.html#scipy-stats-fisher-exact>
 /// Expects a table in row-major order
@@ -112,7 +139,7 @@ fn binary_search(
 pub fn fishers_exact_with_odds_ratio(
     table: &[u64; 4],
     alternative: Alternative,
-) -> Result<(f64, f64), StatsError> {
+) -> Result<(f64, f64), FishersExactTestError> {
     // If both values in a row or column are zero, p-value is 1 and odds ratio is NaN.
     match table {
         [0, _, 0, _] | [_, 0, _, 0] => return Ok((f64::NAN, 1.0)), // both 0 in a row
@@ -144,7 +171,10 @@ pub fn fishers_exact_with_odds_ratio(
 /// let table = [3, 5, 4, 50];
 /// let p_value = fishers_exact(&table, Alternative::Less).unwrap();
 /// ```
-pub fn fishers_exact(table: &[u64; 4], alternative: Alternative) -> Result<f64, StatsError> {
+pub fn fishers_exact(
+    table: &[u64; 4],
+    alternative: Alternative,
+) -> Result<f64, FishersExactTestError> {
     // If both values in a row or column are zero, the p-value is 1 and the odds ratio is NaN.
     match table {
         [0, _, 0, _] | [_, 0, _, 0] => return Ok(1.0), // both 0 in a row

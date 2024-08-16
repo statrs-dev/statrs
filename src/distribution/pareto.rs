@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::distributions::OpenClosed01;
 use rand::Rng;
 use std::f64;
@@ -25,6 +24,28 @@ pub struct Pareto {
     shape: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Pareto`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum ParetoError {
+    /// The scale is NaN, zero or less than zero.
+    ScaleInvalid,
+
+    /// The shape is NaN, zero or less than zero.
+    ShapeInvalid,
+}
+
+impl std::fmt::Display for ParetoError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ParetoError::ScaleInvalid => write!(f, "Scale is NaN, zero, or less than zero"),
+            ParetoError::ShapeInvalid => write!(f, "Shape is NaN, zero, or less than zero"),
+        }
+    }
+}
+
+impl std::error::Error for ParetoError {}
+
 impl Pareto {
     /// Constructs a new Pareto distribution with scale `scale`, and `shape`
     /// shape.
@@ -45,13 +66,16 @@ impl Pareto {
     /// result = Pareto::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(scale: f64, shape: f64) -> Result<Pareto> {
-        let is_nan = scale.is_nan() || shape.is_nan();
-        if is_nan || scale <= 0.0 || shape <= 0.0 {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(Pareto { scale, shape })
+    pub fn new(scale: f64, shape: f64) -> Result<Pareto, ParetoError> {
+        if scale.is_nan() || scale <= 0.0 {
+            return Err(ParetoError::ScaleInvalid);
         }
+
+        if shape.is_nan() || shape <= 0.0 {
+            return Err(ParetoError::ShapeInvalid);
+        }
+
+        Ok(Pareto { scale, shape })
     }
 
     /// Returns the scale of the Pareto distribution
@@ -358,7 +382,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(scale: f64, shape: f64; Pareto; StatsError);
+    testing_boiler!(scale: f64, shape: f64; Pareto; ParetoError);
 
     #[test]
     fn test_create() {
@@ -372,9 +396,9 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
+        test_create_err(1.0, -1.0, ParetoError::ShapeInvalid);
+        test_create_err(-1.0, 1.0, ParetoError::ScaleInvalid);
         create_err(0.0, 0.0);
-        create_err(1.0, -1.0);
-        create_err(-1.0, 1.0);
         create_err(-1.0, -1.0);
         create_err(f64::NAN, 1.0);
         create_err(1.0, f64::NAN);

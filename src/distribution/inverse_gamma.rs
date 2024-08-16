@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -26,6 +25,32 @@ pub struct InverseGamma {
     rate: f64,
 }
 
+/// Represents the errors that can occur when creating an [`InverseGamma`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum InverseGammaError {
+    /// The shape is NaN, infinite, zero or less than zero.
+    ShapeInvalid,
+
+    /// The rate is NaN, infinite, zero or less than zero.
+    RateInvalid,
+}
+
+impl std::fmt::Display for InverseGammaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            InverseGammaError::ShapeInvalid => {
+                write!(f, "Shape is NaN, infinite, zero or less than zero")
+            }
+            InverseGammaError::RateInvalid => {
+                write!(f, "Rate is NaN, infinite, zero or less than zero")
+            }
+        }
+    }
+}
+
+impl std::error::Error for InverseGammaError {}
+
 impl InverseGamma {
     /// Constructs a new inverse gamma distribution with a shape (α)
     /// of `shape` and a rate (β) of `rate`
@@ -46,16 +71,16 @@ impl InverseGamma {
     /// result = InverseGamma::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(shape: f64, rate: f64) -> Result<InverseGamma> {
-        let is_nan = shape.is_nan() || rate.is_nan();
-        match (shape, rate, is_nan) {
-            (_, _, true) => Err(StatsError::BadParams),
-            (_, _, false) if shape <= 0.0 || rate <= 0.0 => Err(StatsError::BadParams),
-            (_, _, false) if shape.is_infinite() || rate.is_infinite() => {
-                Err(StatsError::BadParams)
-            }
-            (_, _, false) => Ok(InverseGamma { shape, rate }),
+    pub fn new(shape: f64, rate: f64) -> Result<InverseGamma, InverseGammaError> {
+        if shape.is_nan() || shape.is_infinite() || shape <= 0.0 {
+            return Err(InverseGammaError::ShapeInvalid);
         }
+
+        if rate.is_nan() || rate.is_infinite() || rate <= 0.0 {
+            return Err(InverseGammaError::RateInvalid);
+        }
+
+        Ok(InverseGamma { shape, rate })
     }
 
     /// Returns the shape (α) of the inverse gamma distribution
@@ -317,7 +342,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(shape: f64, rate: f64; InverseGamma; StatsError);
+    testing_boiler!(shape: f64, rate: f64; InverseGamma; InverseGammaError);
 
     #[test]
     fn test_create() {
@@ -327,13 +352,13 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
-        create_err(0.0, 1.0);
+        test_create_err(0.0, 1.0, InverseGammaError::ShapeInvalid);
+        test_create_err(1.0, -1.0, InverseGammaError::RateInvalid);
         create_err(-1.0, 1.0);
         create_err(-100.0, 1.0);
         create_err(f64::NEG_INFINITY, 1.0);
         create_err(f64::NAN, 1.0);
         create_err(1.0, 0.0);
-        create_err(1.0, -1.0);
         create_err(1.0, -100.0);
         create_err(1.0, f64::NEG_INFINITY);
         create_err(1.0, f64::NAN);

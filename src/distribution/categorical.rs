@@ -1,6 +1,5 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -27,6 +26,35 @@ pub struct Categorical {
     sf: Vec<f64>,
 }
 
+/// Represents the errors that can occur when creating a [`Categorical`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum CategoricalError {
+    /// The probability mass is empty.
+    ProbMassEmpty,
+
+    /// The probabilities sums up to zero.
+    ProbMassSumZero,
+
+    /// The probability mass contains at least one element which is NaN or less than zero.
+    ProbMassHasInvalidElements,
+}
+
+impl std::fmt::Display for CategoricalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            CategoricalError::ProbMassEmpty => write!(f, "Probability mass is empty"),
+            CategoricalError::ProbMassSumZero => write!(f, "Probabilities sum up to zero"),
+            CategoricalError::ProbMassHasInvalidElements => write!(
+                f,
+                "Probability mass contains at least one element which is NaN or less than zero"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for CategoricalError {}
+
 impl Categorical {
     /// Constructs a new categorical distribution
     /// with the probabilities masses defined by `prob_mass`
@@ -52,23 +80,36 @@ impl Categorical {
     /// result = Categorical::new(&[0.0, -1.0, 2.0]);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(prob_mass: &[f64]) -> Result<Categorical> {
-        if !super::internal::is_valid_multinomial(prob_mass, true) {
-            Err(StatsError::BadParams)
-        } else {
-            // extract un-normalized cdf
-            let cdf = prob_mass_to_cdf(prob_mass);
-            // extract un-normalized sf
-            let sf = cdf_to_sf(&cdf);
-            // extract normalized probability mass
-            let sum = cdf[cdf.len() - 1];
-            let mut norm_pmf = vec![0.0; prob_mass.len()];
-            norm_pmf
-                .iter_mut()
-                .zip(prob_mass.iter())
-                .for_each(|(np, pm)| *np = *pm / sum);
-            Ok(Categorical { norm_pmf, cdf, sf })
+    pub fn new(prob_mass: &[f64]) -> Result<Categorical, CategoricalError> {
+        if prob_mass.is_empty() {
+            return Err(CategoricalError::ProbMassEmpty);
         }
+
+        let mut prob_sum = 0.0;
+        for &p in prob_mass {
+            if p.is_nan() || p < 0.0 {
+                return Err(CategoricalError::ProbMassHasInvalidElements);
+            }
+
+            prob_sum += p;
+        }
+
+        if prob_sum == 0.0 {
+            return Err(CategoricalError::ProbMassSumZero);
+        }
+
+        // extract un-normalized cdf
+        let cdf = prob_mass_to_cdf(prob_mass);
+        // extract un-normalized sf
+        let sf = cdf_to_sf(&cdf);
+        // extract normalized probability mass
+        let sum = cdf[cdf.len() - 1];
+        let mut norm_pmf = vec![0.0; prob_mass.len()];
+        norm_pmf
+            .iter_mut()
+            .zip(prob_mass.iter())
+            .for_each(|(np, pm)| *np = *pm / sum);
+        Ok(Categorical { norm_pmf, cdf, sf })
     }
 
     fn cdf_max(&self) -> f64 {
@@ -355,7 +396,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(prob_mass: &[f64]; Categorical; StatsError);
+    testing_boiler!(prob_mass: &[f64]; Categorical; CategoricalError);
 
     #[test]
     fn test_create() {
@@ -364,8 +405,15 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
-        create_err(&[-1.0, 1.0]);
-        create_err(&[0.0, 0.0]);
+        let invalid: &[(&[f64], CategoricalError)] = &[
+            (&[], CategoricalError::ProbMassEmpty),
+            (&[-1.0, 1.0], CategoricalError::ProbMassHasInvalidElements),
+            (&[0.0, 0.0, 0.0], CategoricalError::ProbMassSumZero),
+        ];
+
+        for &(prob_mass, err) in invalid {
+            test_create_err(prob_mass, err);
+        }
     }
 
     #[test]

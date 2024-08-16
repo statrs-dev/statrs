@@ -1,6 +1,5 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 
 /// Implements the [Discrete
@@ -23,6 +22,24 @@ pub struct DiscreteUniform {
     max: i64,
 }
 
+/// Represents the errors that can occur when creating a [`DiscreteUniform`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum DiscreteUniformError {
+    /// The maximum is less than the minimum.
+    MinMaxInvalid,
+}
+
+impl std::fmt::Display for DiscreteUniformError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            DiscreteUniformError::MinMaxInvalid => write!(f, "Maximum is less than minimum"),
+        }
+    }
+}
+
+impl std::error::Error for DiscreteUniformError {}
+
 impl DiscreteUniform {
     /// Constructs a new discrete uniform distribution with a minimum value
     /// of `min` and a maximum value of `max`.
@@ -42,9 +59,9 @@ impl DiscreteUniform {
     /// result = DiscreteUniform::new(5, 0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(min: i64, max: i64) -> Result<DiscreteUniform> {
+    pub fn new(min: i64, max: i64) -> Result<DiscreteUniform, DiscreteUniformError> {
         if max < min {
-            Err(StatsError::BadParams)
+            Err(DiscreteUniformError::MinMaxInvalid)
         } else {
             Ok(DiscreteUniform { min, max })
         }
@@ -259,7 +276,7 @@ mod tests {
     use super::*;
     use crate::testing_boiler;
 
-    testing_boiler!(min: i64, max: i64; DiscreteUniform; StatsError);
+    testing_boiler!(min: i64, max: i64; DiscreteUniform; DiscreteUniformError);
 
     #[test]
     fn test_create() {

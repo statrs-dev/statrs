@@ -2,7 +2,6 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 
 /// Implements the [Gamma](https://en.wikipedia.org/wiki/Gamma_distribution)
@@ -25,6 +24,32 @@ pub struct Gamma {
     rate: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Gamma`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum GammaError {
+    /// The shape is NaN, zero or less than zero.
+    ShapeInvalid,
+
+    /// The rate is NaN, zero or less than zero.
+    RateInvalid,
+
+    /// The shape and rate are both infinite.
+    ShapeAndRateInfinite,
+}
+
+impl std::fmt::Display for GammaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            GammaError::ShapeInvalid => write!(f, "Shape is NaN zero, or less than zero."),
+            GammaError::RateInvalid => write!(f, "Rate is NaN zero, or less than zero."),
+            GammaError::ShapeAndRateInfinite => write!(f, "Shape and rate are infinite"),
+        }
+    }
+}
+
+impl std::error::Error for GammaError {}
+
 impl Gamma {
     /// Constructs a new gamma distribution with a shape (α)
     /// of `shape` and a rate (β) of `rate`
@@ -45,15 +70,19 @@ impl Gamma {
     /// result = Gamma::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(shape: f64, rate: f64) -> Result<Gamma> {
-        if shape.is_nan()
-            || rate.is_nan()
-            || shape.is_infinite() && rate.is_infinite()
-            || shape <= 0.0
-            || rate <= 0.0
-        {
-            return Err(StatsError::BadParams);
+    pub fn new(shape: f64, rate: f64) -> Result<Gamma, GammaError> {
+        if shape.is_nan() || shape <= 0.0 {
+            return Err(GammaError::ShapeInvalid);
         }
+
+        if rate.is_nan() || rate <= 0.0 {
+            return Err(GammaError::RateInvalid);
+        }
+
+        if shape.is_infinite() && rate.is_infinite() {
+            return Err(GammaError::ShapeAndRateInfinite);
+        }
+
         Ok(Gamma { shape, rate })
     }
 
@@ -406,7 +435,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(shape: f64, rate: f64; Gamma; StatsError);
+    testing_boiler!(shape: f64, rate: f64; Gamma; GammaError);
 
     #[test]
     fn test_create() {
@@ -426,15 +455,20 @@ mod tests {
     #[test]
     fn test_bad_create() {
         let invalid = [
-            (0.0, 0.0),
-            (1.0, f64::NAN),
-            (1.0, -1.0),
-            (-1.0, 1.0),
-            (-1.0, -1.0),
-            (-1.0, f64::NAN),
+            (0.0, 0.0, GammaError::ShapeInvalid),
+            (1.0, f64::NAN, GammaError::RateInvalid),
+            (1.0, -1.0, GammaError::RateInvalid),
+            (-1.0, 1.0, GammaError::ShapeInvalid),
+            (-1.0, -1.0, GammaError::ShapeInvalid),
+            (-1.0, f64::NAN, GammaError::ShapeInvalid),
+            (
+                f64::INFINITY,
+                f64::INFINITY,
+                GammaError::ShapeAndRateInfinite,
+            ),
         ];
-        for (s, r) in invalid {
-            create_err(s, r);
+        for (s, r, err) in invalid {
+            test_create_err(s, r, err);
         }
     }
 

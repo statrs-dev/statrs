@@ -1,7 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{factorial, gamma};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -24,6 +23,24 @@ pub struct Poisson {
     lambda: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Poisson`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum PoissonError {
+    /// The lambda is NaN, zero or less than zero.
+    LambdaInvalid,
+}
+
+impl std::fmt::Display for PoissonError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            PoissonError::LambdaInvalid => write!(f, "Lambda is NaN, zero or less than zero"),
+        }
+    }
+}
+
+impl std::error::Error for PoissonError {}
+
 impl Poisson {
     /// Constructs a new poisson distribution with a rate (λ)
     /// of `lambda`
@@ -43,9 +60,9 @@ impl Poisson {
     /// result = Poisson::new(0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(lambda: f64) -> Result<Poisson> {
+    pub fn new(lambda: f64) -> Result<Poisson, PoissonError> {
         if lambda.is_nan() || lambda <= 0.0 {
-            Err(StatsError::BadParams)
+            Err(PoissonError::LambdaInvalid)
         } else {
             Ok(Poisson { lambda })
         }
@@ -308,7 +325,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(lambda: f64; Poisson; StatsError);
+    testing_boiler!(lambda: f64; Poisson; PoissonError);
 
     #[test]
     fn test_create() {

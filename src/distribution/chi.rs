@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -24,6 +23,26 @@ pub struct Chi {
     freedom: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Chi`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum ChiError {
+    /// The degrees of freedom are NaN, zero or less than zero.
+    FreedomInvalid,
+}
+
+impl std::fmt::Display for ChiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ChiError::FreedomInvalid => {
+                write!(f, "Degrees of freedom are NaN, zero or less than zero")
+            }
+        }
+    }
+}
+
+impl std::error::Error for ChiError {}
+
 impl Chi {
     /// Constructs a new chi distribution
     /// with `freedom` degrees of freedom
@@ -44,9 +63,9 @@ impl Chi {
     /// result = Chi::new(0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(freedom: f64) -> Result<Chi> {
+    pub fn new(freedom: f64) -> Result<Chi, ChiError> {
         if freedom.is_nan() || freedom <= 0.0 {
-            Err(StatsError::BadParams)
+            Err(ChiError::FreedomInvalid)
         } else {
             Ok(Chi { freedom })
         }
@@ -329,7 +348,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(freedom: f64; Chi; StatsError);
+    testing_boiler!(freedom: f64; Chi; ChiError);
 
     #[test]
     fn test_create() {

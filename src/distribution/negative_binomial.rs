@@ -1,7 +1,6 @@
 use crate::distribution::{self, poisson, Discrete, DiscreteCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -41,6 +40,28 @@ pub struct NegativeBinomial {
     p: f64,
 }
 
+/// Represents the errors that can occur when creating a [`NegativeBinomial`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum NegativeBinomialError {
+    /// `r` is NaN or less than zero.
+    RInvalid,
+
+    /// `p` is NaN or not in `[0, 1]`.
+    PInvalid,
+}
+
+impl std::fmt::Display for NegativeBinomialError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            NegativeBinomialError::RInvalid => write!(f, "r is NaN or less than zero"),
+            NegativeBinomialError::PInvalid => write!(f, "p is NaN or not in [0, 1]"),
+        }
+    }
+}
+
+impl std::error::Error for NegativeBinomialError {}
+
 impl NegativeBinomial {
     /// Constructs a new negative binomial distribution with parameters `r`
     /// and `p`.  When `r` is an integer, the negative binomial distribution
@@ -64,12 +85,16 @@ impl NegativeBinomial {
     /// result = NegativeBinomial::new(-0.5, 5.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(r: f64, p: f64) -> Result<NegativeBinomial> {
-        if p.is_nan() || !(0.0..=1.0).contains(&p) || r.is_nan() || r < 0.0 {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(NegativeBinomial { r, p })
+    pub fn new(r: f64, p: f64) -> Result<NegativeBinomial, NegativeBinomialError> {
+        if r.is_nan() || r < 0.0 {
+            return Err(NegativeBinomialError::RInvalid);
         }
+
+        if p.is_nan() || !(0.0..=1.0).contains(&p) {
+            return Err(NegativeBinomialError::PInvalid);
+        }
+
+        Ok(NegativeBinomial { r, p })
     }
 
     /// Returns the probability of success `p` of a single
@@ -295,7 +320,7 @@ mod tests {
     use crate::distribution::internal::test;
     use crate::testing_boiler;
 
-    testing_boiler!(r: f64, p: f64; NegativeBinomial; StatsError);
+    testing_boiler!(r: f64, p: f64; NegativeBinomial; NegativeBinomialError);
 
     #[test]
     fn test_create() {
@@ -306,8 +331,8 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
-        create_err(f64::NAN, 1.0);
-        create_err(0.0, f64::NAN);
+        test_create_err(f64::NAN, 1.0, NegativeBinomialError::RInvalid);
+        test_create_err(0.0, f64::NAN, NegativeBinomialError::PInvalid);
         create_err(-1.0, 1.0);
         create_err(2.0, 2.0);
     }

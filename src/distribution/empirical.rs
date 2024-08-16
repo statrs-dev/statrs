@@ -1,6 +1,5 @@
 use crate::distribution::{ContinuousCDF, Uniform};
 use crate::statistics::*;
-use crate::Result;
 use core::cmp::Ordering;
 use rand::Rng;
 use std::collections::BTreeMap;
@@ -48,6 +47,8 @@ impl Empirical {
     /// Constructs a new discrete uniform distribution with a minimum value
     /// of `min` and a maximum value of `max`.
     ///
+    /// Note that this will always succeed and never return the [`Err`][Result::Err] variant.
+    ///
     /// # Examples
     ///
     /// ```
@@ -56,7 +57,8 @@ impl Empirical {
     /// let mut result = Empirical::new();
     /// assert!(result.is_ok());
     /// ```
-    pub fn new() -> Result<Empirical> {
+    #[allow(clippy::result_unit_err)]
+    pub fn new() -> Result<Empirical, ()> {
         Ok(Empirical {
             sum: 0.,
             mean_and_var: None,

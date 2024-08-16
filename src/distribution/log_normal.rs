@@ -1,7 +1,7 @@
+use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
-use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -26,6 +26,28 @@ pub struct LogNormal {
     scale: f64,
 }
 
+/// Represents the errors that can occur when creating a [`LogNormal`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum LogNormalError {
+    /// The location is NaN.
+    LocationInvalid,
+
+    /// The scale is NaN, zero or less than zero.
+    ScaleInvalid,
+}
+
+impl std::fmt::Display for LogNormalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            LogNormalError::LocationInvalid => write!(f, "Location is NaN"),
+            LogNormalError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero"),
+        }
+    }
+}
+
+impl std::error::Error for LogNormalError {}
+
 impl LogNormal {
     /// Constructs a new log-normal distribution with a location of `location`
     /// and a scale of `scale`
@@ -46,12 +68,16 @@ impl LogNormal {
     /// result = LogNormal::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(location: f64, scale: f64) -> Result<LogNormal> {
-        if location.is_nan() || scale.is_nan() || scale <= 0.0 {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(LogNormal { location, scale })
+    pub fn new(location: f64, scale: f64) -> Result<LogNormal, LogNormalError> {
+        if location.is_nan() {
+            return Err(LogNormalError::LocationInvalid);
         }
+
+        if scale.is_nan() || scale <= 0.0 {
+            return Err(LogNormalError::ScaleInvalid);
+        }
+
+        Ok(LogNormal { location, scale })
     }
 }
 
@@ -309,7 +335,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(mean: f64, std_dev: f64; LogNormal; StatsError);
+    testing_boiler!(location: f64, scale: f64; LogNormal; LogNormalError);
 
     #[test]
     fn test_create() {
@@ -322,9 +348,9 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
+        test_create_err(f64::NAN, 1.0, LogNormalError::LocationInvalid);
+        test_create_err(1.0, f64::NAN, LogNormalError::ScaleInvalid);
         create_err(0.0, 0.0);
-        create_err(f64::NAN, 1.0);
-        create_err(1.0, f64::NAN);
         create_err(f64::NAN, f64::NAN);
         create_err(1.0, -1.0);
     }

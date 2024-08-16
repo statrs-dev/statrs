@@ -1,7 +1,7 @@
+use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -27,6 +27,28 @@ pub struct Weibull {
     scale_pow_shape_inv: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Weibull`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum WeibullError {
+    /// The shape is NaN, zero or less than zero.
+    ShapeInvalid,
+
+    /// The scale is NaN, zero or less than zero.
+    ScaleInvalid,
+}
+
+impl std::fmt::Display for WeibullError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            WeibullError::ShapeInvalid => write!(f, "Shape is NaN, zero or less than zero."),
+            WeibullError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero."),
+        }
+    }
+}
+
+impl std::error::Error for WeibullError {}
+
 impl Weibull {
     /// Constructs a new weibull distribution with a shape (k) of `shape`
     /// and a scale (λ) of `scale`
@@ -47,17 +69,20 @@ impl Weibull {
     /// result = Weibull::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(shape: f64, scale: f64) -> Result<Weibull> {
-        let is_nan = shape.is_nan() || scale.is_nan();
-        match (shape, scale, is_nan) {
-            (_, _, true) => Err(StatsError::BadParams),
-            (_, _, false) if shape <= 0.0 || scale <= 0.0 => Err(StatsError::BadParams),
-            (_, _, false) => Ok(Weibull {
-                shape,
-                scale,
-                scale_pow_shape_inv: scale.powf(-shape),
-            }),
+    pub fn new(shape: f64, scale: f64) -> Result<Weibull, WeibullError> {
+        if shape.is_nan() || shape <= 0.0 {
+            return Err(WeibullError::ShapeInvalid);
         }
+
+        if scale.is_nan() || scale <= 0.0 {
+            return Err(WeibullError::ScaleInvalid);
+        }
+
+        Ok(Weibull {
+            shape,
+            scale,
+            scale_pow_shape_inv: scale.powf(-shape),
+        })
     }
 
     /// Returns the shape of the weibull distribution
@@ -354,7 +379,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(shape: f64, scale: f64; Weibull; StatsError);
+    testing_boiler!(shape: f64, scale: f64; Weibull; WeibullError);
 
     #[test]
     fn test_create() {
@@ -366,8 +391,8 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
-        create_err(f64::NAN, 1.0);
-        create_err(1.0, f64::NAN);
+        test_create_err(f64::NAN, 1.0, WeibullError::ShapeInvalid);
+        test_create_err(1.0, f64::NAN, WeibullError::ScaleInvalid);
         create_err(f64::NAN, f64::NAN);
         create_err(1.0, -1.0);
         create_err(-1.0, 1.0);

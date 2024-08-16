@@ -1,56 +1,5 @@
 use num_traits::Num;
 
-/// Returns true if there are no elements in `x` in `arr`
-/// such that `x <= 0.0` or `x` is `f64::NAN` and `sum(arr) > 0.0`.
-/// IF `incl_zero` is true, it tests for `x < 0.0` instead of `x <= 0.0`
-pub fn is_valid_multinomial(arr: &[f64], incl_zero: bool) -> bool {
-    let mut sum = 0.0;
-    for &elt in arr {
-        if incl_zero && elt < 0.0 || !incl_zero && elt <= 0.0 || elt.is_nan() {
-            return false;
-        }
-        sum += elt;
-    }
-    sum != 0.0
-}
-
-#[cfg(feature = "nalgebra")]
-use nalgebra::{Dim, OVector};
-
-#[cfg(feature = "nalgebra")]
-pub fn check_multinomial<D>(arr: &OVector<f64, D>, accept_zeroes: bool) -> crate::Result<()>
-where
-    D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
-{
-    use crate::StatsError;
-
-    if arr.len() < 2 {
-        return Err(StatsError::BadParams);
-    }
-    let mut sum = 0.0;
-    for &x in arr.iter() {
-        #[allow(clippy::if_same_then_else)]
-        if x.is_nan() {
-            return Err(StatsError::BadParams);
-        } else if x.is_infinite() {
-            return Err(StatsError::BadParams);
-        } else if x < 0.0 {
-            return Err(StatsError::BadParams);
-        } else if x == 0.0 && !accept_zeroes {
-            return Err(StatsError::BadParams);
-        } else {
-            sum += x;
-        }
-    }
-
-    if sum != 0.0 {
-        Ok(())
-    } else {
-        Err(StatsError::BadParams)
-    }
-}
-
 /// Implements univariate function bisection searching for criteria
 /// ```text
 /// smallest k such that f(k) >= z
@@ -240,6 +189,25 @@ pub mod test {
                 }
             }
 
+            /// Purposely fails creating a distribution with the given
+            /// parameters and compares the returned error to `expected`.
+            ///
+            /// Panics if `::new` succeeds.
+            #[allow(dead_code)]
+            fn test_create_err($($arg_name: $arg_ty),+, expected: $dist_err)
+            {
+                let err = create_err($($arg_name),+);
+                if err != expected {
+                    panic!(
+                        "{}::new was expected to fail with error {:?}, but failed with error {:?} for {}",
+                        stringify!($dist),
+                        expected,
+                        err,
+                        make_param_text($($arg_name),+)
+                    )
+                }
+            }
+
             /// Gets a value for the given parameters by calling `create_and_get`
             /// and asserts that it is [`NAN`].
             ///
@@ -277,92 +245,101 @@ pub mod test {
     }
 
     pub mod boiler_tests {
-        use crate::distribution::Binomial;
+        use crate::distribution::{Beta, BetaError};
         use crate::statistics::*;
-        use crate::StatsError;
 
-        testing_boiler!(p: f64, n: u64; Binomial; StatsError);
+        testing_boiler!(shape_a: f64, shape_b: f64; Beta; BetaError);
 
         #[test]
         fn create_ok_success() {
-            let b = create_ok(0.8, 1200);
-            assert_eq!(b.p(), 0.8);
-            assert_eq!(b.n(), 1200);
+            let b = create_ok(0.8, 1.2);
+            assert_eq!(b.shape_a(), 0.8);
+            assert_eq!(b.shape_b(), 1.2);
         }
 
         #[test]
         #[should_panic]
         fn create_err_failure() {
-            create_err(0.8, 1200);
+            create_err(0.8, 1.2);
         }
 
         #[test]
         fn create_err_success() {
-            let err = create_err(-0.5, 1000);
-            assert_eq!(err, StatsError::BadParams);
+            let err = create_err(-0.5, 1.2);
+            assert_eq!(err, BetaError::ShapeAInvalid);
         }
 
         #[test]
         #[should_panic]
         fn create_ok_failure() {
-            create_ok(-0.5, 1000);
+            create_ok(-0.5, 1.2);
         }
 
         #[test]
         fn test_exact_success() {
-            test_exact(0.0, 4, 0.0, |dist| dist.mean().unwrap());
+            test_exact(1.5, 1.5, 0.5, |dist| dist.mode().unwrap());
         }
 
         #[test]
         #[should_panic]
         fn test_exact_failure() {
-            test_exact(0.3, 3, 0.9, |dist| dist.mean().unwrap());
+            test_exact(1.2, 1.4, 0.333333333333, |dist| dist.mode().unwrap());
         }
 
         #[test]
         fn test_relative_success() {
-            test_relative(0.3, 3, 0.9, |dist| dist.mean().unwrap());
+            test_relative(1.2, 1.4, 0.333333333333, |dist| dist.mode().unwrap());
         }
 
         #[test]
         #[should_panic]
         fn test_relative_failure() {
-            test_relative(0.3, 3, 0.8, |dist| dist.mean().unwrap());
+            test_relative(1.2, 1.4, 0.333, |dist| dist.mode().unwrap());
         }
 
         #[test]
         fn test_absolute_success() {
-            test_absolute(0.3, 3, 0.9, 1e-15, |dist| dist.mean().unwrap());
+            test_absolute(1.2, 1.4, 0.333333333333, 1e-12, |dist| dist.mode().unwrap());
         }
 
         #[test]
         #[should_panic]
         fn test_absolute_failure() {
-            test_absolute(0.3, 3, 0.9, 1e-17, |dist| dist.mean().unwrap());
+            test_absolute(1.2, 1.4, 0.333333333333, 1e-15, |dist| dist.mode().unwrap());
+        }
+
+        #[test]
+        fn test_create_err_success() {
+            test_create_err(0.0, 0.5, BetaError::ShapeAInvalid);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_create_err_failure() {
+            test_create_err(0.0, 0.5, BetaError::BothShapesInfinite);
         }
 
         #[test]
         fn test_is_nan_success() {
-            // Not sure that any Binomial API can return a NaN, so we force the issue
-            test_is_nan(0.8, 1200, |_| f64::NAN);
+            // Not sure that any Beta API can return a NaN, so we force the issue
+            test_is_nan(0.8, 1.2, |_| f64::NAN);
         }
 
         #[test]
         #[should_panic]
         fn test_is_nan_failure() {
-            test_is_nan(0.8, 1200, |dist| dist.mean().unwrap());
+            test_is_nan(0.8, 1.2, |dist| dist.mean().unwrap());
         }
 
         #[test]
         fn test_is_none_success() {
-            // Same as test_is_nan_success, force returning `None` here
-            test_none(0.8, 1200, |_| Option::<f64>::None);
+            test_none(f64::INFINITY, 1.2, |dist| dist.entropy());
         }
 
         #[test]
         #[should_panic]
         fn test_is_none_failure() {
-            test_none(0.8, 1200, |dist| dist.mean());
+            test_none(0.8, 1.2, |dist| dist.mean());
         }
     }
 
@@ -469,31 +446,6 @@ pub mod test {
         // assert_eq!(dist.cdf(f64::INFINITY), 1.0);
 
         check_sum_pmf_is_cdf(dist, x_max);
-    }
-
-    #[cfg(feature = "nalgebra")]
-    #[test]
-    fn test_is_valid_multinomial() {
-        use std::f64;
-
-        let invalid = [1.0, f64::NAN, 3.0];
-        assert!(!is_valid_multinomial(&invalid, true));
-        assert!(check_multinomial(&invalid.to_vec().into(), true).is_err());
-        let invalid2 = [-2.0, 5.0, 1.0, 6.2];
-        assert!(!is_valid_multinomial(&invalid2, true));
-        assert!(check_multinomial(&invalid2.to_vec().into(), true).is_err());
-        let invalid3 = [0.0, 0.0, 0.0];
-        assert!(!is_valid_multinomial(&invalid3, true));
-        assert!(check_multinomial(&invalid3.to_vec().into(), true).is_err());
-        let valid = [5.2, 0.0, 1e-15, 1000000.12];
-        assert!(is_valid_multinomial(&valid, true));
-        assert!(check_multinomial(&valid.to_vec().into(), true).is_ok());
-    }
-
-    #[test]
-    fn test_is_valid_multinomial_no_zero() {
-        let invalid = [5.2, 0.0, 1e-15, 1000000.12];
-        assert!(!is_valid_multinomial(&invalid, false));
     }
 
     #[test]

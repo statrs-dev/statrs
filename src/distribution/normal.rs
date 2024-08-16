@@ -1,7 +1,7 @@
+use crate::consts;
 use crate::distribution::{ziggurat, Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
-use crate::{consts, Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -24,6 +24,30 @@ pub struct Normal {
     std_dev: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Normal`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum NormalError {
+    /// The mean is NaN.
+    MeanInvalid,
+
+    /// The standard deviation is NaN, zero or less than zero.
+    StandardDeviationInvalid,
+}
+
+impl std::fmt::Display for NormalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            NormalError::MeanInvalid => write!(f, "Mean is NaN"),
+            NormalError::StandardDeviationInvalid => {
+                write!(f, "Standard deviation is NaN, zero or less than zero")
+            }
+        }
+    }
+}
+
+impl std::error::Error for NormalError {}
+
 impl Normal {
     ///  Constructs a new normal distribution with a mean of `mean`
     /// and a standard deviation of `std_dev`
@@ -44,12 +68,16 @@ impl Normal {
     /// result = Normal::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(mean: f64, std_dev: f64) -> Result<Normal> {
-        if mean.is_nan() || std_dev.is_nan() || std_dev <= 0.0 {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(Normal { mean, std_dev })
+    pub fn new(mean: f64, std_dev: f64) -> Result<Normal, NormalError> {
+        if mean.is_nan() {
+            return Err(NormalError::MeanInvalid);
         }
+
+        if std_dev.is_nan() || std_dev <= 0.0 {
+            return Err(NormalError::StandardDeviationInvalid);
+        }
+
+        Ok(Normal { mean, std_dev })
     }
 
     /// Constructs a new standard normal distribution with a mean of 0
@@ -338,7 +366,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(mean: f64, std_dev: f64; Normal; StatsError);
+    testing_boiler!(mean: f64, std_dev: f64; Normal; NormalError);
 
     #[test]
     fn test_create() {
@@ -351,9 +379,9 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
+        test_create_err(f64::NAN, 1.0, NormalError::MeanInvalid);
+        test_create_err(1.0, f64::NAN, NormalError::StandardDeviationInvalid);
         create_err(0.0, 0.0);
-        create_err(f64::NAN, 1.0);
-        create_err(1.0, f64::NAN);
         create_err(f64::NAN, f64::NAN);
         create_err(1.0, -1.0);
     }

@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -23,6 +22,28 @@ pub struct Cauchy {
     scale: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Cauchy`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum CauchyError {
+    /// The location is NaN.
+    LocationInvalid,
+
+    /// The scale is NaN, zero or less than zero.
+    ScaleInvalid,
+}
+
+impl std::fmt::Display for CauchyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            CauchyError::LocationInvalid => write!(f, "Location is NaN"),
+            CauchyError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero"),
+        }
+    }
+}
+
+impl std::error::Error for CauchyError {}
+
 impl Cauchy {
     /// Constructs a new cauchy distribution with the given
     /// location and scale.
@@ -42,12 +63,16 @@ impl Cauchy {
     /// result = Cauchy::new(0.0, -1.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(location: f64, scale: f64) -> Result<Cauchy> {
-        if location.is_nan() || scale.is_nan() || scale <= 0.0 {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(Cauchy { location, scale })
+    pub fn new(location: f64, scale: f64) -> Result<Cauchy, CauchyError> {
+        if location.is_nan() {
+            return Err(CauchyError::LocationInvalid);
         }
+
+        if scale.is_nan() || scale <= 0.0 {
+            return Err(CauchyError::ScaleInvalid);
+        }
+
+        Ok(Cauchy { location, scale })
     }
 
     /// Returns the location of the cauchy distribution
@@ -256,7 +281,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(location: f64, scale: f64; Cauchy; StatsError);
+    testing_boiler!(location: f64, scale: f64; Cauchy; CauchyError);
 
     #[test]
     fn test_create() {
@@ -270,10 +295,16 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
-        create_err(f64::NAN, 1.0);
-        create_err(1.0, f64::NAN);
-        create_err(f64::NAN, f64::NAN);
-        create_err(1.0, 0.0);
+        let invalid = [
+            (f64::NAN, 1.0, CauchyError::LocationInvalid),
+            (1.0, f64::NAN, CauchyError::ScaleInvalid),
+            (f64::NAN, f64::NAN, CauchyError::LocationInvalid),
+            (1.0, 0.0, CauchyError::ScaleInvalid),
+        ];
+
+        for (location, scale, err) in invalid {
+            test_create_err(location, scale, err);
+        }
     }
 
     #[test]

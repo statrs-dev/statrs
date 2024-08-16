@@ -1,6 +1,5 @@
-use crate::distribution::{Continuous, ContinuousCDF, Gamma};
+use crate::distribution::{Continuous, ContinuousCDF, Gamma, GammaError};
 use crate::statistics::*;
-use crate::Result;
 use rand::Rng;
 
 /// Implements the [Erlang](https://en.wikipedia.org/wiki/Erlang_distribution)
@@ -45,7 +44,7 @@ impl Erlang {
     /// result = Erlang::new(0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(shape: u64, rate: f64) -> Result<Erlang> {
+    pub fn new(shape: u64, rate: f64) -> Result<Erlang, GammaError> {
         Gamma::new(shape as f64, rate).map(|g| Erlang { g })
     }
 
@@ -295,10 +294,9 @@ impl Continuous<f64, f64> for Erlang {
 mod tests {
     use super::*;
     use crate::distribution::internal::*;
-    use crate::StatsError;
     use crate::testing_boiler;
 
-    testing_boiler!(shape: u64, rate: f64; Erlang; StatsError);
+    testing_boiler!(shape: u64, rate: f64; Erlang; GammaError);
 
     #[test]
     fn test_create() {
@@ -311,10 +309,16 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
-        create_err(0, 1.0);
-        create_err(1, 0.0);
-        create_err(1, f64::NAN);
-        create_err(1, -1.0);
+        let invalid = [
+            (0, 1.0, GammaError::ShapeInvalid),
+            (1, 0.0, GammaError::RateInvalid),
+            (1, f64::NAN, GammaError::RateInvalid),
+            (1, -1.0, GammaError::RateInvalid),
+        ];
+
+        for (s, r, err) in invalid {
+            test_create_err(s, r, err);
+        }
     }
 
     #[test]

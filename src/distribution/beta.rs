@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 
 /// Implements the [Beta](https://en.wikipedia.org/wiki/Beta_distribution)
@@ -24,6 +23,32 @@ pub struct Beta {
     shape_b: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Beta`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum BetaError {
+    /// Shape A is NaN, zero or negative.
+    ShapeAInvalid,
+
+    /// Shape B is NaN, zero or negative.
+    ShapeBInvalid,
+
+    /// Shape A and Shape B are infinite.
+    BothShapesInfinite,
+}
+
+impl std::fmt::Display for BetaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            BetaError::ShapeAInvalid => write!(f, "Shape A is NaN, zero or negative"),
+            BetaError::ShapeBInvalid => write!(f, "Shape B is NaN, zero or negative"),
+            BetaError::BothShapesInfinite => write!(f, "Shape A and shape B are infinite"),
+        }
+    }
+}
+
+impl std::error::Error for BetaError {}
+
 impl Beta {
     /// Constructs a new beta distribution with shapeA (α) of `shape_a`
     /// and shapeB (β) of `shape_b`
@@ -44,15 +69,19 @@ impl Beta {
     /// result = Beta::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(shape_a: f64, shape_b: f64) -> Result<Beta> {
-        if shape_a.is_nan()
-            || shape_b.is_nan()
-            || shape_a.is_infinite() && shape_b.is_infinite()
-            || shape_a <= 0.0
-            || shape_b <= 0.0
-        {
-            return Err(StatsError::BadParams);
-        };
+    pub fn new(shape_a: f64, shape_b: f64) -> Result<Beta, BetaError> {
+        if shape_a.is_nan() || shape_a <= 0.0 {
+            return Err(BetaError::ShapeAInvalid);
+        }
+
+        if shape_b.is_nan() || shape_b <= 0.0 {
+            return Err(BetaError::ShapeBInvalid);
+        }
+
+        if shape_a.is_infinite() && shape_b.is_infinite() {
+            return Err(BetaError::BothShapesInfinite);
+        }
+
         Ok(Beta { shape_a, shape_b })
     }
 
@@ -433,7 +462,7 @@ mod tests {
     use super::super::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(a: f64, b: f64; Beta; StatsError);
+    testing_boiler!(a: f64, b: f64; Beta; BetaError);
 
     #[test]
     fn test_create() {

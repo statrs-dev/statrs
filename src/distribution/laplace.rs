@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::{Distribution, Max, Median, Min, Mode};
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -23,6 +22,28 @@ pub struct Laplace {
     scale: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Laplace`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum LaplaceError {
+    /// The location is NaN.
+    LocationInvalid,
+
+    /// The scale is NaN, zero or less than zero.
+    ScaleInvalid,
+}
+
+impl std::fmt::Display for LaplaceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            LaplaceError::LocationInvalid => write!(f, "Location is NaN"),
+            LaplaceError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero"),
+        }
+    }
+}
+
+impl std::error::Error for LaplaceError {}
+
 impl Laplace {
     /// Constructs a new laplace distribution with the given
     /// location and scale.
@@ -42,12 +63,16 @@ impl Laplace {
     /// result = Laplace::new(0.0, -1.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(location: f64, scale: f64) -> Result<Laplace> {
-        if location.is_nan() || scale.is_nan() || scale <= 0.0 {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(Laplace { location, scale })
+    pub fn new(location: f64, scale: f64) -> Result<Laplace, LaplaceError> {
+        if location.is_nan() {
+            return Err(LaplaceError::LocationInvalid);
         }
+
+        if scale.is_nan() || scale <= 0.0 {
+            return Err(LaplaceError::ScaleInvalid);
+        }
+
+        Ok(Laplace { location, scale })
     }
 
     /// Returns the location of the laplace distribution
@@ -304,7 +329,7 @@ mod tests {
 
     use crate::testing_boiler;
 
-    testing_boiler!(location: f64, scale: f64; Laplace; StatsError);
+    testing_boiler!(location: f64, scale: f64; Laplace; LaplaceError);
 
     // A wrapper for the `assert_relative_eq!` macro from the approx crate.
     //
@@ -332,8 +357,8 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
-        create_err(2.0, -1.0);
-        create_err(f64::NAN, 1.0);
+        test_create_err(2.0, -1.0, LaplaceError::ScaleInvalid);
+        test_create_err(f64::NAN, 1.0, LaplaceError::LocationInvalid);
         create_err(f64::NAN, -1.0);
     }
 

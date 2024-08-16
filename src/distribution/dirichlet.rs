@@ -1,7 +1,7 @@
 use crate::distribution::Continuous;
 use crate::function::gamma;
+use crate::prec;
 use crate::statistics::*;
-use crate::{prec, Result, StatsError};
 use nalgebra::{Const, Dim, Dyn, OMatrix, OVector};
 use rand::Rng;
 use std::f64;
@@ -31,6 +31,31 @@ where
     alpha: OVector<f64, D>,
 }
 
+/// Represents the errors that can occur when creating a [`Dirichlet`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum DirichletError {
+    /// Alpha contains less than two elements.
+    AlphaTooShort,
+
+    /// Alpha contains an element that is NaN, infinite, zero or less than zero.
+    AlphaHasInvalidElements,
+}
+
+impl std::fmt::Display for DirichletError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            DirichletError::AlphaTooShort => write!(f, "Alpha contains less than two elements"),
+            DirichletError::AlphaHasInvalidElements => write!(
+                f,
+                "Alpha contains an element that is NaN, infinite, zero or less than zero"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for DirichletError {}
+
 impl Dirichlet<Dyn> {
     /// Constructs a new dirichlet distribution with the given
     /// concentration parameters (alpha)
@@ -55,7 +80,7 @@ impl Dirichlet<Dyn> {
     /// result = Dirichlet::new(alpha_err);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(alpha: Vec<f64>) -> Result<Self> {
+    pub fn new(alpha: Vec<f64>) -> Result<Self, DirichletError> {
         Self::new_from_nalgebra(alpha.into())
     }
 
@@ -78,7 +103,7 @@ impl Dirichlet<Dyn> {
     /// result = Dirichlet::new_with_param(0.0, 1);
     /// assert!(result.is_err());
     /// ```
-    pub fn new_with_param(alpha: f64, n: usize) -> Result<Self> {
+    pub fn new_with_param(alpha: f64, n: usize) -> Result<Self, DirichletError> {
         Self::new(vec![alpha; n])
     }
 }
@@ -95,12 +120,16 @@ where
     ///
     /// Returns an error if vector has length less than 2 or if any element
     /// of alpha is NOT finite positive
-    pub fn new_from_nalgebra(alpha: OVector<f64, D>) -> Result<Self> {
-        if !is_valid_alpha(alpha.as_slice()) {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(Self { alpha })
+    pub fn new_from_nalgebra(alpha: OVector<f64, D>) -> Result<Self, DirichletError> {
+        if alpha.len() < 2 {
+            return Err(DirichletError::AlphaTooShort);
         }
+
+        if alpha.iter().any(|&a_i| !a_i.is_finite() || a_i <= 0.0) {
+            return Err(DirichletError::AlphaHasInvalidElements);
+        }
+
+        Ok(Self { alpha })
     }
 
     /// Returns the concentration parameters of
@@ -336,12 +365,6 @@ where
     }
 }
 
-// determines if `a` is a valid alpha array
-// for the Dirichlet distribution
-fn is_valid_alpha(a: &[f64]) -> bool {
-    a.len() >= 2 && a.iter().all(|&a_i| a_i.is_finite() && a_i > 0.0)
-}
-
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
@@ -349,7 +372,6 @@ mod tests {
 
     use nalgebra::{dmatrix, dvector, vector, DimMin, OVector};
 
-    use super::is_valid_alpha;
     use crate::{
         distribution::{Continuous, Dirichlet},
         statistics::{MeanN, VarianceN},
@@ -387,17 +409,8 @@ mod tests {
     }
 
     #[test]
-    fn test_is_valid_alpha() {
-        assert!(!is_valid_alpha(&[1.0]));
-        assert!(!is_valid_alpha(&[1.0, f64::NAN]));
-        assert!(is_valid_alpha(&[1.0, 2.0]));
-        assert!(!is_valid_alpha(&[1.0, 0.0]));
-        assert!(!is_valid_alpha(&[1.0, f64::INFINITY]));
-        assert!(!is_valid_alpha(&[-1.0, 2.0]));
-    }
-
-    #[test]
     fn test_create() {
+        try_create(vector![1.0, 2.0]);
         try_create(vector![1.0, 2.0, 3.0, 4.0, 5.0]);
         assert!(Dirichlet::new(vec![1.0, 2.0, 3.0, 4.0, 5.0]).is_ok());
         // try_create(vector![0.001, f64::INFINITY, 3756.0]); // moved to bad case as this is degenerate
@@ -405,6 +418,10 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
+        bad_create_case(vector![1.0, f64::NAN]);
+        bad_create_case(vector![1.0, 0.0]);
+        bad_create_case(vector![1.0, f64::INFINITY]);
+        bad_create_case(vector![-1.0, 2.0]);
         bad_create_case(vector![1.0]);
         bad_create_case(vector![1.0, 2.0, 0.0, 4.0, 5.0]);
         bad_create_case(vector![1.0, f64::NAN, 3.0, 4.0, 5.0]);

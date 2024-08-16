@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::beta;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -26,6 +25,32 @@ pub struct FisherSnedecor {
     freedom_2: f64,
 }
 
+/// Represents the errors that can occur when creating a [`FisherSnedecor`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum FisherSnedecorError {
+    /// `freedom_1` is NaN, infinite, zero or less than zero.
+    Freedom1Invalid,
+
+    /// `freedom_2` is NaN, infinite, zero or less than zero.
+    Freedom2Invalid,
+}
+
+impl std::fmt::Display for FisherSnedecorError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            FisherSnedecorError::Freedom1Invalid => {
+                write!(f, "freedom_1 is NaN, infinite, zero or less than zero.")
+            }
+            FisherSnedecorError::Freedom2Invalid => {
+                write!(f, "freedom_2 is NaN, infinite, zero or less than zero.")
+            }
+        }
+    }
+}
+
+impl std::error::Error for FisherSnedecorError {}
+
 impl FisherSnedecor {
     /// Constructs a new fisher-snedecor distribution with
     /// degrees of freedom `freedom_1` and `freedom_2`
@@ -46,16 +71,19 @@ impl FisherSnedecor {
     /// result = FisherSnedecor::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(freedom_1: f64, freedom_2: f64) -> Result<FisherSnedecor> {
-        if !freedom_1.is_finite() || freedom_1 <= 0.0 || !freedom_2.is_finite() || freedom_2 <= 0.0
-        {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(FisherSnedecor {
-                freedom_1,
-                freedom_2,
-            })
+    pub fn new(freedom_1: f64, freedom_2: f64) -> Result<FisherSnedecor, FisherSnedecorError> {
+        if !freedom_1.is_finite() || freedom_1 <= 0.0 {
+            return Err(FisherSnedecorError::Freedom1Invalid);
         }
+
+        if !freedom_2.is_finite() || freedom_2 <= 0.0 {
+            return Err(FisherSnedecorError::Freedom2Invalid);
+        }
+
+        Ok(FisherSnedecor {
+            freedom_1,
+            freedom_2,
+        })
     }
 
     /// Returns the first degree of freedom for the
@@ -389,7 +417,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(freedom_1: f64, freedom_2: f64; FisherSnedecor; StatsError);
+    testing_boiler!(freedom_1: f64, freedom_2: f64; FisherSnedecor; FisherSnedecorError);
 
     #[test]
     fn test_create() {
@@ -403,6 +431,9 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
+        test_create_err(f64::INFINITY, 0.1, FisherSnedecorError::Freedom1Invalid);
+        test_create_err(0.1, f64::INFINITY, FisherSnedecorError::Freedom2Invalid);
+
         create_err(f64::NAN, f64::NAN);
         create_err(0.0, f64::NAN);
         create_err(-1.0, f64::NAN);
@@ -419,8 +450,6 @@ mod tests {
         create_err(0.0, -10.0);
         create_err(-1.0, -10.0);
         create_err(-10.0, -10.0);
-        create_err(f64::INFINITY, 0.1);
-        create_err(0.1, f64::INFINITY);
         create_err(f64::INFINITY, f64::INFINITY);
     }
 

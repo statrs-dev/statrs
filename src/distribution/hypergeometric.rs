@@ -1,7 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::factorial;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::cmp;
 use std::f64;
@@ -17,15 +16,37 @@ pub struct Hypergeometric {
     draws: u64,
 }
 
+/// Represents the errors that can occur when creating a [`Hypergeometric`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum HypergeometricError {
+    /// The number of successes is greater than the population.
+    TooManySuccesses,
+
+    /// The number of draws is greater than the population.
+    TooManyDraws,
+}
+
+impl std::fmt::Display for HypergeometricError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            HypergeometricError::TooManySuccesses => write!(f, "successes > population"),
+            HypergeometricError::TooManyDraws => write!(f, "draws > population"),
+        }
+    }
+}
+
+impl std::error::Error for HypergeometricError {}
+
 impl Hypergeometric {
     /// Constructs a new hypergeometric distribution
     /// with a population (N) of `population`, number
     /// of successes (K) of `successes`, and number of draws
-    /// (n) of `draws`
+    /// (n) of `draws`.
     ///
     /// # Errors
     ///
-    /// If `successes > population` or `draws > population`
+    /// If `successes > population` or `draws > population`.
     ///
     /// # Examples
     ///
@@ -38,16 +59,24 @@ impl Hypergeometric {
     /// result = Hypergeometric::new(2, 3, 2);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(population: u64, successes: u64, draws: u64) -> Result<Hypergeometric> {
-        if successes > population || draws > population {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(Hypergeometric {
-                population,
-                successes,
-                draws,
-            })
+    pub fn new(
+        population: u64,
+        successes: u64,
+        draws: u64,
+    ) -> Result<Hypergeometric, HypergeometricError> {
+        if successes > population {
+            return Err(HypergeometricError::TooManySuccesses);
         }
+
+        if draws > population {
+            return Err(HypergeometricError::TooManyDraws);
+        }
+
+        Ok(Hypergeometric {
+            population,
+            successes,
+            draws,
+        })
     }
 
     /// Returns the population size of the hypergeometric
@@ -376,7 +405,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(population: u64, successes: u64, draws: u64; Hypergeometric; StatsError);
+    testing_boiler!(population: u64, successes: u64, draws: u64; Hypergeometric; HypergeometricError);
 
     #[test]
     fn test_create() {
@@ -390,8 +419,8 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
-        create_err(2, 3, 2);
-        create_err(10, 5, 20);
+        test_create_err(2, 3, 2, HypergeometricError::TooManySuccesses);
+        test_create_err(10, 5, 20, HypergeometricError::TooManyDraws);
         create_err(0, 1, 1);
     }
 

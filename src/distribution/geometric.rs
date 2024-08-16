@@ -1,6 +1,5 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::distributions::OpenClosed01;
 use rand::Rng;
 use std::f64;
@@ -25,6 +24,24 @@ pub struct Geometric {
     p: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Geometric`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum GeometricError {
+    /// The probability is NaN or not in `(0, 1]`.
+    ProbabilityInvalid,
+}
+
+impl std::fmt::Display for GeometricError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            GeometricError::ProbabilityInvalid => write!(f, "Probability is NaN or not in (0, 1]"),
+        }
+    }
+}
+
+impl std::error::Error for GeometricError {}
+
 impl Geometric {
     /// Constructs a new shifted geometric distribution with a probability
     /// of `p`
@@ -44,9 +61,9 @@ impl Geometric {
     /// result = Geometric::new(0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(p: f64) -> Result<Geometric> {
+    pub fn new(p: f64) -> Result<Geometric, GeometricError> {
         if p <= 0.0 || p > 1.0 || p.is_nan() {
-            Err(StatsError::BadParams)
+            Err(GeometricError::ProbabilityInvalid)
         } else {
             Ok(Geometric { p })
         }
@@ -277,7 +294,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(p: f64; Geometric; StatsError);
+    testing_boiler!(p: f64; Geometric; GeometricError);
 
     #[test]
     fn test_create() {

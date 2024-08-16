@@ -2,7 +2,6 @@ use crate::distribution::Continuous;
 use crate::distribution::{ChiSquared, Normal};
 use crate::function::gamma;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
-use crate::{Result, StatsError};
 use nalgebra::{Cholesky, Const, DMatrix, Dim, DimMin, Dyn, OMatrix, OVector};
 use rand::Rng;
 use std::f64::consts::PI;
@@ -39,6 +38,53 @@ where
     ln_pdf_const: f64,
 }
 
+/// Represents the errors that can occur when creating a [`MultivariateStudent`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum MultivariateStudentError {
+    /// The scale matrix is asymmetric or contains a NaN.
+    ScaleInvalid,
+
+    /// The location vector contains a NaN.
+    LocationInvalid,
+
+    /// The degrees of freedom are NaN, zero or less than zero.
+    FreedomInvalid,
+
+    /// The amount of rows in the location vector is not equal to the amount
+    /// of rows in the scale matrix.
+    DimensionMismatch,
+
+    /// After all other validation, computing the Cholesky decomposition failed.
+    /// This means that the scale matrix is not definite-positive.
+    CholeskyFailed,
+}
+
+impl std::fmt::Display for MultivariateStudentError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            MultivariateStudentError::ScaleInvalid => {
+                write!(f, "Scale matrix is asymmetric or contains a NaN")
+            }
+            MultivariateStudentError::LocationInvalid => {
+                write!(f, "Location vector contains a NaN")
+            }
+            MultivariateStudentError::FreedomInvalid => {
+                write!(f, "Degrees of freedom are NaN, zero or less than zero")
+            }
+            MultivariateStudentError::DimensionMismatch => write!(
+                f,
+                "Location vector and scale matrix do not have the same number of rows"
+            ),
+            MultivariateStudentError::CholeskyFailed => {
+                write!(f, "Computing the Cholesky decomposition failed")
+            }
+        }
+    }
+}
+
+impl std::error::Error for MultivariateStudentError {}
+
 impl MultivariateStudent<Dyn> {
     /// Constructs a new multivariate students t distribution with a location of `location`,
     /// scale matrix `scale` and `freedom` degrees of freedom.
@@ -47,7 +93,11 @@ impl MultivariateStudent<Dyn> {
     ///
     /// Returns `StatsError::BadParams` if the scale matrix is not symmetric-positive
     /// definite and `StatsError::ArgMustBePositive` if freedom is non-positive.
-    pub fn new(location: Vec<f64>, scale: Vec<f64>, freedom: f64) -> Result<Self> {
+    pub fn new(
+        location: Vec<f64>,
+        scale: Vec<f64>,
+        freedom: f64,
+    ) -> Result<Self, MultivariateStudentError> {
         let dim = location.len();
         Self::new_from_nalgebra(location.into(), DMatrix::from_vec(dim, dim, scale), freedom)
     }
@@ -69,26 +119,26 @@ where
         location: OVector<f64, D>,
         scale: OMatrix<f64, D, D>,
         freedom: f64,
-    ) -> Result<Self> {
+    ) -> Result<Self, MultivariateStudentError> {
         let dim = location.len();
 
-        // Check that the provided scale matrix is symmetric
-        if scale.lower_triangle() != scale.upper_triangle().transpose()
-        // Check that mean and covariance do not contain NaN
-            || location.iter().any(|f| f.is_nan())
-            || scale.iter().any(|f| f.is_nan())
-        // Check that the dimensions match
-            || location.nrows() != scale.nrows() || scale.nrows() != scale.ncols()
-        // Check that the degrees of freedom is not NaN
-            || freedom.is_nan()
-        {
-            return Err(StatsError::BadParams);
+        if location.iter().any(|f| f.is_nan()) {
+            return Err(MultivariateStudentError::LocationInvalid);
         }
-        // Check that degrees of freedom is positive
-        if freedom <= 0. {
-            return Err(StatsError::ArgMustBePositive(
-                "Degrees of freedom must be positive",
-            ));
+
+        if !scale.is_square()
+            || scale.lower_triangle() != scale.upper_triangle().transpose()
+            || scale.iter().any(|f| f.is_nan())
+        {
+            return Err(MultivariateStudentError::ScaleInvalid);
+        }
+
+        if freedom.is_nan() || freedom <= 0.0 {
+            return Err(MultivariateStudentError::FreedomInvalid);
+        }
+
+        if location.nrows() != scale.nrows() {
+            return Err(MultivariateStudentError::DimensionMismatch);
         }
 
         let scale_det = scale.determinant();
@@ -98,7 +148,7 @@ where
             - 0.5 * scale_det.ln();
 
         match Cholesky::new(scale.clone()) {
-            None => Err(StatsError::BadParams), // Scale matrix is not positive definite
+            None => Err(MultivariateStudentError::CholeskyFailed),
             Some(cholesky_decomp) => {
                 let precision = cholesky_decomp.inverse();
                 Ok(MultivariateStudent {

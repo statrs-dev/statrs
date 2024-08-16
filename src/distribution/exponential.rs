@@ -1,6 +1,5 @@
 use crate::distribution::{ziggurat, Continuous, ContinuousCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -25,13 +24,31 @@ pub struct Exp {
     rate: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Exp`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum ExpError {
+    /// The rate is NaN, zero or less than zero.
+    RateInvalid,
+}
+
+impl std::fmt::Display for ExpError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ExpError::RateInvalid => write!(f, "Rate is NaN, zero or less than zero"),
+        }
+    }
+}
+
+impl std::error::Error for ExpError {}
+
 impl Exp {
     /// Constructs a new exponential distribution with a
     /// rate (λ) of `rate`.
     ///
     /// # Errors
     ///
-    /// Returns an error if rate is `NaN` or `rate <= 0.0`
+    /// Returns an error if rate is `NaN` or `rate <= 0.0`.
     ///
     /// # Examples
     ///
@@ -44,9 +61,9 @@ impl Exp {
     /// result = Exp::new(-1.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(rate: f64) -> Result<Exp> {
+    pub fn new(rate: f64) -> Result<Exp, ExpError> {
         if rate.is_nan() || rate <= 0.0 {
-            Err(StatsError::BadParams)
+            Err(ExpError::RateInvalid)
         } else {
             Ok(Exp { rate })
         }
@@ -283,7 +300,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(rate: f64; Exp; StatsError);
+    testing_boiler!(rate: f64; Exp; ExpError);
 
     #[test]
     fn test_create() {

@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 use std::f64;
 
@@ -26,15 +25,42 @@ pub struct StudentsT {
     freedom: f64,
 }
 
+/// Represents the errors that can occur when creating a [`StudentsT`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum StudentsTError {
+    /// The location is NaN.
+    LocationInvalid,
+
+    /// The scale is NaN, zero or less than zero.
+    ScaleInvalid,
+
+    /// The degrees of freedom are NaN, zero or less than zero.
+    FreedomInvalid,
+}
+
+impl std::fmt::Display for StudentsTError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            StudentsTError::LocationInvalid => write!(f, "Location is NaN"),
+            StudentsTError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero"),
+            StudentsTError::FreedomInvalid => {
+                write!(f, "Degrees of freedom are NaN, zero or less than zero")
+            }
+        }
+    }
+}
+
+impl std::error::Error for StudentsTError {}
+
 impl StudentsT {
     /// Constructs a new student's t-distribution with location `location`,
-    /// scale `scale`,
-    /// and `freedom` freedom.
+    /// scale `scale`, and `freedom` freedom.
     ///
     /// # Errors
     ///
     /// Returns an error if any of `location`, `scale`, or `freedom` are `NaN`.
-    /// Returns an error if `scale <= 0.0` or `freedom <= 0.0`
+    /// Returns an error if `scale <= 0.0` or `freedom <= 0.0`.
     ///
     /// # Examples
     ///
@@ -47,17 +73,24 @@ impl StudentsT {
     /// result = StudentsT::new(0.0, 0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(location: f64, scale: f64, freedom: f64) -> Result<StudentsT> {
-        let is_nan = location.is_nan() || scale.is_nan() || freedom.is_nan();
-        if is_nan || scale <= 0.0 || freedom <= 0.0 {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(StudentsT {
-                location,
-                scale,
-                freedom,
-            })
+    pub fn new(location: f64, scale: f64, freedom: f64) -> Result<StudentsT, StudentsTError> {
+        if location.is_nan() {
+            return Err(StudentsTError::LocationInvalid);
         }
+
+        if scale.is_nan() || scale <= 0.0 {
+            return Err(StudentsTError::ScaleInvalid);
+        }
+
+        if freedom.is_nan() || freedom <= 0.0 {
+            return Err(StudentsTError::FreedomInvalid);
+        }
+
+        Ok(StudentsT {
+            location,
+            scale,
+            freedom,
+        })
     }
 
     /// Returns the location of the student's t-distribution
@@ -426,7 +459,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(location: f64, scale: f64, freedom: f64; StudentsT; StatsError);
+    testing_boiler!(location: f64, scale: f64, freedom: f64; StudentsT; StudentsTError);
 
     #[test]
     fn test_create() {
@@ -444,11 +477,17 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
-        create_err(f64::NAN, 1.0, 1.0);
-        create_err(0.0, f64::NAN, 1.0);
-        create_err(0.0, 1.0, f64::NAN);
-        create_err(0.0, -10.0, 1.0);
-        create_err(0.0, 10.0, -1.0);
+        let invalid = [
+            (f64::NAN, 1.0, 1.0, StudentsTError::LocationInvalid),
+            (0.0, f64::NAN, 1.0, StudentsTError::ScaleInvalid),
+            (0.0, 1.0, f64::NAN, StudentsTError::FreedomInvalid),
+            (0.0, -10.0, 1.0, StudentsTError::ScaleInvalid),
+            (0.0, 10.0, -1.0, StudentsTError::FreedomInvalid),
+        ];
+
+        for (l, s, f, err) in invalid {
+            test_create_err(l, s, f, err);
+        }
     }
 
     #[test]

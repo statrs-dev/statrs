@@ -1,6 +1,5 @@
-use crate::distribution::{Continuous, ContinuousCDF, Gamma};
+use crate::distribution::{Continuous, ContinuousCDF, Gamma, GammaError};
 use crate::statistics::*;
-use crate::Result;
 use rand::Rng;
 use std::f64;
 
@@ -48,7 +47,7 @@ impl ChiSquared {
     /// result = ChiSquared::new(0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(freedom: f64) -> Result<ChiSquared> {
+    pub fn new(freedom: f64) -> Result<ChiSquared, GammaError> {
         Gamma::new(freedom / 2.0, 0.5).map(|g| ChiSquared { freedom, g })
     }
 
@@ -308,10 +307,9 @@ impl Continuous<f64, f64> for ChiSquared {
 mod tests {
     use super::*;
     use crate::distribution::internal::*;
-    use crate::StatsError;
     use crate::testing_boiler;
 
-    testing_boiler!(freedom: f64; ChiSquared; StatsError);
+    testing_boiler!(freedom: f64; ChiSquared; GammaError);
 
     #[test]
     fn test_median() {

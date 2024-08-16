@@ -1,6 +1,5 @@
-use crate::distribution::{Binomial, Discrete, DiscreteCDF};
+use crate::distribution::{Binomial, BinomialError, Discrete, DiscreteCDF};
 use crate::statistics::*;
-use crate::Result;
 use rand::Rng;
 
 /// Implements the
@@ -45,7 +44,7 @@ impl Bernoulli {
     /// result = Bernoulli::new(-0.5);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(p: f64) -> Result<Bernoulli> {
+    pub fn new(p: f64) -> Result<Bernoulli, BinomialError> {
         Binomial::new(p, 1).map(|b| Bernoulli { b })
     }
 
@@ -266,10 +265,9 @@ impl Discrete<u64, f64> for Bernoulli {
 #[cfg(test)]
 mod testing {
     use super::*;
-    use crate::StatsError;
     use crate::testing_boiler;
 
-    testing_boiler!(p: f64; Bernoulli; StatsError);
+    testing_boiler!(p: f64; Bernoulli; BinomialError);
 
     #[test]
     fn test_create() {

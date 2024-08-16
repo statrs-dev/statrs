@@ -1,7 +1,6 @@
 use crate::distribution::Discrete;
 use crate::function::factorial;
 use crate::statistics::*;
-use crate::Result;
 use nalgebra::{Const, DVector, Dim, Dyn, OMatrix, OVector};
 use rand::Rng;
 
@@ -33,6 +32,35 @@ where
     n: u64,
 }
 
+/// Represents the errors that can occur when creating a [`Multinomial`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum MultinomialError {
+    /// Fewer than two probabilities.
+    NotEnoughProbabilities,
+
+    /// The sum of all probabilities is zero.
+    ProbabilitySumZero,
+
+    /// At least one probability is NaN, infinite or less than zero.
+    ProbabilityInvalid,
+}
+
+impl std::fmt::Display for MultinomialError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            MultinomialError::NotEnoughProbabilities => write!(f, "Fewer than two probabilities"),
+            MultinomialError::ProbabilitySumZero => write!(f, "The probabilities sum up to zero"),
+            MultinomialError::ProbabilityInvalid => write!(
+                f,
+                "At least one probability is NaN, infinity or less than zero"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for MultinomialError {}
+
 impl Multinomial<Dyn> {
     /// Constructs a new multinomial distribution with probabilities `p`
     /// and `n` number of trials.
@@ -57,7 +85,7 @@ impl Multinomial<Dyn> {
     /// result = Multinomial::new(vec![0.0, -1.0, 2.0], 3);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(p: Vec<f64>, n: u64) -> Result<Self> {
+    pub fn new(p: Vec<f64>, n: u64) -> Result<Self, MultinomialError> {
         Self::new_from_nalgebra(p.into(), n)
     }
 }
@@ -67,14 +95,26 @@ where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
 {
-    pub fn new_from_nalgebra(mut p: OVector<f64, D>, n: u64) -> Result<Self> {
-        match super::internal::check_multinomial(&p, true) {
-            Err(e) => Err(e),
-            Ok(_) => {
-                p.unscale_mut(p.lp_norm(1));
-                Ok(Self { p, n })
-            }
+    pub fn new_from_nalgebra(mut p: OVector<f64, D>, n: u64) -> Result<Self, MultinomialError> {
+        if p.len() < 2 {
+            return Err(MultinomialError::NotEnoughProbabilities);
         }
+
+        let mut sum = 0.0;
+        for &val in &p {
+            if val.is_nan() || val < 0.0 {
+                return Err(MultinomialError::ProbabilityInvalid);
+            }
+
+            sum += val;
+        }
+
+        if sum == 0.0 {
+            return Err(MultinomialError::ProbabilitySumZero);
+        }
+
+        p.unscale_mut(p.lp_norm(1));
+        Ok(Self { p, n })
     }
 
     /// Returns the probabilities of the multinomial
@@ -295,7 +335,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::{
-        distribution::{Discrete, Multinomial},
+        distribution::{Discrete, Multinomial, MultinomialError},
         statistics::{MeanN, VarianceN},
     };
     use nalgebra::{dmatrix, dvector, vector, DimMin, Dyn, OVector};
@@ -311,7 +351,7 @@ mod tests {
         mvn.unwrap()
     }
 
-    fn bad_create_case<D>(p: OVector<f64, D>, n: u64) -> crate::StatsError
+    fn bad_create_case<D>(p: OVector<f64, D>, n: u64) -> MultinomialError
     where
         D: DimMin<D, Output = D>,
         nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
@@ -345,17 +385,22 @@ mod tests {
     #[test]
     fn test_bad_create() {
         assert_eq!(
+            bad_create_case(vector![0.5], 4),
+            MultinomialError::NotEnoughProbabilities,
+        );
+
+        assert_eq!(
             bad_create_case(vector![-1.0, 2.0], 4),
-            crate::StatsError::BadParams
+            MultinomialError::ProbabilityInvalid,
         );
 
         assert_eq!(
             bad_create_case(vector![0.0, 0.0], 4),
-            crate::StatsError::BadParams
+            MultinomialError::ProbabilitySumZero,
         );
         assert_eq!(
             bad_create_case(vector![1.0, f64::NAN], 4),
-            crate::StatsError::BadParams
+            MultinomialError::ProbabilityInvalid,
         );
     }
 

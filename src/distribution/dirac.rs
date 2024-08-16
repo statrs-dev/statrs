@@ -1,6 +1,5 @@
 use crate::distribution::ContinuousCDF;
 use crate::statistics::*;
-use crate::{Result, StatsError};
 use rand::Rng;
 
 /// Implements the [Dirac Delta](https://en.wikipedia.org/wiki/Dirac_delta_function#As_a_distribution)
@@ -18,8 +17,26 @@ use rand::Rng;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Dirac(f64);
 
+/// Represents the errors that can occur when creating a [`Dirac`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum DiracError {
+    /// The value v is NaN.
+    ValueInvalid,
+}
+
+impl std::fmt::Display for DiracError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            DiracError::ValueInvalid => write!(f, "Value v is NaN"),
+        }
+    }
+}
+
+impl std::error::Error for DiracError {}
+
 impl Dirac {
-    ///  Constructs a new dirac distribution function at value `v`.
+    /// Constructs a new dirac distribution function at value `v`.
     ///
     /// # Errors
     ///
@@ -36,9 +53,9 @@ impl Dirac {
     /// result = Dirac::new(f64::NAN);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(v: f64) -> Result<Self> {
+    pub fn new(v: f64) -> Result<Self, DiracError> {
         if v.is_nan() {
-            Err(StatsError::BadParams)
+            Err(DiracError::ValueInvalid)
         } else {
             Ok(Dirac(v))
         }
@@ -196,7 +213,7 @@ mod tests {
     use super::*;
     use crate::testing_boiler;
 
-    testing_boiler!(v: f64; Dirac; StatsError);
+    testing_boiler!(v: f64; Dirac; DiracError);
 
     #[test]
     fn test_create() {
