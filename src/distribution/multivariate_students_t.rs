@@ -95,28 +95,34 @@ impl MultivariateStudent {
     pub fn dim(&self) -> usize {
         self.dim
     }
+
     /// Returns the cholesky decomposiiton matrix of the scale matrix.
     ///
     /// Returns A where Σ = AAᵀ.
     pub fn scale_chol_decomp(&self) -> DMatrix<f64> {
         self.scale_chol_decomp.clone()
     }
+
     /// Returns the location of the distribution.
     pub fn location(&self) -> DVector<f64> {
         self.location.clone()
     }
+
     /// Returns the scale matrix of the distribution.
     pub fn scale(&self) -> DMatrix<f64> {
         self.scale.clone()
     }
+
     /// Returns the degrees of freedom of the distribution.
     pub fn freedom(&self) -> f64 {
         self.freedom
     }
+
     /// Returns the inverse of the cholesky decomposition matrix.
     pub fn precision(&self) -> DMatrix<f64> {
         self.precision.clone()
     }
+
     /// Returns the logarithmed constant part of the probability
     /// distribution function.
     pub fn ln_pdf_const(&self) -> f64 {
@@ -129,9 +135,9 @@ impl ::rand::distributions::Distribution<DVector<f64>> for MultivariateStudent {
     ///
     /// # Formula
     ///
-    ///```math
+    /// ```math
     /// W ⋅ L ⋅ Z + μ
-    ///```
+    /// ```
     ///
     /// where `W` has √(ν/Sν) distribution, Sν has Chi-squared
     /// distribution with ν degrees of freedom,
@@ -426,7 +432,7 @@ mod tests  {
         // These three are crossed checked against both python's scipy.multivariate_t.pdf and octave's mvtpdf.
         test_almost(vec![-1., 1., 50.], vec![1., 0.5, 0.25, 0.5, 1., -0.1, 0.25, -0.1, 1.], 8., 6.960998836915657e-16, 1e-30, pdf(dvec![0.9718, 0.1298, 0.8134]));
         test_almost(vec![-1., 1., 50.], vec![1., 0.5, 0.25, 0.5, 1., -0.1, 0.25, -0.1, 1.], 8., 7.369987979187023e-16, 1e-30, pdf(dvec![0.4922, 0.5522, 0.7185]));
-        test_almost(vec![-1., 1., 50.], vec![1., 0.5, 0.25, 0.5, 1., -0.1, 0.25, -0.1, 1.], 8.,6.952297846610382e-16, 1e-30, pdf(dvec![0.3010, 0.1491, 0.5008]));
+        test_almost(vec![-1., 1., 50.], vec![1., 0.5, 0.25, 0.5, 1., -0.1, 0.25, -0.1, 1.], 8.,6.951631724511314e-16, 1e-30, pdf(dvec![0.3020, 0.1491, 0.5008]));
         test_case(vec![-1., 0.], vec![f64::INFINITY, 0., 0., f64::INFINITY], 10., 0., pdf(dvec![10., 10.]));
     }
 
