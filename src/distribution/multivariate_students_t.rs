@@ -339,7 +339,7 @@ mod tests  {
     use core::fmt::Debug;
 
     use approx::RelativeEq;
-    use nalgebra::{Dyn, DMatrix, DVector};
+    use nalgebra::{DMatrix, DVector, Dyn, OMatrix, OVector, U1, U2};
 
     use crate::{
         distribution::{Continuous, MultivariateStudent, MultivariateNormal},
@@ -540,4 +540,28 @@ mod tests  {
         test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], f64::INFINITY, 1e-300, dvec![1., 1.], pdf_mvs, pdf_mvn);
         test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0.99, 0.99, 1.], f64::INFINITY, 1e-300, dvec![1., 1.], pdf_mvs, pdf_mvn);
     }
+
+    #[test]
+    fn test_immut_field_access() {
+        // init as Dyn
+        let mvs = MultivariateStudent::new(vec![1., 1.], vec![1., 0., 0., 1.], 2.)
+            .expect("hard coded valid construction");
+        assert_eq!(mvs.freedom(), 2.);
+        assert_relative_eq!(mvs.ln_pdf_const(), std::f64::consts::TAU.recip().ln(), epsilon = 1e-15);
+
+        // compare to static
+        assert_eq!(mvs.dim(), 2); 
+        assert!(mvs.location().eq(&OVector::<f64, U2>::new(1., 1.)));
+        assert!(mvs.scale().eq(&OMatrix::<f64, U2, U2>::identity()));
+        assert!(mvs.precision().eq(&OMatrix::<f64, U2, U2>::identity()));
+        assert!(mvs.scale_chol_decomp().eq(&OMatrix::<f64, U2, U2>::identity()));
+
+        // compare to Dyn
+        assert_eq!(mvs.location(),&OVector::<f64, Dyn>::from_element_generic(Dyn(2), U1, 1.));
+        assert_eq!(mvs.scale(), &OMatrix::<f64, Dyn, Dyn>::identity(2, 2));
+        assert_eq!(mvs.precision(), &OMatrix::<f64, Dyn, Dyn>::identity(2, 2));
+        assert_eq!(mvs.scale_chol_decomp(), &OMatrix::<f64, Dyn, Dyn>::identity(2, 2));
+    }
+        
+    
 }
