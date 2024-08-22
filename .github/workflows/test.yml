@@ -46,7 +46,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@nightly
 
-      - name: Test default features
-        run: cargo test --all-targets
+      - name: Test default features on stable
+        run: cargo +stable test --all-targets
+      - name: Test default features on nightly
+        run: cargo +nightly test --all-targets
 
