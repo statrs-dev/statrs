@@ -38,8 +38,20 @@ jobs:
       - name: Run rustfmt --check
         run: cargo fmt -- --check
 
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v2
+      - name: Use predefined lockfile
+        run: mv -v Cargo.lock.MSRV Cargo.lock
+      - name: Build (lib only)
+        run: cargo hack check --rust-version --locked
+
   test:
-    needs: [clippy, fmt]
+    needs: [clippy, fmt, msrv]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
