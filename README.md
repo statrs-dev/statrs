@@ -48,6 +48,10 @@ cargo test
 If you'd like to modify where the data is downloaded, you can use the environment variable,
 `STATRS_NIST_DATA_DIR` for running the script and the tests.
 
+## Minimum supported Rust version (MSRV)
+
+This crate requires a Rust version of 1.66.0 or higher. Increases in MSRV will be considered a semver non-breaking API change and require a version increase (PATCH until 1.0.0, MINOR after 1.0.0).
+
 ## Contributing
 
 Thanks for your help to improve the project!

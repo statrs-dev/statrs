@@ -1,5 +1,4 @@
 [package]
-
 name = "statrs"
 version = "0.17.1"
 authors = ["Michael Ma"]
@@ -12,6 +11,9 @@ repository = "https://github.com/statrs-dev/statrs"
 edition = "2021"
 
 include = ["CHANGELOG.md", "LICENSE.md", "src/", "tests/"]
+
+# When changing MSRV: Also update the README
+rust-version = "1.66.0"
 
 [lib]
 name = "statrs"
