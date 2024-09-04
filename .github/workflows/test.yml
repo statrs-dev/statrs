@@ -23,6 +23,9 @@ jobs:
       - name: Run cargo clippy
         run: cargo clippy --all-targets
 
+      - name: Run cargo clippy without default features
+        run: cargo clippy --no-default-features --all-targets
+
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -48,5 +51,5 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Test default features
-        run: cargo test --all-targets
+        run: cargo test
 
