@@ -309,44 +309,25 @@ mod tests {
     use crate::statistics::Median;
     use crate::distribution::ChiSquared;
     use crate::distribution::internal::*;
+    use crate::testing_boiler;
 
-    fn try_create(freedom: f64) -> ChiSquared {
-        let n = ChiSquared::new(freedom);
-        assert!(n.is_ok());
-        n.unwrap()
-    }
-
-    fn test_case<F>(freedom: f64, expected: f64, eval: F)
-        where F: Fn(ChiSquared) -> f64
-    {
-        let n = try_create(freedom);
-        let x = eval(n);
-        assert_eq!(expected, x);
-    }
-
-    fn test_almost<F>(freedom: f64, expected: f64, acc: f64, eval: F)
-        where F: Fn(ChiSquared) -> f64
-    {
-        let n = try_create(freedom);
-        let x = eval(n);
-        assert_almost_eq!(expected, x, acc);
-    }
+    testing_boiler!(freedom: f64; ChiSquared);
 
     #[test]
     fn test_median() {
         let median = |x: ChiSquared| x.median();
-        test_almost(0.5, 0.0857338820301783264746, 1e-16, median);
-        test_case(1.0, 1.0 - 2.0 / 3.0, median);
-        test_case(2.0, 2.0 - 2.0 / 3.0, median);
-        test_case(2.5, 2.5 - 2.0 / 3.0, median);
-        test_case(3.0, 3.0 - 2.0 / 3.0, median);
+        test_absolute(0.5, 0.0857338820301783264746, 1e-16, median);
+        test_exact(1.0, 1.0 - 2.0 / 3.0, median);
+        test_exact(2.0, 2.0 - 2.0 / 3.0, median);
+        test_exact(2.5, 2.5 - 2.0 / 3.0, median);
+        test_exact(3.0, 3.0 - 2.0 / 3.0, median);
     }
 
     #[test]
     fn test_continuous() {
         // TODO: figure out why this test fails:
-        //test::check_continuous_distribution(&try_create(1.0), 0.0, 10.0);
-        test::check_continuous_distribution(&try_create(2.0), 0.0, 10.0);
-        test::check_continuous_distribution(&try_create(5.0), 0.0, 50.0);
+        //test::check_continuous_distribution(&create_ok(1.0), 0.0, 10.0);
+        test::check_continuous_distribution(&create_ok(2.0), 0.0, 10.0);
+        test::check_continuous_distribution(&create_ok(5.0), 0.0, 50.0);
     }
 }
