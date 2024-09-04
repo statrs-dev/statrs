@@ -120,6 +120,8 @@ pub mod test {
                 param_text
             }
 
+            /// Creates and returns a distribution with the given parameters,
+            /// panicking if `::new` fails.
             fn create_ok($($arg_name: $arg_ty),+) -> $dist {
                 match <$dist>::new($($arg_name),+) {
                     Ok(d) => d,
@@ -132,6 +134,8 @@ pub mod test {
                 }
             }
 
+            /// Returns the error when creating a distribution with the given parameters,
+            /// panicking if `::new` succeeds.
             fn create_err($($arg_name: $arg_ty),+) -> $crate::StatsError {
                 match <$dist>::new($($arg_name),+) {
                     Err(e) => e,
@@ -144,6 +148,10 @@ pub mod test {
                 }
             }
 
+            /// Creates a distribution with the given parameters, calls the `eval`
+            /// function with the new distribution and returns the result of `eval`.
+            ///
+            /// Panics if `::new` fails.
             fn get_value<F, T>($($arg_name: $arg_ty),+, eval: F) -> T
             where
                 F: Fn($dist) -> T,
@@ -152,6 +160,12 @@ pub mod test {
                 eval(n)
             }
 
+            /// Gets a value for the given parameters and `eval` by calling `get_value`
+            /// and compares it to `expected`.
+            ///
+            /// Allows relative error of up to [`crate::consts::ACC`].
+            ///
+            /// Panics if `::new` fails.
             fn test_case<F, T>($($arg_name: $arg_ty),+, expected: T, eval: F)
             where
                 F: Fn($dist) -> T,
@@ -161,6 +175,12 @@ pub mod test {
                 assert_relative_eq!(expected, x, max_relative = $crate::consts::ACC);
             }
 
+            /// Gets a value for the given parameters and `eval` by calling `get_value`
+            /// and compares it to `expected`.
+            ///
+            /// Allows absolute error of up to `acc`.
+            ///
+            /// Panics if `::new` fails.
             #[allow(dead_code)] // This is not used by all distributions.
             fn test_case_special<F, T>($($arg_name: $arg_ty),+, expected: T, acc: f64, eval: F)
             where
@@ -171,6 +191,10 @@ pub mod test {
                 assert_abs_diff_eq!(expected, x, epsilon = acc);
             }
 
+            /// Gets a value for the given parameters and `eval` by calling `get_value`
+            /// and asserts that it is [`None`].
+            ///
+            /// Panics if `::new` fails.
             #[allow(dead_code)] // This is not used by all distributions.
             fn test_none<F, T>($($arg_name: $arg_ty),+, eval: F)
             where
