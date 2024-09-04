@@ -148,60 +148,60 @@ pub mod test {
                 }
             }
 
-            /// Creates a distribution with the given parameters, calls the `eval`
-            /// function with the new distribution and returns the result of `eval`.
+            /// Creates a distribution with the given parameters, calls the `get_fn`
+            /// function with the new distribution and returns the result of `get_fn`.
             ///
             /// Panics if `::new` fails.
-            fn get_value<F, T>($($arg_name: $arg_ty),+, eval: F) -> T
+            fn create_and_get<F, T>($($arg_name: $arg_ty),+, get_fn: F) -> T
             where
                 F: Fn($dist) -> T,
             {
                 let n = create_ok($($arg_name),+);
-                eval(n)
+                get_fn(n)
             }
 
-            /// Gets a value for the given parameters and `eval` by calling `get_value`
+            /// Gets a value for the given parameters by calling `create_and_get`
             /// and compares it to `expected`.
             ///
             /// Allows relative error of up to [`crate::consts::ACC`].
             ///
             /// Panics if `::new` fails.
-            fn test_case<F, T>($($arg_name: $arg_ty),+, expected: T, eval: F)
+            fn test_case<F, T>($($arg_name: $arg_ty),+, expected: T, get_fn: F)
             where
                 F: Fn($dist) -> T,
                 T: ::core::fmt::Debug + ::approx::RelativeEq<Epsilon = f64>,
             {
-                let x = get_value($($arg_name),+, eval);
+                let x = create_and_get($($arg_name),+, get_fn);
                 assert_relative_eq!(expected, x, max_relative = $crate::consts::ACC);
             }
 
-            /// Gets a value for the given parameters and `eval` by calling `get_value`
+            /// Gets a value for the given parameters by calling `create_and_get`
             /// and compares it to `expected`.
             ///
             /// Allows absolute error of up to `acc`.
             ///
             /// Panics if `::new` fails.
             #[allow(dead_code)] // This is not used by all distributions.
-            fn test_case_special<F, T>($($arg_name: $arg_ty),+, expected: T, acc: f64, eval: F)
+            fn test_case_special<F, T>($($arg_name: $arg_ty),+, expected: T, acc: f64, get_fn: F)
             where
                 F: Fn($dist) -> T,
                 T: ::core::fmt::Debug + ::approx::AbsDiffEq<Epsilon = f64>,
             {
-                let x = get_value($($arg_name),+, eval);
+                let x = create_and_get($($arg_name),+, get_fn);
                 assert_abs_diff_eq!(expected, x, epsilon = acc);
             }
 
-            /// Gets a value for the given parameters and `eval` by calling `get_value`
+            /// Gets a value for the given parameters by calling `create_and_get`
             /// and asserts that it is [`None`].
             ///
             /// Panics if `::new` fails.
             #[allow(dead_code)] // This is not used by all distributions.
-            fn test_none<F, T>($($arg_name: $arg_ty),+, eval: F)
+            fn test_none<F, T>($($arg_name: $arg_ty),+, get_fn: F)
             where
                 F: Fn($dist) -> Option<T>,
                 T: ::core::cmp::PartialEq + ::core::fmt::Debug,
             {
-                let x = get_value($($arg_name),+, eval);
+                let x = create_and_get($($arg_name),+, get_fn);
                 assert_eq!(None, x);
             }
         };
