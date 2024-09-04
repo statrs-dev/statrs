@@ -166,13 +166,22 @@ pub mod test {
             /// Allows relative error of up to [`crate::consts::ACC`].
             ///
             /// Panics if `::new` fails.
-            fn test_case<F, T>($($arg_name: $arg_ty),+, expected: T, get_fn: F)
+            fn test_relative<F>($($arg_name: $arg_ty),+, expected: f64, get_fn: F)
             where
-                F: Fn($dist) -> T,
-                T: ::core::fmt::Debug + ::approx::RelativeEq<Epsilon = f64>,
+                F: Fn($dist) -> f64,
             {
                 let x = create_and_get($($arg_name),+, get_fn);
-                assert_relative_eq!(expected, x, max_relative = $crate::consts::ACC);
+                let max_relative = $crate::consts::ACC;
+
+                if !::approx::relative_eq!(expected, x, max_relative = max_relative) {
+                    panic!(
+                        "Expected {:?} to be almost equal to {:?} (max. relative error of {:?}), but wasn't for {}",
+                        x,
+                        expected,
+                        max_relative,
+                        make_param_text($($arg_name),+)
+                    );
+                }
             }
 
             /// Gets a value for the given parameters by calling `create_and_get`
@@ -182,13 +191,26 @@ pub mod test {
             ///
             /// Panics if `::new` fails.
             #[allow(dead_code)] // This is not used by all distributions.
-            fn test_case_special<F, T>($($arg_name: $arg_ty),+, expected: T, acc: f64, get_fn: F)
+            fn test_absolute<F>($($arg_name: $arg_ty),+, expected: f64, acc: f64, get_fn: F)
             where
-                F: Fn($dist) -> T,
-                T: ::core::fmt::Debug + ::approx::AbsDiffEq<Epsilon = f64>,
+                F: Fn($dist) -> f64,
             {
                 let x = create_and_get($($arg_name),+, get_fn);
-                assert_abs_diff_eq!(expected, x, epsilon = acc);
+
+                // abs_diff_eq! cannot handle infinities, so we manually accept them here
+                if expected.is_infinite() && x == expected {
+                    return;
+                }
+
+                if !::approx::abs_diff_eq!(expected, x, epsilon = acc) {
+                    panic!(
+                        "Expected {:?} to be almost equal to {:?} (max. absolute error of {:?}), but wasn't for {}",
+                        x,
+                        expected,
+                        acc,
+                        make_param_text($($arg_name),+)
+                    );
+                }
             }
 
             /// Gets a value for the given parameters by calling `create_and_get`
@@ -199,10 +221,17 @@ pub mod test {
             fn test_none<F, T>($($arg_name: $arg_ty),+, get_fn: F)
             where
                 F: Fn($dist) -> Option<T>,
-                T: ::core::cmp::PartialEq + ::core::fmt::Debug,
+                T: ::core::fmt::Debug,
             {
                 let x = create_and_get($($arg_name),+, get_fn);
-                assert_eq!(None, x);
+
+                if let Some(inner) = x {
+                    panic!(
+                        "Expected None, got {:?} for {}",
+                        inner,
+                        make_param_text($($arg_name),+)
+                    )
+                }
             }
         };
     }

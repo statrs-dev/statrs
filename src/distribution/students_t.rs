@@ -456,10 +456,10 @@ mod tests {
     #[test]
     fn test_mean() {
         let mean = |x: StudentsT| x.mean().unwrap();
-        test_case(0.0, 1.0, 3.0, 0.0, mean);
-        test_case(0.0, 10.0, 2.0, 0.0, mean);
-        test_case(0.0, 10.0, f64::INFINITY, 0.0, mean);
-        test_case(-5.0, 100.0, 1.5, -5.0, mean);
+        test_relative(0.0, 1.0, 3.0, 0.0, mean);
+        test_relative(0.0, 10.0, 2.0, 0.0, mean);
+        test_relative(0.0, 10.0, f64::INFINITY, 0.0, mean);
+        test_relative(-5.0, 100.0, 1.5, -5.0, mean);
         let mean = |x: StudentsT| x.mean();
         test_none(0.0, 1.0, 1.0, mean);
         test_none(0.0, 0.1, 1.0, mean);
@@ -476,9 +476,9 @@ mod tests {
     #[test]
     fn test_variance() {
         let variance = |x: StudentsT| x.variance().unwrap();
-        test_case(0.0, 1.0, 3.0, 3.0, variance);
-        test_case(0.0, 10.0, 2.5, 500.0, variance);
-        test_case(10.0, 1.0, 2.5, 5.0, variance);
+        test_relative(0.0, 1.0, 3.0, 3.0, variance);
+        test_relative(0.0, 10.0, 2.5, 500.0, variance);
+        test_relative(10.0, 1.0, 2.5, 5.0, variance);
         let variance = |x: StudentsT| x.variance();
         test_none(0.0, 10.0, 2.0, variance);
         test_none(0.0, 1.0, 1.0, variance);
@@ -503,121 +503,121 @@ mod tests {
     #[test]
     fn test_mode() {
         let mode = |x: StudentsT| x.mode().unwrap();
-        test_case(0.0, 1.0, 1.0, 0.0, mode);
-        test_case(0.0, 0.1, 1.0, 0.0, mode);
-        test_case(0.0, 1.0, 3.0, 0.0, mode);
-        test_case(0.0, 10.0, 1.0, 0.0, mode);
-        test_case(0.0, 10.0, 2.0, 0.0, mode);
-        test_case(0.0, 10.0, 2.5, 0.0, mode);
-        test_case(0.0, 10.0, f64::INFINITY, 0.0, mode);
-        test_case(10.0, 1.0, 1.0, 10.0, mode);
-        test_case(10.0, 1.0, 2.5, 10.0, mode);
-        test_case(-5.0, 100.0, 1.5, -5.0, mode);
-        test_case(0.0, f64::INFINITY, 1.0, 0.0, mode);
+        test_relative(0.0, 1.0, 1.0, 0.0, mode);
+        test_relative(0.0, 0.1, 1.0, 0.0, mode);
+        test_relative(0.0, 1.0, 3.0, 0.0, mode);
+        test_relative(0.0, 10.0, 1.0, 0.0, mode);
+        test_relative(0.0, 10.0, 2.0, 0.0, mode);
+        test_relative(0.0, 10.0, 2.5, 0.0, mode);
+        test_relative(0.0, 10.0, f64::INFINITY, 0.0, mode);
+        test_relative(10.0, 1.0, 1.0, 10.0, mode);
+        test_relative(10.0, 1.0, 2.5, 10.0, mode);
+        test_relative(-5.0, 100.0, 1.5, -5.0, mode);
+        test_relative(0.0, f64::INFINITY, 1.0, 0.0, mode);
     }
 
     #[test]
     fn test_median() {
         let median = |x: StudentsT| x.median();
-        test_case(0.0, 1.0, 1.0, 0.0, median);
-        test_case(0.0, 0.1, 1.0, 0.0, median);
-        test_case(0.0, 1.0, 3.0, 0.0, median);
-        test_case(0.0, 10.0, 1.0, 0.0, median);
-        test_case(0.0, 10.0, 2.0, 0.0, median);
-        test_case(0.0, 10.0, 2.5, 0.0, median);
-        test_case(0.0, 10.0, f64::INFINITY, 0.0, median);
-        test_case(10.0, 1.0, 1.0, 10.0, median);
-        test_case(10.0, 1.0, 2.5, 10.0, median);
-        test_case(-5.0, 100.0, 1.5, -5.0, median);
-        test_case(0.0, f64::INFINITY, 1.0, 0.0, median);
+        test_relative(0.0, 1.0, 1.0, 0.0, median);
+        test_relative(0.0, 0.1, 1.0, 0.0, median);
+        test_relative(0.0, 1.0, 3.0, 0.0, median);
+        test_relative(0.0, 10.0, 1.0, 0.0, median);
+        test_relative(0.0, 10.0, 2.0, 0.0, median);
+        test_relative(0.0, 10.0, 2.5, 0.0, median);
+        test_relative(0.0, 10.0, f64::INFINITY, 0.0, median);
+        test_relative(10.0, 1.0, 1.0, 10.0, median);
+        test_relative(10.0, 1.0, 2.5, 10.0, median);
+        test_relative(-5.0, 100.0, 1.5, -5.0, median);
+        test_relative(0.0, f64::INFINITY, 1.0, 0.0, median);
     }
 
     #[test]
     fn test_min_max() {
         let min = |x: StudentsT| x.min();
         let max = |x: StudentsT| x.max();
-        test_case(0.0, 1.0, 1.0, f64::NEG_INFINITY, min);
-        test_case(2.5, 100.0, 1.5, f64::NEG_INFINITY, min);
-        test_case(10.0, f64::INFINITY, 3.5, f64::NEG_INFINITY, min);
-        test_case(0.0, 1.0, 1.0, f64::INFINITY, max);
-        test_case(2.5, 100.0, 1.5, f64::INFINITY, max);
-        test_case(10.0, f64::INFINITY, 5.5, f64::INFINITY, max);
+        test_relative(0.0, 1.0, 1.0, f64::NEG_INFINITY, min);
+        test_relative(2.5, 100.0, 1.5, f64::NEG_INFINITY, min);
+        test_relative(10.0, f64::INFINITY, 3.5, f64::NEG_INFINITY, min);
+        test_relative(0.0, 1.0, 1.0, f64::INFINITY, max);
+        test_relative(2.5, 100.0, 1.5, f64::INFINITY, max);
+        test_relative(10.0, f64::INFINITY, 5.5, f64::INFINITY, max);
     }
 
     #[test]
     fn test_pdf() {
         let pdf = |arg: f64| move |x: StudentsT| x.pdf(arg);
-        test_case(0.0, 1.0, 1.0, std::f64::consts::FRAC_1_PI, pdf(0.0));
-        test_case(0.0, 1.0, 1.0, 0.159154943091895, pdf(1.0));
-        test_case(0.0, 1.0, 1.0, 0.159154943091895, pdf(-1.0));
-        test_case(0.0, 1.0, 1.0, 0.063661977236758, pdf(2.0));
-        test_case(0.0, 1.0, 1.0, 0.063661977236758, pdf(-2.0));
-        test_case(0.0, 1.0, 2.0, 0.353553390593274, pdf(0.0));
-        test_case(0.0, 1.0, 2.0, 0.192450089729875, pdf(1.0));
-        test_case(0.0, 1.0, 2.0, 0.192450089729875, pdf(-1.0));
-        test_case(0.0, 1.0, 2.0, 0.068041381743977, pdf(2.0));
-        test_case(0.0, 1.0, 2.0, 0.068041381743977, pdf(-2.0));
-        test_case(0.0, 1.0, f64::INFINITY, 0.398942280401433, pdf(0.0));
-        test_case(0.0, 1.0, f64::INFINITY, 0.241970724519143, pdf(1.0));
-        test_case(0.0, 1.0, f64::INFINITY, 0.053990966513188, pdf(2.0));
+        test_relative(0.0, 1.0, 1.0, std::f64::consts::FRAC_1_PI, pdf(0.0));
+        test_relative(0.0, 1.0, 1.0, 0.159154943091895, pdf(1.0));
+        test_relative(0.0, 1.0, 1.0, 0.159154943091895, pdf(-1.0));
+        test_relative(0.0, 1.0, 1.0, 0.063661977236758, pdf(2.0));
+        test_relative(0.0, 1.0, 1.0, 0.063661977236758, pdf(-2.0));
+        test_relative(0.0, 1.0, 2.0, 0.353553390593274, pdf(0.0));
+        test_relative(0.0, 1.0, 2.0, 0.192450089729875, pdf(1.0));
+        test_relative(0.0, 1.0, 2.0, 0.192450089729875, pdf(-1.0));
+        test_relative(0.0, 1.0, 2.0, 0.068041381743977, pdf(2.0));
+        test_relative(0.0, 1.0, 2.0, 0.068041381743977, pdf(-2.0));
+        test_relative(0.0, 1.0, f64::INFINITY, 0.398942280401433, pdf(0.0));
+        test_relative(0.0, 1.0, f64::INFINITY, 0.241970724519143, pdf(1.0));
+        test_relative(0.0, 1.0, f64::INFINITY, 0.053990966513188, pdf(2.0));
     }
 
     #[test]
     fn test_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: StudentsT| x.ln_pdf(arg);
-        test_case(0.0, 1.0, 1.0, -1.144729885849399, ln_pdf(0.0));
-        test_case(0.0, 1.0, 1.0, -1.837877066409348, ln_pdf(1.0));
-        test_case(0.0, 1.0, 1.0, -1.837877066409348, ln_pdf(-1.0));
-        test_case(0.0, 1.0, 1.0, -2.754167798283503, ln_pdf(2.0));
-        test_case(0.0, 1.0, 1.0, -2.754167798283503, ln_pdf(-2.0));
-        test_case(0.0, 1.0, 2.0, -1.039720770839917, ln_pdf(0.0));
-        test_case(0.0, 1.0, 2.0, -1.647918433002166, ln_pdf(1.0));
-        test_case(0.0, 1.0, 2.0, -1.647918433002166, ln_pdf(-1.0));
-        test_case(0.0, 1.0, 2.0, -2.687639203842085, ln_pdf(2.0));
-        test_case(0.0, 1.0, 2.0, -2.687639203842085, ln_pdf(-2.0));
-        test_case(0.0, 1.0, f64::INFINITY, -0.918938533204672, ln_pdf(0.0));
-        test_case(0.0, 1.0, f64::INFINITY, -1.418938533204674, ln_pdf(1.0));
-        test_case(0.0, 1.0, f64::INFINITY, -2.918938533204674, ln_pdf(2.0));
+        test_relative(0.0, 1.0, 1.0, -1.144729885849399, ln_pdf(0.0));
+        test_relative(0.0, 1.0, 1.0, -1.837877066409348, ln_pdf(1.0));
+        test_relative(0.0, 1.0, 1.0, -1.837877066409348, ln_pdf(-1.0));
+        test_relative(0.0, 1.0, 1.0, -2.754167798283503, ln_pdf(2.0));
+        test_relative(0.0, 1.0, 1.0, -2.754167798283503, ln_pdf(-2.0));
+        test_relative(0.0, 1.0, 2.0, -1.039720770839917, ln_pdf(0.0));
+        test_relative(0.0, 1.0, 2.0, -1.647918433002166, ln_pdf(1.0));
+        test_relative(0.0, 1.0, 2.0, -1.647918433002166, ln_pdf(-1.0));
+        test_relative(0.0, 1.0, 2.0, -2.687639203842085, ln_pdf(2.0));
+        test_relative(0.0, 1.0, 2.0, -2.687639203842085, ln_pdf(-2.0));
+        test_relative(0.0, 1.0, f64::INFINITY, -0.918938533204672, ln_pdf(0.0));
+        test_relative(0.0, 1.0, f64::INFINITY, -1.418938533204674, ln_pdf(1.0));
+        test_relative(0.0, 1.0, f64::INFINITY, -2.918938533204674, ln_pdf(2.0));
     }
 
     #[test]
     fn test_cdf() {
         let cdf = |arg: f64| move |x: StudentsT| x.cdf(arg);
-        test_case(0.0, 1.0, 1.0, 0.5, cdf(0.0));
-        test_case(0.0, 1.0, 1.0, 0.75, cdf(1.0));
-        test_case(0.0, 1.0, 1.0, 0.25, cdf(-1.0));
-        test_case(0.0, 1.0, 1.0, 0.852416382349567, cdf(2.0));
-        test_case(0.0, 1.0, 1.0, 0.147583617650433, cdf(-2.0));
-        test_case(0.0, 1.0, 2.0, 0.5, cdf(0.0));
-        test_case(0.0, 1.0, 2.0, 0.788675134594813, cdf(1.0));
-        test_case(0.0, 1.0, 2.0, 0.211324865405187, cdf(-1.0));
-        test_case(0.0, 1.0, 2.0, 0.908248290463863, cdf(2.0));
-        test_case(0.0, 1.0, 2.0, 0.091751709536137, cdf(-2.0));
-        test_case(0.0, 1.0, f64::INFINITY, 0.5, cdf(0.0));
+        test_relative(0.0, 1.0, 1.0, 0.5, cdf(0.0));
+        test_relative(0.0, 1.0, 1.0, 0.75, cdf(1.0));
+        test_relative(0.0, 1.0, 1.0, 0.25, cdf(-1.0));
+        test_relative(0.0, 1.0, 1.0, 0.852416382349567, cdf(2.0));
+        test_relative(0.0, 1.0, 1.0, 0.147583617650433, cdf(-2.0));
+        test_relative(0.0, 1.0, 2.0, 0.5, cdf(0.0));
+        test_relative(0.0, 1.0, 2.0, 0.788675134594813, cdf(1.0));
+        test_relative(0.0, 1.0, 2.0, 0.211324865405187, cdf(-1.0));
+        test_relative(0.0, 1.0, 2.0, 0.908248290463863, cdf(2.0));
+        test_relative(0.0, 1.0, 2.0, 0.091751709536137, cdf(-2.0));
+        test_relative(0.0, 1.0, f64::INFINITY, 0.5, cdf(0.0));
 
         // TODO: these are curiously low accuracy and should be re-examined
-        test_case(0.0, 1.0, f64::INFINITY, 0.841344746068543, cdf(1.0));
-        test_case(0.0, 1.0, f64::INFINITY, 0.977249868051821, cdf(2.0));
+        test_relative(0.0, 1.0, f64::INFINITY, 0.841344746068543, cdf(1.0));
+        test_relative(0.0, 1.0, f64::INFINITY, 0.977249868051821, cdf(2.0));
     }
 
     #[test]
     fn test_sf() {
         let sf = |arg: f64| move |x: StudentsT| x.sf(arg);
-        test_case(0.0, 1.0, 1.0, 0.5, sf(0.0));
-        test_case(0.0, 1.0, 1.0, 0.25, sf(1.0));
-        test_case(0.0, 1.0, 1.0, 0.75, sf(-1.0));
-        test_case(0.0, 1.0, 1.0, 0.147583617650433, sf(2.0));
-        test_case(0.0, 1.0, 1.0, 0.852416382349566, sf(-2.0));
-        test_case(0.0, 1.0, 2.0, 0.5, sf(0.0));
-        test_case(0.0, 1.0, 2.0, 0.211324865405186, sf(1.0));
-        test_case(0.0, 1.0, 2.0, 0.788675134594813, sf(-1.0));
-        test_case(0.0, 1.0, 2.0, 0.091751709536137, sf(2.0));
-        test_case(0.0, 1.0, 2.0, 0.908248290463862, sf(-2.0));
-        test_case(0.0, 1.0, f64::INFINITY, 0.5, sf(0.0));
+        test_relative(0.0, 1.0, 1.0, 0.5, sf(0.0));
+        test_relative(0.0, 1.0, 1.0, 0.25, sf(1.0));
+        test_relative(0.0, 1.0, 1.0, 0.75, sf(-1.0));
+        test_relative(0.0, 1.0, 1.0, 0.147583617650433, sf(2.0));
+        test_relative(0.0, 1.0, 1.0, 0.852416382349566, sf(-2.0));
+        test_relative(0.0, 1.0, 2.0, 0.5, sf(0.0));
+        test_relative(0.0, 1.0, 2.0, 0.211324865405186, sf(1.0));
+        test_relative(0.0, 1.0, 2.0, 0.788675134594813, sf(-1.0));
+        test_relative(0.0, 1.0, 2.0, 0.091751709536137, sf(2.0));
+        test_relative(0.0, 1.0, 2.0, 0.908248290463862, sf(-2.0));
+        test_relative(0.0, 1.0, f64::INFINITY, 0.5, sf(0.0));
 
         // TODO: these are curiously low accuracy and should be re-examined
-        test_case(0.0, 1.0, f64::INFINITY, 0.158655253945057, sf(1.0));
-        test_case(0.0, 1.0, f64::INFINITY, 0.022750131947162, sf(2.0));
+        test_relative(0.0, 1.0, f64::INFINITY, 0.158655253945057, sf(1.0));
+        test_relative(0.0, 1.0, f64::INFINITY, 0.022750131947162, sf(2.0));
     }
 
     #[test]

@@ -453,7 +453,7 @@ mod tests {
             ((10.0, f64::INFINITY), 0.0),
         ];
         for ((s, r), res) in test {
-            test_case(s, r, res, f);
+            test_relative(s, r, res, f);
         }
     }
 
@@ -468,7 +468,7 @@ mod tests {
             ((10.0, f64::INFINITY), 0.0),
         ];
         for ((s, r), res) in test {
-            test_case(s, r, res, f);
+            test_relative(s, r, res, f);
         }
     }
 
@@ -483,7 +483,7 @@ mod tests {
             ((10.0, f64::INFINITY), f64::NEG_INFINITY),
         ];
         for ((s, r), res) in test {
-            test_case(s, r, res, f);
+            test_relative(s, r, res, f);
         }
     }
 
@@ -498,7 +498,7 @@ mod tests {
             ((10.0, f64::INFINITY), 0.6324555320336758),
         ];
         for ((s, r), res) in test {
-            test_case(s, r, res, f);
+            test_relative(s, r, res, f);
         }
     }
 
@@ -507,7 +507,7 @@ mod tests {
         let f = |x: Gamma| x.mode().unwrap();
         let test = [((1.0, 0.1), 0.0), ((1.0, 1.0), 0.0)];
         for &((s, r), res) in test.iter() {
-            test_case_special(s, r, res, 10e-6, f);
+            test_absolute(s, r, res, 10e-6, f);
         }
         let test = [
             ((10.0, 10.0), 0.9),
@@ -515,7 +515,7 @@ mod tests {
             ((10.0, f64::INFINITY), 0.0),
         ];
         for ((s, r), res) in test {
-            test_case(s, r, res, f);
+            test_relative(s, r, res, f);
         }
     }
 
@@ -530,7 +530,7 @@ mod tests {
             ((10.0, f64::INFINITY), 0.0),
         ];
         for ((s, r), res) in test {
-            test_case(s, r, res, f);
+            test_relative(s, r, res, f);
         }
         let f = |x: Gamma| x.max();
         let test = [
@@ -541,7 +541,7 @@ mod tests {
             ((10.0, f64::INFINITY), f64::INFINITY),
         ];
         for ((s, r), res) in test {
-            test_case(s, r, res, f);
+            test_relative(s, r, res, f);
         }
     }
 
@@ -559,7 +559,7 @@ mod tests {
             ((10.0, 1.0), 10.0, 0.125110035721133298984764),
         ];
         for ((s, r), x, res) in test {
-            test_case(s, r, res, f(x));
+            test_relative(s, r, res, f(x));
         }
         // TODO: test special
         // test_is_nan((10.0, f64::INFINITY), pdf(1.0)); // is this really the behavior we want?
@@ -569,8 +569,8 @@ mod tests {
 
     #[test]
     fn test_pdf_at_zero() {
-        test_case(1.0, 0.1, 0.1, |x| x.pdf(0.0));
-        test_case(1.0, 0.1, 0.1f64.ln(), |x| x.ln_pdf(0.0));
+        test_relative(1.0, 0.1, 0.1, |x| x.pdf(0.0));
+        test_relative(1.0, 0.1, 0.1f64.ln(), |x| x.ln_pdf(0.0));
     }
 
     #[test]
@@ -588,7 +588,7 @@ mod tests {
             ((10.0, f64::INFINITY), f64::INFINITY, f64::NEG_INFINITY),
         ];
         for ((s, r), x, res) in test {
-            test_case(s, r, res, f(x));
+            test_relative(s, r, res, f(x));
         }
         // TODO: test special
         // test_is_nan((10.0, f64::INFINITY), f(1.0)); // is this really the behavior we want?
@@ -610,13 +610,13 @@ mod tests {
             ((10.0, f64::INFINITY), 10.0, 1.0),
         ];
         for ((s, r), x, res) in test {
-            test_case(s, r, res, f(x));
+            test_relative(s, r, res, f(x));
         }
     }
 
     #[test]
     fn test_cdf_at_zero() {
-        test_case(1.0, 0.1, 0.0, |x| x.cdf(0.0));
+        test_relative(1.0, 0.1, 0.0, |x| x.cdf(0.0));
     }
 
     #[test]
@@ -633,7 +633,7 @@ mod tests {
         for (s, r) in params {
             for n in -5..0 {
                 let p = 10.0f64.powi(n);
-                test_case(s, r, p, f(p));
+                test_relative(s, r, p, f(p));
             }
         }
 
@@ -641,7 +641,7 @@ mod tests {
         {
             let x = 20.5567;
             let f = |x: f64| move |g: Gamma| g.inverse_cdf(g.cdf(x));
-            test_case(3.0, 0.5, x, f(x))
+            test_relative(3.0, 0.5, x, f(x))
         }
     }
 
@@ -661,13 +661,13 @@ mod tests {
             ((10.0, f64::INFINITY), 10.0, 0.0),
         ];
         for ((s, r), x, res) in test {
-            test_case(s, r, res, f(x));
+            test_relative(s, r, res, f(x));
         }
     }
 
     #[test]
     fn test_sf_at_zero() {
-        test_case(1.0, 0.1, 1.0, |x| x.sf(0.0));
+        test_relative(1.0, 0.1, 1.0, |x| x.sf(0.0));
     }
 
     #[test]

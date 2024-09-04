@@ -475,7 +475,7 @@ mod tests {
             ((f64::INFINITY, 1.0), 1.0),
         ];
         for ((a, b), res) in test {
-            test_case(a, b, res, f);
+            test_relative(a, b, res, f);
         }
     }
 
@@ -490,7 +490,7 @@ mod tests {
             ((f64::INFINITY, 1.0), 0.0),
         ];
         for ((a, b), res) in test {
-            test_case(a, b, res, f);
+            test_relative(a, b, res, f);
         }
     }
 
@@ -502,9 +502,9 @@ mod tests {
             ((5.0, 100.0), -2.52016231876027436794592),
         ];
         for ((a, b), res) in test {
-            test_case(a, b, res, f);
+            test_relative(a, b, res, f);
         }
-        test_case_special(1.0, 1.0, 0.0, 1e-14, f);
+        test_absolute(1.0, 1.0, 0.0, 1e-14, f);
         let entropy = |x: Beta| x.entropy();
         test_none(1.0, f64::INFINITY, entropy);
         test_none(f64::INFINITY, 1.0, entropy);
@@ -513,19 +513,19 @@ mod tests {
     #[test]
     fn test_skewness() {
         let skewness = |x: Beta| x.skewness().unwrap();
-        test_case(1.0, 1.0, 0.0, skewness);
-        test_case(9.0, 1.0, -1.4740554623801777107177478829, skewness);
-        test_case(5.0, 100.0, 0.817594109275534303545831591, skewness);
-        test_case(1.0, f64::INFINITY, 2.0, skewness);
-        test_case(f64::INFINITY, 1.0, -2.0, skewness);
+        test_relative(1.0, 1.0, 0.0, skewness);
+        test_relative(9.0, 1.0, -1.4740554623801777107177478829, skewness);
+        test_relative(5.0, 100.0, 0.817594109275534303545831591, skewness);
+        test_relative(1.0, f64::INFINITY, 2.0, skewness);
+        test_relative(f64::INFINITY, 1.0, -2.0, skewness);
     }
 
     #[test]
     fn test_mode() {
         let mode = |x: Beta| x.mode().unwrap();
-        test_case(5.0, 100.0, 0.038834951456310676243255386, mode);
-        test_case(92.0, f64::INFINITY, 0.0, mode);
-        test_case(f64::INFINITY, 2.0, 1.0, mode);
+        test_relative(5.0, 100.0, 0.038834951456310676243255386, mode);
+        test_relative(92.0, f64::INFINITY, 0.0, mode);
+        test_relative(f64::INFINITY, 2.0, 1.0, mode);
     }
 
     #[test]
@@ -542,8 +542,8 @@ mod tests {
     fn test_min_max() {
         let min = |x: Beta| x.min();
         let max = |x: Beta| x.max();
-        test_case(1.0, 1.0, 0.0, min);
-        test_case(1.0, 1.0, 1.0, max);
+        test_relative(1.0, 1.0, 0.0, min);
+        test_relative(1.0, 1.0, 1.0, max);
     }
 
     #[test]
@@ -568,20 +568,20 @@ mod tests {
             ((f64::INFINITY, 1.0), 1.0, f64::INFINITY),
         ];
         for ((a, b), x, expect) in test {
-            test_case(a, b, expect, f(x));
+            test_relative(a, b, expect, f(x));
         }
     }
 
     #[test]
     fn test_pdf_input_lt_0() {
         let pdf = |arg: f64| move |x: Beta| x.pdf(arg);
-        test_case(1.0, 1.0, 0.0, pdf(-1.0));
+        test_relative(1.0, 1.0, 0.0, pdf(-1.0));
     }
 
     #[test]
     fn test_pdf_input_gt_0() {
         let pdf = |arg: f64| move |x: Beta| x.pdf(arg);
-        test_case(1.0, 1.0, 0.0, pdf(2.0));
+        test_relative(1.0, 1.0, 0.0, pdf(2.0));
     }
 
     #[test]
@@ -605,20 +605,20 @@ mod tests {
             ((f64::INFINITY, 1.0), 1.0, f64::INFINITY),
         ];
         for ((a, b), x, expect) in test {
-            test_case(a, b, expect, f(x));
+            test_relative(a, b, expect, f(x));
         }
     }
 
     #[test]
     fn test_ln_pdf_input_lt_0() {
         let ln_pdf = |arg: f64| move |x: Beta| x.ln_pdf(arg);
-        test_case(1.0, 1.0, f64::NEG_INFINITY, ln_pdf(-1.0));
+        test_relative(1.0, 1.0, f64::NEG_INFINITY, ln_pdf(-1.0));
     }
 
     #[test]
     fn test_ln_pdf_input_gt_1() {
         let ln_pdf = |arg: f64| move |x: Beta| x.ln_pdf(arg);
-        test_case(1.0, 1.0, f64::NEG_INFINITY, ln_pdf(2.0));
+        test_relative(1.0, 1.0, f64::NEG_INFINITY, ln_pdf(2.0));
     }
 
     #[test]
@@ -642,7 +642,7 @@ mod tests {
             ((f64::INFINITY, 1.0), 1.0, 1.0),
         ];
         for ((a, b), x, expect) in test {
-            test_case(a, b, expect, cdf(x));
+            test_relative(a, b, expect, cdf(x));
         }
     }
 
@@ -667,7 +667,7 @@ mod tests {
             ((f64::INFINITY, 1.0), 1.0, 0.0),
         ];
         for ((a, b), x, expect) in test {
-            test_case(a, b, expect, sf(x));
+            test_relative(a, b, expect, sf(x));
         }
     }
 
@@ -688,32 +688,32 @@ mod tests {
             ((5.0, 100.0), 1.0, 1.0),
         ];
         for ((a, b), x, expect) in test {
-           test_case(a, b, expect, func(x));
+           test_relative(a, b, expect, func(x));
         };
     }
 
     #[test]
     fn test_cdf_input_lt_0() {
         let cdf = |arg: f64| move |x: Beta| x.cdf(arg);
-        test_case(1.0, 1.0, 0.0, cdf(-1.0));
+        test_relative(1.0, 1.0, 0.0, cdf(-1.0));
     }
 
     #[test]
     fn test_cdf_input_gt_1() {
         let cdf = |arg: f64| move |x: Beta| x.cdf(arg);
-        test_case(1.0, 1.0, 1.0, cdf(2.0));
+        test_relative(1.0, 1.0, 1.0, cdf(2.0));
     }
 
     #[test]
     fn test_sf_input_lt_0() {
         let sf = |arg: f64| move |x: Beta| x.sf(arg);
-        test_case(1.0, 1.0, 1.0, sf(-1.0));
+        test_relative(1.0, 1.0, 1.0, sf(-1.0));
     }
 
     #[test]
     fn test_sf_input_gt_1() {
         let sf = |arg: f64| move |x: Beta| x.sf(arg);
-        test_case(1.0, 1.0, 0.0, sf(2.0));
+        test_relative(1.0, 1.0, 0.0, sf(2.0));
     }
 
     #[test]
