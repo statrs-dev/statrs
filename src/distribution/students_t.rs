@@ -469,10 +469,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_mean_freedom_lte_1() {
-        let mean = |x: StudentsT| x.mean().unwrap();
-        get_value(1.0, 1.0, 0.5, mean);
+        test_none(1.0, 1.0, 0.5, |dist| dist.mean());
     }
 
     #[test]
@@ -492,18 +490,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_variance_freedom_lte1() {
-        let variance = |x: StudentsT| x.variance().unwrap();
-        get_value(1.0, 1.0, 0.5, variance);
+        test_none(1.0, 1.0, 0.5, |dist| dist.variance());
     }
 
     // TODO: valid skewness tests
     #[test]
-    #[should_panic]
     fn test_skewness_freedom_lte_3() {
-        let skewness = |x: StudentsT| x.skewness().unwrap();
-        get_value(1.0, 1.0, 1.0, skewness);
+        test_none(1.0, 1.0, 1.0, |dist| dist.skewness());
     }
 
     #[test]
