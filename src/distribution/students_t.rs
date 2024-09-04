@@ -432,10 +432,10 @@ mod tests {
 
     #[test]
     fn test_create() {
-        try_create(0.0, 0.1, 1.0);
-        try_create(0.0, 1.0, 1.0);
-        try_create(-5.0, 1.0, 3.0);
-        try_create(10.0, 10.0, f64::INFINITY);
+        create_ok(0.0, 0.1, 1.0);
+        create_ok(0.0, 1.0, 1.0);
+        create_ok(-5.0, 1.0, 3.0);
+        create_ok(10.0, 10.0, f64::INFINITY);
     }
 
     // #[test]
@@ -628,9 +628,9 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&try_create(0.0, 1.0, 3.0), -30.0, 30.0);
-        test::check_continuous_distribution(&try_create(0.0, 1.0, 10.0), -10.0, 10.0);
-        test::check_continuous_distribution(&try_create(20.0, 0.5, 10.0), 10.0, 30.0);
+        test::check_continuous_distribution(&create_ok(0.0, 1.0, 3.0), -30.0, 30.0);
+        test::check_continuous_distribution(&create_ok(0.0, 1.0, 10.0), -10.0, 10.0);
+        test::check_continuous_distribution(&create_ok(20.0, 0.5, 10.0), 10.0, 30.0);
     }
 
     #[test]

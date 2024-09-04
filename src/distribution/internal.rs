@@ -98,10 +98,38 @@ pub mod test {
     #[macro_export]
     macro_rules! testing_boiler {
         ($($arg_name:ident: $arg_ty:ty),+; $dist:ty) => {
-            fn try_create($($arg_name: $arg_ty),+) -> $dist {
-                let n = <$dist>::new($($arg_name),+);
-                assert!(n.is_ok());
-                n.unwrap()
+            fn make_param_text($($arg_name: $arg_ty),+) -> String {
+                // ""
+                let mut param_text = String::new();
+
+                // "shape=10.0, rate=NaN, "
+                $(
+                    param_text.push_str(
+                        &format!(
+                            "{}={:?}, ",
+                            stringify!($arg_name),
+                            $arg_name,
+                        )
+                    );
+                )+
+
+                // "shape=10.0, rate=NaN" (removes trailing comma and whitespace)
+                param_text.pop();
+                param_text.pop();
+
+                param_text
+            }
+
+            fn create_ok($($arg_name: $arg_ty),+) -> $dist {
+                match <$dist>::new($($arg_name),+) {
+                    Ok(d) => d,
+                    Err(e) => panic!(
+                        "{}::new was expected to succeed, but failed for {} with error: '{}'",
+                        stringify!($dist),
+                        make_param_text($($arg_name),+),
+                        e
+                    )
+                }
             }
 
             fn bad_create_case($($arg_name: $arg_ty),+) {
@@ -113,7 +141,7 @@ pub mod test {
             where
                 F: Fn($dist) -> T,
             {
-                let n = try_create($($arg_name),+);
+                let n = create_ok($($arg_name),+);
                 eval(n)
             }
 

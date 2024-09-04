@@ -423,7 +423,7 @@ mod tests {
         ];
 
         for (s, r) in valid {
-            try_create(s, r);
+            create_ok(s, r);
         }
     }
 
@@ -672,7 +672,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&try_create(1.0, 0.5), 0.0, 20.0);
-        test::check_continuous_distribution(&try_create(9.0, 2.0), 0.0, 20.0);
+        test::check_continuous_distribution(&create_ok(1.0, 0.5), 0.0, 20.0);
+        test::check_continuous_distribution(&create_ok(9.0, 2.0), 0.0, 20.0);
     }
 }

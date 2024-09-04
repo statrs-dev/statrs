@@ -439,7 +439,7 @@ mod tests {
     fn test_create() {
         let valid = [(1.0, 1.0), (9.0, 1.0), (5.0, 100.0), (1.0, f64::INFINITY), (f64::INFINITY, 1.0)];
         for (a, b) in valid {
-            try_create(a, b);
+            create_ok(a, b);
         }
     }
 
@@ -722,7 +722,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&try_create(1.2, 3.4), 0.0, 1.0);
-        test::check_continuous_distribution(&try_create(4.5, 6.7), 0.0, 1.0);
+        test::check_continuous_distribution(&create_ok(1.2, 3.4), 0.0, 1.0);
+        test::check_continuous_distribution(&create_ok(4.5, 6.7), 0.0, 1.0);
     }
 }
