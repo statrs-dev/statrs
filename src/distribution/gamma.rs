@@ -438,7 +438,7 @@ mod tests {
             (-1.0, f64::NAN),
         ];
         for (s, r) in invalid {
-            bad_create_case(s, r);
+            create_err(s, r);
         }
     }
 

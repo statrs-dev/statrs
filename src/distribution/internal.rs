@@ -132,9 +132,16 @@ pub mod test {
                 }
             }
 
-            fn bad_create_case($($arg_name: $arg_ty),+) {
-                let n = <$dist>::new($($arg_name),+);
-                assert!(n.is_err());
+            fn create_err($($arg_name: $arg_ty),+) -> $crate::StatsError {
+                match <$dist>::new($($arg_name),+) {
+                    Err(e) => e,
+                    Ok(d) => panic!(
+                        "{}::new was expected to fail, but succeeded for {} with result: {:?}",
+                        stringify!($dist),
+                        make_param_text($($arg_name),+),
+                        d
+                    )
+                }
             }
 
             fn get_value<F, T>($($arg_name: $arg_ty),+, eval: F) -> T

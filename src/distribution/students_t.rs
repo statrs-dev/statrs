@@ -446,11 +446,11 @@ mod tests {
 
     #[test]
     fn test_bad_create() {
-        bad_create_case(f64::NAN, 1.0, 1.0);
-        bad_create_case(0.0, f64::NAN, 1.0);
-        bad_create_case(0.0, 1.0, f64::NAN);
-        bad_create_case(0.0, -10.0, 1.0);
-        bad_create_case(0.0, 10.0, -1.0);
+        create_err(f64::NAN, 1.0, 1.0);
+        create_err(0.0, f64::NAN, 1.0);
+        create_err(0.0, 1.0, f64::NAN);
+        create_err(0.0, -10.0, 1.0);
+        create_err(0.0, 10.0, -1.0);
     }
 
     #[test]

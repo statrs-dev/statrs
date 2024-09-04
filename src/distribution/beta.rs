@@ -460,7 +460,7 @@ mod tests {
             (f64::INFINITY, f64::INFINITY),
         ];
         for (a, b) in invalid {
-            bad_create_case(a, b);
+            create_err(a, b);
         }
     }
 
