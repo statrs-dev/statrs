@@ -529,17 +529,13 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_mode_shape_a_lte_1() {
-        let mode = |x: Beta| x.mode().unwrap();
-        get_value(1.0, 5.0, mode);
+        test_none(1.0, 5.0, |dist| dist.mode());
     }
 
     #[test]
-    #[should_panic]
     fn test_mode_shape_b_lte_1() {
-        let mode = |x: Beta| x.mode().unwrap();
-        get_value(5.0, 1.0, mode);
+        test_none(5.0, 1.0, |dist| dist.mode());
     }
 
     #[test]
