@@ -238,6 +238,19 @@ pub mod test {
             }
 
             /// Gets a value for the given parameters by calling `create_and_get`
+            /// and asserts that it is [`NAN`].
+            ///
+            /// Panics if `::new` fails.
+            #[allow(dead_code)]
+            fn test_is_nan<F>($($arg_name: $arg_ty),+, get_fn: F)
+            where
+                F: Fn($dist) -> f64
+            {
+                let x = create_and_get($($arg_name),+, get_fn);
+                assert!(x.is_nan());
+            }
+
+            /// Gets a value for the given parameters by calling `create_and_get`
             /// and asserts that it is [`None`].
             ///
             /// Panics if `::new` fails.
