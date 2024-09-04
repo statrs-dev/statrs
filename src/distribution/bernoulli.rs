@@ -265,90 +265,53 @@ impl Discrete<u64, f64> for Bernoulli {
 #[rustfmt::skip]
 #[cfg(test)]
 mod testing {
-    use std::fmt::Debug;
     use crate::distribution::DiscreteCDF;
+    use crate::testing_boiler;
     use super::Bernoulli;
 
-    fn try_create(p: f64) -> Bernoulli {
-        let n = Bernoulli::new(p);
-        assert!(n.is_ok());
-        n.unwrap()
-    }
-
-    fn create_case(p: f64) {
-        let dist = try_create(p);
-        assert_eq!(p, dist.p());
-    }
-
-    fn bad_create_case(p: f64) {
-        let n = Bernoulli::new(p);
-        assert!(n.is_err());
-    }
-
-    fn get_value<T, F>(p: f64, eval: F) -> T
-        where T: PartialEq + Debug,
-              F: Fn(Bernoulli) -> T
-    {
-        let n = try_create(p);
-        eval(n)
-    }
-
-    fn test_case<T, F>(p: f64, expected: T, eval: F)
-        where T: PartialEq + Debug,
-              F: Fn(Bernoulli) -> T
-    {
-        let x = get_value(p, eval);
-        assert_eq!(expected, x);
-    }
-
-    fn test_almost<F>(p: f64, expected: f64, acc: f64, eval: F)
-        where F: Fn(Bernoulli) -> f64
-    {
-        let x = get_value(p, eval);
-        assert_almost_eq!(expected, x, acc);
-    }
+    testing_boiler!(p: f64; Bernoulli);
 
     #[test]
     fn test_create() {
-        create_case(0.0);
-        create_case(0.3);
-        create_case(1.0);
+        create_ok(0.0);
+        create_ok(0.3);
+        create_ok(1.0);
     }
 
     #[test]
     fn test_bad_create() {
-        bad_create_case(f64::NAN);
-        bad_create_case(-1.0);
-        bad_create_case(2.0);
+        create_err(f64::NAN);
+        create_err(-1.0);
+        create_err(2.0);
     }
 
     #[test]
     fn test_cdf_upper_bound() {
         let cdf = |arg: u64| move |x: Bernoulli| x.cdf(arg);
-        test_case(0.3, 1., cdf(1));
+        test_relative(0.3, 1., cdf(1));
     }
 
     #[test]
     fn test_sf_upper_bound() {
         let sf = |arg: u64| move |x: Bernoulli| x.sf(arg);
-        test_case(0.3, 0., sf(1));
+        test_relative(0.3, 0., sf(1));
     }
 
     #[test]
     fn test_cdf() {
         let cdf = |arg: u64| move |x: Bernoulli| x.cdf(arg);
-        test_case(0.0, 1.0, cdf(0));
-        test_case(0.0, 1.0, cdf(1));
-        test_almost(0.3, 0.7, 1e-15, cdf(0));
-        test_almost(0.7, 0.3, 1e-15, cdf(0));
+        test_relative(0.0, 1.0, cdf(0));
+        test_relative(0.0, 1.0, cdf(1));
+        test_absolute(0.3, 0.7, 1e-15, cdf(0));
+        test_absolute(0.7, 0.3, 1e-15, cdf(0));
     }
 
     #[test]
     fn test_sf() {
         let sf = |arg: u64| move |x: Bernoulli| x.sf(arg);
-        test_case(0.0, 0.0, sf(0));
-        test_case(0.0, 0.0, sf(1));
-        test_almost(0.3, 0.3, 1e-15, sf(0));
-        test_almost(0.7, 0.7, 1e-15, sf(0));
+        test_relative(0.0, 0.0, sf(0));
+        test_relative(0.0, 0.0, sf(1));
+        test_absolute(0.3, 0.3, 1e-15, sf(0));
+        test_absolute(0.7, 0.7, 1e-15, sf(0));
     }
 }
