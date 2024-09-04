@@ -188,6 +188,7 @@ pub mod test {
             /// Allows relative error of up to [`crate::consts::ACC`].
             ///
             /// Panics if `::new` fails.
+            #[allow(dead_code)] // This is not used by all distributions.
             fn test_relative<F>($($arg_name: $arg_ty),+, expected: f64, get_fn: F)
             where
                 F: Fn($dist) -> f64,
