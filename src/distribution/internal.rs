@@ -160,6 +160,28 @@ pub mod test {
                 get_fn(n)
             }
 
+            /// Creates a distribution with the given parameters, calls the `get_fn`
+            /// function with the new distribution and compares the result of `get_fn`
+            /// to `expected` exactly.
+            ///
+            /// Panics if `::new` fails.
+            #[allow(dead_code)] // This is not used by all distributions.
+            fn test_exact<F, T>($($arg_name: $arg_ty),+, expected: T, get_fn: F)
+            where
+                F: Fn($dist) -> T,
+                T: ::core::cmp::PartialEq + ::core::fmt::Debug
+            {
+                let x = create_and_get($($arg_name),+, get_fn);
+                if x != expected {
+                    panic!(
+                        "Expected {:?}, got {:?} for {}",
+                        expected,
+                        x,
+                        make_param_text($($arg_name),+)
+                    );
+                }
+            }
+
             /// Gets a value for the given parameters by calling `create_and_get`
             /// and compares it to `expected`.
             ///
