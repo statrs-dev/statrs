@@ -390,10 +390,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_variance_degen() {
-        let variance = |x: Pareto| x.variance().unwrap();
-        test_exact(1.0, 1.0, f64::INFINITY, variance); // shape <= 2.0
+        test_none(1.0, 1.0, |dist| dist.variance()); // shape <= 2.0
     }
 
     #[test]
