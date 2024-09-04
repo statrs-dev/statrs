@@ -17,13 +17,26 @@ include = ["CHANGELOG.md", "LICENSE.md", "src/", "tests/"]
 name = "statrs"
 path = "src/lib.rs"
 
+[features]
+default = ["nalgebra"]
+nalgebra = ["dep:nalgebra"]
+
 [dependencies]
 rand = "0.8"
-nalgebra = { version = "0.32", default-features = false, features = ["rand", "std"] }
 approx = "0.5.0"
 num-traits = "0.2.14"
+
+[dependencies.nalgebra]
+version = "0.32"
+optional = true
+default-features = false
+features = ["rand", "std"]
 
 [dev-dependencies]
 criterion = "0.3.3"
 anyhow = "1.0"
-nalgebra = { version = "0.32", default-features = false, features = ["macros"] }
+
+[dev-dependencies.nalgebra]
+version = "0.32"
+default-features = false
+features = ["macros"]

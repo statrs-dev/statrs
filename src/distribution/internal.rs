@@ -1,7 +1,4 @@
-use nalgebra::{Dim, OVector};
 use num_traits::Num;
-
-use crate::StatsError;
 
 /// Returns true if there are no elements in `x` in `arr`
 /// such that `x <= 0.0` or `x` is `f64::NAN` and `sum(arr) > 0.0`.
@@ -17,11 +14,17 @@ pub fn is_valid_multinomial(arr: &[f64], incl_zero: bool) -> bool {
     sum != 0.0
 }
 
+#[cfg(feature = "nalgebra")]
+use nalgebra::{Dim, OVector};
+
+#[cfg(feature = "nalgebra")]
 pub fn check_multinomial<D>(arr: &OVector<f64, D>, accept_zeroes: bool) -> crate::Result<()>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
 {
+    use crate::StatsError;
+
     if arr.len() < 2 {
         return Err(StatsError::BadParams);
     }
@@ -253,6 +256,7 @@ pub mod test {
         check_sum_pmf_is_cdf(dist, x_max);
     }
 
+    #[cfg(feature = "nalgebra")]
     #[test]
     fn test_is_valid_multinomial() {
         use std::f64;
