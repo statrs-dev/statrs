@@ -295,45 +295,31 @@ impl Continuous<f64, f64> for Erlang {
 mod tests {
     use crate::distribution::Erlang;
     use crate::distribution::internal::*;
+    use crate::testing_boiler;
 
-    fn try_create(shape: u64, rate: f64) -> Erlang {
-        let n = Erlang::new(shape, rate);
-        assert!(n.is_ok());
-        n.unwrap()
-    }
-
-    fn create_case(shape: u64, rate: f64) {
-        let n = try_create(shape, rate);
-        assert_eq!(shape, n.shape());
-        assert_eq!(rate, n.rate());
-    }
-
-    fn bad_create_case(shape: u64, rate: f64) {
-        let n = Erlang::new(shape, rate);
-        assert!(n.is_err());
-    }
+    testing_boiler!(shape: u64, rate: f64; Erlang);
 
     #[test]
     fn test_create() {
-        create_case(1, 0.1);
-        create_case(1, 1.0);
-        create_case(10, 10.0);
-        create_case(10, 1.0);
-        create_case(10, f64::INFINITY);
+        create_ok(1, 0.1);
+        create_ok(1, 1.0);
+        create_ok(10, 10.0);
+        create_ok(10, 1.0);
+        create_ok(10, f64::INFINITY);
     }
 
     #[test]
     fn test_bad_create() {
-        bad_create_case(0, 1.0);
-        bad_create_case(1, 0.0);
-        bad_create_case(1, f64::NAN);
-        bad_create_case(1, -1.0);
+        create_err(0, 1.0);
+        create_err(1, 0.0);
+        create_err(1, f64::NAN);
+        create_err(1, -1.0);
     }
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&try_create(1, 2.5), 0.0, 20.0);
-        test::check_continuous_distribution(&try_create(2, 1.5), 0.0, 20.0);
-        test::check_continuous_distribution(&try_create(3, 0.5), 0.0, 20.0);
+        test::check_continuous_distribution(&create_ok(1, 2.5), 0.0, 20.0);
+        test::check_continuous_distribution(&create_ok(2, 1.5), 0.0, 20.0);
+        test::check_continuous_distribution(&create_ok(3, 0.5), 0.0, 20.0);
     }
 }
