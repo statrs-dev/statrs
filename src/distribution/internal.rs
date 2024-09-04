@@ -273,6 +273,96 @@ pub mod test {
         };
     }
 
+    pub mod boiler_tests {
+        use super::*;
+        use crate::distribution::Binomial;
+        use crate::statistics::*;
+
+        testing_boiler!(p: f64, n: u64; Binomial);
+
+        #[test]
+        fn create_ok_success() {
+            let b = create_ok(0.8, 1200);
+            assert_eq!(b.p(), 0.8);
+            assert_eq!(b.n(), 1200);
+        }
+
+        #[test]
+        #[should_panic]
+        fn create_err_failure() {
+            create_err(0.8, 1200);
+        }
+
+        #[test]
+        fn create_err_success() {
+            let err = create_err(-0.5, 1000);
+            assert_eq!(err, StatsError::BadParams);
+        }
+
+        #[test]
+        #[should_panic]
+        fn create_ok_failure() {
+            create_ok(-0.5, 1000);
+        }
+
+        #[test]
+        fn test_exact_success() {
+            test_exact(0.0, 4, 0.0, |dist| dist.mean().unwrap());
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_exact_failure() {
+            test_exact(0.3, 3, 0.9, |dist| dist.mean().unwrap());
+        }
+
+        #[test]
+        fn test_relative_success() {
+            test_relative(0.3, 3, 0.9, |dist| dist.mean().unwrap());
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_relative_failure() {
+            test_relative(0.3, 3, 0.8, |dist| dist.mean().unwrap());
+        }
+
+        #[test]
+        fn test_absolute_success() {
+            test_absolute(0.3, 3, 0.9, 1e-15, |dist| dist.mean().unwrap());
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_absolute_failure() {
+            test_absolute(0.3, 3, 0.9, 1e-17, |dist| dist.mean().unwrap());
+        }
+
+        #[test]
+        fn test_is_nan_success() {
+            // Not sure that any Binomial API can return a NaN, so we force the issue
+            test_is_nan(0.8, 1200, |_| f64::NAN);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_is_nan_failure() {
+            test_is_nan(0.8, 1200, |dist| dist.mean().unwrap());
+        }
+
+        #[test]
+        fn test_is_none_success() {
+            // Same as test_is_nan_success, force returning `None` here
+            test_none(0.8, 1200, |_| Option::<f64>::None);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_is_none_failure() {
+            test_none(0.8, 1200, |dist| dist.mean());
+        }
+    }
+
     /// cdf should be the integral of the pdf
     fn check_integrate_pdf_is_cdf<D: ContinuousCDF<f64, f64> + Continuous<f64, f64>>(
         dist: &D,
