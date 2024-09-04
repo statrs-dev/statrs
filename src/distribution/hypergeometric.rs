@@ -9,11 +9,7 @@ use std::f64;
 /// Implements the
 /// [Hypergeometric](http://en.wikipedia.org/wiki/Hypergeometric_distribution)
 /// distribution
-///
-/// # Examples
-///
-/// ```
-/// ```
+// TODO: Add examples
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Hypergeometric {
     population: u64,
@@ -155,9 +151,8 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
     /// ```
     ///
     /// where `N` is population, `K` is successes, `n` is draws,
-    /// and `p_F_q` is the [generalized hypergeometric
-    /// function](https://en.wikipedia.
-    /// org/wiki/Generalized_hypergeometric_function)
+    /// and `p_F_q` is the
+    /// [generalized hypergeometric function](https://en.wikipedia.org/wiki/Generalized_hypergeometric_function)
     ///
     /// Calculated as a discrete integral over the probability mass
     /// function evaluated from 0..x+1
@@ -189,9 +184,8 @@ impl DiscreteCDF<u64, f64> for Hypergeometric {
     /// ```
     ///
     /// where `N` is population, `K` is successes, `n` is draws,
-    /// and `p_F_q` is the [generalized hypergeometric
-    /// function](https://en.wikipedia.
-    /// org/wiki/Generalized_hypergeometric_function)
+    /// and `p_F_q` is the
+    /// [generalized hypergeometric function](https://en.wikipedia.org/wiki/Generalized_hypergeometric_function)
     ///
     /// Calculated as a discrete integral over the probability mass
     /// function evaluated from (x+1)..max

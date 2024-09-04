@@ -365,15 +365,11 @@ impl Continuous<f64, f64> for Gamma {
 }
 /// Samples from a gamma distribution with a shape of `shape` and a
 /// rate of `rate` using `rng` as the source of randomness. Implementation from:
-/// <br />
-/// <div>
-/// <i>"A Simple Method for Generating Gamma Variables"</i> - Marsaglia & Tsang
-/// </div>
-/// <div>
+///
+/// _"A Simple Method for Generating Gamma Variables"_ - Marsaglia & Tsang
+///
 /// ACM Transactions on Mathematical Software, Vol. 26, No. 3, September 2000,
 /// Pages 363-372
-/// </div>
-/// <br />
 pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, shape: f64, rate: f64) -> f64 {
     let mut a = shape;
     let mut afix = 1.0;

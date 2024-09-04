@@ -14,26 +14,18 @@ use crate::{consts, Result, StatsError};
 /// # Remarks
 ///
 /// This implementation follows the derivation in
-/// <br />
-/// <div>
-/// <i>"Handbook of Mathematical Functions, Applied Mathematics Series, Volume
-/// 55"</i> - Abramowitz, M., and Stegun, I.A 1964
-/// </div>
+///
+/// _"Handbook of Mathematical Functions, Applied Mathematics Series, Volume
+/// 55"_ - Abramowitz, M., and Stegun, I.A 1964
+///
 /// AND
-/// <br />
-/// <div>
-/// <i>"Advanced mathematical methods for scientists and engineers" - Bender,
+///
+/// _"Advanced mathematical methods for scientists and engineers"_ - Bender,
 /// Carl M.; Steven A. Orszag (1978). page 253
-/// </div>
-/// <br />
-/// The continued fraction approac is used for `x > 1.0` while the taylor
-/// series expansions
-/// is used for `0.0 < x <= 1`
 ///
-/// # Examples
-///
-/// ```
-/// ```
+/// The continued fraction approach is used for `x > 1.0` while the taylor
+/// series expansions is used for `0.0 < x <= 1`.
+// TODO: Add examples
 pub fn integral(x: f64, n: u64) -> Result<f64> {
     let eps = 0.00000000000000001;
     let max_iter = 100;
