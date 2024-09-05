@@ -17,6 +17,10 @@ include = ["CHANGELOG.md", "LICENSE.md", "src/", "tests/"]
 name = "statrs"
 path = "src/lib.rs"
 
+[[bench]]
+name = "order_statistics"
+harness = false
+
 [features]
 default = ["nalgebra"]
 nalgebra = ["dep:nalgebra"]
@@ -33,7 +37,7 @@ default-features = false
 features = ["rand", "std"]
 
 [dev-dependencies]
-criterion = "0.3.3"
+criterion = "0.5"
 anyhow = "1.0"
 
 [dev-dependencies.nalgebra]
