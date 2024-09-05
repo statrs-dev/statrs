@@ -75,13 +75,12 @@ git checkout -b <feature_branch> master
 
 Write your code and docs, then ensure it is formatted:
 
-The below sample modify in-place, use `--check` flag to view diff without making file changes.
-Not using `fmt` from +nightly may result in some warnings and different formatting.
-Our CI will `fmt`, but less chores in commit history are appreciated.
+```
+cargo fmt
+```
 
-```
-cargo +nightly fmt
-```
+Add `--check` to view the diff without making file changes.
+Our CI will `fmt`, but less chores in commit history are appreciated.
 
 After commiting your code:
 
