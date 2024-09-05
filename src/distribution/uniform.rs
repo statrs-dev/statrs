@@ -1,7 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use rand::distributions::Uniform as RandUniform;
-use rand::Rng;
 use std::f64;
 use std::fmt::Debug;
 
@@ -121,9 +119,10 @@ impl std::fmt::Display for Uniform {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Uniform {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        let d = RandUniform::new_inclusive(self.min, self.max);
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+        let d = rand::distributions::Uniform::new_inclusive(self.min, self.max);
         rng.sample(d)
     }
 }
@@ -495,6 +494,7 @@ mod tests {
         test::check_continuous_distribution(&create_ok(-2.0, 15.0), -2.0, 15.0);
     }
 
+    #[cfg(feature = "rand")]
     #[test]
     fn test_samples_in_range() {
         use rand::rngs::StdRng;

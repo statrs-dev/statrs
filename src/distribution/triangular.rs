@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use rand::Rng;
 use std::f64;
 
 /// Implements the
@@ -112,8 +111,9 @@ impl std::fmt::Display for Triangular {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Triangular {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         sample_unchecked(rng, self.min, self.max, self.mode)
     }
 }
@@ -382,7 +382,8 @@ impl Continuous<f64, f64> for Triangular {
     }
 }
 
-fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, min: f64, max: f64, mode: f64) -> f64 {
+#[cfg(feature = "rand")]
+fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, min: f64, max: f64, mode: f64) -> f64 {
     let f: f64 = rng.gen();
     if f < (mode - min) / (max - min) {
         min + (f * (max - min) * (mode - min)).sqrt()

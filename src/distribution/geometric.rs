@@ -1,7 +1,5 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use rand::distributions::OpenClosed01;
-use rand::Rng;
 use std::f64;
 
 /// Implements the
@@ -92,8 +90,11 @@ impl std::fmt::Display for Geometric {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Geometric {
-    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        use ::rand::distributions::OpenClosed01;
+
         if ulps_eq!(self.p, 1.0) {
             1.0
         } else {

@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use rand::Rng;
 use std::f64;
 
 /// Implements the [Chi](https://en.wikipedia.org/wiki/Chi_distribution)
@@ -94,8 +93,9 @@ impl std::fmt::Display for Chi {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Chi {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         (0..self.freedom as i64)
             .fold(0.0, |acc, _| {
                 acc + super::normal::sample_unchecked(rng, 0.0, 1.0).powf(2.0)

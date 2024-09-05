@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::{Distribution, Max, Median, Min, Mode};
-use rand::Rng;
 use std::f64;
 
 /// Implements the [Laplace](https://en.wikipedia.org/wiki/Laplace_distribution)
@@ -111,8 +110,9 @@ impl std::fmt::Display for Laplace {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Laplace {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         let x: f64 = rng.gen_range(-0.5..0.5);
         self.location - self.scale * x.signum() * (1. - 2. * x.abs()).ln()
     }
@@ -326,7 +326,6 @@ impl Continuous<f64, f64> for Laplace {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::thread_rng;
 
     use crate::testing_boiler;
 
@@ -551,18 +550,22 @@ mod tests {
         test_rel_close(loc, scale, expected, reltol, inverse_cdf(0.95));
     }
 
+    #[cfg(feature = "rand")]
     #[test]
     fn test_sample() {
         use ::rand::distributions::Distribution;
+        use ::rand::thread_rng;
+
         let l = create_ok(0.1, 0.5);
         l.sample(&mut thread_rng());
     }
 
+    #[cfg(feature = "rand")]
     #[test]
     fn test_sample_distribution() {
+        use ::rand::distributions::Distribution;
         use ::rand::rngs::StdRng;
         use ::rand::SeedableRng;
-        use rand::distributions::Distribution;
 
         // sanity check sampling
         let location = 0.0;

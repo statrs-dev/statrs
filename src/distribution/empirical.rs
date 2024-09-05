@@ -1,7 +1,6 @@
-use crate::distribution::{ContinuousCDF, Uniform};
+use crate::distribution::ContinuousCDF;
 use crate::statistics::*;
 use core::cmp::Ordering;
-use rand::Rng;
 use std::collections::BTreeMap;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -176,8 +175,11 @@ impl std::fmt::Display for Empirical {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Empirical {
-    fn sample<R: ?Sized + Rng>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+        use crate::distribution::Uniform;
+
         let uniform = Uniform::new(0.0, 1.0).unwrap();
         self.__inverse_cdf(uniform.sample(rng))
     }

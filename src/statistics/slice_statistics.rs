@@ -1,6 +1,5 @@
 use crate::statistics::*;
 use core::ops::{Index, IndexMut};
-use rand::prelude::SliceRandom;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Data<D>(D);
@@ -133,8 +132,11 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Data<D> {
     }
 }
 
+#[cfg(feature = "rand")]
 impl<D: AsRef<[f64]>> ::rand::distributions::Distribution<f64> for Data<D> {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+        use rand::prelude::SliceRandom;
+
         *self.0.as_ref().choose(rng).unwrap()
     }
 }

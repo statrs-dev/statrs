@@ -78,7 +78,9 @@ mod students_t;
 mod triangular;
 mod uniform;
 mod weibull;
+#[cfg(feature = "rand")]
 mod ziggurat;
+#[cfg(feature = "rand")]
 mod ziggurat_tables;
 
 /// The `ContinuousCDF` trait is used to specify an interface for univariate

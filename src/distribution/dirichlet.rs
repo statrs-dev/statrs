@@ -2,8 +2,7 @@ use crate::distribution::Continuous;
 use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
-use nalgebra::{Const, Dim, Dyn, OMatrix, OVector};
-use rand::Rng;
+use nalgebra::{Dim, Dyn, OMatrix, OVector};
 use std::f64;
 
 /// Implements the
@@ -192,16 +191,17 @@ where
     }
 }
 
+#[cfg(feature = "rand")]
 impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for Dirichlet<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
 {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
         let mut sum = 0.0;
         OVector::from_iterator_generic(
             self.alpha.shape_generic().0,
-            Const::<1>,
+            nalgebra::Const::<1>,
             self.alpha.iter().map(|&a| {
                 let sample = super::gamma::sample_unchecked(rng, a, 1.0);
                 sum += sample;

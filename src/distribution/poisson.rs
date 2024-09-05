@@ -1,7 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{factorial, gamma};
 use crate::statistics::*;
-use rand::Rng;
 use std::f64;
 
 /// Implements the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution)
@@ -90,13 +89,14 @@ impl std::fmt::Display for Poisson {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Poisson {
     /// Generates one sample from the Poisson distribution either by
     /// Knuth's method if lambda < 30.0 or Rejection method PA by
     /// A. C. Atkinson from the Journal of the Royal Statistical Society
     /// Series C (Applied Statistics) Vol. 28 No. 1. (1979) pp. 29 - 35
     /// otherwise
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         sample_unchecked(rng, self.lambda)
     }
 }
@@ -283,7 +283,8 @@ impl Discrete<u64, f64> for Poisson {
 /// A. C. Atkinson from the Journal of the Royal Statistical Society
 /// Series C (Applied Statistics) Vol. 28 No. 1. (1979) pp. 29 - 35
 /// otherwise
-pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, lambda: f64) -> f64 {
+#[cfg(feature = "rand")]
+pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, lambda: f64) -> f64 {
     if lambda < 30.0 {
         let limit = (-lambda).exp();
         let mut count = 0.0;

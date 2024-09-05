@@ -1,6 +1,5 @@
-use crate::distribution::{ziggurat, Continuous, ContinuousCDF};
+use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use rand::Rng;
 use std::f64;
 
 /// Implements the
@@ -91,8 +90,11 @@ impl std::fmt::Display for Exp {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Exp {
-    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
+        use crate::distribution::ziggurat;
+
         ziggurat::sample_exp_1(r) / self.rate
     }
 }

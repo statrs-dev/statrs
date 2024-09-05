@@ -1,7 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::factorial;
 use crate::statistics::*;
-use rand::Rng;
 use std::cmp;
 use std::f64;
 
@@ -146,8 +145,9 @@ impl std::fmt::Display for Hypergeometric {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Hypergeometric {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         let mut population = self.population as f64;
         let mut successes = self.successes as f64;
         let mut draws = self.draws;

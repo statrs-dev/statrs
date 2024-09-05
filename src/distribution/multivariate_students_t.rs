@@ -1,9 +1,7 @@
 use crate::distribution::Continuous;
-use crate::distribution::{ChiSquared, Normal};
 use crate::function::gamma;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
 use nalgebra::{Cholesky, Const, DMatrix, Dim, DimMin, Dyn, OMatrix, OVector};
-use rand::Rng;
 use std::f64::consts::PI;
 
 /// Implements the [Multivariate Student's t-distribution](https://en.wikipedia.org/wiki/Multivariate_t-distribution)
@@ -198,6 +196,7 @@ where
     }
 }
 
+#[cfg(feature = "rand")]
 impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for MultivariateStudent<D>
 where
     D: Dim,
@@ -217,7 +216,9 @@ where
     /// `L` is the Cholesky decomposition of the scale matrix,
     /// `Z` is a vector of normally distributed random variables, and
     /// `μ` is the location vector
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
+        use crate::distribution::{ChiSquared, Normal};
+
         let d = Normal::new(0., 1.).unwrap();
         let s = ChiSquared::new(self.freedom).unwrap();
         let w = (self.freedom / s.sample(rng)).sqrt();

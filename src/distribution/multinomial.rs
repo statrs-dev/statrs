@@ -1,8 +1,7 @@
 use crate::distribution::Discrete;
 use crate::function::factorial;
 use crate::statistics::*;
-use nalgebra::{Const, DVector, Dim, Dyn, OMatrix, OVector};
-use rand::Rng;
+use nalgebra::{DVector, Dim, Dyn, OMatrix, OVector};
 
 /// Implements the
 /// [Multinomial](https://en.wikipedia.org/wiki/Multinomial_distribution)
@@ -160,12 +159,15 @@ where
     }
 }
 
+#[cfg(feature = "rand")]
 impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for Multinomial<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
 {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
+        use nalgebra::Const;
+
         let p_cdf = super::categorical::prob_mass_to_cdf(self.p().as_slice());
         let mut res = OVector::zeros_generic(self.p.shape_generic().0, Const::<1>);
         for _ in 0..self.n {

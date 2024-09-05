@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use rand::Rng;
 use std::f64;
 
 /// Implements the [Cauchy](https://en.wikipedia.org/wiki/Cauchy_distribution)
@@ -111,8 +110,9 @@ impl std::fmt::Display for Cauchy {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Cauchy {
-    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
         self.location + self.scale * (f64::consts::PI * (r.gen::<f64>() - 0.5)).tan()
     }
 }

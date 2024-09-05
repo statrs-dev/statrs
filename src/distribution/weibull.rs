@@ -2,7 +2,6 @@ use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use rand::Rng;
 use std::f64;
 
 /// Implements the [Weibull](https://en.wikipedia.org/wiki/Weibull_distribution)
@@ -121,8 +120,9 @@ impl std::fmt::Display for Weibull {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Weibull {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         let x: f64 = rng.gen();
         self.scale * (-x.ln()).powf(1.0 / self.shape)
     }

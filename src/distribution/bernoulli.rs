@@ -1,6 +1,5 @@
 use crate::distribution::{Binomial, BinomialError, Discrete, DiscreteCDF};
 use crate::statistics::*;
-use rand::Rng;
 
 /// Implements the
 /// [Bernoulli](https://en.wikipedia.org/wiki/Bernoulli_distribution)
@@ -85,8 +84,9 @@ impl std::fmt::Display for Bernoulli {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Bernoulli {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         rng.gen_bool(self.p()) as u8 as f64
     }
 }

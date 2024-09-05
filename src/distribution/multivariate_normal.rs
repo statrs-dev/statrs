@@ -1,9 +1,7 @@
 use crate::distribution::Continuous;
-use crate::distribution::Normal;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
 use crate::StatsError;
 use nalgebra::{Cholesky, Const, DMatrix, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
-use rand::Rng;
 use std::f64;
 use std::f64::consts::{E, PI};
 
@@ -247,6 +245,7 @@ where
     }
 }
 
+#[cfg(feature = "rand")]
 impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for MultivariateNormal<D>
 where
     D: Dim,
@@ -264,8 +263,8 @@ where
     /// `Z` is a vector of normally distributed random variables, and
     /// `μ` is the mean vector
 
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
-        let d = Normal::new(0., 1.).unwrap();
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
+        let d = crate::distribution::Normal::new(0., 1.).unwrap();
         let z = OVector::from_distribution_generic(self.mu.shape_generic().0, Const::<1>, &d, rng);
         (&self.cov_chol_decomp * z) + &self.mu
     }

@@ -1,4 +1,3 @@
-extern crate rand;
 extern crate statrs;
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
 use rand::prelude::*;

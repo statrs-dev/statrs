@@ -1,7 +1,6 @@
-use crate::distribution::{self, poisson, Discrete, DiscreteCDF};
+use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
-use rand::Rng;
 use std::f64;
 
 /// Implements the
@@ -136,9 +135,12 @@ impl std::fmt::Display for NegativeBinomial {
     }
 }
 
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<u64> for NegativeBinomial {
-    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> u64 {
-        let lambda = distribution::gamma::sample_unchecked(r, self.r, (1.0 - self.p) / self.p);
+    fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> u64 {
+        use crate::distribution::{gamma, poisson};
+
+        let lambda = gamma::sample_unchecked(r, self.r, (1.0 - self.p) / self.p);
         poisson::sample_unchecked(r, lambda).floor() as u64
     }
 }
