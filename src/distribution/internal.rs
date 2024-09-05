@@ -277,9 +277,9 @@ pub mod test {
     }
 
     pub mod boiler_tests {
-        use super::*;
         use crate::distribution::Binomial;
         use crate::statistics::*;
+        use crate::StatsError;
 
         testing_boiler!(p: f64, n: u64; Binomial);
 
