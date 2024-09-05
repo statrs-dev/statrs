@@ -304,7 +304,7 @@ mod tests {
 
     use crate::testing_boiler;
 
-    testing_boiler!(location: f64, scale: f64; Laplace);
+    testing_boiler!(location: f64, scale: f64; Laplace; StatsError);
 
     // A wrapper for the `assert_relative_eq!` macro from the approx crate.
     //

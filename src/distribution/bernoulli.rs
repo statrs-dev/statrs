@@ -265,11 +265,11 @@ impl Discrete<u64, f64> for Bernoulli {
 #[rustfmt::skip]
 #[cfg(test)]
 mod testing {
-    use crate::distribution::DiscreteCDF;
+    use super::*;
+    use crate::StatsError;
     use crate::testing_boiler;
-    use super::Bernoulli;
 
-    testing_boiler!(p: f64; Bernoulli);
+    testing_boiler!(p: f64; Bernoulli; StatsError);
 
     #[test]
     fn test_create() {

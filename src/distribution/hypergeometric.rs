@@ -372,12 +372,11 @@ impl Discrete<u64, f64> for Hypergeometric {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{DiscreteCDF, Discrete, Hypergeometric};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(population: u64, successes: u64, draws: u64; Hypergeometric);
+    testing_boiler!(population: u64, successes: u64, draws: u64; Hypergeometric; StatsError);
 
     #[test]
     fn test_create() {

@@ -193,11 +193,10 @@ impl Mode<Option<f64>> for Dirac {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{ContinuousCDF, Dirac};
-    use crate::statistics::*;
+    use super::*;
     use crate::testing_boiler;
 
-    testing_boiler!(v: f64; Dirac);
+    testing_boiler!(v: f64; Dirac; StatsError);
 
     #[test]
     fn test_create() {

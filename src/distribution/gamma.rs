@@ -406,7 +406,7 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(shape: f64, rate: f64; Gamma);
+    testing_boiler!(shape: f64, rate: f64; Gamma; StatsError);
 
     #[test]
     fn test_create() {

@@ -305,12 +305,11 @@ impl Continuous<f64, f64> for LogNormal {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{ContinuousCDF, Continuous, LogNormal};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(mean: f64, std_dev: f64; LogNormal);
+    testing_boiler!(mean: f64, std_dev: f64; LogNormal; StatsError);
 
     #[test]
     fn test_create() {

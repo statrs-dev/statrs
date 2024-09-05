@@ -328,12 +328,11 @@ impl Discrete<u64, f64> for Binomial {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::statistics::*;
-    use crate::distribution::{DiscreteCDF, Discrete, Binomial};
+    use super::*;
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(p: f64, n: u64; Binomial);
+    testing_boiler!(p: f64, n: u64; Binomial; StatsError);
 
     #[test]
     fn test_create() {

@@ -291,12 +291,11 @@ impl Discrete<u64, f64> for NegativeBinomial {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{DiscreteCDF, Discrete, NegativeBinomial};
+    use super::*;
     use crate::distribution::internal::test;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(r: f64, p: f64; NegativeBinomial);
+    testing_boiler!(r: f64, p: f64; NegativeBinomial; StatsError);
 
     #[test]
     fn test_create() {

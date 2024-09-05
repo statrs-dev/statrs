@@ -306,12 +306,12 @@ impl Continuous<f64, f64> for ChiSquared {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::statistics::Median;
-    use crate::distribution::ChiSquared;
+    use super::*;
     use crate::distribution::internal::*;
+    use crate::StatsError;
     use crate::testing_boiler;
 
-    testing_boiler!(freedom: f64; ChiSquared);
+    testing_boiler!(freedom: f64; ChiSquared; StatsError);
 
     #[test]
     fn test_median() {

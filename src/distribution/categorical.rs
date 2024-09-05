@@ -351,12 +351,11 @@ fn test_binary_index() {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::statistics::*;
-    use crate::distribution::{Categorical, Discrete, DiscreteCDF};
+    use super::*;
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(prob_mass: &[f64]; Categorical);
+    testing_boiler!(prob_mass: &[f64]; Categorical; StatsError);
 
     #[test]
     fn test_create() {

@@ -293,11 +293,12 @@ impl Continuous<f64, f64> for Erlang {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::Erlang;
+    use super::*;
     use crate::distribution::internal::*;
+    use crate::StatsError;
     use crate::testing_boiler;
 
-    testing_boiler!(shape: u64, rate: f64; Erlang);
+    testing_boiler!(shape: u64, rate: f64; Erlang; StatsError);
 
     #[test]
     fn test_create() {

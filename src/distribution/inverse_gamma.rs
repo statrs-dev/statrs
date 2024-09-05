@@ -313,12 +313,11 @@ impl Continuous<f64, f64> for InverseGamma {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{ContinuousCDF, Continuous, InverseGamma};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(shape: f64, rate: f64; InverseGamma);
+    testing_boiler!(shape: f64, rate: f64; InverseGamma; StatsError);
 
     #[test]
     fn test_create() {

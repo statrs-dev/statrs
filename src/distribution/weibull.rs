@@ -350,12 +350,11 @@ impl Continuous<f64, f64> for Weibull {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{ContinuousCDF, Continuous, Weibull};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(shape: f64, scale: f64; Weibull);
+    testing_boiler!(shape: f64, scale: f64; Weibull; StatsError);
 
     #[test]
     fn test_create() {

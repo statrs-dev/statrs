@@ -421,14 +421,12 @@ impl Continuous<f64, f64> for StudentsT {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::consts::ACC;
     use crate::distribution::internal::*;
-    use crate::distribution::{Continuous, ContinuousCDF, StudentsT};
-    use crate::statistics::*;
     use crate::testing_boiler;
-    use std::panic;
 
-    testing_boiler!(location: f64, scale: f64, freedom: f64; StudentsT);
+    testing_boiler!(location: f64, scale: f64, freedom: f64; StudentsT; StatsError);
 
     #[test]
     fn test_create() {

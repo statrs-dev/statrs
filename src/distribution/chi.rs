@@ -325,13 +325,11 @@ impl Continuous<f64, f64> for Chi {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use std::f64;
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::distribution::{Chi, Continuous, ContinuousCDF};
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(freedom: f64; Chi);
+    testing_boiler!(freedom: f64; Chi; StatsError);
 
     #[test]
     fn test_create() {

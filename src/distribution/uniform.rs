@@ -284,12 +284,11 @@ impl Continuous<f64, f64> for Uniform {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{ContinuousCDF, Continuous, Uniform};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(min: f64, max: f64; Uniform);
+    testing_boiler!(min: f64, max: f64; Uniform; StatsError);
 
     #[test]
     fn test_create() {

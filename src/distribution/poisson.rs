@@ -304,12 +304,11 @@ pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, lambda: f64) -> f64 {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{DiscreteCDF, Discrete, Poisson};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(lambda: f64; Poisson);
+    testing_boiler!(lambda: f64; Poisson; StatsError);
 
     #[test]
     fn test_create() {

@@ -100,7 +100,7 @@ pub mod test {
 
     #[macro_export]
     macro_rules! testing_boiler {
-        ($($arg_name:ident: $arg_ty:ty),+; $dist:ty) => {
+        ($($arg_name:ident: $arg_ty:ty),+; $dist:ty; $dist_err:ty) => {
             fn make_param_text($($arg_name: $arg_ty),+) -> String {
                 // ""
                 let mut param_text = String::new();
@@ -140,7 +140,7 @@ pub mod test {
             /// Returns the error when creating a distribution with the given parameters,
             /// panicking if `::new` succeeds.
             #[allow(dead_code)]
-            fn create_err($($arg_name: $arg_ty),+) -> $crate::StatsError {
+            fn create_err($($arg_name: $arg_ty),+) -> $dist_err {
                 match <$dist>::new($($arg_name),+) {
                     Err(e) => e,
                     Ok(d) => panic!(
@@ -281,7 +281,7 @@ pub mod test {
         use crate::statistics::*;
         use crate::StatsError;
 
-        testing_boiler!(p: f64, n: u64; Binomial);
+        testing_boiler!(p: f64, n: u64; Binomial; StatsError);
 
         #[test]
         fn create_ok_success() {

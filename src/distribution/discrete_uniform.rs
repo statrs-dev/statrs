@@ -256,11 +256,10 @@ impl Discrete<i64, f64> for DiscreteUniform {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{DiscreteCDF, Discrete, DiscreteUniform};
-    use crate::statistics::*;
+    use super::*;
     use crate::testing_boiler;
 
-    testing_boiler!(min: i64, max: i64; DiscreteUniform);
+    testing_boiler!(min: i64, max: i64; DiscreteUniform; StatsError);
 
     #[test]
     fn test_create() {

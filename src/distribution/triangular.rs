@@ -347,12 +347,11 @@ fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, min: f64, max: f64, mode: f64)
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{ContinuousCDF, Continuous, Triangular};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(min: f64, max: f64, mode: f64; Triangular);
+    testing_boiler!(min: f64, max: f64, mode: f64; Triangular; StatsError);
 
     #[test]
     fn test_create() {

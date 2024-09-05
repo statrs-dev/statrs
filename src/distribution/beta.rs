@@ -433,7 +433,7 @@ mod tests {
     use super::super::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(a: f64, b: f64; Beta);
+    testing_boiler!(a: f64, b: f64; Beta; StatsError);
 
     #[test]
     fn test_create() {

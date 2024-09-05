@@ -273,12 +273,11 @@ impl Discrete<u64, f64> for Geometric {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{DiscreteCDF, Discrete, Geometric};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(p: f64; Geometric);
+    testing_boiler!(p: f64; Geometric; StatsError);
 
     #[test]
     fn test_create() {

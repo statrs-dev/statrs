@@ -385,12 +385,11 @@ impl Continuous<f64, f64> for FisherSnedecor {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{ContinuousCDF, Continuous, FisherSnedecor};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(freedom_1: f64, freedom_2: f64; FisherSnedecor);
+    testing_boiler!(freedom_1: f64, freedom_2: f64; FisherSnedecor; StatsError);
 
     #[test]
     fn test_create() {

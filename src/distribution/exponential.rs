@@ -279,13 +279,11 @@ impl Continuous<f64, f64> for Exp {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use std::f64;
-    use crate::distribution::{ContinuousCDF, Continuous, Exp};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(rate: f64; Exp);
+    testing_boiler!(rate: f64; Exp; StatsError);
 
     #[test]
     fn test_create() {

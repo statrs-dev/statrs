@@ -252,11 +252,11 @@ impl Continuous<f64, f64> for Cauchy {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::{statistics::*, testing_boiler};
-    use crate::distribution::{ContinuousCDF, Continuous, Cauchy};
+    use super::*;
     use crate::distribution::internal::*;
+    use crate::testing_boiler;
 
-    testing_boiler!(location: f64, scale: f64; Cauchy);
+    testing_boiler!(location: f64, scale: f64; Cauchy; StatsError);
 
     #[test]
     fn test_create() {

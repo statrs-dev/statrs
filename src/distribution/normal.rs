@@ -334,12 +334,11 @@ impl std::default::Default for Normal {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use crate::distribution::{ContinuousCDF, Continuous, Normal};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::statistics::*;
     use crate::testing_boiler;
 
-    testing_boiler!(mean: f64, std_dev: f64; Normal);
+    testing_boiler!(mean: f64, std_dev: f64; Normal; StatsError);
 
     #[test]
     fn test_create() {
