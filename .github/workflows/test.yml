@@ -20,11 +20,8 @@ jobs:
         with:
           components: clippy
 
-      - name: Run cargo clippy
+      - name: Run cargo clippy (default features)
         run: cargo clippy --all-targets
-
-      - name: Run cargo clippy without default features
-        run: cargo clippy --no-default-features --all-targets
 
   fmt:
     runs-on: ubuntu-latest
@@ -65,3 +62,15 @@ jobs:
       - name: Test default features
         run: cargo test
 
+  features:
+    needs: [clippy, fmt]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v2
+      - name: Check all possible feature sets
+        run: cargo hack check --feature-powerset --no-dev-deps
