@@ -150,6 +150,37 @@ where
             -gamma::ln_gamma(sum) + (sum - self.alpha.len() as f64) * gamma::digamma(sum) - num;
         Some(entr)
     }
+
+    /// Consumes the [`Dirichlet`] and returns the `alpha` parameter
+    /// originally passed to [`new_from_nalgebra`][Self::new_from_nalgebra]
+    /// to construct it.
+    ///
+    /// This can be used to avoid allocations when creating the same
+    /// distribution multiple times.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Dirichlet;
+    /// use nalgebra::dvector;
+    ///
+    /// let alpha = dvector![0.1, 0.3, 0.5, 0.8];
+    /// let dir_1 = Dirichlet::new_from_nalgebra(alpha).unwrap();
+    /// assert_eq!(dir_1.entropy(), Some(-17.46469081094079));
+    ///
+    /// let mut alpha = dir_1.into_params();
+    /// alpha[1] = 0.2;
+    /// alpha[2] = 0.3;
+    /// alpha[3] = 0.4;
+    ///
+    /// let dir_2 = Dirichlet::new_from_nalgebra(alpha).unwrap();
+    /// assert_eq!(dir_2.entropy(), Some(-21.53881433791513));
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn into_params(self) -> OVector<f64, D> {
+        self.alpha
+    }
 }
 
 impl<D> std::fmt::Display for Dirichlet<D>

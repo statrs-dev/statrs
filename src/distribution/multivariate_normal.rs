@@ -188,6 +188,37 @@ where
                 .ln(),
         )
     }
+
+    /// Consumes the [`MultivariateNormal`] and returns the parameters
+    /// originally passed to [`new_from_nalgebra`][Self::new_from_nalgebra]
+    /// to construct it.
+    ///
+    /// This can be used to avoid allocations when creating the same
+    /// distribution multiple times.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::MultivariateNormal;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let mean = dvector![0.0, 0.0];
+    /// let cov = dmatrix![1.0, 0.0; 0.0, 1.0];
+    /// let mvn_1 = MultivariateNormal::new_from_nalgebra(mean, cov).unwrap();
+    /// assert_eq!(mvn_1.entropy(), Some(2.8378770664093453));
+    ///
+    /// let (mean, mut cov) = mvn_1.into_params();
+    /// cov[1] = 0.5;
+    /// cov[2] = 0.5;
+    ///
+    /// let mvn_2 = MultivariateNormal::new_from_nalgebra(mean, cov).unwrap();
+    /// assert_eq!(mvn_2.entropy(), Some(2.694036030183455));
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn into_params(self) -> (OVector<f64, D>, OMatrix<f64, D, D>) {
+        (self.mu, self.cov)
+    }
 }
 
 impl<D> std::fmt::Display for MultivariateNormal<D>

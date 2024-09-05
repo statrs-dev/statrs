@@ -145,6 +145,40 @@ where
     pub fn ln_pdf_const(&self) -> f64 {
         self.ln_pdf_const
     }
+
+    /// Consumes the [`MultivariateStudent`] and returns the parameters
+    /// originally passed to [`new_from_nalgebra`][Self::new_from_nalgebra]
+    /// to construct it.
+    ///
+    /// This can be used to avoid allocations when creating the same
+    /// distribution multiple times.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::MultivariateStudent;
+    /// use statrs::distribution::Continuous;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let location = dvector![0.0, 0.0];
+    /// let scale = dmatrix![1.0, 0.0; 0.0, 1.0];
+    /// let freedom = 4.0;
+    /// let x = dvector![1.0, 2.0];
+    ///
+    /// let mvs_1 = MultivariateStudent::new_from_nalgebra(location, scale, freedom).unwrap();
+    /// assert_eq!(mvs_1.pdf(&x), 0.01397245042233379);
+    ///
+    /// let (location, scale, _) = mvs_1.into_params();
+    /// let freedom = 2.0;
+    ///
+    /// let mvs_2 = MultivariateStudent::new_from_nalgebra(location, scale, freedom).unwrap();
+    /// assert_eq!(mvs_2.pdf(&x), 0.012992240252399626);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn into_params(self) -> (OVector<f64, D>, OMatrix<f64, D, D>, f64) {
+        (self.location, self.scale, self.freedom)
+    }
 }
 
 impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for MultivariateStudent<D>
