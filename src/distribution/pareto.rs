@@ -36,6 +36,7 @@ pub enum ParetoError {
 }
 
 impl std::fmt::Display for ParetoError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             ParetoError::ScaleInvalid => write!(f, "Scale is NaN, zero, or less than zero"),

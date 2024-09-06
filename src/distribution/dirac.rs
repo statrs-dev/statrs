@@ -26,6 +26,7 @@ pub enum DiracError {
 }
 
 impl std::fmt::Display for DiracError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             DiracError::ValueInvalid => write!(f, "Value v is NaN"),

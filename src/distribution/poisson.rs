@@ -32,6 +32,7 @@ pub enum PoissonError {
 }
 
 impl std::fmt::Display for PoissonError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             PoissonError::LambdaInvalid => write!(f, "Lambda is NaN, zero or less than zero"),

@@ -105,6 +105,7 @@ pub enum FishersExactTestError {
 }
 
 impl std::fmt::Display for FishersExactTestError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             FishersExactTestError::TableInvalidForHypergeometric(hg_err) => {

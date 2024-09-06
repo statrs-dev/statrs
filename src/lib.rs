@@ -48,6 +48,7 @@
 #![allow(clippy::excessive_precision)]
 #![allow(clippy::many_single_char_names)]
 #![forbid(unsafe_code)]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 #[macro_use]
 extern crate approx;

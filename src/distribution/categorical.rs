@@ -41,6 +41,7 @@ pub enum CategoricalError {
 }
 
 impl std::fmt::Display for CategoricalError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             CategoricalError::ProbMassEmpty => write!(f, "Probability mass is empty"),

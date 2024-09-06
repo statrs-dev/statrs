@@ -33,6 +33,7 @@ pub enum ExpError {
 }
 
 impl std::fmt::Display for ExpError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             ExpError::RateInvalid => write!(f, "Rate is NaN, zero or less than zero"),

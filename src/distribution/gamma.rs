@@ -39,6 +39,7 @@ pub enum GammaError {
 }
 
 impl std::fmt::Display for GammaError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             GammaError::ShapeInvalid => write!(f, "Shape is NaN zero, or less than zero."),

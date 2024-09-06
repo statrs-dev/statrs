@@ -40,6 +40,7 @@ pub enum StudentsTError {
 }
 
 impl std::fmt::Display for StudentsTError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             StudentsTError::LocationInvalid => write!(f, "Location is NaN"),

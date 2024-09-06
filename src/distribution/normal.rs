@@ -36,6 +36,7 @@ pub enum NormalError {
 }
 
 impl std::fmt::Display for NormalError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             NormalError::MeanInvalid => write!(f, "Mean is NaN"),

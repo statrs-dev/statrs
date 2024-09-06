@@ -37,6 +37,7 @@ pub enum FisherSnedecorError {
 }
 
 impl std::fmt::Display for FisherSnedecorError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             FisherSnedecorError::Freedom1Invalid => {

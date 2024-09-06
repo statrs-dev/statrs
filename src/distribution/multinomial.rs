@@ -47,6 +47,7 @@ pub enum MultinomialError {
 }
 
 impl std::fmt::Display for MultinomialError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             MultinomialError::NotEnoughProbabilities => write!(f, "Fewer than two probabilities"),

@@ -40,6 +40,7 @@ pub enum UniformError {
 }
 
 impl std::fmt::Display for UniformError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             UniformError::MinInvalid => write!(f, "Minimum is NaN or infinite"),

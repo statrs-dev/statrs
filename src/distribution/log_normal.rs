@@ -38,6 +38,7 @@ pub enum LogNormalError {
 }
 
 impl std::fmt::Display for LogNormalError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             LogNormalError::LocationInvalid => write!(f, "Location is NaN"),
