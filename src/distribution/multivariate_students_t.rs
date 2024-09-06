@@ -346,14 +346,9 @@ where
     /// of the scale matrix, and `k` is the dimension of the distribution.
     fn pdf(&self, x: &'a OVector<f64, D>) -> f64 {
         if self.freedom.is_infinite() {
-            use super::multivariate_normal::density_normalization_and_exponential;
-            let (pdf_const, exp_arg) = density_normalization_and_exponential(
-                &self.location,
-                &self.scale,
-                &self.precision,
-                x,
-            )
-            .unwrap();
+            use super::multivariate_normal as mvn;
+            let pdf_const = mvn::pdf_const_unchecked(&self.location, &self.scale);
+            let exp_arg = mvn::pdf_exponent_unchecked(&self.location, &self.precision, x);
             return pdf_const * exp_arg.exp();
         }
 
@@ -367,14 +362,9 @@ where
     /// student distribution at `x`. Equivalent to pdf(x).ln().
     fn ln_pdf(&self, x: &'a OVector<f64, D>) -> f64 {
         if self.freedom.is_infinite() {
-            use super::multivariate_normal::density_normalization_and_exponential;
-            let (pdf_const, exp_arg) = density_normalization_and_exponential(
-                &self.location,
-                &self.scale,
-                &self.precision,
-                x,
-            )
-            .unwrap();
+            use super::multivariate_normal as mvn;
+            let pdf_const = mvn::pdf_const_unchecked(&self.location, &self.scale);
+            let exp_arg = mvn::pdf_exponent_unchecked(&self.location, &self.precision, x);
             return pdf_const.ln() + exp_arg;
         }
 
