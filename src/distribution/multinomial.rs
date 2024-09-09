@@ -500,6 +500,12 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_error_is_sync_send() {
+        fn assert_sync_send<T: Sync + Send>() {}
+        assert_sync_send::<MultinomialError>();
+    }
+
     //     #[test]
     //     #[should_panic]
     //     fn test_pmf_x_wrong_length() {

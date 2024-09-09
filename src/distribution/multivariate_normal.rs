@@ -389,6 +389,8 @@ mod tests  {
         statistics::{Max, MeanN, Min, Mode, VarianceN},
     };
 
+    use super::MultivariateNormalError;
+
     fn try_create<D>(mean: OVector<f64, D>, covariance: OMatrix<f64, D, D>) -> MultivariateNormal<D>
     where
         D: DimMin<D, Output = D>,
@@ -702,5 +704,11 @@ mod tests  {
     fn test_pdf_mismatched_arg_size() {
         let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.,]).unwrap();
         mvn.pdf(&vec![1.].into()); // x.size != mu.size
+    }
+
+    #[test]
+    fn test_error_is_sync_send() {
+        fn assert_sync_send<T: Sync + Send>() {}
+        assert_sync_send::<MultivariateNormalError>();
     }
 }

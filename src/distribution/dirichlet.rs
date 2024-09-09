@@ -369,14 +369,11 @@ where
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use std::fmt::{Debug, Display};
 
     use nalgebra::{dmatrix, dvector, vector, DimMin, OVector};
-
-    use crate::{
-        distribution::{Continuous, Dirichlet},
-        statistics::{MeanN, VarianceN},
-    };
 
     fn try_create<D>(alpha: OVector<f64, D>) -> Dirichlet<D>
     where
@@ -579,5 +576,11 @@ mod tests {
     fn test_ln_pdf_bad_input_sum() {
         let n = try_create(vector![0.1, 0.3, 0.5, 0.8]);
         n.ln_pdf(&vector![0.5, 0.25, 0.8, 0.9]);
+    }
+
+    #[test]
+    fn test_error_is_sync_send() {
+        fn assert_sync_send<T: Sync + Send>() {}
+        assert_sync_send::<DirichletError>();
     }
 }

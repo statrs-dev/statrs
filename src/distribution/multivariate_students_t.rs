@@ -397,6 +397,8 @@ mod tests  {
         statistics::{Max, MeanN, Min, Mode, VarianceN},
     };
 
+    use super::MultivariateStudentError;
+
     fn try_create(location: Vec<f64>, scale: Vec<f64>, freedom: f64) -> MultivariateStudent<Dyn>
     {
         let mvs = MultivariateStudent::new(location, scale, freedom);
@@ -614,5 +616,9 @@ mod tests  {
         assert_eq!(mvs.scale_chol_decomp(), &OMatrix::<f64, Dyn, Dyn>::identity(2, 2));
     }
         
-    
+    #[test]
+    fn test_error_is_sync_send() {
+        fn assert_sync_send<T: Sync + Send>() {}
+        assert_sync_send::<MultivariateStudentError>();
+    }
 }
