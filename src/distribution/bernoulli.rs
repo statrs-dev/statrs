@@ -79,6 +79,7 @@ impl Bernoulli {
 }
 
 impl std::fmt::Display for Bernoulli {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Bernoulli({})", self.p())
     }

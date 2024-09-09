@@ -95,6 +95,7 @@ impl ChiSquared {
 }
 
 impl std::fmt::Display for ChiSquared {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "χ^2_{}", self.freedom)
     }
