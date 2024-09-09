@@ -58,6 +58,7 @@ mod exponential;
 mod fisher_snedecor;
 mod gamma;
 mod geometric;
+mod gumbel;
 mod hypergeometric;
 #[macro_use]
 mod internal;
