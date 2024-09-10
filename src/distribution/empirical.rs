@@ -153,17 +153,16 @@ impl Empirical {
 
 impl std::fmt::Display for Empirical {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some((&NonNan(x), _)) = self.data.first_key_value() {
+        let mut enumerated_values = self
+            .data
+            .iter()
+            .flat_map(|(&NonNan(x), &count)| std::iter::repeat(x).take(count as usize));
+
+        if let Some(x) = enumerated_values.next() {
             write!(f, "Empirical([{:.3e}", x)?;
         } else {
             return write!(f, "Empirical(∅)");
         }
-
-        let mut enumerated_values = self
-            .data
-            .iter()
-            .flat_map(|(&NonNan(x), &count)| std::iter::repeat(x).take(count as usize))
-            .skip(1);
 
         for val in enumerated_values.by_ref().take(4) {
             write!(f, ", {:.3e}", val)?;
