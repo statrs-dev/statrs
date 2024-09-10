@@ -347,8 +347,8 @@ where
     fn pdf(&self, x: &'a OVector<f64, D>) -> f64 {
         if self.freedom.is_infinite() {
             use super::multivariate_normal as mvn;
-            let pdf_const = mvn::pdf_const_unchecked(&self.location, &self.scale);
-            let exp_arg = mvn::pdf_exponent_unchecked(&self.location, &self.precision, x);
+            let pdf_const = mvn::pdf_const(&self.location, &self.scale);
+            let exp_arg = mvn::pdf_exponent(&self.location, &self.precision, x);
             return pdf_const * exp_arg.exp();
         }
 
@@ -363,8 +363,8 @@ where
     fn ln_pdf(&self, x: &'a OVector<f64, D>) -> f64 {
         if self.freedom.is_infinite() {
             use super::multivariate_normal as mvn;
-            let pdf_const = mvn::pdf_const_unchecked(&self.location, &self.scale);
-            let exp_arg = mvn::pdf_exponent_unchecked(&self.location, &self.precision, x);
+            let pdf_const = mvn::pdf_const(&self.location, &self.scale);
+            let exp_arg = mvn::pdf_exponent(&self.location, &self.precision, x);
             return pdf_const.ln() + exp_arg;
         }
 

@@ -9,7 +9,7 @@ use std::f64::consts::{E, PI};
 /// # Panics
 /// will panic on dimension mismatch
 #[inline]
-pub(super) fn pdf_exponent_unchecked<D>(
+pub(super) fn pdf_exponent<D>(
     mu: &OVector<f64, D>,
     precision: &OMatrix<f64, D, D>,
     x: &OVector<f64, D>,
@@ -23,11 +23,11 @@ where
     -0.5 * (precision * &dv).dot(&dv)
 }
 
-/// computes the argument of the normalization term in the normal distribution
+/// computes normalization term in the normal distribution
 /// # Panics
 /// will panic on dimension mismatch
 #[inline]
-pub(super) fn pdf_const_unchecked<D>(mu: &OVector<f64, D>, cov: &OMatrix<f64, D, D>) -> f64
+pub(super) fn pdf_const<D>(mu: &OVector<f64, D>, cov: &OMatrix<f64, D, D>) -> f64
 where
     D: DimMin<D, Output = D>,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>
@@ -165,7 +165,7 @@ where
             cov_chol @ Some(_) => Ok(MultivariateNormal {
                 precision: cov_chol.as_ref().map(|ll| ll.inverse()),
                 cov_chol,
-                pdf_const: pdf_const_unchecked(&mean, &cov),
+                pdf_const: pdf_const(&mean, &cov),
                 mu: mean,
                 cov,
             }),
@@ -400,13 +400,13 @@ where
     /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
     /// of the covariance matrix, and `k` is the dimension of the distribution
     fn pdf(&self, x: &OVector<f64, D>) -> f64 {
-        self.pdf_const * pdf_exponent_unchecked(&self.mu, self.precision.as_ref().unwrap(), x).exp()
+        self.pdf_const * pdf_exponent(&self.mu, self.precision.as_ref().unwrap(), x).exp()
     }
 
     /// Calculates the log probability density function for the multivariate
     /// normal distribution at `x`. Equivalent to pdf(x).ln().
     fn ln_pdf(&self, x: &OVector<f64, D>) -> f64 {
-        self.pdf_const.ln() + pdf_exponent_unchecked(&self.mu, self.precision.as_ref().unwrap(), x)
+        self.pdf_const.ln() + pdf_exponent(&self.mu, self.precision.as_ref().unwrap(), x)
     }
 }
 
