@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        toolchain: [nightly, nightly-2024-08-29]
+        toolchain: [nightly, nightly-2024-09-01]
 
     name: Coverage
     runs-on: ubuntu-latest
