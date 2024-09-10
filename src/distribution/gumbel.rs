@@ -1,6 +1,10 @@
 use core::f64;
+use std::f64::consts::PI;
 
-use crate::statistics::{Max, Min};
+use crate::{
+    consts::EULER_MASCHERONI,
+    statistics::{Distribution, Max, Min},
+};
 
 use super::ContinuousCDF;
 
@@ -64,7 +68,7 @@ impl std::fmt::Display for Gumbel {
 impl ::rand::distributions::Distribution<f64> for Gumbel {
     fn sample<R: rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
         // Check: Quantile formula: mu - beta*ln(-ln(p))
-        self.location - self.scale * (((-(r.gen::<f64>())).ln()).ln())
+        self.location - self.scale * ((-(r.gen::<f64>())).ln()).ln()
     }
 }
 
@@ -137,5 +141,63 @@ impl Max<f64> for Gumbel {
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
+    }
+}
+
+impl Distribution<f64> for Gumbel {
+    /// Returns the entropy of the gumbel distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// ln(β) + γ + 1
+    /// ```
+    ///
+    /// where `β` is the scale
+    /// and `γ` is the Euler-Mascheroni constant (approx 0.57721)
+    fn entropy(&self) -> Option<f64> {
+        Some(1.0 + EULER_MASCHERONI + (self.scale).ln())
+    }
+
+    /// Returns the mean of the gumbel distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// μ + γβ
+    /// ```
+    ///
+    /// where `μ` is the location, `β` is the scale
+    /// and `γ` is the Euler-Mascheroni constant (approx 0.57721)
+    fn mean(&self) -> Option<f64> {
+        Some(self.location + (EULER_MASCHERONI * self.scale))
+    }
+
+    /// Returns the skewness of the gumbel distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// 12 * sqrt(6) * ζ(3) / π^3 ≈ 1.13955
+    /// ```
+    /// ζ(3) is the Riemann zeta function evaluated at 3 (approx 1.20206)
+    /// π is the constant PI (approx 3.14159)
+    /// This approximately evaluates to 1.13955\
+    /// Ref: https://www.statsref.com/HTML/gumbel_extreme_value_distribut.html
+    fn skewness(&self) -> Option<f64> {
+        Some(1.13955)
+    }
+
+    /// Returns the variance of the gumbel distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (π^2 / 6) * β^2
+    /// ```
+    ///
+    /// where `β` is the scale and `π` is the constant PI (approx 3.14159)
+    fn variance(&self) -> Option<f64> {
+        Some(((PI * PI) / 6.0) * self.scale * self.scale)
     }
 }
