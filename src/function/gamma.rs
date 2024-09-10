@@ -2,10 +2,31 @@
 //! related functions
 
 use crate::consts;
-use crate::error::StatsError;
 use crate::prec;
-use crate::Result;
 use std::f64;
+
+/// Represents the errors that can occur when computing any of the incomplete
+/// gamma functions.
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum GammaFuncError {
+    /// `a` is infinite, zero or less than zero.
+    AInvalid,
+
+    /// `x` is infinite, zero or less than zero.
+    XInvalid,
+}
+
+impl std::fmt::Display for GammaFuncError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            GammaFuncError::AInvalid => write!(f, "a is infinite, zero or less than zero"),
+            GammaFuncError::XInvalid => write!(f, "x is infinite, zero or less than zero"),
+        }
+    }
+}
+
+impl std::error::Error for GammaFuncError {}
 
 /// Auxiliary variable when evaluating the `gamma_ln` function
 const GAMMA_R: f64 = 10.900511;
@@ -104,7 +125,7 @@ pub fn gamma_ui(a: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// if `a` or `x` are not in `(0, +inf)`
-pub fn checked_gamma_ui(a: f64, x: f64) -> Result<f64> {
+pub fn checked_gamma_ui(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     checked_gamma_ur(a, x).map(|x| x * gamma(a))
 }
 
@@ -130,7 +151,7 @@ pub fn gamma_li(a: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// if `a` or `x` are not in `(0, +inf)`
-pub fn checked_gamma_li(a: f64, x: f64) -> Result<f64> {
+pub fn checked_gamma_li(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     checked_gamma_lr(a, x).map(|x| x * gamma(a))
 }
 
@@ -162,15 +183,15 @@ pub fn gamma_ur(a: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// if `a` or `x` are not in `(0, +inf)`
-pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64> {
+pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     if a.is_nan() || x.is_nan() {
         return Ok(f64::NAN);
     }
     if a <= 0.0 || a == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("a", 0.0, f64::INFINITY));
+        return Err(GammaFuncError::AInvalid);
     }
     if x <= 0.0 || x == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("x", 0.0, f64::INFINITY));
+        return Err(GammaFuncError::XInvalid);
     }
 
     let eps = 0.000000000000001;
@@ -256,15 +277,15 @@ pub fn gamma_lr(a: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// if `a` or `x` are not in `(0, +inf)`
-pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64> {
+pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     if a.is_nan() || x.is_nan() {
         return Ok(f64::NAN);
     }
     if a <= 0.0 || a == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("a", 0.0, f64::INFINITY));
+        return Err(GammaFuncError::AInvalid);
     }
     if x <= 0.0 || x == f64::INFINITY {
-        return Err(StatsError::ArgIntervalExcl("x", 0.0, f64::INFINITY));
+        return Err(GammaFuncError::XInvalid);
     }
 
     let eps = 0.000000000000001;
@@ -423,7 +444,9 @@ fn signum(x: f64) -> f64 {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use std::f64::{self, consts};
+    use super::*;
+
+    use std::f64::consts;
 
     #[test]
     fn test_gamma() {
@@ -803,5 +826,11 @@ mod tests {
         assert_almost_eq!(super::inv_digamma(1.5061176684318004727268212432509309022911739973934097), 5.0, 1e-14);
         assert_almost_eq!(super::inv_digamma(1.6110931485817511237336268416044190359814435699427405), 5.5, 1e-14);
         assert_almost_eq!(super::inv_digamma(2.2622143570941481235561593642219403924532310597356171), 10.1, 1e-13);
+    }
+
+    #[test]
+    fn test_error_is_sync_send() {
+        fn assert_sync_send<T: Sync + Send>() {}
+        assert_sync_send::<GammaFuncError>();
     }
 }
