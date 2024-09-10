@@ -1,4 +1,3 @@
-use crate::error::StatsError;
 use crate::statistics::*;
 use std::borrow::Borrow;
 use std::f64;
@@ -175,7 +174,7 @@ where
         for x in self {
             let borrow = *x.borrow();
             let borrow2 = match iter.next() {
-                None => panic!("{}", StatsError::ContainersMustBeSameLength),
+                None => panic!("Iterators must have the same length"),
                 Some(x) => *x.borrow(),
             };
             let old_mean2 = mean2;
@@ -185,7 +184,7 @@ where
             comoment += (borrow - mean1) * (borrow2 - old_mean2);
         }
         if iter.next().is_some() {
-            panic!("{}", StatsError::ContainersMustBeSameLength);
+            panic!("Iterators must have the same length");
         }
 
         if n > 1.0 {
@@ -205,7 +204,7 @@ where
         for x in self {
             let borrow = *x.borrow();
             let borrow2 = match iter.next() {
-                None => panic!("{}", StatsError::ContainersMustBeSameLength),
+                None => panic!("Iterators must have the same length"),
                 Some(x) => *x.borrow(),
             };
             let old_mean2 = mean2;
@@ -215,7 +214,7 @@ where
             comoment += (borrow - mean1) * (borrow2 - old_mean2);
         }
         if iter.next().is_some() {
-            panic!("{}", StatsError::ContainersMustBeSameLength)
+            panic!("Iterators must have the same length")
         }
         if n > 0.0 {
             comoment / n
