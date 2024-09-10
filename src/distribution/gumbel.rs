@@ -3,7 +3,7 @@ use std::f64::consts::PI;
 
 use crate::{
     consts::EULER_MASCHERONI,
-    statistics::{Distribution, Max, MeanN, Median, Min, Mode},
+    statistics::{Distribution, Max, Median, Min, Mode},
 };
 
 use super::{Continuous, ContinuousCDF};
@@ -43,7 +43,7 @@ impl Gumbel {
             return Err(GumbelError::LocationInvalid);
         }
 
-        if scale.is_nan() && scale <= 0.0 {
+        if scale.is_nan() || scale <= 0.0 {
             return Err(GumbelError::ScaleInvalid);
         }
 
@@ -276,5 +276,116 @@ impl Continuous<f64, f64> for Gumbel {
             * (-(x - self.location) / (self.scale)).exp()
             * (-((-(x - self.location) / self.scale).exp())).exp())
         .ln()
+    }
+}
+
+#[rustfmt::skip]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::distribution::internal::*;
+    use crate::testing_boiler;
+
+    testing_boiler!(location: f64, scale: f64; Gumbel; GumbelError);
+
+    #[test]
+    fn test_create() {
+        create_ok(0.0, 0.1);
+        create_ok(0.0, 1.0);
+        create_ok(0.0, 10.0);
+        create_ok(10.0, 11.0);
+        create_ok(-5.0, 100.0);
+        create_ok(0.0, f64::INFINITY);
+    }
+
+    #[test]
+    fn test_bad_create() {
+        let invalid = [
+            (f64::NAN, 1.0, GumbelError::LocationInvalid),
+            (1.0, f64::NAN, GumbelError::ScaleInvalid),
+            (f64::NAN, f64::NAN, GumbelError::LocationInvalid),
+            (1.0, 0.0, GumbelError::ScaleInvalid),
+            (0.0, f64::NEG_INFINITY, GumbelError::ScaleInvalid)
+        ];
+
+        for (location, scale, err) in invalid {
+            test_create_err(location, scale, err);
+        }
+    }
+
+    #[test]
+    fn test_min_max() {
+        let min = |x: Gumbel| x.min();
+        let max = |x:Gumbel| x.max();
+
+        test_exact(0.0, 1.0, f64::NEG_INFINITY, min);
+        test_exact(0.0, 1.0, f64::INFINITY, max);
+    }
+
+    #[test]
+    fn test_entropy() {
+        let entropy = |x: Gumbel| x.entropy().unwrap();
+        test_exact(0.0, 2.0, 2.270362845461478, entropy);
+        test_exact(0.1, 4.0, 2.9635100260214235, entropy);
+        test_exact(1.0, 10.0, 3.8798007578955787, entropy);
+        test_exact(10.0, 11.0, 3.9751109376999034, entropy); 
+    }
+
+    #[test]
+    fn test_mean() {
+        let mean = |x: Gumbel| x.mean().unwrap();
+        test_exact(0.0, 2.0, 1.1544313298030658, mean);
+        test_exact(0.1, 4.0, 2.4088626596061316, mean);
+        test_exact(1.0, 10.0, 6.772156649015328, mean);
+        test_exact(10.0, 11.0, 16.34937231391686, mean);
+        test_exact(10.0, f64::INFINITY, f64::INFINITY, mean);
+    }
+
+    #[test]
+    fn test_skewness() {
+        let skewness = |x: Gumbel| x.skewness().unwrap();
+        test_exact(0.0, 2.0, 1.13955, skewness);
+        test_exact(0.1, 4.0, 1.13955, skewness);
+        test_exact(1.0, 10.0, 1.13955, skewness);
+        test_exact(10.0, 11.0, 1.13955, skewness);
+        test_exact(10.0, f64::INFINITY, 1.13955, skewness);
+    }
+
+    #[test]
+    fn test_variance() {
+        let variance = |x: Gumbel| x.variance().unwrap();
+        test_exact(0.0, 2.0, 6.579736267392906, variance);
+        test_exact(0.1, 4.0, 26.318945069571624, variance);
+        test_exact(1.0, 10.0, 164.49340668482265, variance);
+        test_exact(10.0, 11.0, 199.03702208863538, variance);
+    }
+
+    #[test]
+    fn test_std_dev() {
+        let std_dev = |x: Gumbel| x.std_dev().unwrap();
+        test_exact(0.0, 2.0, 2.565099660323728, std_dev);
+        test_exact(0.1, 4.0, 5.130199320647456, std_dev);
+        test_exact(1.0, 10.0, 12.82549830161864, std_dev);
+        test_exact(10.0, 11.0, 14.108048131780505, std_dev);
+    }
+
+    #[test]
+    fn test_median() {
+        let median = |x: Gumbel| x.median();
+        test_exact(0.0, 2.0, 0.7330258411633287, median);
+        test_exact(0.1, 4.0, 1.5660516823266574, median);
+        test_exact(1.0, 10.0, 4.665129205816644, median);
+        test_exact(10.0, 11.0, 14.031642126398307, median);
+        test_exact(10.0, f64::INFINITY, f64::INFINITY, median);
+    }
+
+    #[test]
+    fn test_mode() {
+        let mode = |x: Gumbel| x.mode();
+        test_exact(0.0, 2.0, 0.0, mode);
+        test_exact(0.1, 4.0, 0.1, mode);
+        test_exact(1.0, 10.0, 1.0, mode);
+        test_exact(10.0, 11.0, 10.0, mode);
+        test_exact(10.0, f64::INFINITY, 10.0, mode);
     }
 }
