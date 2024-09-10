@@ -1,9 +1,8 @@
 //! Defines common interfaces for interacting with statistical distributions
 //! and provides
 //! concrete implementations for a variety of distributions.
-use super::statistics::{Max, Min};
-use ::num_traits::{Float, Num};
-use num_traits::NumAssignOps;
+use crate::statistics::{Max, Min};
+use num_traits::{Float, Num, NumAssignOps};
 
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::{Beta, BetaError};

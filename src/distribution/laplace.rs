@@ -553,8 +553,8 @@ mod tests {
     #[cfg(feature = "rand")]
     #[test]
     fn test_sample() {
-        use ::rand::distributions::Distribution;
-        use ::rand::thread_rng;
+        use rand::distributions::Distribution;
+        use rand::thread_rng;
 
         let l = create_ok(0.1, 0.5);
         l.sample(&mut thread_rng());
@@ -563,9 +563,9 @@ mod tests {
     #[cfg(feature = "rand")]
     #[test]
     fn test_sample_distribution() {
-        use ::rand::distributions::Distribution;
-        use ::rand::rngs::StdRng;
-        use ::rand::SeedableRng;
+        use rand::distributions::Distribution;
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
 
         // sanity check sampling
         let location = 0.0;
