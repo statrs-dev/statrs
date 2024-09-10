@@ -3,7 +3,7 @@ use std::f64::consts::PI;
 
 use crate::{
     consts::EULER_MASCHERONI,
-    statistics::{Distribution, Max, Min},
+    statistics::{Distribution, Max, Median, Min, Mode},
 };
 
 use super::ContinuousCDF;
@@ -182,8 +182,7 @@ impl Distribution<f64> for Gumbel {
     /// ```
     /// ζ(3) is the Riemann zeta function evaluated at 3 (approx 1.20206)
     /// π is the constant PI (approx 3.14159)
-    /// This approximately evaluates to 1.13955\
-    /// Ref: https://www.statsref.com/HTML/gumbel_extreme_value_distribut.html
+    /// This approximately evaluates to 1.13955
     fn skewness(&self) -> Option<f64> {
         Some(1.13955)
     }
@@ -199,5 +198,48 @@ impl Distribution<f64> for Gumbel {
     /// where `β` is the scale and `π` is the constant PI (approx 3.14159)
     fn variance(&self) -> Option<f64> {
         Some(((PI * PI) / 6.0) * self.scale * self.scale)
+    }
+
+    /// Returns the standard deviation of the gumbel distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// β * π / sqrt(6)
+    /// ```
+    ///
+    /// where `β` is the scale and `π` is the constant PI (approx 3.14159)
+    fn std_dev(&self) -> Option<f64> {
+        Some(self.scale * PI / 6.0_f64.sqrt())
+    }
+}
+
+impl Median<f64> for Gumbel {
+    /// Returns the median of the gumbel distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// μ - β ln(ln(2))
+    /// ```
+    ///
+    /// where `μ` is the location and `β` is the scale parameter
+    fn median(&self) -> f64 {
+        self.location - self.scale * (((2.0_f64).ln()).ln())
+    }
+}
+
+impl Mode<f64> for Gumbel {
+    /// Returns the mode of the gumbel distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// μ
+    /// ```
+    ///
+    /// where `μ` is the location
+    fn mode(&self) -> f64 {
+        self.location
     }
 }
