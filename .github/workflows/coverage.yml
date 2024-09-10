@@ -7,6 +7,11 @@ on:
     branches: [ master ]
 jobs:
   coverage:
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        toolchain: [nightly, nightly-2024-08-29]
+
     name: Coverage
     runs-on: ubuntu-latest
     env:
@@ -14,8 +19,9 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ matrix.toolchain }}
           components: llvm-tools-preview
 
       - uses: taiki-e/install-action@v2
