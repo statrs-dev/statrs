@@ -3,10 +3,10 @@ use std::f64::consts::PI;
 
 use crate::{
     consts::EULER_MASCHERONI,
-    statistics::{Distribution, Max, Median, Min, Mode},
+    statistics::{Distribution, Max, MeanN, Median, Min, Mode},
 };
 
-use super::ContinuousCDF;
+use super::{Continuous, ContinuousCDF};
 
 /// https://en.wikipedia.org/wiki/Gumbel_distribution
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -241,5 +241,40 @@ impl Mode<f64> for Gumbel {
     /// where `μ` is the location
     fn mode(&self) -> f64 {
         self.location
+    }
+}
+
+impl Continuous<f64, f64> for Gumbel {
+    /// Calculates the probability density function for the gumbel
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (1/β) * exp(-(x - μ)/β) * exp(-exp(-(x - μ)/β))
+    /// ```
+    ///
+    /// where `μ` is the location, `β` is the scale
+    fn pdf(&self, x: f64) -> f64 {
+        (1.0_f64 / self.scale)
+            * (-(x - self.location) / (self.scale)).exp()
+            * (-((-(x - self.location) / self.scale).exp())).exp()
+    }
+
+    /// Calculates the log probability density function for the gumbel
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// ln((1/β) * exp(-(x - μ)/β) * exp(-exp(-(x - μ)/β)))
+    /// ```
+    ///
+    /// where `μ` is the location, `β` is the scale
+    fn ln_pdf(&self, x: f64) -> f64 {
+        ((1.0_f64 / self.scale)
+            * (-(x - self.location) / (self.scale)).exp()
+            * (-((-(x - self.location) / self.scale).exp())).exp())
+        .ln()
     }
 }
