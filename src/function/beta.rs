@@ -1,11 +1,36 @@
 //! Provides the [beta](https://en.wikipedia.org/wiki/Beta_function) and related
 //! function
 
-use crate::error::StatsError;
 use crate::function::gamma;
 use crate::prec;
-use crate::Result;
 use std::f64;
+
+/// Represents the errors that can occur when computing the natural logarithm
+/// of the beta function or the regularized lower incomplete beta function.
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum BetaFuncError {
+    /// `a` is zero or less than zero.
+    ANotGreaterThanZero,
+
+    /// `b` is zero or less than zero.
+    BNotGreaterThanZero,
+
+    /// `x` is not in `[0, 1]`.
+    XOutOfRange,
+}
+
+impl std::fmt::Display for BetaFuncError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            BetaFuncError::ANotGreaterThanZero => write!(f, "a is zero or less than zero"),
+            BetaFuncError::BNotGreaterThanZero => write!(f, "b is zero or less than zero"),
+            BetaFuncError::XOutOfRange => write!(f, "x is not in [0, 1]"),
+        }
+    }
+}
+
+impl std::error::Error for BetaFuncError {}
 
 /// Computes the natural logarithm
 /// of the beta function
@@ -29,11 +54,11 @@ pub fn ln_beta(a: f64, b: f64) -> f64 {
 /// # Errors
 ///
 /// if `a <= 0.0` or `b <= 0.0`
-pub fn checked_ln_beta(a: f64, b: f64) -> Result<f64> {
+pub fn checked_ln_beta(a: f64, b: f64) -> Result<f64, BetaFuncError> {
     if a <= 0.0 {
-        Err(StatsError::ArgMustBePositive("a"))
+        Err(BetaFuncError::ANotGreaterThanZero)
     } else if b <= 0.0 {
-        Err(StatsError::ArgMustBePositive("b"))
+        Err(BetaFuncError::BNotGreaterThanZero)
     } else {
         Ok(gamma::ln_gamma(a) + gamma::ln_gamma(b) - gamma::ln_gamma(a + b))
     }
@@ -59,7 +84,7 @@ pub fn beta(a: f64, b: f64) -> f64 {
 /// # Errors
 ///
 /// if `a <= 0.0` or `b <= 0.0`
-pub fn checked_beta(a: f64, b: f64) -> Result<f64> {
+pub fn checked_beta(a: f64, b: f64) -> Result<f64, BetaFuncError> {
     checked_ln_beta(a, b).map(|x| x.exp())
 }
 
@@ -83,7 +108,7 @@ pub fn beta_inc(a: f64, b: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
-pub fn checked_beta_inc(a: f64, b: f64, x: f64) -> Result<f64> {
+pub fn checked_beta_inc(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     checked_beta_reg(a, b, x).and_then(|x| checked_beta(a, b).map(|y| x * y))
 }
 
@@ -109,96 +134,100 @@ pub fn beta_reg(a: f64, b: f64, x: f64) -> f64 {
 /// # Errors
 ///
 /// if `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
-pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64> {
+pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     if a <= 0.0 {
-        Err(StatsError::ArgMustBePositive("a"))
-    } else if b <= 0.0 {
-        Err(StatsError::ArgMustBePositive("b"))
-    } else if !(0.0..=1.0).contains(&x) {
-        Err(StatsError::ArgIntervalIncl("x", 0.0, 1.0))
+        return Err(BetaFuncError::ANotGreaterThanZero);
+    }
+
+    if b <= 0.0 {
+        return Err(BetaFuncError::BNotGreaterThanZero);
+    }
+
+    if !(0.0..=1.0).contains(&x) {
+        return Err(BetaFuncError::XOutOfRange);
+    }
+
+    let bt = if x == 0.0 || ulps_eq!(x, 1.0) {
+        0.0
     } else {
-        let bt = if x == 0.0 || ulps_eq!(x, 1.0) {
-            0.0
-        } else {
-            (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
-                + a * x.ln()
-                + b * (1.0 - x).ln())
-            .exp()
-        };
-        let symm_transform = x >= (a + 1.0) / (a + b + 2.0);
-        let eps = prec::F64_PREC;
-        let fpmin = f64::MIN_POSITIVE / eps;
+        (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
+            + a * x.ln()
+            + b * (1.0 - x).ln())
+        .exp()
+    };
+    let symm_transform = x >= (a + 1.0) / (a + b + 2.0);
+    let eps = prec::F64_PREC;
+    let fpmin = f64::MIN_POSITIVE / eps;
 
-        let mut a = a;
-        let mut b = b;
-        let mut x = x;
-        if symm_transform {
-            let swap = a;
-            x = 1.0 - x;
-            a = b;
-            b = swap;
-        }
+    let mut a = a;
+    let mut b = b;
+    let mut x = x;
+    if symm_transform {
+        let swap = a;
+        x = 1.0 - x;
+        a = b;
+        b = swap;
+    }
 
-        let qab = a + b;
-        let qap = a + 1.0;
-        let qam = a - 1.0;
-        let mut c = 1.0;
-        let mut d = 1.0 - qab * x / qap;
+    let qab = a + b;
+    let qap = a + 1.0;
+    let qam = a - 1.0;
+    let mut c = 1.0;
+    let mut d = 1.0 - qab * x / qap;
+
+    if d.abs() < fpmin {
+        d = fpmin;
+    }
+    d = 1.0 / d;
+    let mut h = d;
+
+    for m in 1..141 {
+        let m = f64::from(m);
+        let m2 = m * 2.0;
+        let mut aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+        d = 1.0 + aa * d;
 
         if d.abs() < fpmin {
             d = fpmin;
         }
+
+        c = 1.0 + aa / c;
+        if c.abs() < fpmin {
+            c = fpmin;
+        }
+
         d = 1.0 / d;
-        let mut h = d;
+        h = h * d * c;
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+        d = 1.0 + aa * d;
 
-        for m in 1..141 {
-            let m = f64::from(m);
-            let m2 = m * 2.0;
-            let mut aa = m * (b - m) * x / ((qam + m2) * (a + m2));
-            d = 1.0 + aa * d;
-
-            if d.abs() < fpmin {
-                d = fpmin;
-            }
-
-            c = 1.0 + aa / c;
-            if c.abs() < fpmin {
-                c = fpmin;
-            }
-
-            d = 1.0 / d;
-            h = h * d * c;
-            aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
-            d = 1.0 + aa * d;
-
-            if d.abs() < fpmin {
-                d = fpmin;
-            }
-
-            c = 1.0 + aa / c;
-
-            if c.abs() < fpmin {
-                c = fpmin;
-            }
-
-            d = 1.0 / d;
-            let del = d * c;
-            h *= del;
-
-            if (del - 1.0).abs() <= eps {
-                return if symm_transform {
-                    Ok(1.0 - bt * h / a)
-                } else {
-                    Ok(bt * h / a)
-                };
-            }
+        if d.abs() < fpmin {
+            d = fpmin;
         }
 
-        if symm_transform {
-            Ok(1.0 - bt * h / a)
-        } else {
-            Ok(bt * h / a)
+        c = 1.0 + aa / c;
+
+        if c.abs() < fpmin {
+            c = fpmin;
         }
+
+        d = 1.0 / d;
+        let del = d * c;
+        h *= del;
+
+        if (del - 1.0).abs() <= eps {
+            return if symm_transform {
+                Ok(1.0 - bt * h / a)
+            } else {
+                Ok(bt * h / a)
+            };
+        }
+    }
+
+    if symm_transform {
+        Ok(1.0 - bt * h / a)
+    } else {
+        Ok(bt * h / a)
     }
 }
 
@@ -396,6 +425,8 @@ pub fn inv_beta_reg(mut a: f64, mut b: f64, mut x: f64) -> f64 {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn test_ln_beta() {
         assert_almost_eq!(super::ln_beta(0.5, 0.5), 1.144729885849400174144, 1e-15);
@@ -596,5 +627,11 @@ mod tests {
     #[test]
     fn test_checked_beta_reg_x_gt_1() {
         assert!(super::checked_beta_reg(1.0, 1.0, 2.0).is_err());
+    }
+
+    #[test]
+    fn test_error_is_sync_send() {
+        fn assert_sync_send<T: Sync + Send>() {}
+        assert_sync_send::<BetaFuncError>();
     }
 }
