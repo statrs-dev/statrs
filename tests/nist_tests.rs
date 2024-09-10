@@ -76,7 +76,7 @@ fn nist_strd_univariate_mean() {
     for fname in FILENAMES {
         let filepath = get_path(fname, env::var(NIST_DATA_DIR_ENV).ok().as_deref());
         let case = parse_file(filepath)
-            .unwrap_or_else(|e| panic!("failed parsing file {} with `{:?}`", fname, e));
+            .unwrap_or_else(|e| panic!("failed parsing file {fname} with `{e:?}`"));
         assert_relative_eq!(case.values.mean(), case.certified.mean, epsilon = 1e-12);
     }
 }
@@ -87,7 +87,7 @@ fn nist_strd_univariate_std_dev() {
     for fname in FILENAMES {
         let filepath = get_path(fname, env::var(NIST_DATA_DIR_ENV).ok().as_deref());
         let case = parse_file(filepath)
-            .unwrap_or_else(|e| panic!("failed parsing file {} with `{:?}`", fname, e));
+            .unwrap_or_else(|e| panic!("failed parsing file {fname} with `{e:?}`"));
         assert_relative_eq!(
             case.values.std_dev(),
             case.certified.std_dev,

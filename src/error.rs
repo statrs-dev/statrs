@@ -56,50 +56,50 @@ impl fmt::Display for StatsError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             StatsError::BadParams => write!(f, "Bad distribution parameters"),
-            StatsError::ArgFinite(s) => write!(f, "Argument {} must be finite", s),
-            StatsError::ArgMustBePositive(s) => write!(f, "Argument {} must be positive", s),
-            StatsError::ArgNotNegative(s) => write!(f, "Argument {} must be non-negative", s),
+            StatsError::ArgFinite(s) => write!(f, "Argument {s} must be finite"),
+            StatsError::ArgMustBePositive(s) => write!(f, "Argument {s} must be positive"),
+            StatsError::ArgNotNegative(s) => write!(f, "Argument {s} must be non-negative"),
             StatsError::ArgIntervalIncl(s, min, max) => {
-                write!(f, "Argument {} not within interval [{}, {}]", s, min, max)
+                write!(f, "Argument {s} not within interval [{min}, {max}]")
             }
             StatsError::ArgIntervalExcl(s, min, max) => {
-                write!(f, "Argument {} not within interval ({}, {})", s, min, max)
+                write!(f, "Argument {s} not within interval ({min}, {max})")
             }
             StatsError::ArgIntervalExclMin(s, min, max) => {
-                write!(f, "Argument {} not within interval ({}, {}]", s, min, max)
+                write!(f, "Argument {s} not within interval ({min}, {max}]")
             }
             StatsError::ArgIntervalExclMax(s, min, max) => {
-                write!(f, "Argument {} not within interval [{}, {})", s, min, max)
+                write!(f, "Argument {s} not within interval [{min}, {max})")
             }
-            StatsError::ArgGt(s, val) => write!(f, "Argument {} must be greater than {}", s, val),
+            StatsError::ArgGt(s, val) => write!(f, "Argument {s} must be greater than {val}"),
             StatsError::ArgGtArg(s, val) => {
-                write!(f, "Argument {} must be greater than {}", s, val)
+                write!(f, "Argument {s} must be greater than {val}")
             }
             StatsError::ArgGte(s, val) => {
-                write!(f, "Argument {} must be greater than or equal to {}", s, val)
+                write!(f, "Argument {s} must be greater than or equal to {val}")
             }
             StatsError::ArgGteArg(s, val) => {
-                write!(f, "Argument {} must be greater than or equal to {}", s, val)
+                write!(f, "Argument {s} must be greater than or equal to {val}")
             }
-            StatsError::ArgLt(s, val) => write!(f, "Argument {} must be less than {}", s, val),
-            StatsError::ArgLtArg(s, val) => write!(f, "Argument {} must be less than {}", s, val),
+            StatsError::ArgLt(s, val) => write!(f, "Argument {s} must be less than {val}"),
+            StatsError::ArgLtArg(s, val) => write!(f, "Argument {s} must be less than {val}"),
             StatsError::ArgLte(s, val) => {
-                write!(f, "Argument {} must be less than or equal to {}", s, val)
+                write!(f, "Argument {s} must be less than or equal to {val}")
             }
             StatsError::ArgLteArg(s, val) => {
-                write!(f, "Argument {} must be less than or equal to {}", s, val)
+                write!(f, "Argument {s} must be less than or equal to {val}")
             }
             StatsError::ContainersMustBeSameLength => {
                 write!(f, "Expected containers of same length")
             }
             StatsError::ComputationFailedToConverge => write!(f, "Computation failed to converge"),
             StatsError::ContainerExpectedSum(s, sum) => {
-                write!(f, "Elements in container {} expected to sum to {}", s, sum)
+                write!(f, "Elements in container {s} expected to sum to {sum}")
             }
             StatsError::ContainerExpectedSumVar(s, sum) => {
-                write!(f, "Elements in container {} expected to sum to {}", s, sum)
+                write!(f, "Elements in container {s} expected to sum to {sum}")
             }
-            StatsError::SpecialCase(s) => write!(f, "{}", s),
+            StatsError::SpecialCase(s) => write!(f, "{s}"),
         }
     }
 }

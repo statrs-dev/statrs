@@ -588,9 +588,7 @@ mod tests {
             });
             assert!(
                 result > -tolerance && result < tolerance,
-                "Balance is {} for seed {}",
-                result,
-                seed
+                "Balance is {result} for seed {seed}"
             );
         }
     }

@@ -168,7 +168,7 @@ impl ContinuousCDF<f64, f64> for Uniform {
     /// Finds the value of `x` where `F(p) = x`
     fn inverse_cdf(&self, p: f64) -> f64 {
         if !(0.0..=1.0).contains(&p) {
-            panic!("p must be in [0, 1], was {}", p);
+            panic!("p must be in [0, 1], was {p}");
         } else if p == 0.0 {
             self.min
         } else if p == 1.0 {

@@ -377,8 +377,8 @@ pub mod test {
             let cdf = dist.cdf(x);
             if (sum - cdf).abs() > 1e-3 {
                 println!("Integral of pdf doesn't equal cdf!");
-                println!("Integration from {} by {} to {} = {}", x_min, step, x, sum);
-                println!("cdf = {}", cdf);
+                println!("Integration from {x_min} by {step} to {x} = {sum}");
+                println!("cdf = {cdf}");
                 panic!();
             }
 

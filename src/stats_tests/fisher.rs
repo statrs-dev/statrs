@@ -111,7 +111,7 @@ impl std::fmt::Display for FishersExactTestError {
             FishersExactTestError::TableInvalidForHypergeometric(hg_err) => {
                 writeln!(f, "Cannot create a Hypergeometric distribution from the data in the contingency table.")?;
                 writeln!(f, "Is it in row-major order?")?;
-                write!(f, "Inner error: '{}'", hg_err)
+                write!(f, "Inner error: '{hg_err}'")
             }
         }
     }

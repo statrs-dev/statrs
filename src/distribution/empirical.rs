@@ -159,13 +159,13 @@ impl std::fmt::Display for Empirical {
             .flat_map(|(&NonNan(x), &count)| std::iter::repeat(x).take(count as usize));
 
         if let Some(x) = enumerated_values.next() {
-            write!(f, "Empirical([{:.3e}", x)?;
+            write!(f, "Empirical([{x:.3e}")?;
         } else {
             return write!(f, "Empirical(∅)");
         }
 
         for val in enumerated_values.by_ref().take(4) {
-            write!(f, ", {:.3e}", val)?;
+            write!(f, ", {val:.3e}")?;
         }
         if enumerated_values.next().is_some() {
             write!(f, ", ...")?;

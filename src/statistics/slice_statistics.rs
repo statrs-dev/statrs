@@ -14,11 +14,11 @@ where
         write!(f, "Data([")?;
 
         if let Some(v) = tee.next() {
-            write!(f, "{}", v)?;
+            write!(f, "{v}")?;
         }
         for _ in 1..5 {
             if let Some(v) = tee.next() {
-                write!(f, ", {}", v)?;
+                write!(f, ", {v}")?;
             }
         }
         if tee.next().is_some() {

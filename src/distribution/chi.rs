@@ -381,7 +381,7 @@ mod tests {
     fn test_large_dof_mean_not_nan() {
         for i in 1..1000 {
             let mean = Chi::new(i as f64).unwrap().mean().unwrap();
-            assert!(!mean.is_nan(), "Chi mean for {} dof was {}", i, mean);
+            assert!(!mean.is_nan(), "Chi mean for {i} dof was {mean}");
         }
     }
 
