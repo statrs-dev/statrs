@@ -74,11 +74,3 @@ pub mod generate;
 pub mod prec;
 pub mod statistics;
 pub mod stats_tests;
-
-mod error;
-
-pub use crate::error::StatsError;
-
-/// Result type for the statrs library package that returns
-/// either a result type `T` or a `StatsError`
-pub type Result<T> = std::result::Result<T, StatsError>;
