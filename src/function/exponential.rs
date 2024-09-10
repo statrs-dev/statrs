@@ -1,14 +1,12 @@
 //! Provides functions related to exponential calculations
 
-use crate::{consts, Result, StatsError};
+use crate::consts;
 
 /// Computes the generalized Exponential Integral function
 /// where `x` is the argument and `n` is the integer power of the
 /// denominator term.
 ///
-/// # Errors
-///
-/// Returns an error if `x < 0.0` or the computation could not
+/// Returns `None` if `x < 0.0` or the computation could not
 /// converge after 100 iterations
 ///
 /// # Remarks
@@ -26,7 +24,7 @@ use crate::{consts, Result, StatsError};
 /// The continued fraction approach is used for `x > 1.0` while the taylor
 /// series expansions is used for `0.0 < x <= 1`.
 // TODO: Add examples
-pub fn integral(x: f64, n: u64) -> Result<f64> {
+pub fn integral(x: f64, n: u64) -> Option<f64> {
     let eps = 0.00000000000000001;
     let max_iter = 100;
     let nf64 = n as f64;
@@ -34,10 +32,10 @@ pub fn integral(x: f64, n: u64) -> Result<f64> {
 
     // special cases
     if n == 0 {
-        return Ok((-1.0 * x).exp() / x);
+        return Some((-1.0 * x).exp() / x);
     }
     if x == 0.0 {
-        return Ok(1.0 / (nf64 - 1.0));
+        return Some(1.0 / (nf64 - 1.0));
     }
 
     if x > 1.0 {
@@ -53,10 +51,10 @@ pub fn integral(x: f64, n: u64) -> Result<f64> {
             let del = c * d;
             h *= del;
             if (del - 1.0).abs() < eps {
-                return Ok(h * (-x).exp());
+                return Some(h * (-x).exp());
             }
         }
-        Err(StatsError::ComputationFailedToConverge)
+        None
     } else {
         let mut factorial = 1.0;
         let mut result = if n - 1 != 0 {
@@ -77,10 +75,10 @@ pub fn integral(x: f64, n: u64) -> Result<f64> {
             };
             result += del;
             if del.abs() < result.abs() * eps {
-                return Ok(result);
+                return Some(result);
             }
         }
-        Err(StatsError::ComputationFailedToConverge)
+        None
     }
 }
 
