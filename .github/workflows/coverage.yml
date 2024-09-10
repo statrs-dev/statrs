@@ -14,9 +14,8 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2024-08-29
           components: llvm-tools-preview
 
       - uses: taiki-e/install-action@v2
