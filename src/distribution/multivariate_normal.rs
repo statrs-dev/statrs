@@ -1,42 +1,37 @@
 use crate::distribution::Continuous;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
-use crate::StatsError;
 use nalgebra::{Cholesky, Const, DMatrix, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
 use std::f64;
 use std::f64::consts::{E, PI};
 
-/// computes both the normalization and exponential argument in the normal distribution
-/// # Errors
-/// will error on dimension mismatch
+/// Computes both the normalization and exponential argument in the normal
+/// distribution, returning `None` on dimension mismatch.
 pub(super) fn density_normalization_and_exponential<D>(
     mu: &OVector<f64, D>,
     cov: &OMatrix<f64, D, D>,
     precision: &OMatrix<f64, D, D>,
     x: &OVector<f64, D>,
-) -> std::result::Result<(f64, f64), StatsError>
+) -> Option<(f64, f64)>
 where
     D: DimMin<D, Output = D>,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>
         + nalgebra::allocator::Allocator<f64, D, D>
         + nalgebra::allocator::Allocator<(usize, usize), D>,
 {
-    Ok((
+    Some((
         density_distribution_pdf_const(mu, cov)?,
         density_distribution_exponential(mu, precision, x)?,
     ))
 }
 
-/// computes the argument of the exponential term in the normal distribution
-/// ```text
-/// ```
-/// # Errors
-/// will error on dimension mismatch
+/// Computes the argument of the exponential term in the normal distribution,
+/// returning `None` on dimension mismatch.
 #[inline]
-pub(super) fn density_distribution_exponential<D>(
+fn density_distribution_exponential<D>(
     mu: &OVector<f64, D>,
     precision: &OMatrix<f64, D, D>,
     x: &OVector<f64, D>,
-) -> std::result::Result<f64, StatsError>
+) -> Option<f64>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
@@ -46,22 +41,18 @@ where
         || x.shape_generic().0 != mu.shape_generic().0
         || !precision.is_square()
     {
-        return Err(StatsError::ContainersMustBeSameLength);
+        return None;
     }
+
     let dv = x - mu;
     let exp_term: f64 = -0.5 * (precision * &dv).dot(&dv);
-    Ok(exp_term)
-    // TODO update to dimension mismatch error
+    Some(exp_term)
 }
 
-/// computes the argument of the normalization term in the normal distribution
-/// # Errors
-/// will error on dimension mismatch
+/// Computes the argument of the normalization term in the normal distribution,
+/// returning `None` on dimension mismatch.
 #[inline]
-pub(super) fn density_distribution_pdf_const<D>(
-    mu: &OVector<f64, D>,
-    cov: &OMatrix<f64, D, D>,
-) -> std::result::Result<f64, StatsError>
+fn density_distribution_pdf_const<D>(mu: &OVector<f64, D>, cov: &OMatrix<f64, D, D>) -> Option<f64>
 where
     D: DimMin<D, Output = D>,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>
@@ -69,12 +60,14 @@ where
         + nalgebra::allocator::Allocator<(usize, usize), D>,
 {
     if cov.shape_generic().0 != mu.shape_generic().0 || !cov.is_square() {
-        return Err(StatsError::ContainersMustBeSameLength);
+        return None;
     }
     let cov_det = cov.determinant();
-    Ok(((2. * PI).powi(mu.nrows() as i32) * cov_det.abs())
-        .recip()
-        .sqrt())
+    Some(
+        ((2. * PI).powi(mu.nrows() as i32) * cov_det.abs())
+            .recip()
+            .sqrt(),
+    )
 }
 
 /// Implements the [Multivariate Normal](https://en.wikipedia.org/wiki/Multivariate_normal_distribution)

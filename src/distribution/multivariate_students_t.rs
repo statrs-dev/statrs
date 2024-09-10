@@ -340,10 +340,13 @@ where
     /// [Γ(ν+p)/2] / [Γ(ν/2) ((ν * π)^p det(Σ))^(1 / 2)] * [1 + 1/ν (x - μ)ᵀ inv(Σ) (x - μ)]^(-(ν+p)/2)
     /// ```
     ///
-    /// where `ν` is the degrees of freedom,  `μ` is the mean, `Γ`
-    /// is the Gamma function, `inv(Σ)`
-    /// is the precision matrix, `det(Σ)` is the determinant
-    /// of the scale matrix, and `k` is the dimension of the distribution.
+    /// where
+    /// - `ν` is the degrees of freedom,
+    /// - `μ` is the mean,
+    /// - `Γ` is the Gamma function,
+    /// - `inv(Σ)` is the precision matrix,
+    /// - `det(Σ)` is the determinant of the scale matrix, and
+    /// - `k` is the dimension of the distribution.
     fn pdf(&self, x: &'a OVector<f64, D>) -> f64 {
         if self.freedom.is_infinite() {
             use super::multivariate_normal::density_normalization_and_exponential;
