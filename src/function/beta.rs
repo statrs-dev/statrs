@@ -3,7 +3,6 @@
 
 use crate::error::StatsError;
 use crate::function::gamma;
-use crate::is_zero;
 use crate::prec;
 use crate::Result;
 use std::f64;
@@ -118,7 +117,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64> {
     } else if !(0.0..=1.0).contains(&x) {
         Err(StatsError::ArgIntervalIncl("x", 0.0, 1.0))
     } else {
-        let bt = if is_zero(x) || ulps_eq!(x, 1.0) {
+        let bt = if x == 0.0 || ulps_eq!(x, 1.0) {
             0.0
         } else {
             (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
@@ -204,7 +203,6 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64> {
 }
 
 /// Computes the inverse of the regularized incomplete beta function
-//
 // This code is based on the implementation in the ["special"][1] crate,
 // which in turn is based on a [C implementation][2] by John Burkardt. The
 // original algorithm was published in Applied Statistics and is known as
@@ -327,11 +325,7 @@ pub fn inv_beta_reg(mut a: f64, mut b: f64, mut x: f64) -> f64 {
         }
     }
 
-    if p < 0.0001 {
-        p = 0.0001;
-    } else if 0.9999 < p {
-        p = 0.9999;
-    }
+    p = p.clamp(0.0001, 0.9999);
 
     // Remark AS R83
     // http://www.jstor.org/stable/2347779
@@ -365,7 +359,7 @@ pub fn inv_beta_reg(mut a: f64, mut b: f64, mut x: f64) -> f64 {
 
                 if sq < prev {
                     pnext = p - adj;
-                    if 0.0 <= pnext && pnext <= 1.0 {
+                    if (0.0..=1.0).contains(&pnext) {
                         break;
                     }
                 }

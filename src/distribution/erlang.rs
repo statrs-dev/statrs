@@ -1,7 +1,5 @@
-use crate::distribution::{Continuous, ContinuousCDF, Gamma};
+use crate::distribution::{Continuous, ContinuousCDF, Gamma, GammaError};
 use crate::statistics::*;
-use crate::Result;
-use rand::Rng;
 
 /// Implements the [Erlang](https://en.wikipedia.org/wiki/Erlang_distribution)
 /// distribution
@@ -20,7 +18,7 @@ use rand::Rng;
 /// assert_eq!(n.mean().unwrap(), 3.0);
 /// assert!(prec::almost_eq(n.pdf(2.0), 0.270670566473225383788, 1e-15));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Erlang {
     g: Gamma,
 }
@@ -45,7 +43,7 @@ impl Erlang {
     /// result = Erlang::new(0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(shape: u64, rate: f64) -> Result<Erlang> {
+    pub fn new(shape: u64, rate: f64) -> Result<Erlang, GammaError> {
         Gamma::new(shape as f64, rate).map(|g| Erlang { g })
     }
 
@@ -78,8 +76,15 @@ impl Erlang {
     }
 }
 
+impl std::fmt::Display for Erlang {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "E({}, {})", self.rate(), self.shape())
+    }
+}
+
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Erlang {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         ::rand::distributions::Distribution::sample(&self.g, rng)
     }
 }
@@ -91,7 +96,7 @@ impl ContinuousCDF<f64, f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// γ(k, λx)  (k - 1)!
     /// ```
     ///
@@ -107,7 +112,7 @@ impl ContinuousCDF<f64, f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// γ(k, λx)  (k - 1)!
     /// ```
     ///
@@ -115,6 +120,21 @@ impl ContinuousCDF<f64, f64> for Erlang {
     /// incomplete gamma function
     fn sf(&self, x: f64) -> f64 {
         self.g.sf(x)
+    }
+
+    /// Calculates the inverse cumulative distribution function for the erlang
+    /// distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// γ^{-1}(k, (k - 1)! x) / λ
+    /// ```
+    ///
+    /// where `k` is the shape, `λ` is the rate, and `γ` is the upper
+    /// incomplete gamma function
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        self.g.inverse_cdf(p)
     }
 }
 
@@ -125,7 +145,7 @@ impl Min<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -140,8 +160,8 @@ impl Max<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         self.g.max()
@@ -158,7 +178,7 @@ impl Distribution<f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k / λ
     /// ```
     ///
@@ -166,11 +186,12 @@ impl Distribution<f64> for Erlang {
     fn mean(&self) -> Option<f64> {
         self.g.mean()
     }
+
     /// Returns the variance of the erlang distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k / λ^2
     /// ```
     ///
@@ -178,11 +199,12 @@ impl Distribution<f64> for Erlang {
     fn variance(&self) -> Option<f64> {
         self.g.variance()
     }
+
     /// Returns the entropy of the erlang distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k - ln(λ) + ln(Γ(k)) + (1 - k) * ψ(k)
     /// ```
     ///
@@ -191,11 +213,12 @@ impl Distribution<f64> for Erlang {
     fn entropy(&self) -> Option<f64> {
         self.g.entropy()
     }
+
     /// Returns the skewness of the erlang distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2 / sqrt(k)
     /// ```
     ///
@@ -215,7 +238,7 @@ impl Mode<Option<f64>> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (k - 1) / λ
     /// ```
     ///
@@ -236,7 +259,7 @@ impl Continuous<f64, f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (λ^k / Γ(k)) * x^(k - 1) * e^(-λ * x)
     /// ```
     ///
@@ -256,7 +279,7 @@ impl Continuous<f64, f64> for Erlang {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((λ^k / Γ(k)) * x^(k - 1) * e ^(-λ * x))
     /// ```
     ///
@@ -267,50 +290,41 @@ impl Continuous<f64, f64> for Erlang {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
-    use crate::distribution::Erlang;
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
+    use crate::testing_boiler;
 
-    fn try_create(shape: u64, rate: f64) -> Erlang {
-        let n = Erlang::new(shape, rate);
-        assert!(n.is_ok());
-        n.unwrap()
-    }
-
-    fn create_case(shape: u64, rate: f64) {
-        let n = try_create(shape, rate);
-        assert_eq!(shape, n.shape());
-        assert_eq!(rate, n.rate());
-    }
-
-    fn bad_create_case(shape: u64, rate: f64) {
-        let n = Erlang::new(shape, rate);
-        assert!(n.is_err());
-    }
+    testing_boiler!(shape: u64, rate: f64; Erlang; GammaError);
 
     #[test]
     fn test_create() {
-        create_case(1, 0.1);
-        create_case(1, 1.0);
-        create_case(10, 10.0);
-        create_case(10, 1.0);
-        create_case(10, f64::INFINITY);
+        create_ok(1, 0.1);
+        create_ok(1, 1.0);
+        create_ok(10, 10.0);
+        create_ok(10, 1.0);
+        create_ok(10, f64::INFINITY);
     }
 
     #[test]
     fn test_bad_create() {
-        bad_create_case(0, 1.0);
-        bad_create_case(1, 0.0);
-        bad_create_case(1, f64::NAN);
-        bad_create_case(1, -1.0);
+        let invalid = [
+            (0, 1.0, GammaError::ShapeInvalid),
+            (1, 0.0, GammaError::RateInvalid),
+            (1, f64::NAN, GammaError::RateInvalid),
+            (1, -1.0, GammaError::RateInvalid),
+        ];
+
+        for (s, r, err) in invalid {
+            test_create_err(s, r, err);
+        }
     }
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&try_create(1, 2.5), 0.0, 20.0);
-        test::check_continuous_distribution(&try_create(2, 1.5), 0.0, 20.0);
-        test::check_continuous_distribution(&try_create(3, 0.5), 0.0, 20.0);
+        test::check_continuous_distribution(&create_ok(1, 2.5), 0.0, 20.0);
+        test::check_continuous_distribution(&create_ok(2, 1.5), 0.0, 20.0);
+        test::check_continuous_distribution(&create_ok(3, 0.5), 0.0, 20.0);
     }
 }

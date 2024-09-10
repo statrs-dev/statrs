@@ -2,7 +2,6 @@
 //! related functions
 
 use crate::function::evaluate;
-use crate::is_zero;
 use std::f64;
 
 /// `erf` calculates the error function at `x`.
@@ -13,7 +12,7 @@ pub fn erf(x: f64) -> f64 {
         1.0
     } else if x <= 0.0 && x.is_infinite() {
         -1.0
-    } else if is_zero(x) {
+    } else if x == 0.0 {
         0.0
     } else {
         erf_impl(x, false)

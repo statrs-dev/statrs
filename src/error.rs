@@ -2,10 +2,12 @@ use std::error::Error;
 use std::fmt;
 
 /// Enumeration of possible errors thrown within the `statrs` library
-#[derive(Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum StatsError {
     /// Generic bad input parameter error
     BadParams,
+    /// An argument must be finite
+    ArgFinite(&'static str),
     /// An argument should have been positive and was not
     ArgMustBePositive(&'static str),
     /// An argument should have been non-negative and was not
@@ -48,16 +50,13 @@ pub enum StatsError {
     SpecialCase(&'static str),
 }
 
-impl Error for StatsError {
-    fn description(&self) -> &str {
-        "Error performing statistical calculation"
-    }
-}
+impl Error for StatsError {}
 
 impl fmt::Display for StatsError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             StatsError::BadParams => write!(f, "Bad distribution parameters"),
+            StatsError::ArgFinite(s) => write!(f, "Argument {} must be finite", s),
             StatsError::ArgMustBePositive(s) => write!(f, "Argument {} must be positive", s),
             StatsError::ArgNotNegative(s) => write!(f, "Argument {} must be non-negative", s),
             StatsError::ArgIntervalIncl(s, min, max) => {
@@ -102,5 +101,20 @@ impl fmt::Display for StatsError {
             }
             StatsError::SpecialCase(s) => write!(f, "{}", s),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn assert_sync<T: Sync>() {}
+    fn assert_send<T: Send>() {}
+
+    #[test]
+    fn test_sync_send() {
+        // Error types should implement Sync and Send
+        assert_sync::<StatsError>();
+        assert_send::<StatsError>();
     }
 }

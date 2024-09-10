@@ -1,9 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
+use crate::prec;
 use crate::statistics::*;
-use crate::{Result, StatsError};
-use core::f64::INFINITY as INF;
-use rand::Rng;
 
 /// Implements the [Gamma](https://en.wikipedia.org/wiki/Gamma_distribution)
 /// distribution
@@ -19,11 +17,38 @@ use rand::Rng;
 /// assert_eq!(n.mean().unwrap(), 3.0);
 /// assert!(prec::almost_eq(n.pdf(2.0), 0.270670566473225383788, 1e-15));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Gamma {
     shape: f64,
     rate: f64,
 }
+
+/// Represents the errors that can occur when creating a [`Gamma`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum GammaError {
+    /// The shape is NaN, zero or less than zero.
+    ShapeInvalid,
+
+    /// The rate is NaN, zero or less than zero.
+    RateInvalid,
+
+    /// The shape and rate are both infinite.
+    ShapeAndRateInfinite,
+}
+
+impl std::fmt::Display for GammaError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            GammaError::ShapeInvalid => write!(f, "Shape is NaN zero, or less than zero."),
+            GammaError::RateInvalid => write!(f, "Rate is NaN zero, or less than zero."),
+            GammaError::ShapeAndRateInfinite => write!(f, "Shape and rate are infinite"),
+        }
+    }
+}
+
+impl std::error::Error for GammaError {}
 
 impl Gamma {
     /// Constructs a new gamma distribution with a shape (α)
@@ -45,15 +70,19 @@ impl Gamma {
     /// result = Gamma::new(0.0, 0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(shape: f64, rate: f64) -> Result<Gamma> {
-        if shape.is_nan()
-            || rate.is_nan()
-            || shape.is_infinite() && rate.is_infinite()
-            || shape <= 0.0
-            || rate <= 0.0
-        {
-            return Err(StatsError::BadParams);
+    pub fn new(shape: f64, rate: f64) -> Result<Gamma, GammaError> {
+        if shape.is_nan() || shape <= 0.0 {
+            return Err(GammaError::ShapeInvalid);
         }
+
+        if rate.is_nan() || rate <= 0.0 {
+            return Err(GammaError::RateInvalid);
+        }
+
+        if shape.is_infinite() && rate.is_infinite() {
+            return Err(GammaError::ShapeAndRateInfinite);
+        }
+
         Ok(Gamma { shape, rate })
     }
 
@@ -86,8 +115,15 @@ impl Gamma {
     }
 }
 
+impl std::fmt::Display for Gamma {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Γ({}, {})", self.shape, self.rate)
+    }
+}
+
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Gamma {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         sample_unchecked(rng, self.shape, self.rate)
     }
 }
@@ -99,7 +135,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / Γ(α)) * γ(α, β * x)
     /// ```
     ///
@@ -124,7 +160,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / Γ(α)) * γ(α, β * x)
     /// ```
     ///
@@ -133,19 +169,59 @@ impl ContinuousCDF<f64, f64> for Gamma {
     fn sf(&self, x: f64) -> f64 {
         if x <= 0.0 {
             1.0
-        }
-        else if ulps_eq!(x, self.shape) && self.rate.is_infinite() {
+        } else if ulps_eq!(x, self.shape) && self.rate.is_infinite() {
             0.0
-        }
-        else if self.rate.is_infinite() {
+        } else if self.rate.is_infinite() {
             1.0
-        }
-        else if x.is_infinite() {
+        } else if x.is_infinite() {
             0.0
-        }
-        else {
+        } else {
             gamma::gamma_ur(self.shape, x * self.rate)
         }
+    }
+
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        if !(0.0..=1.0).contains(&p) {
+            panic!("default inverse_cdf implementation should be provided probability on [0,1]")
+        }
+        if p == 0.0 {
+            return self.min();
+        };
+        if p == 1.0 {
+            return self.max();
+        };
+
+        // Bisection search for MAX_ITERS.0 iterations
+        let mut high = 2.0;
+        let mut low = 1.0;
+        while self.cdf(low) > p {
+            low /= 2.0;
+        }
+        while self.cdf(high) < p {
+            high *= 2.0;
+        }
+        let mut x_0 = (high + low) / 2.0;
+
+        for _ in 0..8 {
+            if self.cdf(x_0) >= p {
+                high = x_0;
+            } else {
+                low = x_0;
+            }
+            if prec::convergence(&mut x_0, (high + low) / 2.0) {
+                break;
+            }
+        }
+
+        // Newton Raphson, for at least one step
+        for _ in 0..4 {
+            let x_next = x_0 - (self.cdf(x_0) - p) / self.pdf(x_0);
+            if prec::convergence(&mut x_0, x_next) {
+                break;
+            }
+        }
+
+        x_0
     }
 }
 
@@ -156,7 +232,7 @@ impl Min<f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -171,11 +247,11 @@ impl Max<f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
-        INF
+        f64::INFINITY
     }
 }
 
@@ -184,7 +260,7 @@ impl Distribution<f64> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α / β
     /// ```
     ///
@@ -192,11 +268,12 @@ impl Distribution<f64> for Gamma {
     fn mean(&self) -> Option<f64> {
         Some(self.shape / self.rate)
     }
+
     /// Returns the variance of the gamma distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α / β^2
     /// ```
     ///
@@ -204,11 +281,12 @@ impl Distribution<f64> for Gamma {
     fn variance(&self) -> Option<f64> {
         Some(self.shape / (self.rate * self.rate))
     }
+
     /// Returns the entropy of the gamma distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// α - ln(β) + ln(Γ(α)) + (1 - α) * ψ(α)
     /// ```
     ///
@@ -220,11 +298,12 @@ impl Distribution<f64> for Gamma {
             + (1.0 - self.shape) * gamma::digamma(self.shape);
         Some(entr)
     }
+
     /// Returns the skewness of the gamma distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2 / sqrt(α)
     /// ```
     ///
@@ -239,13 +318,17 @@ impl Mode<Option<f64>> for Gamma {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// (α - 1) / β
+    /// ```text
+    /// (α - 1) / β, where α≥1
     /// ```
     ///
     /// where `α` is the shape and `β` is the rate
     fn mode(&self) -> Option<f64> {
-        Some((self.shape - 1.0) / self.rate)
+        if self.shape < 1.0 {
+            None
+        } else {
+            Some((self.shape - 1.0) / self.rate)
+        }
     }
 }
 
@@ -255,12 +338,12 @@ impl Continuous<f64, f64> for Gamma {
     ///
     /// # Remarks
     ///
-    /// Returns `NAN` if any of `shape` or `rate` are `INF`
-    /// or if `x` is `INF`
+    /// Returns `NAN` if any of `shape` or `rate` are `f64::INFINITY`
+    /// or if `x` is `f64::INFINITY`
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (β^α / Γ(α)) * x^(α - 1) * e^(-β * x)
     /// ```
     ///
@@ -286,12 +369,12 @@ impl Continuous<f64, f64> for Gamma {
     ///
     /// # Remarks
     ///
-    /// Returns `NAN` if any of `shape` or `rate` are `INF`
-    /// or if `x` is `INF`
+    /// Returns `NAN` if any of `shape` or `rate` are `f64::INFINITY`
+    /// or if `x` is `f64::INFINITY`
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((β^α / Γ(α)) * x^(α - 1) * e ^(-β * x))
     /// ```
     ///
@@ -312,16 +395,13 @@ impl Continuous<f64, f64> for Gamma {
 }
 /// Samples from a gamma distribution with a shape of `shape` and a
 /// rate of `rate` using `rng` as the source of randomness. Implementation from:
-/// <br />
-/// <div>
-/// <i>"A Simple Method for Generating Gamma Variables"</i> - Marsaglia & Tsang
-/// </div>
-/// <div>
+///
+/// _"A Simple Method for Generating Gamma Variables"_ - Marsaglia & Tsang
+///
 /// ACM Transactions on Mathematical Software, Vol. 26, No. 3, September 2000,
 /// Pages 363-372
-/// </div>
-/// <br />
-pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, shape: f64, rate: f64) -> f64 {
+#[cfg(feature = "rand")]
+pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, shape: f64, rate: f64) -> f64 {
     let mut a = shape;
     let mut afix = 1.0;
     if shape < 1.0 {
@@ -342,8 +422,8 @@ pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, shape: f64, rate: f64) -> 
             };
         }
 
-        v *= v * v;
-        x *= x;
+        v = v * v * v;
+        x = x * x;
         let u: f64 = rng.gen();
         if u < 1.0 - 0.0331 * x * x || u.ln() < 0.5 * x + d * (1.0 - v + v.ln()) {
             return afix * d * v / rate;
@@ -351,14 +431,13 @@ pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, shape: f64, rate: f64) -> 
     }
 }
 
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consts::ACC;
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!((f64, f64), Gamma);
+    testing_boiler!(shape: f64, rate: f64; Gamma; GammaError);
 
     #[test]
     fn test_create() {
@@ -367,26 +446,31 @@ mod tests {
             (1.0, 1.0),
             (10.0, 10.0),
             (10.0, 1.0),
-            (10.0, INF),
+            (10.0, f64::INFINITY),
         ];
 
-        for &arg in valid.iter() {
-            try_create(arg);
+        for (s, r) in valid {
+            create_ok(s, r);
         }
     }
 
     #[test]
     fn test_bad_create() {
         let invalid = [
-            (0.0, 0.0),
-            (1.0, f64::NAN),
-            (1.0, -1.0),
-            (-1.0, 1.0),
-            (-1.0, -1.0),
-            (-1.0, f64::NAN),
+            (0.0, 0.0, GammaError::ShapeInvalid),
+            (1.0, f64::NAN, GammaError::RateInvalid),
+            (1.0, -1.0, GammaError::RateInvalid),
+            (-1.0, 1.0, GammaError::ShapeInvalid),
+            (-1.0, -1.0, GammaError::ShapeInvalid),
+            (-1.0, f64::NAN, GammaError::ShapeInvalid),
+            (
+                f64::INFINITY,
+                f64::INFINITY,
+                GammaError::ShapeAndRateInfinite,
+            ),
         ];
-        for &arg in invalid.iter() {
-            bad_create_case(arg);
+        for (s, r, err) in invalid {
+            test_create_err(s, r, err);
         }
     }
 
@@ -398,10 +482,10 @@ mod tests {
             ((1.0, 1.0), 1.0),
             ((10.0, 10.0), 1.0),
             ((10.0, 1.0), 10.0),
-            ((10.0, INF), 0.0),
+            ((10.0, f64::INFINITY), 0.0),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_relative(s, r, res, f);
         }
     }
 
@@ -413,10 +497,10 @@ mod tests {
             ((1.0, 1.0), 1.0),
             ((10.0, 10.0), 0.1),
             ((10.0, 1.0), 10.0),
-            ((10.0, INF), 0.0),
+            ((10.0, f64::INFINITY), 0.0),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_relative(s, r, res, f);
         }
     }
 
@@ -428,10 +512,10 @@ mod tests {
             ((1.0, 1.0), 1.0),
             ((10.0, 10.0), 0.2334690854869339583626209),
             ((10.0, 1.0), 2.53605417848097964238061239),
-            ((10.0, INF), f64::NEG_INFINITY),
+            ((10.0, f64::INFINITY), f64::NEG_INFINITY),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_relative(s, r, res, f);
         }
     }
 
@@ -443,10 +527,10 @@ mod tests {
             ((1.0, 1.0), 2.0),
             ((10.0, 10.0), 0.6324555320336758663997787),
             ((10.0, 1.0), 0.63245553203367586639977870),
-            ((10.0, INF), 0.6324555320336758),
+            ((10.0, f64::INFINITY), 0.6324555320336758),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_relative(s, r, res, f);
         }
     }
 
@@ -454,12 +538,16 @@ mod tests {
     fn test_mode() {
         let f = |x: Gamma| x.mode().unwrap();
         let test = [((1.0, 0.1), 0.0), ((1.0, 1.0), 0.0)];
-        for &(arg, res) in test.iter() {
-            test_case_special(arg, res, 10e-6, f);
+        for &((s, r), res) in test.iter() {
+            test_absolute(s, r, res, 10e-6, f);
         }
-        let test = [((10.0, 10.0), 0.9), ((10.0, 1.0), 9.0), ((10.0, INF), 0.0)];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        let test = [
+            ((10.0, 10.0), 0.9),
+            ((10.0, 1.0), 9.0),
+            ((10.0, f64::INFINITY), 0.0),
+        ];
+        for ((s, r), res) in test {
+            test_relative(s, r, res, f);
         }
     }
 
@@ -471,21 +559,21 @@ mod tests {
             ((1.0, 1.0), 0.0),
             ((10.0, 10.0), 0.0),
             ((10.0, 1.0), 0.0),
-            ((10.0, INF), 0.0),
+            ((10.0, f64::INFINITY), 0.0),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_relative(s, r, res, f);
         }
         let f = |x: Gamma| x.max();
         let test = [
-            ((1.0, 0.1), INF),
-            ((1.0, 1.0), INF),
-            ((10.0, 10.0), INF),
-            ((10.0, 1.0), INF),
-            ((10.0, INF), INF),
+            ((1.0, 0.1), f64::INFINITY),
+            ((1.0, 1.0), f64::INFINITY),
+            ((10.0, 10.0), f64::INFINITY),
+            ((10.0, 1.0), f64::INFINITY),
+            ((10.0, f64::INFINITY), f64::INFINITY),
         ];
-        for &(arg, res) in test.iter() {
-            test_case(arg, res, f);
+        for ((s, r), res) in test {
+            test_relative(s, r, res, f);
         }
     }
 
@@ -502,19 +590,19 @@ mod tests {
             ((10.0, 1.0), 1.0, 0.000001013777119630297402),
             ((10.0, 1.0), 10.0, 0.125110035721133298984764),
         ];
-        for &(arg, x, res) in test.iter() {
-            test_case(arg, res, f(x));
+        for ((s, r), x, res) in test {
+            test_relative(s, r, res, f(x));
         }
-        //TODO: test special
-        // test_is_nan((10.0, INF), pdf(1.0)); // is this really the behavior we want?
-        //TODO: test special
-        // (10.0, INF, INF, 0.0, pdf(INF)),];
+        // TODO: test special
+        // test_is_nan((10.0, f64::INFINITY), pdf(1.0)); // is this really the behavior we want?
+        // TODO: test special
+        // (10.0, f64::INFINITY, f64::INFINITY, 0.0, pdf(f64::INFINITY)),];
     }
 
     #[test]
     fn test_pdf_at_zero() {
-        test_case((1.0, 0.1), 0.1, |x| x.pdf(0.0));
-        test_case((1.0, 0.1), 0.1f64.ln(), |x| x.ln_pdf(0.0));
+        test_relative(1.0, 0.1, 0.1, |x| x.pdf(0.0));
+        test_relative(1.0, 0.1, 0.1f64.ln(), |x| x.ln_pdf(0.0));
     }
 
     #[test]
@@ -529,13 +617,13 @@ mod tests {
             ((10.0, 10.0), 10.0, -69.0527107131946016148658),
             ((10.0, 1.0), 1.0, -13.8018274800814696112077),
             ((10.0, 1.0), 10.0, -2.07856164313505845504579),
-            ((10.0, INF), INF, f64::NEG_INFINITY),
+            ((10.0, f64::INFINITY), f64::INFINITY, f64::NEG_INFINITY),
         ];
-        for &(arg, x, res) in test.iter() {
-            test_case(arg, res, f(x));
+        for ((s, r), x, res) in test {
+            test_relative(s, r, res, f(x));
         }
         // TODO: test special
-        // test_is_nan((10.0, INF), f(1.0)); // is this really the behavior we want?
+        // test_is_nan((10.0, f64::INFINITY), f(1.0)); // is this really the behavior we want?
     }
 
     #[test]
@@ -550,17 +638,43 @@ mod tests {
             ((10.0, 10.0), 10.0, 0.999999999999999999999999),
             ((10.0, 1.0), 1.0, 0.000000111425478338720677),
             ((10.0, 1.0), 10.0, 0.542070285528147791685835),
-            ((10.0, INF), 1.0, 0.0),
-            ((10.0, INF), 10.0, 1.0),
+            ((10.0, f64::INFINITY), 1.0, 0.0),
+            ((10.0, f64::INFINITY), 10.0, 1.0),
         ];
-        for &(arg, x, res) in test.iter() {
-            test_case(arg, res, f(x));
+        for ((s, r), x, res) in test {
+            test_relative(s, r, res, f(x));
         }
     }
 
     #[test]
     fn test_cdf_at_zero() {
-        test_case((1.0, 0.1), 0.0, |x| x.cdf(0.0));
+        test_relative(1.0, 0.1, 0.0, |x| x.cdf(0.0));
+    }
+
+    #[test]
+    fn test_cdf_inverse_identity() {
+        let f = |p: f64| move |g: Gamma| g.cdf(g.inverse_cdf(p));
+        let params = [
+            (1.0, 0.1),
+            (1.0, 1.0),
+            (10.0, 10.0),
+            (10.0, 1.0),
+            (100.0, 200.0),
+        ];
+
+        for (s, r) in params {
+            for n in -5..0 {
+                let p = 10.0f64.powi(n);
+                test_relative(s, r, p, f(p));
+            }
+        }
+
+        // test case from issue #200
+        {
+            let x = 20.5567;
+            let f = |x: f64| move |g: Gamma| g.inverse_cdf(g.cdf(x));
+            test_relative(3.0, 0.5, x, f(x))
+        }
     }
 
     #[test]
@@ -575,22 +689,22 @@ mod tests {
             ((10.0, 10.0), 10.0, 1.1253473960842808e-31),
             ((10.0, 1.0), 1.0, 0.9999998885745217),
             ((10.0, 1.0), 10.0, 0.4579297144718528),
-            ((10.0, INF), 1.0, 1.0),
-            ((10.0, INF), 10.0, 0.0),
+            ((10.0, f64::INFINITY), 1.0, 1.0),
+            ((10.0, f64::INFINITY), 10.0, 0.0),
         ];
-        for &(arg, x, res) in test.iter() {
-            test_case(arg, res, f(x));
+        for ((s, r), x, res) in test {
+            test_relative(s, r, res, f(x));
         }
     }
 
     #[test]
     fn test_sf_at_zero() {
-        test_case((1.0, 0.1), 1.0, |x| x.sf(0.0));
+        test_relative(1.0, 0.1, 1.0, |x| x.sf(0.0));
     }
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&try_create((1.0, 0.5)), 0.0, 20.0);
-        test::check_continuous_distribution(&try_create((9.0, 2.0)), 0.0, 20.0);
+        test::check_continuous_distribution(&create_ok(1.0, 0.5), 0.0, 20.0);
+        test::check_continuous_distribution(&create_ok(9.0, 2.0), 0.0, 20.0);
     }
 }

@@ -1,7 +1,5 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
-use rand::Rng;
 use std::f64;
 
 /// Implements the
@@ -12,7 +10,6 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-///
 /// use statrs::distribution::{Categorical, Discrete};
 /// use statrs::statistics::Distribution;
 /// use statrs::prec;
@@ -21,12 +18,42 @@ use std::f64;
 /// assert!(prec::almost_eq(n.mean().unwrap(), 5.0 / 3.0, 1e-15));
 /// assert_eq!(n.pmf(1), 1.0 / 3.0);
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Categorical {
     norm_pmf: Vec<f64>,
     cdf: Vec<f64>,
-    sf: Vec<f64>
+    sf: Vec<f64>,
 }
+
+/// Represents the errors that can occur when creating a [`Categorical`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum CategoricalError {
+    /// The probability mass is empty.
+    ProbMassEmpty,
+
+    /// The probabilities sums up to zero.
+    ProbMassSumZero,
+
+    /// The probability mass contains at least one element which is NaN or less than zero.
+    ProbMassHasInvalidElements,
+}
+
+impl std::fmt::Display for CategoricalError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            CategoricalError::ProbMassEmpty => write!(f, "Probability mass is empty"),
+            CategoricalError::ProbMassSumZero => write!(f, "Probabilities sum up to zero"),
+            CategoricalError::ProbMassHasInvalidElements => write!(
+                f,
+                "Probability mass contains at least one element which is NaN or less than zero"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for CategoricalError {}
 
 impl Categorical {
     /// Constructs a new categorical distribution
@@ -53,23 +80,36 @@ impl Categorical {
     /// result = Categorical::new(&[0.0, -1.0, 2.0]);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(prob_mass: &[f64]) -> Result<Categorical> {
-        if !super::internal::is_valid_multinomial(prob_mass, true) {
-            Err(StatsError::BadParams)
-        } else {
-            // extract un-normalized cdf
-            let cdf = prob_mass_to_cdf(prob_mass);
-            // extract un-normalized sf
-            let sf = cdf_to_sf(&cdf);
-            // extract normalized probability mass
-            let sum = cdf[cdf.len() - 1];
-            let mut norm_pmf = vec![0.0; prob_mass.len()];
-            norm_pmf
-                .iter_mut()
-                .zip(prob_mass.iter())
-                .for_each(|(np, pm)| *np = *pm / sum);
-            Ok(Categorical { norm_pmf, cdf, sf })
+    pub fn new(prob_mass: &[f64]) -> Result<Categorical, CategoricalError> {
+        if prob_mass.is_empty() {
+            return Err(CategoricalError::ProbMassEmpty);
         }
+
+        let mut prob_sum = 0.0;
+        for &p in prob_mass {
+            if p.is_nan() || p < 0.0 {
+                return Err(CategoricalError::ProbMassHasInvalidElements);
+            }
+
+            prob_sum += p;
+        }
+
+        if prob_sum == 0.0 {
+            return Err(CategoricalError::ProbMassSumZero);
+        }
+
+        // extract un-normalized cdf
+        let cdf = prob_mass_to_cdf(prob_mass);
+        // extract un-normalized sf
+        let sf = cdf_to_sf(&cdf);
+        // extract normalized probability mass
+        let sum = cdf[cdf.len() - 1];
+        let mut norm_pmf = vec![0.0; prob_mass.len()];
+        norm_pmf
+            .iter_mut()
+            .zip(prob_mass.iter())
+            .for_each(|(np, pm)| *np = *pm / sum);
+        Ok(Categorical { norm_pmf, cdf, sf })
     }
 
     fn cdf_max(&self) -> f64 {
@@ -77,8 +117,15 @@ impl Categorical {
     }
 }
 
+impl std::fmt::Display for Categorical {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Cat({:#?})", self.norm_pmf)
+    }
+}
+
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Categorical {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         sample_unchecked(rng, &self.cdf)
     }
 }
@@ -89,7 +136,7 @@ impl DiscreteCDF<u64, f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// sum(p_j) from 0..x
     /// ```
     ///
@@ -107,7 +154,7 @@ impl DiscreteCDF<u64, f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// [ sum(p_j) from x..end ]
     /// ```
     fn sf(&self, x: u64) -> f64 {
@@ -128,7 +175,7 @@ impl DiscreteCDF<u64, f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// i
     /// ```
     ///
@@ -151,7 +198,7 @@ impl Min<u64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> u64 {
@@ -166,7 +213,7 @@ impl Max<u64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// n
     /// ```
     fn max(&self) -> u64 {
@@ -179,7 +226,7 @@ impl Distribution<f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// Σ(j * p_j)
     /// ```
     ///
@@ -194,11 +241,12 @@ impl Distribution<f64> for Categorical {
                 .fold(0.0, |acc, (idx, &val)| acc + idx as f64 * val),
         )
     }
+
     /// Returns the variance of the categorical distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// Σ(p_j * (j - μ)^2)
     /// ```
     ///
@@ -217,11 +265,12 @@ impl Distribution<f64> for Categorical {
             });
         Some(var)
     }
+
     /// Returns the entropy of the categorical distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// -Σ(p_j * ln(p_j))
     /// ```
     ///
@@ -243,7 +292,7 @@ impl Median<f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// CDF^-1(0.5)
     /// ```
     fn median(&self) -> f64 {
@@ -257,7 +306,7 @@ impl Discrete<u64, f64> for Categorical {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// p_x
     /// ```
     fn pmf(&self, x: u64) -> f64 {
@@ -273,7 +322,8 @@ impl Discrete<u64, f64> for Categorical {
 
 /// Draws a sample from the categorical distribution described by `cdf`
 /// without doing any bounds checking
-pub fn sample_unchecked<R: Rng + ?Sized>(rng: &mut R, cdf: &[f64]) -> f64 {
+#[cfg(feature = "rand")]
+pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, cdf: &[f64]) -> f64 {
     let draw = rng.gen::<f64>() * cdf.last().unwrap();
     cdf.iter()
         .enumerate()
@@ -294,7 +344,7 @@ pub fn prob_mass_to_cdf(prob_mass: &[f64]) -> Vec<f64> {
     cdf
 }
 
-/// Computes the sf from the given cumulative densities. 
+/// Computes the sf from the given cumulative densities.
 /// Performs no parameter or bounds checking.
 pub fn cdf_to_sf(cdf: &[f64]) -> Vec<f64> {
     let max = *cdf.last().unwrap();
@@ -342,166 +392,135 @@ fn test_binary_index() {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
-    use std::fmt::Debug;
-    use crate::statistics::*;
-    use crate::distribution::{Categorical, Discrete, DiscreteCDF};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
+    use crate::testing_boiler;
 
-    fn try_create(prob_mass: &[f64]) -> Categorical {
-        let n = Categorical::new(prob_mass);
-        assert!(n.is_ok());
-        n.unwrap()
-    }
-
-    fn create_case(prob_mass: &[f64]) {
-        try_create(prob_mass);
-    }
-
-    fn bad_create_case(prob_mass: &[f64]) {
-        let n = Categorical::new(prob_mass);
-        assert!(n.is_err());
-    }
-
-    fn get_value<T, F>(prob_mass: &[f64], eval: F) -> T
-        where T: PartialEq + Debug,
-              F: Fn(Categorical) -> T
-    {
-        let n = try_create(prob_mass);
-        eval(n)
-    }
-
-    fn test_case<T, F>(prob_mass: &[f64], expected: T, eval: F)
-        where T: PartialEq + Debug,
-              F: Fn(Categorical) -> T
-    {
-        let x = get_value(prob_mass, eval);
-        assert_eq!(expected, x);
-    }
-
-    fn test_almost<F>(prob_mass: &[f64], expected: f64, acc: f64, eval: F)
-        where F: Fn(Categorical) -> f64
-    {
-        let x = get_value(prob_mass, eval);
-        assert_almost_eq!(expected, x, acc);
-    }
+    testing_boiler!(prob_mass: &[f64]; Categorical; CategoricalError);
 
     #[test]
     fn test_create() {
-        create_case(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        create_ok(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     }
 
     #[test]
     fn test_bad_create() {
-        bad_create_case(&[-1.0, 1.0]);
-        bad_create_case(&[0.0, 0.0]);
+        let invalid: &[(&[f64], CategoricalError)] = &[
+            (&[], CategoricalError::ProbMassEmpty),
+            (&[-1.0, 1.0], CategoricalError::ProbMassHasInvalidElements),
+            (&[0.0, 0.0, 0.0], CategoricalError::ProbMassSumZero),
+        ];
+
+        for &(prob_mass, err) in invalid {
+            test_create_err(prob_mass, err);
+        }
     }
 
     #[test]
     fn test_mean() {
         let mean = |x: Categorical| x.mean().unwrap();
-        test_case(&[0.0, 0.25, 0.5, 0.25], 2.0, mean);
-        test_case(&[0.0, 1.0, 2.0, 1.0], 2.0, mean);
-        test_case(&[0.0, 0.5, 0.5], 1.5, mean);
-        test_case(&[0.75, 0.25], 0.25, mean);
-        test_case(&[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], 5.0, mean);
+        test_exact(&[0.0, 0.25, 0.5, 0.25], 2.0, mean);
+        test_exact(&[0.0, 1.0, 2.0, 1.0], 2.0, mean);
+        test_exact(&[0.0, 0.5, 0.5], 1.5, mean);
+        test_exact(&[0.75, 0.25], 0.25, mean);
+        test_exact(&[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], 5.0, mean);
     }
 
     #[test]
     fn test_variance() {
         let variance = |x: Categorical| x.variance().unwrap();
-        test_case(&[0.0, 0.25, 0.5, 0.25], 0.5, variance);
-        test_case(&[0.0, 1.0, 2.0, 1.0], 0.5, variance);
-        test_case(&[0.0, 0.5, 0.5], 0.25, variance);
-        test_case(&[0.75, 0.25], 0.1875, variance);
-        test_case(&[1.0, 0.0, 1.0], 1.0, variance);
+        test_exact(&[0.0, 0.25, 0.5, 0.25], 0.5, variance);
+        test_exact(&[0.0, 1.0, 2.0, 1.0], 0.5, variance);
+        test_exact(&[0.0, 0.5, 0.5], 0.25, variance);
+        test_exact(&[0.75, 0.25], 0.1875, variance);
+        test_exact(&[1.0, 0.0, 1.0], 1.0, variance);
     }
 
     #[test]
     fn test_entropy() {
         let entropy = |x: Categorical| x.entropy().unwrap();
-        test_case(&[0.0, 1.0], 0.0, entropy);
-        test_almost(&[0.0, 1.0, 1.0], 2f64.ln(), 1e-15, entropy);
-        test_almost(&[1.0, 1.0, 1.0], 3f64.ln(), 1e-15, entropy);
-        test_almost(&vec![1.0; 100], 100f64.ln(), 1e-14, entropy);
-        test_almost(&[0.0, 0.25, 0.5, 0.25], 1.0397207708399179, 1e-15, entropy);
+        test_exact(&[0.0, 1.0], 0.0, entropy);
+        test_absolute(&[0.0, 1.0, 1.0], 2f64.ln(), 1e-15, entropy);
+        test_absolute(&[1.0, 1.0, 1.0], 3f64.ln(), 1e-15, entropy);
+        test_absolute(&vec![1.0; 100], 100f64.ln(), 1e-14, entropy);
+        test_absolute(&[0.0, 0.25, 0.5, 0.25], 1.0397207708399179, 1e-15, entropy);
     }
 
     #[test]
     fn test_median() {
         let median = |x: Categorical| x.median();
-        test_case(&[0.0, 3.0, 1.0, 1.0], 1.0, median);
-        test_case(&[4.0, 2.5, 2.5, 1.0], 1.0, median);
+        test_exact(&[0.0, 3.0, 1.0, 1.0], 1.0, median);
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 1.0, median);
     }
 
     #[test]
     fn test_min_max() {
         let min = |x: Categorical| x.min();
         let max = |x: Categorical| x.max();
-        test_case(&[4.0, 2.5, 2.5, 1.0], 0, min);
-        test_case(&[4.0, 2.5, 2.5, 1.0], 3, max);
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 0, min);
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 3, max);
     }
 
     #[test]
     fn test_pmf() {
         let pmf = |arg: u64| move |x: Categorical| x.pmf(arg);
-        test_case(&[0.0, 0.25, 0.5, 0.25], 0.0, pmf(0));
-        test_case(&[0.0, 0.25, 0.5, 0.25], 0.25, pmf(1));
-        test_case(&[0.0, 0.25, 0.5, 0.25], 0.25, pmf(3));
+        test_exact(&[0.0, 0.25, 0.5, 0.25], 0.0, pmf(0));
+        test_exact(&[0.0, 0.25, 0.5, 0.25], 0.25, pmf(1));
+        test_exact(&[0.0, 0.25, 0.5, 0.25], 0.25, pmf(3));
     }
 
     #[test]
     fn test_pmf_x_too_high() {
         let pmf = |arg: u64| move |x: Categorical| x.pmf(arg);
-        test_case(&[4.0, 2.5, 2.5, 1.0], 0.0, pmf(4));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 0.0, pmf(4));
     }
 
     #[test]
     fn test_ln_pmf() {
         let ln_pmf = |arg: u64| move |x: Categorical| x.ln_pmf(arg);
-        test_case(&[0.0, 0.25, 0.5, 0.25], 0f64.ln(), ln_pmf(0));
-        test_case(&[0.0, 0.25, 0.5, 0.25], 0.25f64.ln(), ln_pmf(1));
-        test_case(&[0.0, 0.25, 0.5, 0.25], 0.25f64.ln(), ln_pmf(3));
+        test_exact(&[0.0, 0.25, 0.5, 0.25], 0f64.ln(), ln_pmf(0));
+        test_exact(&[0.0, 0.25, 0.5, 0.25], 0.25f64.ln(), ln_pmf(1));
+        test_exact(&[0.0, 0.25, 0.5, 0.25], 0.25f64.ln(), ln_pmf(3));
     }
 
     #[test]
     fn test_ln_pmf_x_too_high() {
         let ln_pmf = |arg: u64| move |x: Categorical| x.ln_pmf(arg);
-        test_case(&[4.0, 2.5, 2.5, 1.0], f64::NEG_INFINITY, ln_pmf(4));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], f64::NEG_INFINITY, ln_pmf(4));
     }
 
     #[test]
     fn test_cdf() {
         let cdf = |arg: u64| move |x: Categorical| x.cdf(arg);
-        test_case(&[0.0, 3.0, 1.0, 1.0], 3.0 / 5.0, cdf(1));
-        test_case(&[1.0, 1.0, 1.0, 1.0], 0.25, cdf(0));
-        test_case(&[4.0, 2.5, 2.5, 1.0], 0.4, cdf(0));
-        test_case(&[4.0, 2.5, 2.5, 1.0], 1.0, cdf(3));
-        test_case(&[4.0, 2.5, 2.5, 1.0], 1.0, cdf(4));
+        test_exact(&[0.0, 3.0, 1.0, 1.0], 3.0 / 5.0, cdf(1));
+        test_exact(&[1.0, 1.0, 1.0, 1.0], 0.25, cdf(0));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 0.4, cdf(0));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 1.0, cdf(3));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 1.0, cdf(4));
     }
 
     #[test]
     fn test_sf() {
         let sf = |arg: u64| move |x: Categorical| x.sf(arg);
-        test_case(&[0.0, 3.0, 1.0, 1.0], 2.0 / 5.0, sf(1));
-        test_case(&[1.0, 1.0, 1.0, 1.0], 0.75, sf(0));
-        test_case(&[4.0, 2.5, 2.5, 1.0], 0.6, sf(0));
-        test_case(&[4.0, 2.5, 2.5, 1.0], 0.0, sf(3));
-        test_case(&[4.0, 2.5, 2.5, 1.0], 0.0, sf(4));
+        test_exact(&[0.0, 3.0, 1.0, 1.0], 2.0 / 5.0, sf(1));
+        test_exact(&[1.0, 1.0, 1.0, 1.0], 0.75, sf(0));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 0.6, sf(0));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 0.0, sf(3));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 0.0, sf(4));
     }
 
     #[test]
     fn test_cdf_input_high() {
         let cdf = |arg: u64| move |x: Categorical| x.cdf(arg);
-        test_case(&[4.0, 2.5, 2.5, 1.0], 1.0, cdf(4));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 1.0, cdf(4));
     }
 
     #[test]
     fn test_sf_input_high() {
         let sf = |arg: u64| move |x: Categorical| x.sf(arg);
-        test_case(&[4.0, 2.5, 2.5, 1.0], 0.0, sf(4));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 0.0, sf(4));
     }
 
     #[test]
@@ -517,31 +536,31 @@ mod tests {
     #[test]
     fn test_inverse_cdf() {
         let inverse_cdf = |arg: f64| move |x: Categorical| x.inverse_cdf(arg);
-        test_case(&[0.0, 3.0, 1.0, 1.0], 1, inverse_cdf(0.2));
-        test_case(&[0.0, 3.0, 1.0, 1.0], 1, inverse_cdf(0.5));
-        test_case(&[0.0, 3.0, 1.0, 1.0], 3, inverse_cdf(0.95));
-        test_case(&[4.0, 2.5, 2.5, 1.0], 0, inverse_cdf(0.2));
-        test_case(&[4.0, 2.5, 2.5, 1.0], 1, inverse_cdf(0.5));
-        test_case(&[4.0, 2.5, 2.5, 1.0], 3, inverse_cdf(0.95));
+        test_exact(&[0.0, 3.0, 1.0, 1.0], 1, inverse_cdf(0.2));
+        test_exact(&[0.0, 3.0, 1.0, 1.0], 1, inverse_cdf(0.5));
+        test_exact(&[0.0, 3.0, 1.0, 1.0], 3, inverse_cdf(0.95));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 0, inverse_cdf(0.2));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 1, inverse_cdf(0.5));
+        test_exact(&[4.0, 2.5, 2.5, 1.0], 3, inverse_cdf(0.95));
     }
 
     #[test]
     #[should_panic]
     fn test_inverse_cdf_input_low() {
-        let inverse_cdf = |arg: f64| move |x: Categorical| x.inverse_cdf(arg);
-        get_value(&[4.0, 2.5, 2.5, 1.0], inverse_cdf(0.0));
+        let dist = create_ok(&[4.0, 2.5, 2.5, 1.0]);
+        dist.inverse_cdf(0.0);
     }
 
     #[test]
     #[should_panic]
     fn test_inverse_cdf_input_high() {
-        let inverse_cdf = |arg: f64| move |x: Categorical| x.inverse_cdf(arg);
-        get_value(&[4.0, 2.5, 2.5, 1.0], inverse_cdf(1.0));
+        let dist = create_ok(&[4.0, 2.5, 2.5, 1.0]);
+        dist.inverse_cdf(1.0);
     }
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&try_create(&[1.0, 2.0, 3.0, 4.0]), 4);
-        test::check_discrete_distribution(&try_create(&[0.0, 1.0, 2.0, 3.0, 4.0]), 5);
+        test::check_discrete_distribution(&create_ok(&[1.0, 2.0, 3.0, 4.0]), 4);
+        test::check_discrete_distribution(&create_ok(&[0.0, 1.0, 2.0, 3.0, 4.0]), 5);
     }
 }

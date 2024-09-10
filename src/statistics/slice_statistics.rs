@@ -1,12 +1,37 @@
 use crate::statistics::*;
 use core::ops::{Index, IndexMut};
-use rand::prelude::SliceRandom;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Data<D>(D);
+
+impl<D, I> std::fmt::Display for Data<D>
+where
+    D: Clone + IntoIterator<Item = I>,
+    I: Clone + std::fmt::Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut tee = self.0.clone().into_iter();
+        write!(f, "Data([")?;
+
+        if let Some(v) = tee.next() {
+            write!(f, "{}", v)?;
+        }
+        for _ in 1..5 {
+            if let Some(v) = tee.next() {
+                write!(f, ", {}", v)?;
+            }
+        }
+        if tee.next().is_some() {
+            write!(f, "...")?;
+        }
+
+        write!(f, "])")
+    }
+}
 
 impl<D: AsRef<[f64]>> Index<usize> for Data<D> {
     type Output = f64;
+
     fn index(&self, i: usize) -> &f64 {
         &self.0.as_ref()[i]
     }
@@ -22,18 +47,23 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Data<D> {
     pub fn new(data: D) -> Self {
         Data(data)
     }
+
     pub fn swap(&mut self, i: usize, j: usize) {
         self.0.as_mut().swap(i, j)
     }
+
     pub fn len(&self) -> usize {
         self.0.as_ref().len()
     }
+
     pub fn is_empty(&self) -> bool {
         self.0.as_ref().len() == 0
     }
+
     pub fn iter(&self) -> core::slice::Iter<'_, f64> {
         self.0.as_ref().iter()
     }
+
     // Selection algorithm from Numerical Recipes
     // See: https://en.wikipedia.org/wiki/Selection_algorithm
     fn select_inplace(&mut self, rank: usize) -> f64 {
@@ -102,8 +132,11 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Data<D> {
     }
 }
 
+#[cfg(feature = "rand")]
 impl<D: AsRef<[f64]>> ::rand::distributions::Distribution<f64> for Data<D> {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+        use rand::prelude::SliceRandom;
+
         *self.0.as_ref().choose(rng).unwrap()
     }
 }
@@ -299,6 +332,7 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Distribution<f64> for Data<D> {
     fn mean(&self) -> Option<f64> {
         Some(Statistics::mean(self.iter()))
     }
+
     /// Estimates the unbiased population variance from the provided samples
     ///
     /// # Remarks

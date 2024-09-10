@@ -1,34 +1,58 @@
 [package]
-
 name = "statrs"
-version = "0.16.0"
+version = "0.17.1"
 authors = ["Michael Ma"]
 description = "Statistical computing library for Rust"
 license = "MIT"
 keywords = ["probability", "statistics", "stats", "distribution", "math"]
 categories = ["science"]
-documentation = "https://docs.rs/statrs/0.15.0/statrs/"
-homepage = "https://github.com/boxtown/statrs"
-repository = "https://github.com/boxtown/statrs"
-edition = "2018"
+homepage = "https://github.com/statrs-dev/statrs"
+repository = "https://github.com/statrs-dev/statrs"
+edition = "2021"
+
+include = ["CHANGELOG.md", "LICENSE.md", "src/", "tests/"]
+
+# When changing MSRV: Also update the README
+rust-version = "1.66.0"
 
 [lib]
 name = "statrs"
 path = "src/lib.rs"
 
-[features]
-nightly = []
-
-[dependencies]
-rand = "0.8"
-nalgebra = { version = "0.29", features = ["rand"] }
-approx = "0.5.0"
-num-traits = "0.2.14"
-lazy_static = "1.4.0"
-
-[dev-dependencies]
-criterion = "0.3.3"
-
 [[bench]]
 name = "order_statistics"
 harness = false
+required-features = ["rand"]
+
+[features]
+default = ["nalgebra", "rand"]
+nalgebra = ["dep:nalgebra"]
+rand = ["dep:rand", "nalgebra?/rand"]
+
+[dependencies]
+approx = "0.5.0"
+num-traits = "0.2.14"
+
+[dependencies.rand]
+version = "0.8"
+optional = true
+
+[dependencies.nalgebra]
+version = "0.32"
+optional = true
+default-features = false
+features = ["std"]
+
+[dev-dependencies]
+criterion = "0.5"
+anyhow = "1.0"
+
+[dev-dependencies.nalgebra]
+version = "0.32"
+default-features = false
+features = ["macros"]
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+# Set by cargo-llvm-cov when running on nightly
+check-cfg = ['cfg(coverage_nightly)']

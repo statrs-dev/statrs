@@ -1,4 +1,0 @@
-# Run using `rustfmt --write-mode overwrite *.rs` in the
-# root of the src directory. You may still get some
-# formatting errors (whitespace etc) which should be
-# fixed manually before committing.

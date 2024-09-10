@@ -2,39 +2,46 @@
 //! and provides
 //! concrete implementations for a variety of distributions.
 use super::statistics::{Max, Min};
-use ::num_traits::{float::Float, Bounded, Num};
+use ::num_traits::{Float, Num};
+use num_traits::NumAssignOps;
 
 pub use self::bernoulli::Bernoulli;
-pub use self::beta::Beta;
-pub use self::binomial::Binomial;
-pub use self::categorical::Categorical;
-pub use self::cauchy::Cauchy;
-pub use self::chi::Chi;
+pub use self::beta::{Beta, BetaError};
+pub use self::binomial::{Binomial, BinomialError};
+pub use self::categorical::{Categorical, CategoricalError};
+pub use self::cauchy::{Cauchy, CauchyError};
+pub use self::chi::{Chi, ChiError};
 pub use self::chi_squared::ChiSquared;
-pub use self::dirac::Dirac;
-pub use self::dirichlet::Dirichlet;
-pub use self::discrete_uniform::DiscreteUniform;
+pub use self::dirac::{Dirac, DiracError};
+#[cfg(feature = "nalgebra")]
+pub use self::dirichlet::{Dirichlet, DirichletError};
+pub use self::discrete_uniform::{DiscreteUniform, DiscreteUniformError};
 pub use self::empirical::Empirical;
 pub use self::erlang::Erlang;
-pub use self::exponential::Exp;
-pub use self::fisher_snedecor::FisherSnedecor;
-pub use self::gamma::Gamma;
-pub use self::geometric::Geometric;
-pub use self::hypergeometric::Hypergeometric;
-pub use self::inverse_gamma::InverseGamma;
-pub use self::laplace::Laplace;
-pub use self::log_normal::LogNormal;
-pub use self::multinomial::Multinomial;
-pub use self::multivariate_normal::MultivariateNormal;
+pub use self::exponential::{Exp, ExpError};
+pub use self::fisher_snedecor::{FisherSnedecor, FisherSnedecorError};
+pub use self::gamma::{Gamma, GammaError};
+pub use self::geometric::{Geometric, GeometricError};
+pub use self::hypergeometric::{Hypergeometric, HypergeometricError};
+pub use self::inverse_gamma::{InverseGamma, InverseGammaError};
+pub use self::laplace::{Laplace, LaplaceError};
+pub use self::log_normal::{LogNormal, LogNormalError};
+#[cfg(feature = "nalgebra")]
+pub use self::multinomial::{Multinomial, MultinomialError};
+#[cfg(feature = "nalgebra")]
+pub use self::multivariate_normal::{MultivariateNormal, MultivariateNormalError};
+#[cfg(feature = "nalgebra")]
 pub use self::multivariate_normal_diag::MultivariateNormalDiag;
-pub use self::negative_binomial::NegativeBinomial;
-pub use self::normal::Normal;
-pub use self::pareto::Pareto;
-pub use self::poisson::Poisson;
-pub use self::students_t::StudentsT;
-pub use self::triangular::Triangular;
-pub use self::uniform::Uniform;
-pub use self::weibull::Weibull;
+#[cfg(feature = "nalgebra")]
+pub use self::multivariate_students_t::{MultivariateStudent, MultivariateStudentError};
+pub use self::negative_binomial::{NegativeBinomial, NegativeBinomialError};
+pub use self::normal::{Normal, NormalError};
+pub use self::pareto::{Pareto, ParetoError};
+pub use self::poisson::{Poisson, PoissonError};
+pub use self::students_t::{StudentsT, StudentsTError};
+pub use self::triangular::{Triangular, TriangularError};
+pub use self::uniform::{Uniform, UniformError};
+pub use self::weibull::{Weibull, WeibullError};
 
 mod bernoulli;
 mod beta;
@@ -44,6 +51,7 @@ mod cauchy;
 mod chi;
 mod chi_squared;
 mod dirac;
+#[cfg(feature = "nalgebra")]
 mod dirichlet;
 mod discrete_uniform;
 mod empirical;
@@ -58,9 +66,14 @@ mod internal;
 mod inverse_gamma;
 mod laplace;
 mod log_normal;
+#[cfg(feature = "nalgebra")]
 mod multinomial;
+#[cfg(feature = "nalgebra")]
 mod multivariate_normal;
+#[cfg(feature = "nalgebra")]
 mod multivariate_normal_diag;
+#[cfg(feature = "nalgebra")]
+mod multivariate_students_t;
 mod negative_binomial;
 mod normal;
 mod pareto;
@@ -69,10 +82,10 @@ mod students_t;
 mod triangular;
 mod uniform;
 mod weibull;
+#[cfg(feature = "rand")]
 mod ziggurat;
+#[cfg(feature = "rand")]
 mod ziggurat_tables;
-
-use crate::Result;
 
 /// The `ContinuousCDF` trait is used to specify an interface for univariate
 /// distributions for which cdf float arguments are sensible.
@@ -103,7 +116,9 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
     /// let n = Uniform::new(0.0, 1.0).unwrap();
     /// assert_eq!(0.5, n.sf(0.5));
     /// ```
-    fn sf(&self, x: K) -> T;
+    fn sf(&self, x: K) -> T {
+        T::one() - self.cdf(x)
+    }
 
     /// Due to issues with rounding and floating-point accuracy the default
     /// implementation may be ill-behaved.
@@ -111,6 +126,8 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
     /// Performs a binary search on the domain of `cdf` to obtain an approximation
     /// of `F^-1(p) := inf { x | F(x) >= p }`. Needless to say, performance may
     /// may be lacking.
+    #[doc(alias = "quantile function")]
+    #[doc(alias = "quantile")]
     fn inverse_cdf(&self, p: T) -> K {
         if p == T::zero() {
             return self.min();
@@ -143,7 +160,9 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
 
 /// The `DiscreteCDF` trait is used to specify an interface for univariate
 /// discrete distributions.
-pub trait DiscreteCDF<K: Bounded + Clone + Num, T: Float>: Min<K> + Max<K> {
+pub trait DiscreteCDF<K: Sized + Num + Ord + Clone + NumAssignOps, T: Float>:
+    Min<K> + Max<K>
+{
     /// Returns the cumulative distribution function calculated
     /// at `x` for a given distribution. May panic depending
     /// on the implementor.
@@ -169,33 +188,32 @@ pub trait DiscreteCDF<K: Bounded + Clone + Num, T: Float>: Min<K> + Max<K> {
     /// let n = DiscreteUniform::new(1, 10).unwrap();
     /// assert_eq!(0.4, n.sf(6));
     /// ```
-    fn sf(&self, x: K) -> T;
+    fn sf(&self, x: K) -> T {
+        T::one() - self.cdf(x)
+    }
 
     /// Due to issues with rounding and floating-point accuracy the default implementation may be ill-behaved
     /// Specialized inverse cdfs should be used whenever possible.
+    ///
+    /// # Panics
+    /// this default impl panics if provided `p` not on interval [0.0, 1.0]
     fn inverse_cdf(&self, p: T) -> K {
-        // TODO: fix integer implementation
         if p == T::zero() {
             return self.min();
-        };
-        if p == T::one() {
+        } else if p == T::one() {
             return self.max();
-        };
+        } else if !(T::zero()..=T::one()).contains(&p) {
+            panic!("p must be on [0, 1]")
+        }
+
         let two = K::one() + K::one();
-        let mut high = two.clone();
-        let mut low = K::min_value();
-        while self.cdf(high.clone()) < p {
-            high = high.clone() + high.clone();
+        let mut ub = two.clone();
+        let lb = self.min();
+        while self.cdf(ub.clone()) < p {
+            ub *= two.clone();
         }
-        while high != low {
-            let mid = (high.clone() + low.clone()) / two.clone();
-            if self.cdf(mid.clone()) >= p {
-                high = mid;
-            } else {
-                low = mid;
-            }
-        }
-        high
+
+        internal::integral_bisection_search(|p| self.cdf(p.clone()), p, lb, ub).unwrap()
     }
 }
 

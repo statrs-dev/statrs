@@ -1,7 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::{Distribution, Max, Median, Min, Mode};
-use crate::{Result, StatsError};
-use rand::Rng;
 use std::f64;
 
 /// Implements the [Laplace](https://en.wikipedia.org/wiki/Laplace_distribution)
@@ -17,11 +15,34 @@ use std::f64;
 /// assert_eq!(n.mode().unwrap(), 0.0);
 /// assert_eq!(n.pdf(1.0), 0.18393972058572117);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Laplace {
     location: f64,
     scale: f64,
 }
+
+/// Represents the errors that can occur when creating a [`Laplace`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum LaplaceError {
+    /// The location is NaN.
+    LocationInvalid,
+
+    /// The scale is NaN, zero or less than zero.
+    ScaleInvalid,
+}
+
+impl std::fmt::Display for LaplaceError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            LaplaceError::LocationInvalid => write!(f, "Location is NaN"),
+            LaplaceError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero"),
+        }
+    }
+}
+
+impl std::error::Error for LaplaceError {}
 
 impl Laplace {
     /// Constructs a new laplace distribution with the given
@@ -42,12 +63,16 @@ impl Laplace {
     /// result = Laplace::new(0.0, -1.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(location: f64, scale: f64) -> Result<Laplace> {
-        if location.is_nan() || scale.is_nan() || scale <= 0.0 {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(Laplace { location, scale })
+    pub fn new(location: f64, scale: f64) -> Result<Laplace, LaplaceError> {
+        if location.is_nan() {
+            return Err(LaplaceError::LocationInvalid);
         }
+
+        if scale.is_nan() || scale <= 0.0 {
+            return Err(LaplaceError::ScaleInvalid);
+        }
+
+        Ok(Laplace { location, scale })
     }
 
     /// Returns the location of the laplace distribution
@@ -79,8 +104,15 @@ impl Laplace {
     }
 }
 
+impl std::fmt::Display for Laplace {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Laplace({}, {})", self.location, self.scale)
+    }
+}
+
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Laplace {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         let x: f64 = rng.gen_range(-0.5..0.5);
         self.location - self.scale * x.signum() * (1. - 2. * x.abs()).ln()
     }
@@ -92,7 +124,7 @@ impl ContinuousCDF<f64, f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2) * (1 + signum(x - μ)) - signum(x - μ) * exp(-|x - μ| / b)
     /// ```
     ///
@@ -111,7 +143,7 @@ impl ContinuousCDF<f64, f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 - [(1 / 2) * (1 + signum(x - μ)) - signum(x - μ) * exp(-|x - μ| / b)]
     /// ```
     ///
@@ -131,11 +163,11 @@ impl ContinuousCDF<f64, f64> for Laplace {
     /// # Formula
     ///
     /// if p <= 1/2
-    /// ```ignore
+    /// ```text
     /// μ + b * ln(2p)
     /// ```
     /// if p >= 1/2
-    /// ```ignore
+    /// ```text
     /// μ - b * ln(2 - 2p)
     /// ```
     ///
@@ -158,7 +190,7 @@ impl Min<f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// NEG_INF
     /// ```
     fn min(&self) -> f64 {
@@ -172,8 +204,8 @@ impl Max<f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -185,7 +217,7 @@ impl Distribution<f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -193,11 +225,12 @@ impl Distribution<f64> for Laplace {
     fn mean(&self) -> Option<f64> {
         Some(self.location)
     }
+
     /// Returns the variance of the laplace distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2*b^2
     /// ```
     ///
@@ -205,11 +238,12 @@ impl Distribution<f64> for Laplace {
     fn variance(&self) -> Option<f64> {
         Some(2. * self.scale * self.scale)
     }
+
     /// Returns the entropy of the laplace distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(2be)
     /// ```
     ///
@@ -217,11 +251,12 @@ impl Distribution<f64> for Laplace {
     fn entropy(&self) -> Option<f64> {
         Some((2. * self.scale).ln() + 1.)
     }
+
     /// Returns the skewness of the laplace distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -234,7 +269,7 @@ impl Median<f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -249,7 +284,7 @@ impl Mode<Option<f64>> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// μ
     /// ```
     ///
@@ -265,7 +300,7 @@ impl Continuous<f64, f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / 2b) * exp(-|x - μ| / b)
     /// ```
     /// where `μ` is the location and `b` is the scale
@@ -278,7 +313,7 @@ impl Continuous<f64, f64> for Laplace {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln((1 / 2b) * exp(-|x - μ| / b))
     /// ```
     ///
@@ -288,202 +323,171 @@ impl Continuous<f64, f64> for Laplace {
     }
 }
 
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
     use super::*;
-    use core::f64::INFINITY as INF;
-    use rand::thread_rng;
 
-    fn try_create(location: f64, scale: f64) -> Laplace {
-        let n = Laplace::new(location, scale);
-        assert!(n.is_ok());
-        n.unwrap()
-    }
+    use crate::testing_boiler;
 
-    fn bad_create_case(location: f64, scale: f64) {
-        let n = Laplace::new(location, scale);
-        assert!(n.is_err());
-    }
-
-    fn test_case<F>(location: f64, scale: f64, expected: f64, eval: F)
-    where
-        F: Fn(Laplace) -> f64,
-    {
-        let n = try_create(location, scale);
-        let x = eval(n);
-        assert_eq!(expected, x);
-    }
-
-    fn test_is_nan<F>(location: f64, scale: f64, eval: F)
-    where
-        F: Fn(Laplace) -> f64,
-    {
-        let n = try_create(location, scale);
-        let x = eval(n);
-        assert!(x.is_nan());
-    }
-
-    fn test_almost<F>(location: f64, scale: f64, expected: f64, acc: f64, eval: F)
-    where
-        F: Fn(Laplace) -> f64,
-    {
-        let n = try_create(location, scale);
-        let x = eval(n);
-        assert_almost_eq!(expected, x, acc);
-    }
+    testing_boiler!(location: f64, scale: f64; Laplace; LaplaceError);
 
     // A wrapper for the `assert_relative_eq!` macro from the approx crate.
     //
     // `rtol` is the accepable relative error.  This function is for testing
     // relative tolerance *only*.  It should not be used with `expected = 0`.
     //
-    fn test_rel_close<F>(location: f64, scale: f64, expected: f64, rtol: f64, eval: F)
+    fn test_rel_close<F>(location: f64, scale: f64, expected: f64, rtol: f64, get_fn: F)
     where
         F: Fn(Laplace) -> f64,
     {
-        let n = try_create(location, scale);
-        let x = eval(n);
+        let x = create_and_get(location, scale, get_fn);
         assert_relative_eq!(expected, x, epsilon = 0.0, max_relative = rtol);
     }
 
     #[test]
     fn test_create() {
-        try_create(1.0, 2.0);
-        try_create(-INF, 0.1);
-        try_create(-5.0 - 1.0, 1.0);
-        try_create(0.0, 5.0);
-        try_create(1.0, 7.0);
-        try_create(5.0, 10.0);
-        try_create(INF, INF);
+        create_ok(1.0, 2.0);
+        create_ok(f64::NEG_INFINITY, 0.1);
+        create_ok(-5.0 - 1.0, 1.0);
+        create_ok(0.0, 5.0);
+        create_ok(1.0, 7.0);
+        create_ok(5.0, 10.0);
+        create_ok(f64::INFINITY, f64::INFINITY);
     }
 
     #[test]
     fn test_bad_create() {
-        bad_create_case(2.0, -1.0);
-        bad_create_case(f64::NAN, 1.0);
-        bad_create_case(f64::NAN, -1.0);
+        test_create_err(2.0, -1.0, LaplaceError::ScaleInvalid);
+        test_create_err(f64::NAN, 1.0, LaplaceError::LocationInvalid);
+        create_err(f64::NAN, -1.0);
     }
 
     #[test]
     fn test_mean() {
         let mean = |x: Laplace| x.mean().unwrap();
-        test_case(-INF, 0.1, -INF, mean);
-        test_case(-5.0 - 1.0, 1.0, -6.0, mean);
-        test_case(0.0, 5.0, 0.0, mean);
-        test_case(1.0, 10.0, 1.0, mean);
-        test_case(INF, INF, INF, mean);
+        test_exact(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, mean);
+        test_exact(-5.0 - 1.0, 1.0, -6.0, mean);
+        test_exact(0.0, 5.0, 0.0, mean);
+        test_exact(1.0, 10.0, 1.0, mean);
+        test_exact(f64::INFINITY, f64::INFINITY, f64::INFINITY, mean);
     }
 
     #[test]
     fn test_variance() {
         let variance = |x: Laplace| x.variance().unwrap();
-        test_almost(-INF, 0.1, 0.02, 1E-12, variance);
-        test_almost(-5.0 - 1.0, 1.0, 2.0, 1E-12, variance);
-        test_almost(0.0, 5.0, 50.0, 1E-12, variance);
-        test_almost(1.0, 7.0, 98.0, 1E-12, variance);
-        test_almost(5.0, 10.0, 200.0, 1E-12, variance);
-        test_almost(INF, INF, INF, 1E-12, variance);
+        test_absolute(f64::NEG_INFINITY, 0.1, 0.02, 1E-12, variance);
+        test_absolute(-5.0 - 1.0, 1.0, 2.0, 1E-12, variance);
+        test_absolute(0.0, 5.0, 50.0, 1E-12, variance);
+        test_absolute(1.0, 7.0, 98.0, 1E-12, variance);
+        test_absolute(5.0, 10.0, 200.0, 1E-12, variance);
+        test_absolute(f64::INFINITY, f64::INFINITY, f64::INFINITY, 1E-12, variance);
     }
     #[test]
     fn test_entropy() {
         let entropy = |x: Laplace| x.entropy().unwrap();
-        test_almost(-INF, 0.1, (2.0 * f64::consts::E * 0.1).ln(), 1E-12, entropy);
-        test_almost(-6.0, 1.0, (2.0 * f64::consts::E).ln(), 1E-12, entropy);
-        test_almost(1.0, 7.0, (2.0 * f64::consts::E * 7.0).ln(), 1E-12, entropy);
-        test_almost(5., 10., (2. * f64::consts::E * 10.).ln(), 1E-12, entropy);
-        test_almost(INF, INF, INF, 1E-12, entropy);
+        test_absolute(
+            f64::NEG_INFINITY,
+            0.1,
+            (2.0 * f64::consts::E * 0.1).ln(),
+            1E-12,
+            entropy,
+        );
+        test_absolute(-6.0, 1.0, (2.0 * f64::consts::E).ln(), 1E-12, entropy);
+        test_absolute(1.0, 7.0, (2.0 * f64::consts::E * 7.0).ln(), 1E-12, entropy);
+        test_absolute(5., 10., (2. * f64::consts::E * 10.).ln(), 1E-12, entropy);
+        test_absolute(f64::INFINITY, f64::INFINITY, f64::INFINITY, 1E-12, entropy);
     }
 
     #[test]
     fn test_skewness() {
         let skewness = |x: Laplace| x.skewness().unwrap();
-        test_case(-INF, 0.1, 0.0, skewness);
-        test_case(-6.0, 1.0, 0.0, skewness);
-        test_case(1.0, 7.0, 0.0, skewness);
-        test_case(5.0, 10.0, 0.0, skewness);
-        test_case(INF, INF, 0.0, skewness);
+        test_exact(f64::NEG_INFINITY, 0.1, 0.0, skewness);
+        test_exact(-6.0, 1.0, 0.0, skewness);
+        test_exact(1.0, 7.0, 0.0, skewness);
+        test_exact(5.0, 10.0, 0.0, skewness);
+        test_exact(f64::INFINITY, f64::INFINITY, 0.0, skewness);
     }
 
     #[test]
     fn test_mode() {
         let mode = |x: Laplace| x.mode().unwrap();
-        test_case(-INF, 0.1, -INF, mode);
-        test_case(-6.0, 1.0, -6.0, mode);
-        test_case(1.0, 7.0, 1.0, mode);
-        test_case(5.0, 10.0, 5.0, mode);
-        test_case(INF, INF, INF, mode);
+        test_exact(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, mode);
+        test_exact(-6.0, 1.0, -6.0, mode);
+        test_exact(1.0, 7.0, 1.0, mode);
+        test_exact(5.0, 10.0, 5.0, mode);
+        test_exact(f64::INFINITY, f64::INFINITY, f64::INFINITY, mode);
     }
 
     #[test]
     fn test_median() {
         let median = |x: Laplace| x.median();
-        test_case(-INF, 0.1, -INF, median);
-        test_case(-6.0, 1.0, -6.0, median);
-        test_case(1.0, 7.0, 1.0, median);
-        test_case(5.0, 10.0, 5.0, median);
-        test_case(INF, INF, INF, median);
+        test_exact(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, median);
+        test_exact(-6.0, 1.0, -6.0, median);
+        test_exact(1.0, 7.0, 1.0, median);
+        test_exact(5.0, 10.0, 5.0, median);
+        test_exact(f64::INFINITY, f64::INFINITY, f64::INFINITY, median);
     }
 
     #[test]
     fn test_min() {
-        test_case(0.0, 1.0, -INF, |l| l.min());
+        test_exact(0.0, 1.0, f64::NEG_INFINITY, |l| l.min());
     }
 
     #[test]
     fn test_max() {
-        test_case(0.0, 1.0, INF, |l| l.max());
+        test_exact(0.0, 1.0, f64::INFINITY, |l| l.max());
     }
 
     #[test]
     fn test_density() {
         let pdf = |arg: f64| move |x: Laplace| x.pdf(arg);
-        test_almost(0.0, 0.1, 1.529511602509129e-06, 1E-12, pdf(1.5));
-        test_almost(1.0, 0.1, 7.614989872356341e-08, 1E-12, pdf(2.8));
-        test_almost(-1.0, 0.1, 3.8905661205668983e-19, 1E-12, pdf(-5.4));
-        test_almost(5.0, 0.1, 5.056107463052243e-43, 1E-12, pdf(-4.9));
-        test_almost(-5.0, 0.1, 1.9877248679543235e-30, 1E-12, pdf(2.0));
-        test_almost(INF, 0.1, 0.0, 1E-12, pdf(5.5));
-        test_almost(-INF, 0.1, 0.0, 1E-12, pdf(-0.0));
-        test_almost(0.0, 1.0, 0.0, 1E-12, pdf(INF));
-        test_almost(1.0, 1.0, 0.00915781944436709, 1E-12, pdf(5.0));
-        test_almost(-1.0, 1.0, 0.5, 1E-12, pdf(-1.0));
-        test_almost(5.0, 1.0, 0.0012393760883331792, 1E-12, pdf(-1.0));
-        test_almost(-5.0, 1.0, 0.0002765421850739168, 1E-12, pdf(2.5));
-        test_almost(INF, 0.1, 0.0, 1E-12, pdf(2.0));
-        test_almost(-INF, 0.1, 0.0, 1E-12, pdf(15.0));
-        test_almost(0.0, INF, 0.0, 1E-12, pdf(89.3));
-        test_almost(1.0, INF, 0.0, 1E-12, pdf(-0.1));
-        test_almost(-1.0, INF, 0.0, 1E-12, pdf(0.1));
-        test_almost(5.0, INF, 0.0, 1E-12, pdf(-6.1));
-        test_almost(-5.0, INF, 0.0, 1E-12, pdf(-10.0));
-        test_is_nan(INF, INF, pdf(2.0));
-        test_is_nan(-INF, INF, pdf(-5.1));
+        test_absolute(0.0, 0.1, 1.529511602509129e-06, 1E-12, pdf(1.5));
+        test_absolute(1.0, 0.1, 7.614989872356341e-08, 1E-12, pdf(2.8));
+        test_absolute(-1.0, 0.1, 3.8905661205668983e-19, 1E-12, pdf(-5.4));
+        test_absolute(5.0, 0.1, 5.056107463052243e-43, 1E-12, pdf(-4.9));
+        test_absolute(-5.0, 0.1, 1.9877248679543235e-30, 1E-12, pdf(2.0));
+        test_absolute(f64::INFINITY, 0.1, 0.0, 1E-12, pdf(5.5));
+        test_absolute(f64::NEG_INFINITY, 0.1, 0.0, 1E-12, pdf(-0.0));
+        test_absolute(0.0, 1.0, 0.0, 1E-12, pdf(f64::INFINITY));
+        test_absolute(1.0, 1.0, 0.00915781944436709, 1E-12, pdf(5.0));
+        test_absolute(-1.0, 1.0, 0.5, 1E-12, pdf(-1.0));
+        test_absolute(5.0, 1.0, 0.0012393760883331792, 1E-12, pdf(-1.0));
+        test_absolute(-5.0, 1.0, 0.0002765421850739168, 1E-12, pdf(2.5));
+        test_absolute(f64::INFINITY, 0.1, 0.0, 1E-12, pdf(2.0));
+        test_absolute(f64::NEG_INFINITY, 0.1, 0.0, 1E-12, pdf(15.0));
+        test_absolute(0.0, f64::INFINITY, 0.0, 1E-12, pdf(89.3));
+        test_absolute(1.0, f64::INFINITY, 0.0, 1E-12, pdf(-0.1));
+        test_absolute(-1.0, f64::INFINITY, 0.0, 1E-12, pdf(0.1));
+        test_absolute(5.0, f64::INFINITY, 0.0, 1E-12, pdf(-6.1));
+        test_absolute(-5.0, f64::INFINITY, 0.0, 1E-12, pdf(-10.0));
+        test_is_nan(f64::INFINITY, f64::INFINITY, pdf(2.0));
+        test_is_nan(f64::NEG_INFINITY, f64::INFINITY, pdf(-5.1));
     }
 
     #[test]
     fn test_ln_density() {
         let ln_pdf = |arg: f64| move |x: Laplace| x.ln_pdf(arg);
-        test_almost(0.0, 0.1, -13.3905620875659, 1E-12, ln_pdf(1.5));
-        test_almost(1.0, 0.1, -16.390562087565897, 1E-12, ln_pdf(2.8));
-        test_almost(-1.0, 0.1, -42.39056208756591, 1E-12, ln_pdf(-5.4));
-        test_almost(5.0, 0.1, -97.3905620875659, 1E-12, ln_pdf(-4.9));
-        test_almost(-5.0, 0.1, -68.3905620875659, 1E-12, ln_pdf(2.0));
-        test_case(INF, 0.1, -INF, ln_pdf(5.5));
-        test_case(-INF, 0.1, -INF, ln_pdf(-0.0));
-        test_case(0.0, 1.0, -INF, ln_pdf(INF));
-        test_almost(1.0, 1.0, -4.693147180559945, 1E-12, ln_pdf(5.0));
-        test_almost(-1.0, 1.0, -f64::consts::LN_2, 1E-12, ln_pdf(-1.0));
-        test_almost(5.0, 1.0, -6.693147180559945, 1E-12, ln_pdf(-1.0));
-        test_almost(-5.0, 1.0, -8.193147180559945, 1E-12, ln_pdf(2.5));
-        test_case(INF, 0.1, -INF, ln_pdf(2.0));
-        test_case(-INF, 0.1, -INF, ln_pdf(15.0));
-        test_case(0.0, INF, -INF, ln_pdf(89.3));
-        test_case(1.0, INF, -INF, ln_pdf(-0.1));
-        test_case(-1.0, INF, -INF, ln_pdf(0.1));
-        test_case(5.0, INF, -INF, ln_pdf(-6.1));
-        test_case(-5.0, INF, -INF, ln_pdf(-10.0));
-        test_is_nan(INF, INF, ln_pdf(2.0));
-        test_is_nan(-INF, INF, ln_pdf(-5.1));
+        test_absolute(0.0, 0.1, -13.3905620875659, 1E-12, ln_pdf(1.5));
+        test_absolute(1.0, 0.1, -16.390562087565897, 1E-12, ln_pdf(2.8));
+        test_absolute(-1.0, 0.1, -42.39056208756591, 1E-12, ln_pdf(-5.4));
+        test_absolute(5.0, 0.1, -97.3905620875659, 1E-12, ln_pdf(-4.9));
+        test_absolute(-5.0, 0.1, -68.3905620875659, 1E-12, ln_pdf(2.0));
+        test_exact(f64::INFINITY, 0.1, f64::NEG_INFINITY, ln_pdf(5.5));
+        test_exact(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, ln_pdf(-0.0));
+        test_exact(0.0, 1.0, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
+        test_absolute(1.0, 1.0, -4.693147180559945, 1E-12, ln_pdf(5.0));
+        test_absolute(-1.0, 1.0, -f64::consts::LN_2, 1E-12, ln_pdf(-1.0));
+        test_absolute(5.0, 1.0, -6.693147180559945, 1E-12, ln_pdf(-1.0));
+        test_absolute(-5.0, 1.0, -8.193147180559945, 1E-12, ln_pdf(2.5));
+        test_exact(f64::INFINITY, 0.1, f64::NEG_INFINITY, ln_pdf(2.0));
+        test_exact(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, ln_pdf(15.0));
+        test_exact(0.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(89.3));
+        test_exact(1.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(-0.1));
+        test_exact(-1.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(0.1));
+        test_exact(5.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(-6.1));
+        test_exact(-5.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(-10.0));
+        test_is_nan(f64::INFINITY, f64::INFINITY, ln_pdf(2.0));
+        test_is_nan(f64::NEG_INFINITY, f64::INFINITY, ln_pdf(-5.1));
     }
 
     #[test]
@@ -546,23 +550,27 @@ mod tests {
         test_rel_close(loc, scale, expected, reltol, inverse_cdf(0.95));
     }
 
+    #[cfg(feature = "rand")]
     #[test]
     fn test_sample() {
         use ::rand::distributions::Distribution;
-        let l = try_create(0.1, 0.5);
+        use ::rand::thread_rng;
+
+        let l = create_ok(0.1, 0.5);
         l.sample(&mut thread_rng());
     }
 
+    #[cfg(feature = "rand")]
     #[test]
     fn test_sample_distribution() {
+        use ::rand::distributions::Distribution;
         use ::rand::rngs::StdRng;
         use ::rand::SeedableRng;
-        use rand::distributions::Distribution;
 
         // sanity check sampling
         let location = 0.0;
         let scale = 1.0;
-        let n = try_create(location, scale);
+        let n = create_ok(location, scale);
         let trials = 10_000;
         let tolerance = 250;
 

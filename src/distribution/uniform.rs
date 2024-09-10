@@ -1,9 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use crate::{Result, StatsError};
-use rand::distributions::Uniform as RandUniform;
-use rand::Rng;
 use std::f64;
+use std::fmt::Debug;
 
 /// Implements the [Continuous
 /// Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous))
@@ -25,13 +23,43 @@ pub struct Uniform {
     max: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Uniform`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum UniformError {
+    /// The minimum is NaN or infinite.
+    MinInvalid,
+
+    /// The maximum is NaN or infinite.
+    MaxInvalid,
+
+    /// The maximum is not greater than the minimum.
+    MaxNotGreaterThanMin,
+}
+
+impl std::fmt::Display for UniformError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            UniformError::MinInvalid => write!(f, "Minimum is NaN or infinite"),
+            UniformError::MaxInvalid => write!(f, "Maximum is NaN or infinite"),
+            UniformError::MaxNotGreaterThanMin => {
+                write!(f, "Maximum is not greater than the minimum")
+            }
+        }
+    }
+}
+
+impl std::error::Error for UniformError {}
+
 impl Uniform {
     /// Constructs a new uniform distribution with a min of `min` and a max
-    /// of `max`
+    /// of `max`.
     ///
     /// # Errors
     ///
-    /// Returns an error if `min` or `max` are `NaN`
+    /// Returns an error if `min` or `max` are `NaN` or infinite.
+    /// Returns an error if `min >= max`.
     ///
     /// # Examples
     ///
@@ -44,19 +72,57 @@ impl Uniform {
     ///
     /// result = Uniform::new(f64::NAN, f64::NAN);
     /// assert!(result.is_err());
+    ///
+    /// result = Uniform::new(f64::NEG_INFINITY, 1.0);
+    /// assert!(result.is_err());
     /// ```
-    pub fn new(min: f64, max: f64) -> Result<Uniform> {
-        if min > max || min.is_nan() || max.is_nan() {
-            Err(StatsError::BadParams)
-        } else {
-            Ok(Uniform { min, max })
+    pub fn new(min: f64, max: f64) -> Result<Uniform, UniformError> {
+        if !min.is_finite() {
+            return Err(UniformError::MinInvalid);
         }
+
+        if !max.is_finite() {
+            return Err(UniformError::MaxInvalid);
+        }
+
+        if min < max {
+            Ok(Uniform { min, max })
+        } else {
+            Err(UniformError::MaxNotGreaterThanMin)
+        }
+    }
+
+    /// Constructs a new standard uniform distribution with
+    /// a lower bound 0 and an upper bound of 1.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Uniform;
+    ///
+    /// let uniform = Uniform::standard();
+    /// ```
+    pub fn standard() -> Self {
+        Self { min: 0.0, max: 1.0 }
     }
 }
 
+impl Default for Uniform {
+    fn default() -> Self {
+        Self::standard()
+    }
+}
+
+impl std::fmt::Display for Uniform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Uni([{},{}])", self.min, self.max)
+    }
+}
+
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Uniform {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        let d = RandUniform::new_inclusive(self.min, self.max);
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+        let d = rand::distributions::Uniform::new_inclusive(self.min, self.max);
         rng.sample(d)
     }
 }
@@ -68,7 +134,7 @@ impl ContinuousCDF<f64, f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (x - min) / (max - min)
     /// ```
     fn cdf(&self, x: f64) -> f64 {
@@ -86,7 +152,7 @@ impl ContinuousCDF<f64, f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (max - x) / (max - min)
     /// ```
     fn sf(&self, x: f64) -> f64 {
@@ -94,12 +160,21 @@ impl ContinuousCDF<f64, f64> for Uniform {
             1.0
         } else if x >= self.max {
             0.0
-        } else if x.is_infinite() && self.max.is_infinite() {
-            0.0
-        } else if self.max.is_infinite() {
-            1.0
         } else {
             (self.max - x) / (self.max - self.min)
+        }
+    }
+
+    /// Finds the value of `x` where `F(p) = x`
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        if !(0.0..=1.0).contains(&p) {
+            panic!("p must be in [0, 1], was {}", p);
+        } else if p == 0.0 {
+            self.min
+        } else if p == 1.0 {
+            self.max
+        } else {
+            (self.max - self.min) * p + self.min
         }
     }
 }
@@ -121,37 +196,40 @@ impl Distribution<f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (min + max) / 2
     /// ```
     fn mean(&self) -> Option<f64> {
         Some((self.min + self.max) / 2.0)
     }
+
     /// Returns the variance for the continuous uniform distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (max - min)^2 / 12
     /// ```
     fn variance(&self) -> Option<f64> {
         Some((self.max - self.min) * (self.max - self.min) / 12.0)
     }
+
     /// Returns the entropy for the continuous uniform distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(max - min)
     /// ```
     fn entropy(&self) -> Option<f64> {
         Some((self.max - self.min).ln())
     }
+
     /// Returns the skewness for the continuous uniform distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn skewness(&self) -> Option<f64> {
@@ -164,7 +242,7 @@ impl Median<f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (min + max) / 2
     /// ```
     fn median(&self) -> f64 {
@@ -182,7 +260,7 @@ impl Mode<Option<f64>> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// N/A // (max + min) / 2 for the middle element
     /// ```
     fn mode(&self) -> Option<f64> {
@@ -200,7 +278,7 @@ impl Continuous<f64, f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / (max - min)
     /// ```
     fn pdf(&self, x: f64) -> f64 {
@@ -221,7 +299,7 @@ impl Continuous<f64, f64> for Uniform {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(1 / (max - min))
     /// ```
     fn ln_pdf(&self, x: f64) -> f64 {
@@ -234,234 +312,189 @@ impl Continuous<f64, f64> for Uniform {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
-    use crate::statistics::*;
-    use crate::distribution::{ContinuousCDF, Continuous, Uniform};
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
+    use crate::testing_boiler;
 
-    fn try_create(min: f64, max: f64) -> Uniform {
-        let n = Uniform::new(min, max);
-        assert!(n.is_ok());
-        n.unwrap()
-    }
-
-    fn create_case(min: f64, max: f64) {
-        let n = try_create(min, max);
-        assert_eq!(n.min(), min);
-        assert_eq!(n.max(), max);
-    }
-
-    fn bad_create_case(min: f64, max: f64) {
-        let n = Uniform::new(min, max);
-        assert!(n.is_err());
-    }
-
-    fn get_value<F>(min: f64, max: f64, eval: F) -> f64
-        where F: Fn(Uniform) -> f64
-    {
-        let n = try_create(min, max);
-        eval(n)
-    }
-
-    fn test_case<F>(min: f64, max: f64, expected: f64, eval: F)
-        where F: Fn(Uniform) -> f64
-    {
-
-        let x = get_value(min, max, eval);
-        assert_eq!(expected, x);
-    }
-
-    fn test_almost<F>(min: f64, max: f64, expected: f64, acc: f64, eval: F)
-        where F: Fn(Uniform) -> f64
-    {
-
-        let x = get_value(min, max, eval);
-        assert_almost_eq!(expected, x, acc);
-    }
+    testing_boiler!(min: f64, max: f64; Uniform; UniformError);
 
     #[test]
     fn test_create() {
-        create_case(0.0, 0.0);
-        create_case(0.0, 0.1);
-        create_case(0.0, 1.0);
-        create_case(10.0, 10.0);
-        create_case(-5.0, 11.0);
-        create_case(-5.0, 100.0);
+        create_ok(0.0, 0.1);
+        create_ok(0.0, 1.0);
+        create_ok(-5.0, 11.0);
+        create_ok(-5.0, 100.0);
     }
 
     #[test]
     fn test_bad_create() {
-        bad_create_case(f64::NAN, 1.0);
-        bad_create_case(1.0, f64::NAN);
-        bad_create_case(f64::NAN, f64::NAN);
-        bad_create_case(1.0, 0.0);
+        let invalid = [
+            (0.0, 0.0, UniformError::MaxNotGreaterThanMin),
+            (f64::NAN, 1.0, UniformError::MinInvalid),
+            (1.0, f64::NAN, UniformError::MaxInvalid),
+            (f64::NAN, f64::NAN, UniformError::MinInvalid),
+            (0.0, f64::INFINITY, UniformError::MaxInvalid),
+            (1.0, 0.0, UniformError::MaxNotGreaterThanMin),
+        ];
+        
+        for (min, max, err) in invalid {
+            test_create_err(min, max, err);
+        }
     }
 
     #[test]
     fn test_variance() {
         let variance = |x: Uniform| x.variance().unwrap();
-        test_case(-0.0, 2.0, 1.0 / 3.0, variance);
-        test_case(0.0, 2.0, 1.0 / 3.0, variance);
-        test_almost(0.1, 4.0, 1.2675, 1e-15, variance);
-        test_case(10.0, 11.0, 1.0 / 12.0, variance);
-        test_case(0.0, f64::INFINITY, f64::INFINITY, variance);
+        test_exact(-0.0, 2.0, 1.0 / 3.0, variance);
+        test_exact(0.0, 2.0, 1.0 / 3.0, variance);
+        test_absolute(0.1, 4.0, 1.2675, 1e-15, variance);
+        test_exact(10.0, 11.0, 1.0 / 12.0, variance);
     }
 
     #[test]
     fn test_entropy() {
         let entropy = |x: Uniform| x.entropy().unwrap();
-        test_case(-0.0, 2.0, 0.6931471805599453094172, entropy);
-        test_case(0.0, 2.0, 0.6931471805599453094172, entropy);
-        test_almost(0.1, 4.0, 1.360976553135600743431, 1e-15, entropy);
-        test_case(1.0, 10.0, 2.19722457733621938279, entropy);
-        test_case(10.0, 11.0, 0.0, entropy);
-        test_case(0.0, f64::INFINITY, f64::INFINITY, entropy);
+        test_exact(-0.0, 2.0, 0.6931471805599453094172, entropy);
+        test_exact(0.0, 2.0, 0.6931471805599453094172, entropy);
+        test_absolute(0.1, 4.0, 1.360976553135600743431, 1e-15, entropy);
+        test_exact(1.0, 10.0, 2.19722457733621938279, entropy);
+        test_exact(10.0, 11.0, 0.0, entropy);
     }
 
     #[test]
     fn test_skewness() {
         let skewness = |x: Uniform| x.skewness().unwrap();
-        test_case(-0.0, 2.0, 0.0, skewness);
-        test_case(0.0, 2.0, 0.0, skewness);
-        test_case(0.1, 4.0, 0.0, skewness);
-        test_case(1.0, 10.0, 0.0, skewness);
-        test_case(10.0, 11.0, 0.0, skewness);
-        test_case(0.0, f64::INFINITY, 0.0, skewness);
+        test_exact(-0.0, 2.0, 0.0, skewness);
+        test_exact(0.0, 2.0, 0.0, skewness);
+        test_exact(0.1, 4.0, 0.0, skewness);
+        test_exact(1.0, 10.0, 0.0, skewness);
+        test_exact(10.0, 11.0, 0.0, skewness);
     }
 
     #[test]
     fn test_mode() {
         let mode = |x: Uniform| x.mode().unwrap();
-        test_case(-0.0, 2.0, 1.0, mode);
-        test_case(0.0, 2.0, 1.0, mode);
-        test_case(0.1, 4.0, 2.05, mode);
-        test_case(1.0, 10.0, 5.5, mode);
-        test_case(10.0, 11.0, 10.5, mode);
-        test_case(0.0, f64::INFINITY, f64::INFINITY, mode);
+        test_exact(-0.0, 2.0, 1.0, mode);
+        test_exact(0.0, 2.0, 1.0, mode);
+        test_exact(0.1, 4.0, 2.05, mode);
+        test_exact(1.0, 10.0, 5.5, mode);
+        test_exact(10.0, 11.0, 10.5, mode);
     }
 
     #[test]
     fn test_median() {
         let median = |x: Uniform| x.median();
-        test_case(-0.0, 2.0, 1.0, median);
-        test_case(0.0, 2.0, 1.0, median);
-        test_case(0.1, 4.0, 2.05, median);
-        test_case(1.0, 10.0, 5.5, median);
-        test_case(10.0, 11.0, 10.5, median);
-        test_case(0.0, f64::INFINITY, f64::INFINITY, median);
+        test_exact(-0.0, 2.0, 1.0, median);
+        test_exact(0.0, 2.0, 1.0, median);
+        test_exact(0.1, 4.0, 2.05, median);
+        test_exact(1.0, 10.0, 5.5, median);
+        test_exact(10.0, 11.0, 10.5, median);
     }
 
     #[test]
     fn test_pdf() {
         let pdf = |arg: f64| move |x: Uniform| x.pdf(arg);
-        test_case(0.0, 0.0, 0.0, pdf(-5.0));
-        test_case(0.0, 0.0, f64::INFINITY, pdf(0.0));
-        test_case(0.0, 0.0, 0.0, pdf(5.0));
-        test_case(0.0, 0.1, 0.0, pdf(-5.0));
-        test_case(0.0, 0.1, 10.0, pdf(0.05));
-        test_case(0.0, 0.1, 0.0, pdf(5.0));
-        test_case(0.0, 1.0, 0.0, pdf(-5.0));
-        test_case(0.0, 1.0, 1.0, pdf(0.5));
-        test_case(0.0, 0.1, 0.0, pdf(5.0));
-        test_case(0.0, 10.0, 0.0, pdf(-5.0));
-        test_case(0.0, 10.0, 0.1, pdf(1.0));
-        test_case(0.0, 10.0, 0.1, pdf(5.0));
-        test_case(0.0, 10.0, 0.0, pdf(11.0));
-        test_case(-5.0, 100.0, 0.0, pdf(-10.0));
-        test_case(-5.0, 100.0, 0.009523809523809523809524, pdf(-5.0));
-        test_case(-5.0, 100.0, 0.009523809523809523809524, pdf(0.0));
-        test_case(-5.0, 100.0, 0.0, pdf(101.0));
-        test_case(0.0, f64::INFINITY, 0.0, pdf(-5.0));
-        test_case(0.0, f64::INFINITY, 0.0, pdf(10.0));
-        test_case(0.0, f64::INFINITY, 0.0, pdf(f64::INFINITY));
+        test_exact(0.0, 0.1, 0.0, pdf(-5.0));
+        test_exact(0.0, 0.1, 10.0, pdf(0.05));
+        test_exact(0.0, 0.1, 0.0, pdf(5.0));
+        test_exact(0.0, 1.0, 0.0, pdf(-5.0));
+        test_exact(0.0, 1.0, 1.0, pdf(0.5));
+        test_exact(0.0, 0.1, 0.0, pdf(5.0));
+        test_exact(0.0, 10.0, 0.0, pdf(-5.0));
+        test_exact(0.0, 10.0, 0.1, pdf(1.0));
+        test_exact(0.0, 10.0, 0.1, pdf(5.0));
+        test_exact(0.0, 10.0, 0.0, pdf(11.0));
+        test_exact(-5.0, 100.0, 0.0, pdf(-10.0));
+        test_exact(-5.0, 100.0, 0.009523809523809523809524, pdf(-5.0));
+        test_exact(-5.0, 100.0, 0.009523809523809523809524, pdf(0.0));
+        test_exact(-5.0, 100.0, 0.0, pdf(101.0));
     }
 
     #[test]
     fn test_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: Uniform| x.ln_pdf(arg);
-        test_case(0.0, 0.0, f64::NEG_INFINITY, ln_pdf(-5.0));
-        test_case(0.0, 0.0, f64::INFINITY, ln_pdf(0.0));
-        test_case(0.0, 0.0, f64::NEG_INFINITY, ln_pdf(5.0));
-        test_case(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(-5.0));
-        test_almost(0.0, 0.1, 2.302585092994045684018, 1e-15, ln_pdf(0.05));
-        test_case(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(5.0));
-        test_case(0.0, 1.0, f64::NEG_INFINITY, ln_pdf(-5.0));
-        test_case(0.0, 1.0, 0.0, ln_pdf(0.5));
-        test_case(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(5.0));
-        test_case(0.0, 10.0, f64::NEG_INFINITY, ln_pdf(-5.0));
-        test_case(0.0, 10.0, -2.302585092994045684018, ln_pdf(1.0));
-        test_case(0.0, 10.0, -2.302585092994045684018, ln_pdf(5.0));
-        test_case(0.0, 10.0, f64::NEG_INFINITY, ln_pdf(11.0));
-        test_case(-5.0, 100.0, f64::NEG_INFINITY, ln_pdf(-10.0));
-        test_case(-5.0, 100.0, -4.653960350157523371101, ln_pdf(-5.0));
-        test_case(-5.0, 100.0, -4.653960350157523371101, ln_pdf(0.0));
-        test_case(-5.0, 100.0, f64::NEG_INFINITY, ln_pdf(101.0));
-        test_case(0.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(-5.0));
-        test_case(0.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(10.0));
-        test_case(0.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
+        test_exact(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(-5.0));
+        test_absolute(0.0, 0.1, 2.302585092994045684018, 1e-15, ln_pdf(0.05));
+        test_exact(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(5.0));
+        test_exact(0.0, 1.0, f64::NEG_INFINITY, ln_pdf(-5.0));
+        test_exact(0.0, 1.0, 0.0, ln_pdf(0.5));
+        test_exact(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(5.0));
+        test_exact(0.0, 10.0, f64::NEG_INFINITY, ln_pdf(-5.0));
+        test_exact(0.0, 10.0, -2.302585092994045684018, ln_pdf(1.0));
+        test_exact(0.0, 10.0, -2.302585092994045684018, ln_pdf(5.0));
+        test_exact(0.0, 10.0, f64::NEG_INFINITY, ln_pdf(11.0));
+        test_exact(-5.0, 100.0, f64::NEG_INFINITY, ln_pdf(-10.0));
+        test_exact(-5.0, 100.0, -4.653960350157523371101, ln_pdf(-5.0));
+        test_exact(-5.0, 100.0, -4.653960350157523371101, ln_pdf(0.0));
+        test_exact(-5.0, 100.0, f64::NEG_INFINITY, ln_pdf(101.0));
     }
 
     #[test]
     fn test_cdf() {
         let cdf = |arg: f64| move |x: Uniform| x.cdf(arg);
-        test_case(0.0, 0.0, 0.0, cdf(0.0));
-        test_case(0.0, 0.1, 0.5, cdf(0.05));
-        test_case(0.0, 1.0, 0.5, cdf(0.5));
-        test_case(0.0, 10.0, 0.1, cdf(1.0));
-        test_case(0.0, 10.0, 0.5, cdf(5.0));
-        test_case(-5.0, 100.0, 0.0, cdf(-5.0));
-        test_case(-5.0, 100.0, 0.04761904761904761904762, cdf(0.0));
-        test_case(0.0, f64::INFINITY, 0.0, cdf(10.0));
-        test_case(0.0, f64::INFINITY, 1.0, cdf(f64::INFINITY));
+        test_exact(0.0, 0.1, 0.5, cdf(0.05));
+        test_exact(0.0, 1.0, 0.5, cdf(0.5));
+        test_exact(0.0, 10.0, 0.1, cdf(1.0));
+        test_exact(0.0, 10.0, 0.5, cdf(5.0));
+        test_exact(-5.0, 100.0, 0.0, cdf(-5.0));
+        test_exact(-5.0, 100.0, 0.04761904761904761904762, cdf(0.0));
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let inverse_cdf = |arg: f64| move |x: Uniform| x.inverse_cdf(arg);
+        test_exact(0.0, 0.1, 0.05, inverse_cdf(0.5));
+        test_exact(0.0, 10.0, 5.0, inverse_cdf(0.5));
+        test_exact(1.0, 10.0, 1.0, inverse_cdf(0.0));
+        test_exact(1.0, 10.0, 4.0, inverse_cdf(1.0 / 3.0));
+        test_exact(1.0, 10.0, 10.0, inverse_cdf(1.0));
     }
 
     #[test]
     fn test_cdf_lower_bound() {
         let cdf = |arg: f64| move |x: Uniform| x.cdf(arg);
-        test_case(0.0, 3.0, 0.0, cdf(-1.0));
+        test_exact(0.0, 3.0, 0.0, cdf(-1.0));
     }
 
     #[test]
     fn test_cdf_upper_bound() {
         let cdf = |arg: f64| move |x: Uniform| x.cdf(arg);
-        test_case(0.0, 3.0, 1.0, cdf(5.0));
+        test_exact(0.0, 3.0, 1.0, cdf(5.0));
     }
 
 
     #[test]
     fn test_sf() {
         let sf = |arg: f64| move |x: Uniform| x.sf(arg);
-        test_case(0.0, 0.0, 1.0, sf(0.0));
-        test_case(0.0, 0.1, 0.5, sf(0.05));
-        test_case(0.0, 1.0, 0.5, sf(0.5));
-        test_case(0.0, 10.0, 0.9, sf(1.0));
-        test_case(0.0, 10.0, 0.5, sf(5.0));
-        test_case(-5.0, 100.0, 1.0, sf(-5.0));
-        test_case(-5.0, 100.0, 0.9523809523809523, sf(0.0));
-        test_case(0.0, f64::INFINITY, 1.0, sf(10.0));
-        test_case(0.0, f64::INFINITY, 0.0, sf(f64::INFINITY));
+        test_exact(0.0, 0.1, 0.5, sf(0.05));
+        test_exact(0.0, 1.0, 0.5, sf(0.5));
+        test_exact(0.0, 10.0, 0.9, sf(1.0));
+        test_exact(0.0, 10.0, 0.5, sf(5.0));
+        test_exact(-5.0, 100.0, 1.0, sf(-5.0));
+        test_exact(-5.0, 100.0, 0.9523809523809523, sf(0.0));
     }
 
     #[test]
     fn test_sf_lower_bound() {
         let sf = |arg: f64| move |x: Uniform| x.sf(arg);
-        test_case(0.0, 3.0, 1.0, sf(-1.0));
+        test_exact(0.0, 3.0, 1.0, sf(-1.0));
     }
 
     #[test]
     fn test_sf_upper_bound() {
         let sf = |arg: f64| move |x: Uniform| x.sf(arg);
-        test_case(0.0, 3.0, 0.0, sf(5.0));
+        test_exact(0.0, 3.0, 0.0, sf(5.0));
     }
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&try_create(0.0, 10.0), 0.0, 10.0);
-        test::check_continuous_distribution(&try_create(-2.0, 15.0), -2.0, 15.0);
+        test::check_continuous_distribution(&create_ok(0.0, 10.0), 0.0, 10.0);
+        test::check_continuous_distribution(&create_ok(-2.0, 15.0), -2.0, 15.0);
     }
 
+    #[cfg(feature = "rand")]
     #[test]
     fn test_samples_in_range() {
         use rand::rngs::StdRng;
@@ -477,11 +510,24 @@ mod tests {
         let min = -0.5;
         let max = 0.5;
         let num_trials = 10_000;
-        let n = try_create(min, max);
+        let n = create_ok(min, max);
 
         assert!((0..num_trials)
             .map(|_| n.sample::<StdRng>(&mut r))
             .all(|v| (min <= v) && (v < max))
         );
+    }
+
+    #[test]
+    fn test_default() {
+        let n = Uniform::default();
+
+        let n_mean = n.mean().unwrap();
+        let n_std  = n.std_dev().unwrap();
+
+        // Check that the mean of the distribution is close to 1 / 2
+        assert_almost_eq!(n_mean, 0.5, 1e-15);
+        // Check that the standard deviation of the distribution is close to 1 / sqrt(12)
+        assert_almost_eq!(n_std, 0.288_675_134_594_812_9, 1e-15);
     }
 }

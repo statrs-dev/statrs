@@ -1,7 +1,5 @@
-use crate::distribution::{Continuous, ContinuousCDF, Gamma};
+use crate::distribution::{Continuous, ContinuousCDF, Gamma, GammaError};
 use crate::statistics::*;
-use crate::Result;
-use rand::Rng;
 use std::f64;
 
 /// Implements the
@@ -21,7 +19,7 @@ use std::f64;
 /// assert_eq!(n.mean().unwrap(), 3.0);
 /// assert!(prec::almost_eq(n.pdf(4.0), 0.107981933026376103901, 1e-15));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct ChiSquared {
     freedom: f64,
     g: Gamma,
@@ -48,7 +46,7 @@ impl ChiSquared {
     /// result = ChiSquared::new(0.0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(freedom: f64) -> Result<ChiSquared> {
+    pub fn new(freedom: f64) -> Result<ChiSquared, GammaError> {
         Gamma::new(freedom / 2.0, 0.5).map(|g| ChiSquared { freedom, g })
     }
 
@@ -96,8 +94,15 @@ impl ChiSquared {
     }
 }
 
+impl std::fmt::Display for ChiSquared {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "χ^2_{}", self.freedom)
+    }
+}
+
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for ChiSquared {
-    fn sample<R: Rng + ?Sized>(&self, r: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
         ::rand::distributions::Distribution::sample(&self.g, r)
     }
 }
@@ -108,7 +113,7 @@ impl ContinuousCDF<f64, f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / Γ(k / 2)) * γ(k / 2, x / 2)
     /// ```
     ///
@@ -123,7 +128,7 @@ impl ContinuousCDF<f64, f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (1 / Γ(k / 2)) * γ(k / 2, x / 2)
     /// ```
     ///
@@ -131,6 +136,21 @@ impl ContinuousCDF<f64, f64> for ChiSquared {
     /// and `γ` is the upper incomplete gamma function
     fn sf(&self, x: f64) -> f64 {
         self.g.sf(x)
+    }
+
+    /// Calculates the inverse cumulative distribution function for the
+    /// chi-squared distribution at `x`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// γ^{-1}(k / 2, x * Γ(k / 2) / 2)
+    /// ```
+    ///
+    /// where `k` is the degrees of freedom, `Γ` is the gamma function,
+    /// and `γ` is the lower incomplete gamma function
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        self.g.inverse_cdf(p)
     }
 }
 
@@ -141,7 +161,7 @@ impl Min<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> f64 {
@@ -156,8 +176,8 @@ impl Max<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
-    /// INF
+    /// ```text
+    /// f64::INFINITY
     /// ```
     fn max(&self) -> f64 {
         f64::INFINITY
@@ -169,7 +189,7 @@ impl Distribution<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k
     /// ```
     ///
@@ -177,11 +197,12 @@ impl Distribution<f64> for ChiSquared {
     fn mean(&self) -> Option<f64> {
         self.g.mean()
     }
+
     /// Returns the variance of the chi-squared distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 2k
     /// ```
     ///
@@ -189,11 +210,12 @@ impl Distribution<f64> for ChiSquared {
     fn variance(&self) -> Option<f64> {
         self.g.variance()
     }
+
     /// Returns the entropy of the chi-squared distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// (k / 2) + ln(2 * Γ(k / 2)) + (1 - (k / 2)) * ψ(k / 2)
     /// ```
     ///
@@ -202,11 +224,12 @@ impl Distribution<f64> for ChiSquared {
     fn entropy(&self) -> Option<f64> {
         self.g.entropy()
     }
+
     /// Returns the skewness of the chi-squared distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// sqrt(8 / k)
     /// ```
     ///
@@ -221,7 +244,7 @@ impl Median<f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k * (1 - (2 / 9k))^3
     /// ```
     fn median(&self) -> f64 {
@@ -241,7 +264,7 @@ impl Mode<Option<f64>> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// k - 2
     /// ```
     ///
@@ -257,7 +280,7 @@ impl Continuous<f64, f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1 / (2^(k / 2) * Γ(k / 2)) * x^((k / 2) - 1) * e^(-x / 2)
     /// ```
     ///
@@ -271,7 +294,7 @@ impl Continuous<f64, f64> for ChiSquared {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// ln(1 / (2^(k / 2) * Γ(k / 2)) * x^((k / 2) - 1) * e^(-x / 2))
     /// ```
     fn ln_pdf(&self, x: f64) -> f64 {
@@ -280,50 +303,29 @@ impl Continuous<f64, f64> for ChiSquared {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod tests {
-    use crate::statistics::Median;
-    use crate::distribution::ChiSquared;
+    use super::*;
     use crate::distribution::internal::*;
-    use crate::consts::ACC;
+    use crate::testing_boiler;
 
-    fn try_create(freedom: f64) -> ChiSquared {
-        let n = ChiSquared::new(freedom);
-        assert!(n.is_ok());
-        n.unwrap()
-    }
-
-    fn test_case<F>(freedom: f64, expected: f64, eval: F)
-        where F: Fn(ChiSquared) -> f64
-    {
-        let n = try_create(freedom);
-        let x = eval(n);
-        assert_eq!(expected, x);
-    }
-
-    fn test_almost<F>(freedom: f64, expected: f64, acc: f64, eval: F)
-        where F: Fn(ChiSquared) -> f64
-    {
-        let n = try_create(freedom);
-        let x = eval(n);
-        assert_almost_eq!(expected, x, acc);
-    }
+    testing_boiler!(freedom: f64; ChiSquared; GammaError);
 
     #[test]
     fn test_median() {
         let median = |x: ChiSquared| x.median();
-        test_almost(0.5, 0.0857338820301783264746, 1e-16, median);
-        test_case(1.0, 1.0 - 2.0 / 3.0, median);
-        test_case(2.0, 2.0 - 2.0 / 3.0, median);
-        test_case(2.5, 2.5 - 2.0 / 3.0, median);
-        test_case(3.0, 3.0 - 2.0 / 3.0, median);
+        test_absolute(0.5, 0.0857338820301783264746, 1e-16, median);
+        test_exact(1.0, 1.0 - 2.0 / 3.0, median);
+        test_exact(2.0, 2.0 - 2.0 / 3.0, median);
+        test_exact(2.5, 2.5 - 2.0 / 3.0, median);
+        test_exact(3.0, 3.0 - 2.0 / 3.0, median);
     }
 
     #[test]
     fn test_continuous() {
         // TODO: figure out why this test fails:
-        //test::check_continuous_distribution(&try_create(1.0), 0.0, 10.0);
-        test::check_continuous_distribution(&try_create(2.0), 0.0, 10.0);
-        test::check_continuous_distribution(&try_create(5.0), 0.0, 50.0);
+        //test::check_continuous_distribution(&create_ok(1.0), 0.0, 10.0);
+        test::check_continuous_distribution(&create_ok(2.0), 0.0, 10.0);
+        test::check_continuous_distribution(&create_ok(5.0), 0.0, 50.0);
     }
 }

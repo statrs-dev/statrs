@@ -1,7 +1,5 @@
-use crate::distribution::{Binomial, Discrete, DiscreteCDF};
+use crate::distribution::{Binomial, BinomialError, Discrete, DiscreteCDF};
 use crate::statistics::*;
-use crate::Result;
-use rand::Rng;
 
 /// Implements the
 /// [Bernoulli](https://en.wikipedia.org/wiki/Bernoulli_distribution)
@@ -20,7 +18,7 @@ use rand::Rng;
 /// assert_eq!(n.pmf(0), 0.5);
 /// assert_eq!(n.pmf(1), 0.5);
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Bernoulli {
     b: Binomial,
 }
@@ -45,7 +43,7 @@ impl Bernoulli {
     /// result = Bernoulli::new(-0.5);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(p: f64) -> Result<Bernoulli> {
+    pub fn new(p: f64) -> Result<Bernoulli, BinomialError> {
         Binomial::new(p, 1).map(|b| Bernoulli { b })
     }
 
@@ -80,8 +78,15 @@ impl Bernoulli {
     }
 }
 
+impl std::fmt::Display for Bernoulli {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Bernoulli({})", self.p())
+    }
+}
+
+#[cfg(feature = "rand")]
 impl ::rand::distributions::Distribution<f64> for Bernoulli {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         rng.gen_bool(self.p()) as u8 as f64
     }
 }
@@ -92,7 +97,7 @@ impl DiscreteCDF<u64, f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < 0 { 0 }
     /// else if x >= 1 { 1 }
     /// else { 1 - p }
@@ -101,12 +106,12 @@ impl DiscreteCDF<u64, f64> for Bernoulli {
         self.b.cdf(x)
     }
 
-    /// Calculates the survival function for the 
+    /// Calculates the survival function for the
     /// bernoulli distribution at `x`.
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x < 0 { 1 }
     /// else if x >= 1 { 0 }
     /// else { p }
@@ -123,7 +128,7 @@ impl Min<u64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 0
     /// ```
     fn min(&self) -> u64 {
@@ -138,7 +143,7 @@ impl Max<u64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// 1
     /// ```
     fn max(&self) -> u64 {
@@ -152,41 +157,44 @@ impl Distribution<f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// p
     /// ```
     fn mean(&self) -> Option<f64> {
         self.b.mean()
     }
+
     /// Returns the variance of the bernoulli
     /// distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// p * (1 - p)
     /// ```
     fn variance(&self) -> Option<f64> {
         self.b.variance()
     }
+
     /// Returns the entropy of the bernoulli
     /// distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// q = (1 - p)
     /// -q * ln(q) - p * ln(p)
     /// ```
     fn entropy(&self) -> Option<f64> {
         self.b.entropy()
     }
+
     /// Returns the skewness of the bernoulli
     /// distribution
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// q = (1 - p)
     /// (1 - 2p) / sqrt(p * q)
     /// ```
@@ -201,7 +209,7 @@ impl Median<f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if p < 0.5 { 0 }
     /// else if p > 0.5 { 1 }
     /// else { 0.5 }
@@ -216,7 +224,7 @@ impl Mode<Option<u64>> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if p < 0.5 { 0 }
     /// else { 1 }
     /// ```
@@ -231,7 +239,7 @@ impl Discrete<u64, f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// if x == 0 { 1 - p }
     /// else { p }
     /// ```
@@ -244,7 +252,7 @@ impl Discrete<u64, f64> for Bernoulli {
     ///
     /// # Formula
     ///
-    /// ```ignore
+    /// ```text
     /// else if x == 0 { ln(1 - p) }
     /// else { ln(p) }
     /// ```
@@ -254,92 +262,54 @@ impl Discrete<u64, f64> for Bernoulli {
 }
 
 #[rustfmt::skip]
-#[cfg(all(test, feature = "nightly"))]
+#[cfg(test)]
 mod testing {
-    use std::fmt::Debug;
-    use crate::distribution::DiscreteCDF;
-    use super::Bernoulli;
+    use super::*;
+    use crate::testing_boiler;
 
-    fn try_create(p: f64) -> Bernoulli {
-        let n = Bernoulli::new(p);
-        assert!(n.is_ok());
-        n.unwrap()
-    }
-
-    fn create_case(p: f64) {
-        let dist = try_create(p);
-        assert_eq!(p, dist.p());
-    }
-
-    fn bad_create_case(p: f64) {
-        let n = Bernoulli::new(p);
-        assert!(n.is_err());
-    }
-
-    fn get_value<T, F>(p: f64, eval: F) -> T
-        where T: PartialEq + Debug,
-              F: Fn(Bernoulli) -> T
-    {
-        let n = try_create(p);
-        eval(n)
-    }
-
-    fn test_case<T, F>(p: f64, expected: T, eval: F)
-        where T: PartialEq + Debug,
-              F: Fn(Bernoulli) -> T
-    {
-        let x = get_value(p, eval);
-        assert_eq!(expected, x);
-    }
-
-    fn test_almost<F>(p: f64, expected: f64, acc: f64, eval: F)
-        where F: Fn(Bernoulli) -> f64
-    {
-        let x = get_value(p, eval);
-        assert_almost_eq!(expected, x, acc);
-    }
+    testing_boiler!(p: f64; Bernoulli; BinomialError);
 
     #[test]
     fn test_create() {
-        create_case(0.0);
-        create_case(0.3);
-        create_case(1.0);
+        create_ok(0.0);
+        create_ok(0.3);
+        create_ok(1.0);
     }
 
     #[test]
     fn test_bad_create() {
-        bad_create_case(f64::NAN);
-        bad_create_case(-1.0);
-        bad_create_case(2.0);
+        create_err(f64::NAN);
+        create_err(-1.0);
+        create_err(2.0);
     }
 
     #[test]
     fn test_cdf_upper_bound() {
         let cdf = |arg: u64| move |x: Bernoulli| x.cdf(arg);
-        test_case(0.3, 1., cdf(1));
+        test_relative(0.3, 1., cdf(1));
     }
 
     #[test]
     fn test_sf_upper_bound() {
         let sf = |arg: u64| move |x: Bernoulli| x.sf(arg);
-        test_case(0.3, 0., sf(1));
+        test_relative(0.3, 0., sf(1));
     }
 
     #[test]
     fn test_cdf() {
         let cdf = |arg: u64| move |x: Bernoulli| x.cdf(arg);
-        test_case(0.0, 1.0, cdf(0));
-        test_case(0.0, 1.0, cdf(1));
-        test_almost(0.3, 0.7, 1e-15, cdf(0));
-        test_almost(0.7, 0.3, 1e-15, cdf(0));
+        test_relative(0.0, 1.0, cdf(0));
+        test_relative(0.0, 1.0, cdf(1));
+        test_absolute(0.3, 0.7, 1e-15, cdf(0));
+        test_absolute(0.7, 0.3, 1e-15, cdf(0));
     }
 
     #[test]
     fn test_sf() {
         let sf = |arg: u64| move |x: Bernoulli| x.sf(arg);
-        test_case(0.0, 0.0, sf(0));
-        test_case(0.0, 0.0, sf(1));
-        test_almost(0.3, 0.3, 1e-15, sf(0));
-        test_almost(0.7, 0.7, 1e-15, sf(0));
+        test_relative(0.0, 0.0, sf(0));
+        test_relative(0.0, 0.0, sf(1));
+        test_absolute(0.3, 0.3, 1e-15, sf(0));
+        test_absolute(0.7, 0.7, 1e-15, sf(0));
     }
 }
