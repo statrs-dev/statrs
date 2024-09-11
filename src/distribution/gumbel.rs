@@ -8,7 +8,6 @@ use crate::{
 
 use super::{Continuous, ContinuousCDF};
 
-/// https://en.wikipedia.org/wiki/Gumbel_distribution
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Gumbel {
     location: f64,
@@ -67,7 +66,6 @@ impl std::fmt::Display for Gumbel {
 
 impl ::rand::distributions::Distribution<f64> for Gumbel {
     fn sample<R: rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
-        // Check: Quantile formula: mu - beta*ln(-ln(p))
         self.location - self.scale * ((-(r.gen::<f64>())).ln()).ln()
     }
 }
@@ -189,7 +187,8 @@ impl Distribution<f64> for Gumbel {
     /// 12 * sqrt(6) * ζ(3) / π^3 ≈ 1.13955
     /// ```
     /// ζ(3) is the Riemann zeta function evaluated at 3 (approx 1.20206)
-    /// π is the constant PI (approx 3.14159)
+    /// and π is the constant PI (approx 3.14159)
+    ///
     /// This approximately evaluates to 1.13955
     fn skewness(&self) -> Option<f64> {
         Some(1.13955)
@@ -291,7 +290,6 @@ impl Continuous<f64, f64> for Gumbel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
     use crate::testing_boiler;
 
     testing_boiler!(location: f64, scale: f64; Gumbel; GumbelError);
@@ -438,5 +436,72 @@ mod tests {
         test_exact(2.0, f64::INFINITY, f64::NEG_INFINITY, inv_cdf(0.1));
         test_exact(-2.0, f64::INFINITY, f64::INFINITY, inv_cdf(0.5));
         test_exact(f64::INFINITY, 1.0, f64::INFINITY, inv_cdf(0.1));
+    }
+
+    #[test]
+    fn test_sf() {
+        let sf = |a: f64| move |x: Gumbel| x.sf(a);
+        test_exact(0.0, 0.1, 1.0, sf(-5.0));
+        test_exact(0.0, 0.1, 1.0, sf(-1.0));
+        test_absolute(0.0, 0.1, 0.632120558828557678, 1e-12, sf(0.0));
+        test_absolute(0.0, 0.1, 0.000045398899201269, 1e-12, sf(1.0));
+        test_absolute(0.0, 1.0, 0.934011964154687462, 1e-12, sf(-1.0));
+        test_absolute(0.0, 1.0, 0.632120558828557678, 1e-12, sf(0.0));
+        test_absolute(0.0, 1.0, 0.3077993724446536, 1e-12, sf(1.0));
+        test_absolute(0.0, 10.0, 0.66884572284709110, 1e-12, sf(-1.0));
+        test_absolute(0.0, 10.0, 0.632120558828557678, 1e-12, sf(0.0));
+        test_absolute(0.0, 10.0, 0.595392338335868174, 1e-12, sf(1.0));
+        test_exact(-2.0, f64::INFINITY, 0.6321205588285576784, sf(-5.0));
+        test_exact(-2.0, f64::INFINITY, 0.6321205588285576784, sf(-1.0));
+        test_exact(-2.0, f64::INFINITY, 0.6321205588285576784, sf(0.0));
+        test_exact(-2.0, f64::INFINITY, 0.6321205588285576784, sf(1.0));
+        test_exact(-2.0, f64::INFINITY, 0.6321205588285576784, sf(5.0));
+        test_exact(f64::INFINITY, 1.0, 1.0, sf(-5.0));
+        test_exact(f64::INFINITY, 1.0, 1.0, sf(-1.0));
+        test_exact(f64::INFINITY, 1.0, 1.0, sf(0.0));
+        test_exact(f64::INFINITY, 1.0, 1.0, sf(1.0));
+        test_exact(f64::INFINITY, 1.0, 1.0, sf(5.0));
+    }
+
+    #[test]
+    fn test_pdf() {
+        let pdf = |a: f64| move |x: Gumbel| x.pdf(a);
+        test_exact(0.0, 0.1, 0.0, pdf(-5.0));
+        test_exact(0.0, 0.1, 3.678794411714423215, pdf(0.0));
+        test_absolute(0.0, 0.1, 0.0004539786865564, 1e-12, pdf(1.0));
+        test_absolute(0.0, 1.0, 0.1793740787340171, 1e-12, pdf(-1.0));
+        test_exact(0.0, 1.0, 0.36787944117144233, pdf(0.0));
+        test_absolute(0.0, 1.0, 0.25464638004358249, 1e-12, pdf(1.0));
+        test_absolute(0.0, 10.0, 0.031704192107794217, 1e-12, pdf(-5.0));
+        test_absolute(0.0, 10.0, 0.0365982076505757, 1e-12, pdf(-1.0));
+        test_exact(0.0, 10.0, 0.036787944117144233, pdf(0.0));
+        test_absolute(0.0, 10.0, 0.03661041518977401428, 1e-12, pdf(1.0));
+        test_absolute(0.0, 10.0, 0.033070429889041, 1e-12, pdf(5.0));
+        test_exact(-2.0, f64::INFINITY, 0.0, pdf(-5.0));
+        test_exact(-2.0, f64::INFINITY, 0.0, pdf(-1.0));
+        test_exact(-2.0, f64::INFINITY, 0.0, pdf(0.0));
+        test_exact(-2.0, f64::INFINITY, 0.0, pdf(1.0));
+        test_exact(-2.0, f64::INFINITY, 0.0, pdf(5.0));
+    }
+
+    #[test]
+    fn test_ln_pdf() {
+        let ln_pdf = |a: f64| move |x: Gumbel| x.ln_pdf(a);
+        test_exact(0.0, 0.1, 0.0_f64.ln(), ln_pdf(-5.0));
+        test_exact(0.0, 0.1, 3.678794411714423215_f64.ln(), ln_pdf(0.0));
+        test_absolute(0.0, 0.1, 0.0004539786865564_f64.ln(), 1e-12, ln_pdf(1.0));
+        test_absolute(0.0, 1.0, 0.1793740787340171_f64.ln(), 1e-12, ln_pdf(-1.0));
+        test_exact(0.0, 1.0, 0.36787944117144233_f64.ln(), ln_pdf(0.0));
+        test_absolute(0.0, 1.0, 0.25464638004358249_f64.ln(), 1e-12, ln_pdf(1.0));
+        test_absolute(0.0, 10.0, 0.031704192107794217_f64.ln(), 1e-12, ln_pdf(-5.0));
+        test_absolute(0.0, 10.0, 0.0365982076505757_f64.ln(), 1e-12, ln_pdf(-1.0));
+        test_exact(0.0, 10.0, 0.036787944117144233_f64.ln(), ln_pdf(0.0));
+        test_absolute(0.0, 10.0, 0.03661041518977401428_f64.ln(), 1e-12, ln_pdf(1.0));
+        test_absolute(0.0, 10.0, 0.033070429889041_f64.ln(), 1e-12, ln_pdf(5.0));
+        test_exact(-2.0, f64::INFINITY, 0.0_f64.ln(), ln_pdf(-5.0));
+        test_exact(-2.0, f64::INFINITY, 0.0_f64.ln(), ln_pdf(-1.0));
+        test_exact(-2.0, f64::INFINITY, 0.0_f64.ln(), ln_pdf(0.0));
+        test_exact(-2.0, f64::INFINITY, 0.0_f64.ln(), ln_pdf(1.0));
+        test_exact(-2.0, f64::INFINITY, 0.0_f64.ln(), ln_pdf(5.0));
     }
 }
