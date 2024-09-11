@@ -135,13 +135,29 @@ impl std::fmt::Display for NoncentralStudentsT {
 }
 
 impl ContinuousCDF<f64, f64> for NoncentralStudentsT {
-    /// computes the distribution function for noncentral students t distribution
+    /// Calculates the cumulative distribution function for the noncentral students t distribution at `t`
     ///
-    /// ```math
-    /// F(t;\nu,\delta) = \Phi(-\delta) + \frac{1}{2}\sum_{i=0}^\infty{\left[P_i I_x(i+ 1/2, n/2) + Q_i I_x(i+ 1/2, n/2)\right]}
-    /// ```
-    fn cdf(&self, x: f64) -> f64 {
+    /// # Definition
+    /// \\(F(t;\nu,\delta) = \textrm{Prob}(t_\nu(\delta) < t)\\)
+    /// \\[
+    /// \Phi(-\delta) + \frac{1}{2}\sum\_{i=0}^\infty{[P\_i I\_x(i+1/2,n/2) + Q\_i I\_x(i+1/2,n/2)]}\textrm{ where}\\\\\[1.5em\]
+    /// x = \frac{t^2}{\nu + t^2}, \quad
+    /// P_i = e^{-\delta^2/2}\\,\frac{(\delta^2/2)^i}{i!}, \quad
+    /// Q_i = e^{-\delta^2/2}\\,\frac{(\delta^2/2)^i}{\Gamma(i + 3/2)}
+    /// \\]
+    /// where \\(I_x\\) denotes the incomplete regularized beta function, same as \\(I_x(a,b)\\) [here](https://en.wikipedia.org/wiki/Beta_function#Incomplete_beta_function), unregularized is implemented as [`beta_inc`](crate::function::beta::beta_inc)
+    fn cdf(&self, t: f64) -> f64 {
         unimplemented!()
+    }
+}
+
+impl Continuous<f64, f64> for NoncentralStudentsT {
+    fn pdf(&self, x: f64) -> f64 {
+        unimplemented!()
+    }
+
+    fn ln_pdf(&self, x: f64) -> f64 {
+        self.pdf(x).ln()
     }
 }
 
