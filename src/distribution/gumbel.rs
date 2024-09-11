@@ -93,12 +93,20 @@ impl ContinuousCDF<f64, f64> for Gumbel {
     /// # Formula
     ///
     /// ```text
-    /// μ - β ln(-ln(p))
+    /// μ - β ln(-ln(p)) where 0 < p < 1
+    /// -INF             where p <= 0
+    /// INF              otherwise
     /// ```
     ///
     /// where `μ` is the location and `β` is the scale
     fn inverse_cdf(&self, p: f64) -> f64 {
-        self.location - self.scale * ((-(p.ln())).ln())
+        if p <= 0.0 {
+            f64::NEG_INFINITY
+        } else if p >= 1.0 {
+            f64::INFINITY
+        } else {
+            self.location - self.scale * ((-(p.ln())).ln())
+        }
     }
 
     /// Calculates the survival function for the
@@ -387,5 +395,48 @@ mod tests {
         test_exact(1.0, 10.0, 1.0, mode);
         test_exact(10.0, 11.0, 10.0, mode);
         test_exact(10.0, f64::INFINITY, 10.0, mode);
+    }
+
+    #[test]
+    fn test_cdf() {
+        let cdf = |a: f64| move |x: Gumbel| x.cdf(a);
+        test_exact(0.0, 0.1, 0.0, cdf(-5.0));
+        test_exact(0.0, 0.1, 0.0, cdf(-1.0));
+        test_exact(0.0, 0.1, 0.36787944117144233, cdf(0.0));
+        test_exact(0.0, 0.1, 0.9999546011007987, cdf(1.0));
+        test_absolute(0.0, 0.1, 0.99999999999999999, 1e-12, cdf(5.0));
+        test_absolute(0.0, 1.0, 0.06598803584531253, 1e-12, cdf(-1.0));
+        test_exact(0.0, 1.0, 0.36787944117144233, cdf(0.0));
+        test_absolute(0.0, 10.0, 0.192295645547964928, 1e-12, cdf(-5.0));
+        test_absolute(0.0, 10.0, 0.3311542771529088, 1e-12, cdf(-1.0));
+        test_exact(0.0, 10.0, 0.36787944117144233, cdf(0.0));
+        test_absolute(0.0, 10.0, 0.4046076616641318, 1e-12, cdf(1.0));
+        test_absolute(0.0, 10.0, 0.545239211892605, 1e-12, cdf(5.0));
+        test_exact(-2.0, f64::INFINITY, 0.36787944117144233, cdf(-5.0));
+        test_exact(-2.0, f64::INFINITY, 0.36787944117144233, cdf(-1.0));
+        test_exact(-2.0, f64::INFINITY, 0.36787944117144233, cdf(0.0));
+        test_exact(-2.0, f64::INFINITY, 0.36787944117144233, cdf(1.0));
+        test_exact(-2.0, f64::INFINITY, 0.36787944117144233, cdf(5.0));
+        test_exact(f64::INFINITY, 1.0, 0.0, cdf(-5.0));
+        test_exact(f64::INFINITY, 1.0, 0.0, cdf(-1.0));
+        test_exact(f64::INFINITY, 1.0, 0.0, cdf(0.0));
+        test_exact(f64::INFINITY, 1.0, 0.0, cdf(1.0));
+        test_exact(f64::INFINITY, 1.0, 0.0, cdf(5.0));
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let inv_cdf = |a: f64| move |x: Gumbel| x.inverse_cdf(a);
+        test_exact(0.0, 0.1, f64::NEG_INFINITY, inv_cdf(-5.0));
+        test_exact(0.0, 0.1, f64::NEG_INFINITY, inv_cdf(-1.0));
+        test_exact(0.0, 0.1, f64::NEG_INFINITY, inv_cdf(0.0));
+        test_exact(0.0, 0.1, f64::INFINITY, inv_cdf(1.0));
+        test_exact(0.0, 0.1, f64::INFINITY, inv_cdf(5.0));
+        test_absolute(0.0, 1.0, -0.8340324452479557, 1e-12, inv_cdf(0.1));
+        test_absolute(0.0, 10.0, 3.6651292058166436, 1e-12, inv_cdf(0.5));
+        test_absolute(0.0, 10.0, 22.503673273124456, 1e-12, inv_cdf(0.9));
+        test_exact(2.0, f64::INFINITY, f64::NEG_INFINITY, inv_cdf(0.1));
+        test_exact(-2.0, f64::INFINITY, f64::INFINITY, inv_cdf(0.5));
+        test_exact(f64::INFINITY, 1.0, f64::INFINITY, inv_cdf(0.1));
     }
 }
