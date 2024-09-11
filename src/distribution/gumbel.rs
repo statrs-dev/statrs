@@ -1,19 +1,29 @@
-use core::f64;
-use std::f64::consts::PI;
-
-use crate::{
-    consts::EULER_MASCHERONI,
-    statistics::{Distribution, Max, Median, Min, Mode},
-};
-
 use super::{Continuous, ContinuousCDF};
+use crate::consts::EULER_MASCHERONI;
+use crate::statistics::*;
+use std::f64::{self, consts::PI};
 
+/// Implements the [Gumbel](https://en.wikipedia.org/wiki/Gumbel_distribution)
+/// distribution, also known as the type-I generalized extreme value distribution.
+///
+/// # Examples
+///
+/// ```
+/// use statrs::distribution::{Gumbel, Continuous};
+/// use statrs::{consts::EULER_MASCHERONI, statistics::Distribution};
+///
+/// let n = Gumbel::new(0.0, 1.0).unwrap();
+/// assert_eq!(n.location(), 0.0);
+/// assert_eq!(n.skewness().unwrap(), 1.13955);
+/// assert_eq!(n.pdf(0.0), 0.36787944117144233);
+/// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Gumbel {
     location: f64,
     scale: f64,
 }
 
+/// Represents the errors that can occur when creating a [`Gumbel`]
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
 #[non_exhaustive]
 pub enum GumbelError {
@@ -37,6 +47,24 @@ impl std::fmt::Display for GumbelError {
 impl std::error::Error for GumbelError {}
 
 impl Gumbel {
+    /// Constructs a new Gumbel distribution with the given
+    /// location and scale.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if location or scale are `NaN` or `scale <= 0.0`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Gumbel;
+    ///
+    /// let mut result = Gumbel::new(0.0, 1.0);
+    /// assert!(result.is_ok());
+    ///
+    /// result = Gumbel::new(0.0, -1.0);
+    /// assert!(result.is_err());
+    /// ```
     pub fn new(location: f64, scale: f64) -> Result<Self, GumbelError> {
         if location.is_nan() {
             return Err(GumbelError::LocationInvalid);
@@ -49,10 +77,30 @@ impl Gumbel {
         Ok(Self { location, scale })
     }
 
+    /// Returns the location of the Gumbel distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Gumbel;
+    ///
+    /// let n = Gumbel::new(0.0, 1.0).unwrap();
+    /// assert_eq!(n.location(), 0.0);
+    /// ```
     pub fn location(&self) -> f64 {
         self.location
     }
 
+    /// Returns the scale of the Gumbel distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Gumbel;
+    ///
+    /// let n = Gumbel::new(0.0, 1.0).unwrap();
+    /// assert_eq!(n.scale(), 1.0);
+    /// ```
     pub fn scale(&self) -> f64 {
         self.scale
     }
@@ -72,7 +120,7 @@ impl ::rand::distributions::Distribution<f64> for Gumbel {
 
 impl ContinuousCDF<f64, f64> for Gumbel {
     /// Calculates the cumulative distribution function for the
-    /// gumbel distribution at `x`
+    /// Gumbel distribution at `x`
     ///
     /// # Formula
     ///
@@ -86,7 +134,7 @@ impl ContinuousCDF<f64, f64> for Gumbel {
     }
 
     /// Calculates the inverse cumulative distribution function for the
-    /// gumbel distribution at `x`
+    /// Gumbel distribution at `x`
     ///
     /// # Formula
     ///
@@ -108,7 +156,7 @@ impl ContinuousCDF<f64, f64> for Gumbel {
     }
 
     /// Calculates the survival function for the
-    /// gumbel distribution at `x`
+    /// Gumbel distribution at `x`
     ///
     /// # Formula
     ///
@@ -123,7 +171,7 @@ impl ContinuousCDF<f64, f64> for Gumbel {
 }
 
 impl Min<f64> for Gumbel {
-    /// Returns the minimum value in the domain of the gumbel
+    /// Returns the minimum value in the domain of the Gumbel
     /// distribution representable by a double precision float
     ///
     /// # Formula
@@ -137,7 +185,7 @@ impl Min<f64> for Gumbel {
 }
 
 impl Max<f64> for Gumbel {
-    /// Returns the maximum value in the domain of the gumbel
+    /// Returns the maximum value in the domain of the Gumbel
     /// distribution representable by a double precision float
     ///
     /// # Formula
@@ -151,7 +199,7 @@ impl Max<f64> for Gumbel {
 }
 
 impl Distribution<f64> for Gumbel {
-    /// Returns the entropy of the gumbel distribution
+    /// Returns the entropy of the Gumbel distribution
     ///
     /// # Formula
     ///
@@ -165,7 +213,7 @@ impl Distribution<f64> for Gumbel {
         Some(1.0 + EULER_MASCHERONI + (self.scale).ln())
     }
 
-    /// Returns the mean of the gumbel distribution
+    /// Returns the mean of the Gumbel distribution
     ///
     /// # Formula
     ///
@@ -179,7 +227,7 @@ impl Distribution<f64> for Gumbel {
         Some(self.location + (EULER_MASCHERONI * self.scale))
     }
 
-    /// Returns the skewness of the gumbel distribution
+    /// Returns the skewness of the Gumbel distribution
     ///
     /// # Formula
     ///
@@ -194,7 +242,7 @@ impl Distribution<f64> for Gumbel {
         Some(1.13955)
     }
 
-    /// Returns the variance of the gumbel distribution
+    /// Returns the variance of the Gumbel distribution
     ///
     /// # Formula
     ///
@@ -207,7 +255,7 @@ impl Distribution<f64> for Gumbel {
         Some(((PI * PI) / 6.0) * self.scale * self.scale)
     }
 
-    /// Returns the standard deviation of the gumbel distribution
+    /// Returns the standard deviation of the Gumbel distribution
     ///
     /// # Formula
     ///
@@ -222,7 +270,7 @@ impl Distribution<f64> for Gumbel {
 }
 
 impl Median<f64> for Gumbel {
-    /// Returns the median of the gumbel distribution
+    /// Returns the median of the Gumbel distribution
     ///
     /// # Formula
     ///
@@ -237,7 +285,7 @@ impl Median<f64> for Gumbel {
 }
 
 impl Mode<f64> for Gumbel {
-    /// Returns the mode of the gumbel distribution
+    /// Returns the mode of the Gumbel distribution
     ///
     /// # Formula
     ///
@@ -252,7 +300,7 @@ impl Mode<f64> for Gumbel {
 }
 
 impl Continuous<f64, f64> for Gumbel {
-    /// Calculates the probability density function for the gumbel
+    /// Calculates the probability density function for the Gumbel
     /// distribution at `x`
     ///
     /// # Formula
@@ -268,7 +316,7 @@ impl Continuous<f64, f64> for Gumbel {
             * (-((-(x - self.location) / self.scale).exp())).exp()
     }
 
-    /// Calculates the log probability density function for the gumbel
+    /// Calculates the log probability density function for the Gumbel
     /// distribution at `x`
     ///
     /// # Formula

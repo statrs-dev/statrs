@@ -22,6 +22,7 @@ pub use self::exponential::{Exp, ExpError};
 pub use self::fisher_snedecor::{FisherSnedecor, FisherSnedecorError};
 pub use self::gamma::{Gamma, GammaError};
 pub use self::geometric::{Geometric, GeometricError};
+pub use self::gumbel::{Gumbel, GumbelError};
 pub use self::hypergeometric::{Hypergeometric, HypergeometricError};
 pub use self::inverse_gamma::{InverseGamma, InverseGammaError};
 pub use self::laplace::{Laplace, LaplaceError};
