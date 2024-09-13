@@ -1,7 +1,7 @@
 //! Provides utility functions for generating data sequences
 
 use crate::euclid::Modulus;
-use std::f64::consts;
+use core::f64::consts;
 /// Generates a base 10 log spaced vector of the given length between the
 /// specified decade exponents (inclusive). Equivalent to MATLAB logspace
 ///
@@ -81,8 +81,8 @@ impl InfinitePeriodic {
     }
 }
 
-impl std::fmt::Display for InfinitePeriodic {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InfinitePeriodic {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{self:#?}")
     }
 }
@@ -167,8 +167,8 @@ impl InfiniteSinusoidal {
     }
 }
 
-impl std::fmt::Display for InfiniteSinusoidal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InfiniteSinusoidal {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", &self)
     }
 }
@@ -227,8 +227,8 @@ impl InfiniteSquare {
     }
 }
 
-impl std::fmt::Display for InfiniteSquare {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InfiniteSquare {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", &self)
     }
 }
@@ -300,8 +300,8 @@ impl InfiniteTriangle {
     }
 }
 
-impl std::fmt::Display for InfiniteTriangle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InfiniteTriangle {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", &self)
     }
 }
@@ -357,8 +357,8 @@ impl InfiniteSawtooth {
     }
 }
 
-impl std::fmt::Display for InfiniteSawtooth {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InfiniteSawtooth {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", &self)
     }
 }

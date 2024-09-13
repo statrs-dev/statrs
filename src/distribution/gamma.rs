@@ -37,9 +37,9 @@ pub enum GammaError {
     ShapeAndRateInfinite,
 }
 
-impl std::fmt::Display for GammaError {
+impl core::fmt::Display for GammaError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             GammaError::ShapeInvalid => write!(f, "Shape is NaN zero, or less than zero."),
             GammaError::RateInvalid => write!(f, "Rate is NaN zero, or less than zero."),
@@ -115,8 +115,8 @@ impl Gamma {
     }
 }
 
-impl std::fmt::Display for Gamma {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Gamma {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Γ({}, {})", self.shape, self.rate)
     }
 }

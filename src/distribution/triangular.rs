@@ -1,6 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Triangular](https://en.wikipedia.org/wiki/Triangular_distribution)
@@ -43,9 +43,9 @@ pub enum TriangularError {
     MinEqualsMax,
 }
 
-impl std::fmt::Display for TriangularError {
+impl core::fmt::Display for TriangularError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             TriangularError::MinInvalid => write!(f, "Minimum is NaN or infinite."),
             TriangularError::MaxInvalid => write!(f, "Maximum is NaN or infinite."),
@@ -105,8 +105,8 @@ impl Triangular {
     }
 }
 
-impl std::fmt::Display for Triangular {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Triangular {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Triangular([{},{}], {})", self.min, self.max, self.mode)
     }
 }

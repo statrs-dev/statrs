@@ -4,12 +4,12 @@ use core::ops::{Index, IndexMut};
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Data<D>(D);
 
-impl<D, I> std::fmt::Display for Data<D>
+impl<D, I> core::fmt::Display for Data<D>
 where
     D: Clone + IntoIterator<Item = I>,
-    I: Clone + std::fmt::Display,
+    I: Clone + core::fmt::Display,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut tee = self.0.clone().into_iter();
         write!(f, "Data([")?;
 

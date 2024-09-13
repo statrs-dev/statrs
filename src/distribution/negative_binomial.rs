@@ -1,7 +1,7 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [negative binomial](http://en.wikipedia.org/wiki/Negative_binomial_distribution)
@@ -50,9 +50,9 @@ pub enum NegativeBinomialError {
     PInvalid,
 }
 
-impl std::fmt::Display for NegativeBinomialError {
+impl core::fmt::Display for NegativeBinomialError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             NegativeBinomialError::RInvalid => write!(f, "r is NaN or less than zero"),
             NegativeBinomialError::PInvalid => write!(f, "p is NaN or not in [0, 1]"),
@@ -129,8 +129,8 @@ impl NegativeBinomial {
     }
 }
 
-impl std::fmt::Display for NegativeBinomial {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NegativeBinomial {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "NB({},{})", self.r, self.p)
     }
 }

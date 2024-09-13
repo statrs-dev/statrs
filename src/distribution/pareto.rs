@@ -1,6 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the [Pareto](https://en.wikipedia.org/wiki/Pareto_distribution)
 /// distribution
@@ -33,9 +33,9 @@ pub enum ParetoError {
     ShapeInvalid,
 }
 
-impl std::fmt::Display for ParetoError {
+impl core::fmt::Display for ParetoError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             ParetoError::ScaleInvalid => write!(f, "Scale is NaN, zero, or less than zero"),
             ParetoError::ShapeInvalid => write!(f, "Shape is NaN, zero, or less than zero"),
@@ -106,8 +106,8 @@ impl Pareto {
     }
 }
 
-impl std::fmt::Display for Pareto {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Pareto {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Pareto({},{})", self.scale, self.shape)
     }
 }

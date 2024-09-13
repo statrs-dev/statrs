@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use std::f64;
-use std::fmt::Debug;
+use core::f64;
 
 /// Implements the [Continuous
 /// Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous))
@@ -37,9 +36,9 @@ pub enum UniformError {
     MaxNotGreaterThanMin,
 }
 
-impl std::fmt::Display for UniformError {
+impl core::fmt::Display for UniformError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             UniformError::MinInvalid => write!(f, "Minimum is NaN or infinite"),
             UniformError::MaxInvalid => write!(f, "Maximum is NaN or infinite"),
@@ -65,7 +64,7 @@ impl Uniform {
     ///
     /// ```
     /// use statrs::distribution::Uniform;
-    /// use std::f64;
+    /// use core::f64;
     ///
     /// let mut result = Uniform::new(0.0, 1.0);
     /// assert!(result.is_ok());
@@ -113,8 +112,8 @@ impl Default for Uniform {
     }
 }
 
-impl std::fmt::Display for Uniform {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Uniform {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Uni([{},{}])", self.min, self.max)
     }
 }

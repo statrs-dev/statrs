@@ -1,8 +1,8 @@
 use crate::distribution::Continuous;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
+use core::f64;
+use core::f64::consts::{E, PI};
 use nalgebra::{Cholesky, Const, DMatrix, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
-use std::f64;
-use std::f64::consts::{E, PI};
 
 /// Computes both the normalization and exponential argument in the normal
 /// distribution, returning `None` on dimension mismatch.
@@ -116,9 +116,9 @@ pub enum MultivariateNormalError {
     CholeskyFailed,
 }
 
-impl std::fmt::Display for MultivariateNormalError {
+impl core::fmt::Display for MultivariateNormalError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             MultivariateNormalError::CovInvalid => {
                 write!(f, "Covariance matrix is asymmetric or contains a NaN")
@@ -226,13 +226,13 @@ where
     }
 }
 
-impl<D> std::fmt::Display for MultivariateNormal<D>
+impl<D> core::fmt::Display for MultivariateNormal<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
         nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "N({}, {})", &self.mu, &self.cov)
     }
 }

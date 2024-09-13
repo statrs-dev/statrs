@@ -2,7 +2,7 @@ use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the [Normal](https://en.wikipedia.org/wiki/Normal_distribution)
 /// distribution
@@ -34,9 +34,9 @@ pub enum NormalError {
     StandardDeviationInvalid,
 }
 
-impl std::fmt::Display for NormalError {
+impl core::fmt::Display for NormalError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             NormalError::MeanInvalid => write!(f, "Mean is NaN"),
             NormalError::StandardDeviationInvalid => {
@@ -99,8 +99,8 @@ impl Normal {
     }
 }
 
-impl std::fmt::Display for Normal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Normal {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "N({},{})", self.mean, self.std_dev)
     }
 }
@@ -357,7 +357,7 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, mean: f64, std_dev
     mean + std_dev * ziggurat::sample_std_normal(rng)
 }
 
-impl std::default::Default for Normal {
+impl core::default::Default for Normal {
     /// Returns the standard normal distribution with a mean of 0
     /// and a standard deviation of 1.
     fn default() -> Self {

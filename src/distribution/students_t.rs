@@ -1,7 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the [Student's
 /// T](https://en.wikipedia.org/wiki/Student%27s_t-distribution) distribution
@@ -38,9 +38,9 @@ pub enum StudentsTError {
     FreedomInvalid,
 }
 
-impl std::fmt::Display for StudentsTError {
+impl core::fmt::Display for StudentsTError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             StudentsTError::LocationInvalid => write!(f, "Location is NaN"),
             StudentsTError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero"),
@@ -136,8 +136,8 @@ impl StudentsT {
     }
 }
 
-impl std::fmt::Display for StudentsT {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for StudentsT {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "t_{}({},{})", self.freedom, self.location, self.scale)
     }
 }
@@ -586,7 +586,7 @@ mod tests {
     #[test]
     fn test_pdf() {
         let pdf = |arg: f64| move |x: StudentsT| x.pdf(arg);
-        test_relative(0.0, 1.0, 1.0, std::f64::consts::FRAC_1_PI, pdf(0.0));
+        test_relative(0.0, 1.0, 1.0, core::f64::consts::FRAC_1_PI, pdf(0.0));
         test_relative(0.0, 1.0, 1.0, 0.159154943091895, pdf(1.0));
         test_relative(0.0, 1.0, 1.0, 0.159154943091895, pdf(-1.0));
         test_relative(0.0, 1.0, 1.0, 0.063661977236758, pdf(2.0));

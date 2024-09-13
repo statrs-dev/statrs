@@ -1,6 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Exp](https://en.wikipedia.org/wiki/Exp_distribution)
@@ -31,9 +31,9 @@ pub enum ExpError {
     RateInvalid,
 }
 
-impl std::fmt::Display for ExpError {
+impl core::fmt::Display for ExpError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             ExpError::RateInvalid => write!(f, "Rate is NaN, zero or less than zero"),
         }
@@ -84,8 +84,8 @@ impl Exp {
     }
 }
 
-impl std::fmt::Display for Exp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Exp {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Exp({})", self.rate)
     }
 }

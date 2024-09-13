@@ -1,8 +1,8 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::factorial;
 use crate::statistics::*;
-use std::cmp;
-use std::f64;
+use core::cmp;
+use core::f64;
 
 /// Implements the
 /// [Hypergeometric](http://en.wikipedia.org/wiki/Hypergeometric_distribution)
@@ -38,9 +38,9 @@ pub enum HypergeometricError {
     TooManyDraws,
 }
 
-impl std::fmt::Display for HypergeometricError {
+impl core::fmt::Display for HypergeometricError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             HypergeometricError::TooManySuccesses => write!(f, "successes > population"),
             HypergeometricError::TooManyDraws => write!(f, "draws > population"),
@@ -147,8 +147,8 @@ impl Hypergeometric {
     }
 }
 
-impl std::fmt::Display for Hypergeometric {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Hypergeometric {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "Hypergeometric({},{},{})",

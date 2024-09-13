@@ -104,9 +104,9 @@ pub enum FishersExactTestError {
     TableInvalidForHypergeometric(HypergeometricError),
 }
 
-impl std::fmt::Display for FishersExactTestError {
+impl core::fmt::Display for FishersExactTestError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             FishersExactTestError::TableInvalidForHypergeometric(hg_err) => {
                 writeln!(f, "Cannot create a Hypergeometric distribution from the data in the contingency table.")?;

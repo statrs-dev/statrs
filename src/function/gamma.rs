@@ -3,7 +3,7 @@
 
 use crate::consts;
 use crate::prec;
-use std::f64;
+use core::f64;
 
 /// Represents the errors that can occur when computing any of the incomplete
 /// gamma functions.
@@ -17,8 +17,8 @@ pub enum GammaFuncError {
     XInvalid,
 }
 
-impl std::fmt::Display for GammaFuncError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Display for GammaFuncError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             GammaFuncError::AInvalid => write!(f, "a is infinite, zero or less than zero"),
             GammaFuncError::XInvalid => write!(f, "x is infinite, zero or less than zero"),
@@ -446,7 +446,7 @@ fn signum(x: f64) -> f64 {
 mod tests {
     use super::*;
 
-    use std::f64::consts;
+    use core::f64::consts;
 
     #[test]
     fn test_gamma() {

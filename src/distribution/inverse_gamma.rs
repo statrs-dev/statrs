@@ -1,7 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the [Inverse
 /// Gamma](https://en.wikipedia.org/wiki/Inverse-gamma_distribution)
@@ -35,9 +35,9 @@ pub enum InverseGammaError {
     RateInvalid,
 }
 
-impl std::fmt::Display for InverseGammaError {
+impl core::fmt::Display for InverseGammaError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             InverseGammaError::ShapeInvalid => {
                 write!(f, "Shape is NaN, infinite, zero or less than zero")
@@ -112,8 +112,8 @@ impl InverseGamma {
     }
 }
 
-impl std::fmt::Display for InverseGamma {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InverseGamma {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Inv-Gamma({}, {})", self.shape, self.rate)
     }
 }
