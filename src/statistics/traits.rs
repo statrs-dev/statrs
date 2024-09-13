@@ -1,4 +1,4 @@
-use ::num_traits::float::Float;
+use num_traits::float::Float;
 
 /// The `Min` trait specifies than an object has a minimum value
 pub trait Min<T> {

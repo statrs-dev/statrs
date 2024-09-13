@@ -1,9 +1,8 @@
 //! Defines common interfaces for interacting with statistical distributions
 //! and provides
 //! concrete implementations for a variety of distributions.
-use super::statistics::{Max, Min};
-use ::num_traits::{Float, Num};
-use num_traits::NumAssignOps;
+use crate::statistics::{Max, Min};
+use num_traits::{Float, Num, NumAssignOps};
 
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::{Beta, BetaError};
@@ -40,6 +39,8 @@ pub use self::students_t::{StudentsT, StudentsTError};
 pub use self::triangular::{Triangular, TriangularError};
 pub use self::uniform::{Uniform, UniformError};
 pub use self::weibull::{Weibull, WeibullError};
+
+pub use self::noncentral_students_t::{NoncentralStudentsT, NoncentralStudentsTError};
 
 mod bernoulli;
 mod beta;
@@ -82,6 +83,8 @@ mod weibull;
 mod ziggurat;
 #[cfg(feature = "rand")]
 mod ziggurat_tables;
+
+mod noncentral_students_t;
 
 /// The `ContinuousCDF` trait is used to specify an interface for univariate
 /// distributions for which cdf float arguments are sensible.

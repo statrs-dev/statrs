@@ -68,6 +68,11 @@ pub fn checked_ln_beta(a: f64, b: f64) -> Result<f64, BetaFuncError> {
 /// where `a` is the first beta parameter
 /// and `b` is the second beta parameter.
 ///
+/// # Definition
+/// $$
+/// B(a,b) = \int\_0^1{t^{a-1}(1-t)^{b-1}}\textrm{d}t
+/// $$
+///
 ///
 /// # Panics
 ///
@@ -89,10 +94,14 @@ pub fn checked_beta(a: f64, b: f64) -> Result<f64, BetaFuncError> {
 }
 
 /// Computes the lower incomplete (unregularized) beta function
-/// `B(a,b,x) = int(t^(a-1)*(1-t)^(b-1),t=0..x)` for `a > 0, b > 0, 1 >= x >= 0`
 /// where `a` is the first beta parameter, `b` is the second beta parameter, and
 /// `x` is the upper limit of the integral
 ///
+/// # Definition
+/// ```math
+/// B(x;a,b) = B\_x(a,b) = \int\_0^x t^{a-1}*(1-t)^{b-1} \textrm{d}t
+/// x \in [0,1] \textrm{ and } a,b > 0
+/// ```
 /// # Panics
 ///
 /// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
