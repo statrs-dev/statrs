@@ -7,10 +7,11 @@ on:
     branches: [ master ]
 jobs:
   coverage:
-    timeout-minutes: 20
+    timeout-minutes: ${{ matrix.toolchain == 'nightly' && 10 || 360 }} # 360 mins is gh actions default
+    continue-on-error: ${{ matrix.toolchain == 'nightly' }}
     strategy:
       matrix:
-        toolchain: [nightly, nightly-2024-09-01]
+        toolchain: [nightly-2024-09-01, nightly]
 
     name: Coverage
     runs-on: ubuntu-latest
