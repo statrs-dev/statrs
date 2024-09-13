@@ -31,6 +31,8 @@ pub use self::multinomial::{Multinomial, MultinomialError};
 #[cfg(feature = "nalgebra")]
 pub use self::multivariate_normal::{MultivariateNormal, MultivariateNormalError};
 #[cfg(feature = "nalgebra")]
+pub use self::multivariate_normal_diag::MultivariateNormalDiag;
+#[cfg(feature = "nalgebra")]
 pub use self::multivariate_students_t::{MultivariateStudent, MultivariateStudentError};
 pub use self::negative_binomial::{NegativeBinomial, NegativeBinomialError};
 pub use self::normal::{Normal, NormalError};
@@ -68,6 +70,8 @@ mod log_normal;
 mod multinomial;
 #[cfg(feature = "nalgebra")]
 mod multivariate_normal;
+#[cfg(feature = "nalgebra")]
+mod multivariate_normal_diag;
 #[cfg(feature = "nalgebra")]
 mod multivariate_students_t;
 mod negative_binomial;
