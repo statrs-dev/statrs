@@ -7,7 +7,8 @@
 //!
 //! # Sampling
 //! The common use case is to set up the distributions and sample from them which depends on the `Rand` crate for random number generation.
-//! ```
+#![cfg_attr(feature = "rand", doc = "```")]
+#![cfg_attr(not(feature = "rand"), doc = "```ignore")]
 //! use statrs::distribution::Exp;
 //! use rand::distributions::Distribution;
 //! let mut r = rand::rngs::OsRng;
