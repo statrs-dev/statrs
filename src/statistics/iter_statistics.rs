@@ -1,6 +1,6 @@
 use crate::statistics::*;
-use std::borrow::Borrow;
-use std::f64;
+use core::borrow::Borrow;
+use core::f64;
 
 impl<T> Statistics<f64> for T
 where
@@ -242,7 +242,7 @@ where
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use std::f64::consts;
+    use core::f64::consts;
     use crate::statistics::Statistics;
     use crate::generate::{InfinitePeriodic, InfiniteSinusoidal};
 

@@ -1,7 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::beta;
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Fisher-Snedecor](https://en.wikipedia.org/wiki/F-distribution) distribution
@@ -35,9 +35,9 @@ pub enum FisherSnedecorError {
     Freedom2Invalid,
 }
 
-impl std::fmt::Display for FisherSnedecorError {
+impl core::fmt::Display for FisherSnedecorError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             FisherSnedecorError::Freedom1Invalid => {
                 write!(f, "freedom_1 is NaN, infinite, zero or less than zero.")
@@ -117,8 +117,8 @@ impl FisherSnedecor {
     }
 }
 
-impl std::fmt::Display for FisherSnedecor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for FisherSnedecor {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "F({},{})", self.freedom_1, self.freedom_2)
     }
 }

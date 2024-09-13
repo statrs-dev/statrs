@@ -1,7 +1,7 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, factorial};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Binomial](https://en.wikipedia.org/wiki/Binomial_distribution)
@@ -32,9 +32,9 @@ pub enum BinomialError {
     ProbabilityInvalid,
 }
 
-impl std::fmt::Display for BinomialError {
+impl core::fmt::Display for BinomialError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             BinomialError::ProbabilityInvalid => write!(f, "Probability is NaN or not in [0, 1]"),
         }
@@ -103,8 +103,8 @@ impl Binomial {
     }
 }
 
-impl std::fmt::Display for Binomial {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Binomial {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Bin({},{})", self.p, self.n)
     }
 }

@@ -24,9 +24,9 @@ pub enum DiracError {
     ValueInvalid,
 }
 
-impl std::fmt::Display for DiracError {
+impl core::fmt::Display for DiracError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             DiracError::ValueInvalid => write!(f, "Value v is NaN"),
         }
@@ -76,8 +76,8 @@ impl Dirac {
     }
 }
 
-impl std::fmt::Display for Dirac {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Dirac {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "δ_{}", self.0)
     }
 }

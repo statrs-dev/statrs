@@ -1,7 +1,7 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{factorial, gamma};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution)
 /// distribution
@@ -30,9 +30,9 @@ pub enum PoissonError {
     LambdaInvalid,
 }
 
-impl std::fmt::Display for PoissonError {
+impl core::fmt::Display for PoissonError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             PoissonError::LambdaInvalid => write!(f, "Lambda is NaN, zero or less than zero"),
         }
@@ -83,8 +83,8 @@ impl Poisson {
     }
 }
 
-impl std::fmt::Display for Poisson {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Poisson {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Pois({})", self.lambda)
     }
 }

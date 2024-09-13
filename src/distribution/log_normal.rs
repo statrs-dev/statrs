@@ -2,7 +2,7 @@ use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Log-normal](https://en.wikipedia.org/wiki/Log-normal_distribution)
@@ -36,9 +36,9 @@ pub enum LogNormalError {
     ScaleInvalid,
 }
 
-impl std::fmt::Display for LogNormalError {
+impl core::fmt::Display for LogNormalError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             LogNormalError::LocationInvalid => write!(f, "Location is NaN"),
             LogNormalError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero"),
@@ -109,8 +109,8 @@ impl LogNormal {
     }
 }
 
-impl std::fmt::Display for LogNormal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for LogNormal {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "LogNormal({}, {}^2)", self.location, self.scale)
     }
 }

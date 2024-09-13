@@ -45,9 +45,9 @@ pub enum MultinomialError {
     ProbabilityInvalid,
 }
 
-impl std::fmt::Display for MultinomialError {
+impl core::fmt::Display for MultinomialError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             MultinomialError::NotEnoughProbabilities => write!(f, "Fewer than two probabilities"),
             MultinomialError::ProbabilitySumZero => write!(f, "The probabilities sum up to zero"),
@@ -149,12 +149,12 @@ where
     }
 }
 
-impl<D> std::fmt::Display for Multinomial<D>
+impl<D> core::fmt::Display for Multinomial<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Multinom({:#?},{})", self.p, self.n)
     }
 }
@@ -363,7 +363,7 @@ mod tests {
         statistics::{MeanN, VarianceN},
     };
     use nalgebra::{dmatrix, dvector, vector, DimMin, Dyn, OVector};
-    use std::fmt::{Debug, Display};
+    use core::fmt::{Debug, Display};
 
     fn try_create<D>(p: OVector<f64, D>, n: u64) -> Multinomial<D>
     where

@@ -1,6 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Categorical](https://en.wikipedia.org/wiki/Categorical_distribution)
@@ -39,9 +39,9 @@ pub enum CategoricalError {
     ProbMassHasInvalidElements,
 }
 
-impl std::fmt::Display for CategoricalError {
+impl core::fmt::Display for CategoricalError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             CategoricalError::ProbMassEmpty => write!(f, "Probability mass is empty"),
             CategoricalError::ProbMassSumZero => write!(f, "Probabilities sum up to zero"),
@@ -117,8 +117,8 @@ impl Categorical {
     }
 }
 
-impl std::fmt::Display for Categorical {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Categorical {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Cat({:#?})", self.norm_pmf)
     }
 }
@@ -371,7 +371,7 @@ pub fn cdf_to_sf(cdf: &[f64]) -> Vec<f64> {
 // return 0. Otherwise val returns the index of the first element larger than
 // it within the search array.
 fn binary_index(search: &[f64], val: f64) -> usize {
-    use std::cmp;
+    use core::cmp;
 
     let mut low = 0_isize;
     let mut high = search.len() as isize - 1;

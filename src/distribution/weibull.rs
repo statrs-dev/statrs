@@ -2,7 +2,7 @@ use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the [Weibull](https://en.wikipedia.org/wiki/Weibull_distribution)
 /// distribution
@@ -37,9 +37,9 @@ pub enum WeibullError {
     ScaleInvalid,
 }
 
-impl std::fmt::Display for WeibullError {
+impl core::fmt::Display for WeibullError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             WeibullError::ShapeInvalid => write!(f, "Shape is NaN, zero or less than zero."),
             WeibullError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero."),
@@ -114,8 +114,8 @@ impl Weibull {
     }
 }
 
-impl std::fmt::Display for Weibull {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Weibull {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Weibull({},{})", self.scale, self.shape)
     }
 }

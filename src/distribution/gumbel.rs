@@ -1,7 +1,8 @@
 use super::{Continuous, ContinuousCDF};
 use crate::consts::EULER_MASCHERONI;
 use crate::statistics::*;
-use std::f64::{self, consts::PI};
+use core::f64;
+use core::f64::consts::PI;
 
 /// Implements the [Gumbel](https://en.wikipedia.org/wiki/Gumbel_distribution)
 /// distribution, also known as the type-I generalized extreme value distribution.
@@ -34,9 +35,9 @@ pub enum GumbelError {
     ScaleInvalid,
 }
 
-impl std::fmt::Display for GumbelError {
+impl core::fmt::Display for GumbelError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             GumbelError::LocationInvalid => write!(f, "Location is NAN"),
             GumbelError::ScaleInvalid => write!(f, "Scale is NAN, zero or less than zero"),
@@ -106,8 +107,8 @@ impl Gumbel {
     }
 }
 
-impl std::fmt::Display for Gumbel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Gumbel {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f, "Gumbel({:?}, {:?})", self.location, self.scale)
     }
 }

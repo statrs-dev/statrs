@@ -3,7 +3,7 @@
 
 use crate::function::gamma;
 use crate::prec;
-use std::f64;
+use core::f64;
 
 /// Represents the errors that can occur when computing the natural logarithm
 /// of the beta function or the regularized lower incomplete beta function.
@@ -20,8 +20,8 @@ pub enum BetaFuncError {
     XOutOfRange,
 }
 
-impl std::fmt::Display for BetaFuncError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Display for BetaFuncError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             BetaFuncError::ANotGreaterThanZero => write!(f, "a is zero or less than zero"),
             BetaFuncError::BNotGreaterThanZero => write!(f, "b is zero or less than zero"),

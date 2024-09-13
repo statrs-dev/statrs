@@ -25,7 +25,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -48,7 +48,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -71,7 +71,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -94,7 +94,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -121,7 +121,7 @@ pub trait Statistics<T> {
     /// #[macro_use]
     /// extern crate statrs;
     ///
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
@@ -151,7 +151,7 @@ pub trait Statistics<T> {
     /// #[macro_use]
     /// extern crate statrs;
     ///
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
@@ -190,7 +190,7 @@ pub trait Statistics<T> {
     /// #[macro_use]
     /// extern crate statrs;
     ///
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
@@ -226,7 +226,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -254,7 +254,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -280,7 +280,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -306,7 +306,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -341,7 +341,7 @@ pub trait Statistics<T> {
     /// #[macro_use]
     /// extern crate statrs;
     ///
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
@@ -378,7 +378,7 @@ pub trait Statistics<T> {
     /// #[macro_use]
     /// extern crate statrs;
     ///
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
@@ -408,7 +408,7 @@ pub trait Statistics<T> {
     /// #[macro_use]
     /// extern crate statrs;
     ///
-    /// use std::f64;
+    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
