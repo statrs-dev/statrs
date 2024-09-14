@@ -567,33 +567,51 @@ mod tests {
     #[test]
     #[ignore = "this test is designed to assess approximately normal results within 2σ"]
     fn test_stochastic_uniform_samples() {
-        use crate::statistics::Statistics;
         use ::rand::{distributions::Distribution, prelude::thread_rng};
+        use crate::statistics::Statistics;
+
+        // describe multinomial such that each binomial variable is viable normal approximation
+        let k: f64 = 60.0;
         let n: f64 = 1000.0;
-        let k: usize = 20;
-        let weights = vec![1.0; k];
+        let weights = vec![1.0; k as usize];
         let multinomial = Multinomial::new(weights, n as u64).unwrap();
+
+        // obtain sample statistics for multiple draws from this multinomial distribution
+        // during iteration, verify that each event is ~ Binom(n, 1/k) under normal approx
+        let n_trials = 20;
+        let stats_across_multinom_events = std::iter::repeat_with(|| {
         let samples: OVector<f64, Dyn> = multinomial.sample(&mut thread_rng());
-        eprintln!("{samples}");
+            samples.iter().enumerate().for_each(|(i, &s)| {
+                assert_abs_diff_eq!(s, n / k, epsilon = multinomial.variance().unwrap()[(i, i)],)
+            });
+            samples
+        })
+        .take(n_trials)
+        .map(|sample| (sample.mean(), sample.population_variance()));
 
-        samples.iter().for_each(|&s| {
+        println!("{:#?}", stats_across_multinom_events.clone().collect::<Vec<_>>());
+
+        // claim: for X from a given trial, Var[X] ~ χ^2(k-1)
+        // the variance across this multinomial sample should be against the true mean
+        //   Var[X] = sum (X_i - bar{X})^2 = sum (X_i - n/k)^2
+        // alternatively, variance is linear, so we should also have
+        //   Var[X] = k Var[X_i] = k npq = k n (k-1)/k^2 = n (k-1)/k as these are iid Binom(n, 1/k)
+        //
+        // since parameters of the binomial variable are around np ~ 20, each binomial variable is approximately normal
+        //
+        // therefore, population variance should be a sum of squares of normal variables from their mean.
+        // i.e. population variances of these multinomial samples should be a scaling of χ^2 squared variables
+        // with k-1 dof
+        //
+        // normal approximation of χ^2(k-1) should be valid for k = 50, so assert against 2σ_normal
+        for (_mu, var) in stats_across_multinom_events {
             assert_abs_diff_eq!(
-                s,
-                n / k as f64,
-                epsilon = 2.0 * multinomial.variance().unwrap()[(0, 0)].sqrt(),
+                var,
+                k - 1.0,
+                epsilon = ((2.0*k - 2.0)/n_trials as f64).sqrt()
             )
-        });
+        }
 
-        assert_abs_diff_eq!(
-            samples.iter().population_variance(),
-            multinomial.variance().unwrap()[(0, 0)],
-            epsilon = n.sqrt()
-        );
-
-        assert_eq!(
-            samples.into_iter().map(|&x| x as u64).sum::<u64>(),
-            n as u64
-        );
     }
 }
 
