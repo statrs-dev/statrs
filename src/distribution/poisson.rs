@@ -90,6 +90,7 @@ impl std::fmt::Display for Poisson {
 }
 
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Poisson {
     /// Generates one sample from the Poisson distribution either by
     /// Knuth's method if lambda < 30.0 or Rejection method PA by
@@ -284,6 +285,7 @@ impl Discrete<u64, f64> for Poisson {
 /// Series C (Applied Statistics) Vol. 28 No. 1. (1979) pp. 29 - 35
 /// otherwise
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, lambda: f64) -> f64 {
     if lambda < 30.0 {
         let limit = (-lambda).exp();

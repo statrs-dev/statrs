@@ -122,6 +122,7 @@ impl std::fmt::Display for Gamma {
 }
 
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Gamma {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         sample_unchecked(rng, self.shape, self.rate)
@@ -401,6 +402,7 @@ impl Continuous<f64, f64> for Gamma {
 /// ACM Transactions on Mathematical Software, Vol. 26, No. 3, September 2000,
 /// Pages 363-372
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, shape: f64, rate: f64) -> f64 {
     let mut a = shape;
     let mut afix = 1.0;

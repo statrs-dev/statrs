@@ -120,6 +120,7 @@ impl std::fmt::Display for Uniform {
 }
 
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Uniform {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         let d = rand::distributions::Uniform::new_inclusive(self.min, self.max);
@@ -495,6 +496,7 @@ mod tests {
     }
 
     #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
     #[test]
     fn test_samples_in_range() {
         use rand::rngs::StdRng;

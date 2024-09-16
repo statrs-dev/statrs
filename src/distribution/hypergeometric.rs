@@ -146,6 +146,7 @@ impl std::fmt::Display for Hypergeometric {
 }
 
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Hypergeometric {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         let mut population = self.population as f64;

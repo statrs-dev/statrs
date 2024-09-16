@@ -106,6 +106,7 @@ impl std::fmt::Display for Normal {
 }
 
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Normal {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         sample_unchecked(rng, self.mean, self.std_dev)
@@ -348,6 +349,7 @@ pub fn ln_pdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
 }
 
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 /// draws a sample from a normal distribution using the Box-Muller algorithm
 pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, mean: f64, std_dev: f64) -> f64 {
     use crate::distribution::ziggurat;

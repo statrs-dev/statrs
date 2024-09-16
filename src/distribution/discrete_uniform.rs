@@ -75,6 +75,7 @@ impl std::fmt::Display for DiscreteUniform {
 }
 
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for DiscreteUniform {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         rng.gen_range(self.min..=self.max) as f64

@@ -136,6 +136,7 @@ impl std::fmt::Display for NegativeBinomial {
 }
 
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<u64> for NegativeBinomial {
     fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> u64 {
         use crate::distribution::{gamma, poisson};

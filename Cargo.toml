@@ -56,3 +56,7 @@ features = ["macros"]
 level = "warn"
 # Set by cargo-llvm-cov when running on nightly
 check-cfg = ['cfg(coverage_nightly)']
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

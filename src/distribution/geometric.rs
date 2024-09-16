@@ -91,6 +91,7 @@ impl std::fmt::Display for Geometric {
 }
 
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Geometric {
     fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
         use ::rand::distributions::OpenClosed01;

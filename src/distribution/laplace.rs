@@ -111,6 +111,7 @@ impl std::fmt::Display for Laplace {
 }
 
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Laplace {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         let x: f64 = rng.gen_range(-0.5..0.5);

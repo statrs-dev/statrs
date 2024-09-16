@@ -50,6 +50,7 @@ mod chi;
 mod chi_squared;
 mod dirac;
 #[cfg(feature = "nalgebra")]
+#[cfg_attr(docsrs, doc(cfg(feature = "nalgebra")))]
 mod dirichlet;
 mod discrete_uniform;
 mod empirical;
@@ -65,10 +66,13 @@ mod inverse_gamma;
 mod laplace;
 mod log_normal;
 #[cfg(feature = "nalgebra")]
+#[cfg_attr(docsrs, doc(cfg(feature = "nalgebra")))]
 mod multinomial;
 #[cfg(feature = "nalgebra")]
+#[cfg_attr(docsrs, doc(cfg(feature = "nalgebra")))]
 mod multivariate_normal;
 #[cfg(feature = "nalgebra")]
+#[cfg_attr(docsrs, doc(cfg(feature = "nalgebra")))]
 mod multivariate_students_t;
 mod negative_binomial;
 mod normal;
@@ -79,8 +83,10 @@ mod triangular;
 mod uniform;
 mod weibull;
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 mod ziggurat;
 #[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 mod ziggurat_tables;
 
 /// The `ContinuousCDF` trait is used to specify an interface for univariate
