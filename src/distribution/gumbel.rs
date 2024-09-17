@@ -510,6 +510,8 @@ mod tests {
         test_exact(f64::INFINITY, 1.0, 1.0, sf(0.0));
         test_exact(f64::INFINITY, 1.0, 1.0, sf(1.0));
         test_exact(f64::INFINITY, 1.0, 1.0, sf(5.0));
+        test_absolute(0.0, 1.0, 4.248354255291589e-18, 1e-32, sf(40.0));
+        test_absolute(0.0, 1.0, 1.804851387845415e-35, 1e-50, sf(80.0));
     }
 
     #[test]
