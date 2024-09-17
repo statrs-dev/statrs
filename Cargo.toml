@@ -43,9 +43,15 @@ optional = true
 default-features = false
 features = ["std"]
 
+[[example]]
+name = "random_clap"
+required-features = ["rand", "nalgebra"]
+
 [dev-dependencies]
 criterion = "0.5"
 anyhow = "1.0"
+clap = { version = "4.0.32", features = ["derive"] }
+clap_derive = "4.0.21"
 
 [dev-dependencies.nalgebra]
 version = "0.33"
