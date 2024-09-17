@@ -167,7 +167,7 @@ impl ContinuousCDF<f64, f64> for Gumbel {
     ///
     /// where `μ` is the location and `β` is the scale
     fn sf(&self, x: f64) -> f64 {
-        1.0 - (-(-(x - self.location) / self.scale).exp()).exp()
+        -(-(-(x - self.location) / self.scale).exp()).exp_m1()
     }
 }
 
