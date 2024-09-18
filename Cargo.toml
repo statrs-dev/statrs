@@ -45,6 +45,7 @@ features = ["std"]
 
 [[example]]
 name = "random_clap"
+required-features = ["rand", "nalgebra"]
 
 [dev-dependencies]
 criterion = "0.5"
