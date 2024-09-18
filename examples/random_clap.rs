@@ -1,14 +1,14 @@
 extern crate statrs;
 
-use nalgebra as na;
-use rand::{distributions, thread_rng, Rng};
-use statrs::distribution::{Binomial, Continuous, Multinomial, Normal};
+use rand::{thread_rng, Rng};
+use statrs::distribution::{Binomial, Continuous, Discrete, Multinomial, Normal};
+use statrs::statistics::Mode;
 
 use std::fmt::Display;
-use std::io::{self, Write};
+use std::io::{self, BufWriter, Write};
 
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name="random_clapping", author, version="0.0.1", about, long_about = None)]
@@ -27,7 +27,12 @@ enum Commands {
         dist: DistributionAsCommand,
     },
     /// for evaluating distribution function density
-    Density { arg: String, dist: String },
+    Density {
+        #[arg(short, long = "arg", action = ArgAction::Append, value_name = "SAMPLE")]
+        args: Vec<String>,
+        #[command(subcommand)]
+        dist: DistributionAsCommand,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -58,34 +63,82 @@ enum DistributionAsCommand {
 fn main() -> Result<()> {
     let args = Args::parse();
     match args.cmd {
-        Commands::Sample { count, dist } => {
-            let count = count.unwrap_or(10);
+        Commands::Sample { count, dist } => run_command_sample(count, dist),
+        Commands::Density { args, dist } => run_command_density(&args, dist),
+    }?;
+    println!();
+    Ok(())
+}
 
-            match dist {
-                DistributionAsCommand::Multinomial { n, p } => {
-                    // store as iter of Vec
-                    let it = thread_rng()
-                        .sample_iter(Multinomial::new(p, n)?)
-                        .map(|v| Into::<Vec<_>>::into(v.data));
-                    // print as int
-                    print_multivariate_samples(
-                        count,
-                        it.map(|v| v.into_iter().map(|x| x as usize)),
-                    )?
-                }
-                DistributionAsCommand::Binomial { n, p } => {
-                    let samples = thread_rng().sample_iter(Binomial::new(p, n)?);
-                    print_samples(count, samples)?;
-                }
-                DistributionAsCommand::Normal { mu, sigma } => {
-                    let samples = thread_rng().sample_iter(Normal::new(mu, sigma)?);
-                    print_samples(count, samples)?
-                }
+fn run_command_density(args: &[String], dist: DistributionAsCommand) -> Result<()> {
+    let densities = match dist {
+        DistributionAsCommand::Multinomial { .. } => {
+            unimplemented!()
+        }
+        DistributionAsCommand::Binomial { n, p } => {
+            let dist = Binomial::new(p, n)?;
+            if !args.is_empty() {
+                args.iter()
+                    .map_while(|s| match s.parse() {
+                        Ok(x) => Some(x),
+                        Err(e) => {
+                            eprintln!("could not parse argment, got {e}");
+                            None
+                        }
+                    })
+                    .map(|x| dist.pmf(x))
+                    .collect()
+            } else {
+                vec![dist.pmf(dist.mode().unwrap())]
             }
         }
-        x @ Commands::Density { .. } => println!("{x:#?}"),
+        DistributionAsCommand::Normal { mu, sigma } => {
+            let dist = Normal::new(mu, sigma)?;
+            if !args.is_empty() {
+                args.iter()
+                    .map_while(|s| match s.parse() {
+                        Ok(x) => Some(x),
+                        Err(e) => {
+                            eprintln!("could not parse argment, got {e}");
+                            None
+                        }
+                    })
+                    .map(|x| dist.pdf(x))
+                    .collect()
+            } else {
+                vec![dist.pdf(dist.mode().unwrap())]
+            }
+        }
+    };
+
+    util::write_interspersed(&mut BufWriter::new(io::stdout()), densities, ", ")?;
+
+    Ok(())
+}
+
+fn run_command_sample(count: Option<usize>, dist: DistributionAsCommand) -> Result<()> {
+    let count = count.unwrap_or(10);
+
+    match dist {
+        // multinomial should print `count` of Vec<uint>
+        DistributionAsCommand::Multinomial { n, p } => {
+            let samples = thread_rng()
+                .sample_iter(Multinomial::new(p, n)?)
+                .map(|v| Into::<Vec<_>>::into(v.data));
+            print_multivariate_samples(count, samples.map(|v| v.into_iter().map(|x| x as usize)))?
+        }
+        // binomial should print `count` of uint
+        DistributionAsCommand::Binomial { n, p } => {
+            let samples = thread_rng().sample_iter(Binomial::new(p, n)?);
+            print_samples(count, samples)?;
+        }
+        // normal should print `count` of float
+        DistributionAsCommand::Normal { mu, sigma } => {
+            let samples = thread_rng().sample_iter(Normal::new(mu, sigma)?);
+            print_samples(count, samples)?
+        }
     }
-    println!("");
+
     Ok(())
 }
 
@@ -125,7 +178,7 @@ where
 
     for s in samples.into_iter().take(count) {
         util::write_interspersed(&mut handle, s.into_iter(), ", ")?;
-        writeln!(&mut handle, "")?;
+        writeln!(&mut handle)?;
     }
     Ok(())
 }
