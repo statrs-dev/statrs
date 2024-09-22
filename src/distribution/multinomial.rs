@@ -161,23 +161,47 @@ where
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
+impl<D> ::rand::distributions::Distribution<OVector<u64, D>> for Multinomial<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<u64, D>,
+{
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<u64, D> {
+        sample_generic(self, rng)
+    }
+}
+
+#[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for Multinomial<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
 {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
-        use nalgebra::Const;
-
-        let p_cdf = super::categorical::prob_mass_to_cdf(self.p().as_slice());
-        let mut res = OVector::zeros_generic(self.p.shape_generic().0, Const::<1>);
-        for _ in 0..self.n {
-            let i = super::categorical::sample_unchecked(rng, &p_cdf);
-            let el = res.get_mut(i as usize).unwrap();
-            *el += 1.0;
-        }
-        res
+        sample_generic(self, rng)
     }
+}
+
+#[cfg(feature = "rand")]
+fn sample_generic<D, R, T>(dist: &Multinomial<D>, rng: &mut R) -> OVector<T, D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<T, D>,
+    R: ::rand::Rng + ?Sized,
+    T: ::num_traits::Num + ::nalgebra::Scalar + ::std::ops::AddAssign<T>,
+{
+    use nalgebra::Const;
+
+    let p_cdf = super::categorical::prob_mass_to_cdf(dist.p().as_slice());
+    let mut res = OVector::zeros_generic(dist.p.shape_generic().0, Const::<1>);
+    for _ in 0..dist.n {
+        let i = super::categorical::sample_unchecked(rng, &p_cdf);
+        res[i] += T::one();
+    }
+    res
 }
 
 impl<D> MeanN<DVector<f64>> for Multinomial<D>

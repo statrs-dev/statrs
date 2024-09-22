@@ -125,9 +125,25 @@ impl std::fmt::Display for Categorical {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
+impl ::rand::distributions::Distribution<usize> for Categorical {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> usize {
+        sample_unchecked(rng, &self.cdf)
+    }
+}
+
+#[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
+impl ::rand::distributions::Distribution<u64> for Categorical {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> u64 {
+        sample_unchecked(rng, &self.cdf) as u64
+    }
+}
+
+#[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Categorical {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        sample_unchecked(rng, &self.cdf)
+        sample_unchecked(rng, &self.cdf) as f64
     }
 }
 
@@ -325,13 +341,9 @@ impl Discrete<u64, f64> for Categorical {
 /// without doing any bounds checking
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, cdf: &[f64]) -> f64 {
+pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, cdf: &[f64]) -> usize {
     let draw = rng.gen::<f64>() * cdf.last().unwrap();
-    cdf.iter()
-        .enumerate()
-        .find(|(_, val)| **val >= draw)
-        .map(|(i, _)| i)
-        .unwrap() as f64
+    cdf.iter().position(|val| *val >= draw).unwrap()
 }
 
 /// Computes the cdf from the given probability masses. Performs

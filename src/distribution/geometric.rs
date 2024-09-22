@@ -92,16 +92,25 @@ impl std::fmt::Display for Geometric {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
+impl ::rand::distributions::Distribution<u64> for Geometric {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> u64 {
+        if ulps_eq!(self.p, 1.0) {
+            1
+        } else {
+            let x: f64 = r.sample(::rand::distributions::OpenClosed01);
+            // This cast is safe, because the largest finite value this expression can take is when
+            // `x = 1.4e-45` and `1.0 - self.p = 0.9999999999999999`, in which case we get
+            // `930262250532780300`, which when casted to a `u64` is `930262250532780288`.
+            x.log(1.0 - self.p).ceil() as u64
+        }
+    }
+}
+
+#[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Geometric {
     fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
-        use ::rand::distributions::OpenClosed01;
-
-        if ulps_eq!(self.p, 1.0) {
-            1.0
-        } else {
-            let x: f64 = r.sample(OpenClosed01);
-            x.log(1.0 - self.p).ceil()
-        }
+        r.sample::<u64, _>(self) as f64
     }
 }
 
