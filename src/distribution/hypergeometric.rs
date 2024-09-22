@@ -7,7 +7,19 @@ use std::f64;
 /// Implements the
 /// [Hypergeometric](http://en.wikipedia.org/wiki/Hypergeometric_distribution)
 /// distribution
-// TODO: Add examples
+///
+/// # Examples
+///
+/// ```
+/// use statrs::distribution::{Hypergeometric, Discrete};
+/// use statrs::statistics::Distribution;
+/// use statrs::prec;
+///
+/// let n = Hypergeometric::new(500, 50, 100).unwrap();
+/// assert_eq!(n.mean().unwrap(), 10.);
+/// assert!(prec::almost_eq(n.pmf(10), 0.14736784, 1e-8));
+/// assert!(prec::almost_eq(n.pmf(25), 3.537e-7, 1e-10));
+/// ```
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Hypergeometric {
     population: u64,
