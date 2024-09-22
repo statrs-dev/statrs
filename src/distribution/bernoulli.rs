@@ -96,7 +96,7 @@ impl ::rand::distributions::Distribution<bool> for Bernoulli {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Bernoulli {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        f64::from(rng.sample::<bool, _>(self))
+        rng.sample::<bool, _>(self) as u8 as f64
     }
 }
 
