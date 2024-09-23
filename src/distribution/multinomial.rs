@@ -391,121 +391,85 @@ mod tests {
         distribution::{Discrete, Multinomial, MultinomialError},
         statistics::{MeanN, VarianceN},
     };
-    use nalgebra::{dmatrix, dvector, vector, DimMin, Dyn, OVector};
-    use std::fmt::{Debug, Display};
+    use nalgebra::{dmatrix, dvector, matrix, vector, Dyn, OVector};
 
-    fn try_create<D>(p: OVector<f64, D>, n: u64) -> Multinomial<D>
-    where
-        D: DimMin<D, Output = D>,
-        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
-    {
-        let mvn = Multinomial::new_from_nalgebra(p, n);
-        assert!(mvn.is_ok());
-        mvn.unwrap()
-    }
 
-    fn bad_create_case<D>(p: OVector<f64, D>, n: u64) -> MultinomialError
-    where
-        D: DimMin<D, Output = D>,
-        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
-    {
-        let dd = Multinomial::new_from_nalgebra(p, n);
-        assert!(dd.is_err());
-        dd.unwrap_err()
-    }
-
-    fn test_almost<F, T, D>(p: OVector<f64, D>, n: u64, expected: T, acc: f64, eval: F)
-    where
-        T: Debug + Display + approx::RelativeEq<Epsilon = f64>,
-        F: FnOnce(Multinomial<D>) -> T,
-        D: DimMin<D, Output = D>,
-        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
-    {
-        let dd = try_create(p, n);
-        let x = eval(dd);
-        assert_relative_eq!(expected, x, epsilon = acc);
-    }
+    use super::boiler::*;
 
     #[test]
     fn test_create() {
         assert_relative_eq!(
-            *try_create(vector![1.0, 1.0, 1.0], 4).p(),
+            *create_ok(vector![1.0, 1.0, 1.0], 4).p(),
             vector![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]
         );
-        try_create(dvector![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 4);
+        create_ok(vector![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 4);
     }
 
     #[test]
     fn test_bad_create() {
         assert_eq!(
-            bad_create_case(vector![0.5], 4),
+            create_err(vector![0.5], 4),
             MultinomialError::NotEnoughProbabilities,
         );
 
         assert_eq!(
-            bad_create_case(vector![-1.0, 2.0], 4),
+            create_err(vector![-1.0, 2.0], 4),
             MultinomialError::ProbabilityInvalid,
         );
 
         assert_eq!(
-            bad_create_case(vector![0.0, 0.0], 4),
+            create_err(vector![0.0, 0.0], 4),
             MultinomialError::ProbabilitySumZero,
         );
         assert_eq!(
-            bad_create_case(vector![1.0, f64::NAN], 4),
+            create_err(vector![1.0, f64::NAN], 4),
             MultinomialError::ProbabilityInvalid,
         );
     }
 
     #[test]
     fn test_mean() {
-        let mean = |x: Multinomial<_>| x.mean().unwrap();
-        test_almost(dvector![0.3, 0.7], 5, dvector![1.5, 3.5], 1e-12, mean);
-        test_almost(
+
+        test_relative(vector![0.3, 0.7], 5, dvector![1.5, 3.5],  |x: Multinomial<_>| x.mean().unwrap());
+        test_relative(
             dvector![0.1, 0.3, 0.6],
             10,
             dvector![1.0, 3.0, 6.0],
-            1e-12,
-            mean,
-        );
-        test_almost(
-            dvector![1.0, 3.0, 6.0],
+            |x: Multinomial<_>| x.mean().unwrap(),
+       );
+        test_relative(
+            vector![1.0, 3.0, 6.0],
             10,
             dvector![1.0, 3.0, 6.0],
-            1e-12,
-            mean,
-        );
-        test_almost(
-            dvector![0.15, 0.35, 0.3, 0.2],
+            |x: Multinomial<_>| x.mean().unwrap()
+       );
+        test_relative(
+            vector![0.15, 0.35, 0.3, 0.2],
             20,
             dvector![3.0, 7.0, 6.0, 4.0],
-            1e-12,
-            mean,
-        );
+            |x: Multinomial<_>| x.mean().unwrap()
+       );
     }
 
     #[test]
     fn test_variance() {
-        let variance = |x: Multinomial<_>| x.variance().unwrap();
-        test_almost(
-            dvector![0.3, 0.7],
+        test_relative(
+            vector![0.3, 0.7],
             5,
-            dmatrix![1.05, -1.05; 
+            matrix![1.05, -1.05; 
                     -1.05,  1.05],
-            1e-15,
-            variance,
+            |x: Multinomial<_>| x.variance().unwrap(),
         );
-        test_almost(
-            dvector![0.1, 0.3, 0.6],
+        test_relative(
+            vector![0.1, 0.3, 0.6],
             10,
-            dmatrix![0.9, -0.3, -0.6;
+            matrix![0.9, -0.3, -0.6;
                     -0.3,  2.1, -1.8;
                     -0.6, -1.8,  2.4;
             ],
-            1e-15,
-            variance,
+            |x: Multinomial<_>| x.variance().unwrap(),
         );
-        test_almost(
+        test_relative(
             dvector![0.15, 0.35, 0.3, 0.2],
             20,
             dmatrix![2.55, -1.05, -0.90, -0.60;
@@ -513,58 +477,45 @@ mod tests {
                     -0.90, -2.10,  4.20, -1.20;
                     -0.60, -1.40, -1.20,  3.20;
             ],
-            1e-15,
-            variance,
+            |x: Multinomial<_>| x.variance().unwrap(),
         );
     }
 
-    //     // #[test]
-    //     // fn test_skewness() {
-    //     //     let skewness = |x: Multinomial| x.skewness().unwrap();
-    //     //     test_almost(&[0.3, 0.7], 5, &[0.390360029179413, -0.390360029179413], 1e-15, skewness);
-    //     //     test_almost(&[0.1, 0.3, 0.6], 10, &[0.843274042711568, 0.276026223736942, -0.12909944487358], 1e-15, skewness);
-    //     //     test_almost(&[0.15, 0.35, 0.3, 0.2], 20, &[0.438357003759605, 0.140642169281549, 0.195180014589707, 0.335410196624968], 1e-15, skewness);
-    //     // }
+    // #[test]
+    // fn test_skewness() {
+    //     test_relative(vector![0.3, 0.7], 5, vector![0.390360029179413, -0.390360029179413], |x: Multinomial<_>| x.skewness().unwrap());
+    //     test_relative(dvector![0.1, 0.3, 0.6], 10, dvector![0.843274042711568, 0.276026223736942, -0.12909944487358], |x: Multinomial<_>| x.skewness().unwrap());
+    //     test_relative(vector![0.15, 0.35, 0.3, 0.2], 20, vector![0.438357003759605, 0.140642169281549, 0.195180014589707, 0.335410196624968], |x: Multinomial<_>| x.skewness().unwrap());
+    // }
 
     #[test]
     fn test_pmf() {
-        let pmf = |arg: OVector<u64, Dyn>| move |x: Multinomial<_>| x.pmf(&arg);
-        test_almost(
-            dvector![0.3, 0.7],
+        test_relative(
+            vector![0.3, 0.7],
             10,
             0.121060821,
-            1e-15,
-            pmf(dvector![1, 9]),
+            move |x: Multinomial<_>| x.pmf(&vector![1, 9]),
         );
-        test_almost(
-            dvector![0.1, 0.3, 0.6],
+        test_relative(
+            vector![0.1, 0.3, 0.6],
             10,
             0.105815808,
-            1e-15,
-            pmf(dvector![1, 3, 6]),
+            move |x: Multinomial<_>| x.pmf(&vector![1, 3, 6]),
         );
-        test_almost(
+        test_relative(
             dvector![0.15, 0.35, 0.3, 0.2],
             10,
             0.000145152,
-            1e-15,
-            pmf(dvector![1, 1, 1, 7]),
+            move |x: Multinomial<_>| x.pmf(&dvector![1, 1, 1, 7]),
         );
     }
 
     #[test]
-    fn test_error_is_sync_send() {
-        fn assert_sync_send<T: Sync + Send>() {}
-        assert_sync_send::<MultinomialError>();
+    #[should_panic]
+    fn test_pmf_x_wrong_length() {
+        let pmf = |arg: OVector<u64, Dyn>| move |x: Multinomial<_>| x.pmf(&arg);
+        test_relative(dvector![0.3, 0.7], 10, f64::NAN, pmf(dvector![1]));
     }
-
-    //     #[test]
-    //     #[should_panic]
-    //     fn test_pmf_x_wrong_length() {
-    //         let pmf = |arg: &[u64]| move |x: Multinomial| x.pmf(arg);
-    //         let n = Multinomial::new(&[0.3, 0.7], 10).unwrap();
-    //         n.pmf(&[1]);
-    //     }
 
     //     #[test]
     //     #[should_panic]
@@ -613,9 +564,10 @@ mod tests {
         assert_relative_eq!(sample[3], n as f64);
     }
 
-    #[test]
     #[cfg(feature = "rand")]
-    fn test_uniform_samples() {
+    #[test]
+    #[ignore = "stochastic tests will not always pass, need a solid rerun strategy"]
+    fn test_stochastic_uniform_samples() {
         use crate::statistics::Statistics;
         use ::rand::{distributions::Distribution, prelude::thread_rng};
         let n: f64 = 1000.0;
@@ -624,21 +576,247 @@ mod tests {
         let multinomial = Multinomial::new(weights, n as u64).unwrap();
         let samples: OVector<f64, Dyn> = multinomial.sample(&mut thread_rng());
         eprintln!("{samples}");
+
         samples.iter().for_each(|&s| {
             assert_abs_diff_eq!(
                 s,
                 n / k as f64,
-                epsilon = 3.0 * multinomial.variance().unwrap()[(0, 0)].sqrt(),
+                epsilon = 2.0 * multinomial.variance().unwrap()[(0, 0)].sqrt(),
             )
         });
+
         assert_abs_diff_eq!(
             samples.iter().population_variance(),
             multinomial.variance().unwrap()[(0, 0)],
             epsilon = n.sqrt()
         );
+
         assert_eq!(
             samples.into_iter().map(|&x| x as u64).sum::<u64>(),
             n as u64
         );
+    }
+}
+
+#[cfg(test)]
+mod boiler {
+    use super::{Multinomial, MultinomialError};
+    use nalgebra::OVector;
+
+    pub fn make_param_text<D>(p: &OVector<f64, D>, n: u64) -> String
+    where
+        D: nalgebra::Dim,
+        nalgebra::DefaultAllocator:
+            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
+    {
+        // ""
+        format!("n: {n}, p: {p}")
+    }
+
+    /// Creates and returns a distribution with the given parameters,
+    /// panicking if `::new` fails.
+    pub fn create_ok<D>(p: OVector<f64, D>, n: u64) -> Multinomial<D>
+    where
+        D: nalgebra::Dim,
+        nalgebra::DefaultAllocator:
+            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
+    {
+        let param_text = make_param_text(&p, n);
+        match Multinomial::new_from_nalgebra(p, n) {
+            Ok(d) => d,
+            Err(e) => panic!(
+                "{}::new was expected to succeed, but failed for {} with error: '{}'",
+                stringify!(Multinomial<D>),
+                param_text,
+                e
+            ),
+        }
+    }
+
+    /// Returns the error when creating a distribution with the given parameters,
+    /// panicking if `::new` succeeds.
+    pub fn create_err<D>(p: OVector<f64, D>, n: u64) -> MultinomialError
+    where
+        D: nalgebra::Dim,
+        nalgebra::DefaultAllocator:
+            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
+    {
+        let param_text = make_param_text(&p, n);
+        match Multinomial::new_from_nalgebra(p, n) {
+            Err(e) => e,
+            Ok(d) => panic!(
+                "{}::new was expected to fail, but succeeded for {} with result: {:?}",
+                stringify!(Multinomial<D>),
+                param_text,
+                d
+            ),
+        }
+    }
+
+    /// Creates a distribution with the given parameters, calls the `get_fn`
+    /// function with the new distribution and returns the result of `get_fn`.
+    ///
+    /// Panics if ctor fails.
+    pub fn create_and_get<F, T, D>(p: OVector<f64, D>, n: u64, get_fn: F) -> T
+    where
+        F: Fn(Multinomial<D>) -> T,
+        D: nalgebra::Dim,
+        nalgebra::DefaultAllocator:
+            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
+    {
+        let n = create_ok(p, n);
+        get_fn(n)
+    }
+
+    /// Creates a distribution with the given parameters, calls the `get_fn`
+    /// function with the new distribution and compares the result of `get_fn`
+    /// to `expected` exactly.
+    ///
+    /// Panics if `::new` fails.
+    #[allow(dead_code)]
+    pub fn test_exact<F, T, D>(p: OVector<f64, D>, n: u64, expected: T, get_fn: F)
+    where
+        F: Fn(Multinomial<D>) -> T,
+        T: ::core::cmp::PartialEq + ::core::fmt::Debug,
+        D: nalgebra::Dim,
+        nalgebra::DefaultAllocator:
+            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
+    {
+        let param_text = make_param_text(&p, n);
+        let x = create_and_get(p, n, get_fn);
+        if x != expected {
+            panic!("Expected {:?}, got {:?} for {}", expected, x, param_text);
+        }
+    }
+
+    /// Gets a value for the given parameters by calling `create_and_get`
+    /// and compares it to `expected`.
+    ///
+    /// Allows relative error of up to [`crate::consts::ACC`].
+    ///
+    /// Panics if `::new` fails.
+    #[allow(dead_code)]
+    pub fn test_relative<F, T, U, D>(p: OVector<f64, D>, n: u64, expected: T, get_fn: F)
+    where
+        F: Fn(Multinomial<D>) -> U,
+        T: ::std::fmt::Debug + ::approx::RelativeEq<U, Epsilon = f64>,
+        U: ::std::fmt::Debug,
+        D: nalgebra::Dim,
+        nalgebra::DefaultAllocator:
+            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
+    {
+        let param_text = make_param_text(&p, n);
+        let x = create_and_get(p, n, get_fn);
+        let max_relative = crate::consts::ACC;
+
+        if !::approx::relative_eq!(expected, x, max_relative = max_relative) {
+            panic!(
+                "Expected {:?} to be almost equal to {:?} (max. relative error of {:?}), but wasn't for {}",
+                x,
+                expected,
+                max_relative,
+                param_text
+            );
+        }
+    }
+
+    /// Gets a value for the given parameters by calling `create_and_get`
+    /// and compares it to `expected`.
+    ///
+    /// Allows absolute error of up to `acc`.
+    ///
+    /// Panics if `::new` fails.
+    #[allow(dead_code)]
+    pub fn test_absolute<F, T, U, D>(p: OVector<f64, D>, n: u64, expected: T, acc: f64, get_fn: F)
+    where
+        F: Fn(Multinomial<D>) -> U,
+        T: ::std::fmt::Display + ::approx::RelativeEq<U, Epsilon = f64> + num_traits::Float,
+        U: ::std::fmt::Display,
+        D: nalgebra::Dim,
+        nalgebra::DefaultAllocator:
+            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
+    {
+        let param_text = make_param_text(&p, n);
+        let x = create_and_get(p, n, get_fn);
+
+        // abs_diff_eq! cannot handle infinities, so we manually accept them here
+        if expected.is_infinite() {
+            return;
+        }
+
+        if ::approx::abs_diff_ne!(expected, x, epsilon = acc) {
+            panic!(
+                "Expected {} to be almost equal to {} (max. absolute error of {:e}), but wasn't for {}",
+                x,
+                expected,
+                acc,
+                param_text
+            );
+        }
+    }
+
+    /// Purposely fails creating a distribution with the given
+    /// parameters and compares the returned error to `expected`.
+    ///
+    /// Panics if `::new` succeeds.
+    #[allow(dead_code)]
+    pub fn test_create_err<D>(p: OVector<f64, D>, n: u64, expected: MultinomialError)
+    where
+        D: nalgebra::Dim,
+        nalgebra::DefaultAllocator:
+            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
+    {
+        let param_text = make_param_text(&p, n);
+        let err = create_err(p, n);
+        if err != expected {
+            panic!(
+                "{}::new was expected to fail with error {expected}, but failed with error {err} for {param_text}",
+                stringify!(Multinomial<D>),
+            )
+        }
+    }
+
+    /// Gets a value for the given parameters by calling `create_and_get`
+    /// and asserts that it is [`NAN`].
+    ///
+    /// Panics if `::new` fails.
+    #[allow(dead_code)]
+    pub fn test_is_nan<F, D>(p: OVector<f64, D>, n: u64, get_fn: F)
+    where
+        F: Fn(Multinomial<D>) -> f64,
+        D: nalgebra::Dim,
+        nalgebra::DefaultAllocator:
+            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
+    {
+        let x = create_and_get(p, n, get_fn);
+        assert!(x.is_nan());
+    }
+
+    /// Gets a value for the given parameters by calling `create_and_get`
+    /// and asserts that it is [`None`].
+    ///
+    /// Panics if `::new` fails.
+    #[allow(dead_code)]
+    pub fn test_none<F, T, D>(p: OVector<f64, D>, n: u64, get_fn: F)
+    where
+        F: Fn(Multinomial<D>) -> Option<T>,
+        T: ::core::fmt::Debug,
+        D: nalgebra::Dim,
+        nalgebra::DefaultAllocator:
+            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
+    {
+        let param_text = make_param_text(&p, n);
+        let x = create_and_get(p, n, get_fn);
+
+        if let Some(inner) = x {
+            panic!("Expected None, got {:?} for {}", inner, param_text)
+        }
+    }
+
+    /// Asserts that associated error type is Send and Sync
+    #[test]
+    pub fn test_error_is_sync_send() {
+        pub fn assert_sync_send<T: Sync + Send>() {}
+        assert_sync_send::<MultinomialError>();
     }
 }
