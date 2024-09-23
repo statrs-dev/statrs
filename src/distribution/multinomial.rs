@@ -195,10 +195,21 @@ where
 {
     use nalgebra::Const;
 
-    let p_cdf = super::categorical::prob_mass_to_cdf(dist.p().as_slice());
+    let mut cdf_sum = 0.0;
+    let p_cdf: Vec<f64> = dist
+        .p()
+        .as_slice()
+        .iter()
+        .map(|p| {
+            cdf_sum += p;
+            cdf_sum
+        })
+        .collect();
+
     let mut res = OVector::zeros_generic(dist.p.shape_generic().0, Const::<1>);
     for _ in 0..dist.n {
-        let i = super::categorical::sample_unchecked(rng, &p_cdf);
+        let draw = ::rand::RngExt::random::<f64>(rng) * cdf_sum;
+        let i = p_cdf.iter().position(|val| *val >= draw).unwrap();
         res[i] += T::one();
     }
     res
