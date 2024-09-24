@@ -1,5 +1,6 @@
 extern crate statrs;
 
+use nalgebra as na;
 use rand::{thread_rng, Rng};
 use statrs::distribution::{Binomial, Continuous, Discrete, Multinomial, Normal};
 use statrs::statistics::Mode;
@@ -158,14 +159,18 @@ fn run_command_sample(count: Option<usize>, dist: DistributionAsCommand) -> Resu
     match dist {
         // multinomial should print `count` of Vec<uint>
         DistributionAsCommand::Multinomial { n, p } => {
-            let samples = thread_rng()
-                .sample_iter(Multinomial::new(p, n)?)
-                .map(|v| Into::<Vec<_>>::into(v.data));
-            print_multivariate_samples(count, samples.map(|v| v.into_iter().map(|x| x as usize)))?
+            let samples = thread_rng().sample_iter(Multinomial::new(p, n)?);
+            print_multivariate_samples(
+                count,
+                samples.map(|v: na::DVector<u64>| {
+                    let vec: Vec<_> = v.into_iter().cloned().collect();
+                    vec
+                }),
+            )?;
         }
         // binomial should print `count` of uint
         DistributionAsCommand::Binomial { n, p } => {
-            let samples = thread_rng().sample_iter(Binomial::new(p, n)?);
+            let samples: Vec<u64> = thread_rng().sample_iter(Binomial::new(p, n)?).collect();
             print_samples(count, samples)?;
         }
         // normal should print `count` of float
