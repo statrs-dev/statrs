@@ -3,7 +3,9 @@
 ![tests][actions-test-badge]
 [![MIT licensed][license-badge]](./LICENSE.md)
 [![Crate][crates-badge]][crates-url]
-[![docs.rs](https://img.shields.io/docsrs/statrs)][docs-url]
+[![docs.rs][docsrs-badge]][docs-url]
+[![codecov-statrs][codecov-badge]][codecov-url]
+![Crates.io MSRV][crates-msrv-badge]
 
 [actions-test-badge]: https://github.com/statrs-dev/statrs/actions/workflows/test.yml/badge.svg
 [crates-badge]: https://img.shields.io/crates/v/statrs.svg
@@ -13,6 +15,7 @@
 [docs-url]: https://docs.rs/statrs/*/statrs
 [codecov-badge]: https://codecov.io/gh/statrs-dev/statrs/graph/badge.svg?token=XtMSMYXvIf
 [codecov-url]: https://codecov.io/gh/statrs-dev/statrs
+[crates-msrv-badge]: https://img.shields.io/crates/msrv/statrs
 
 Statrs provides a host of statistical utilities for Rust scientific computing.
 
@@ -58,10 +61,14 @@ Thanks for your help to improve the project!
 **No contribution is too small and all contributions are valued.**
 
 Suggestions if you don't know where to start,
-- documentation is a great place to start, as you'll be able to identify the value of existing documentation better than its authors.
-- tests are valuable in demonstrating correct behavior, you can review test coverage on the [CodeCov Report][codecov-url]*, not live until [#229](https://github.com/statrs-dev/statrs/pull/229) merged.
+- [documentation][docs-url] is a great place to start, as you'll be able to identify the value of existing documentation better than its authors.
+- tests are valuable in demonstrating correct behavior, you can review test coverage on the [CodeCov Report][codecov-url]
 - check out some of the issues marked [help wanted](https://github.com/statrs-dev/statrs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
-- look at what's not included from Math.NET's [Distributions](https://github.com/mathnet/mathnet-numerics/tree/master/src/Numerics/Distributions), [Statistics](https://github.com/mathnet/mathnet-numerics/tree/master/src/Numerics/Statistics), or related.
+- look at features in other tools you'd like to see in statrs
+  - Math.NET's
+    - [Distributions](https://github.com/mathnet/mathnet-numerics/tree/master/src/Numerics/Distributions)
+    - [Statistics](https://github.com/mathnet/mathnet-numerics/tree/master/src/Numerics/Statistics)
+  - scipy.stats
 
 ### How to contribute
 
@@ -84,12 +91,13 @@ cargo fmt
 ```
 
 Add `--check` to view the diff without making file changes.
-Our CI will `fmt`, but less chores in commit history are appreciated.
+Our CI will check format without making changes.
 
 After commiting your code:
 
-```
-git push -u origin <feature_branch>
+```shell
+git push -u <your_remote_name> <your_branch> # with `git`
+gh pr create --head <your_branch> # with GitHub's cli
 ```
 
 Then submit a PR, preferably referencing the relevant issue, if it exists.
