@@ -323,7 +323,7 @@ pub mod test {
         #[test]
         #[should_panic]
         fn test_create_err_failure() {
-            test_create_err(0.0, 0.5, BetaError::BothShapesInfinite);
+            test_create_err(0.0, 0.5, BetaError::ShapeBInvalid);
         }
 
         #[test]
@@ -340,7 +340,7 @@ pub mod test {
 
         #[test]
         fn test_is_none_success() {
-            test_none(f64::INFINITY, 1.2, |dist| dist.entropy());
+            test_none(0.5, 1.2, |dist| dist.mode());
         }
 
         #[test]
