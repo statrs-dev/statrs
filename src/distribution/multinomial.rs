@@ -23,7 +23,7 @@ use nalgebra::{DVector, Dim, Dyn, OMatrix, OVector};
 pub struct Multinomial<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     /// normalized probabilities for each species
     p: OVector<f64, D>,
@@ -93,7 +93,7 @@ impl Multinomial<Dyn> {
 impl<D> Multinomial<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     pub fn new_from_nalgebra(mut p: OVector<f64, D>, n: u64) -> Result<Self, MultinomialError> {
         if p.len() < 2 {
@@ -152,7 +152,7 @@ where
 impl<D> std::fmt::Display for Multinomial<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Multinom({:#?},{})", self.p, self.n)
@@ -164,8 +164,8 @@ where
 impl<D> ::rand::distributions::Distribution<OVector<u64, D>> for Multinomial<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<u64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<u64, D> {
         sample_generic(self, rng)
@@ -177,7 +177,7 @@ where
 impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for Multinomial<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
         sample_generic(self, rng)
@@ -188,8 +188,7 @@ where
 fn sample_generic<D, R, T>(dist: &Multinomial<D>, rng: &mut R) -> OVector<T, D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<T, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
     R: ::rand::Rng + ?Sized,
     T: ::num_traits::Num + ::nalgebra::Scalar + ::std::ops::AddAssign<T>,
 {
@@ -207,7 +206,7 @@ where
 impl<D> MeanN<DVector<f64>> for Multinomial<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     /// Returns the mean of the multinomial distribution
     ///
@@ -230,7 +229,7 @@ impl<D> VarianceN<OMatrix<f64, D, D>> for Multinomial<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+        nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
     /// Returns the variance of the multinomial distribution
     ///
@@ -284,8 +283,7 @@ where
 impl<'a, D> Discrete<&'a OVector<u64, D>, f64> for Multinomial<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<u64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     /// Calculates the probability mass function for the multinomial
     /// distribution
@@ -372,7 +370,7 @@ mod tests {
     fn try_create<D>(p: OVector<f64, D>, n: u64) -> Multinomial<D>
     where
         D: DimMin<D, Output = D>,
-        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
     {
         let mvn = Multinomial::new_from_nalgebra(p, n);
         assert!(mvn.is_ok());
@@ -382,7 +380,7 @@ mod tests {
     fn bad_create_case<D>(p: OVector<f64, D>, n: u64) -> MultinomialError
     where
         D: DimMin<D, Output = D>,
-        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
     {
         let dd = Multinomial::new_from_nalgebra(p, n);
         assert!(dd.is_err());
@@ -394,7 +392,7 @@ mod tests {
         T: Debug + Display + approx::RelativeEq<Epsilon = f64>,
         F: FnOnce(Multinomial<D>) -> T,
         D: DimMin<D, Output = D>,
-        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
     {
         let dd = try_create(p, n);
         let x = eval(dd);

@@ -26,7 +26,7 @@ pub struct MultivariateStudent<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+        nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
     scale_chol_decomp: OMatrix<f64, D, D>,
     location: OVector<f64, D>,
@@ -110,9 +110,9 @@ impl MultivariateStudent<Dyn> {
 impl<D> MultivariateStudent<D>
 where
     D: DimMin<D, Output = D>,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>
-        + nalgebra::allocator::Allocator<f64, D, D>
-        + nalgebra::allocator::Allocator<(usize, usize), D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>
+        + nalgebra::allocator::Allocator<D, D>
+        + nalgebra::allocator::Allocator<D>,
 {
     pub fn new_from_nalgebra(
         location: OVector<f64, D>,
@@ -202,7 +202,7 @@ impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for MultivariateStu
 where
     D: Dim,
     nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+        nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
     /// Samples from the multivariate student distribution
     ///
@@ -233,7 +233,7 @@ impl<D> Min<OVector<f64, D>> for MultivariateStudent<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+        nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
     /// Returns the minimum value in the domain of the
     /// multivariate normal distribution represented by a real vector
@@ -250,7 +250,7 @@ impl<D> Max<OVector<f64, D>> for MultivariateStudent<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+        nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
     /// Returns the minimum value in the domain of the
     /// multivariate normal distribution represented by a real vector
@@ -263,7 +263,7 @@ impl<D> MeanN<OVector<f64, D>> for MultivariateStudent<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+        nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
     /// Returns the mean of the student distribution.
     ///
@@ -284,7 +284,7 @@ impl<D> VarianceN<OMatrix<f64, D, D>> for MultivariateStudent<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+        nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
     /// Returns the covariance matrix of the multivariate student distribution.
     ///
@@ -309,7 +309,7 @@ impl<D> Mode<OVector<f64, D>> for MultivariateStudent<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+        nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
     /// Returns the mode of the multivariate student distribution.
     ///
@@ -328,9 +328,9 @@ where
 impl<'a, D> Continuous<&'a OVector<f64, D>, f64> for MultivariateStudent<D>
 where
     D: Dim + DimMin<D, Output = D>,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>
-        + nalgebra::allocator::Allocator<f64, D, D>
-        + nalgebra::allocator::Allocator<(usize, usize), D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>
+        + nalgebra::allocator::Allocator<D, D>
+        + nalgebra::allocator::Allocator<D>,
 {
     /// Calculates the probability density function for the multivariate.
     /// student distribution at `x`.

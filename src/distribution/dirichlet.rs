@@ -25,7 +25,7 @@ use std::f64;
 pub struct Dirichlet<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     alpha: OVector<f64, D>,
 }
@@ -111,7 +111,7 @@ impl Dirichlet<Dyn> {
 impl<D> Dirichlet<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     /// Constructs a new distribution with the given vector for `alpha`
     /// Does not clone the vector it takes ownership of
@@ -184,7 +184,7 @@ where
 impl<D> std::fmt::Display for Dirichlet<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Dir({}, {})", self.alpha.len(), &self.alpha)
@@ -196,7 +196,7 @@ where
 impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for Dirichlet<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
         let mut sum = 0.0;
@@ -215,7 +215,7 @@ where
 impl<D> MeanN<OVector<f64, D>> for Dirichlet<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     /// Returns the means of the dirichlet distribution
     ///
@@ -237,7 +237,7 @@ impl<D> VarianceN<OMatrix<f64, D, D>> for Dirichlet<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+        nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
     /// Returns the variances of the dirichlet distribution
     ///
@@ -270,9 +270,9 @@ where
 impl<'a, D> Continuous<&'a OVector<f64, D>, f64> for Dirichlet<D>
 where
     D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>
-        + nalgebra::allocator::Allocator<f64, D, D>
-        + nalgebra::allocator::Allocator<f64, nalgebra::Const<1>, D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>
+        + nalgebra::allocator::Allocator<D, D>
+        + nalgebra::allocator::Allocator<nalgebra::Const<1>, D>,
 {
     /// Calculates the probabiliy density function for the dirichlet
     /// distribution
@@ -375,7 +375,7 @@ mod tests {
     fn try_create<D>(alpha: OVector<f64, D>) -> Dirichlet<D>
     where
         D: DimMin<D, Output = D>,
-        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
     {
         let mvn = Dirichlet::new_from_nalgebra(alpha);
         assert!(mvn.is_ok());
@@ -385,7 +385,7 @@ mod tests {
     fn bad_create_case<D>(alpha: OVector<f64, D>)
     where
         D: DimMin<D, Output = D>,
-        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
     {
         let dd = Dirichlet::new_from_nalgebra(alpha);
         assert!(dd.is_err());
@@ -396,7 +396,7 @@ mod tests {
         T: Debug + Display + approx::RelativeEq<Epsilon = f64>,
         F: FnOnce(Dirichlet<D>) -> T,
         D: DimMin<D, Output = D>,
-        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
+        nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
     {
         let dd = try_create(alpha);
         let x = eval(dd);

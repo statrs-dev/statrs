@@ -38,7 +38,7 @@ version = "0.8"
 optional = true
 
 [dependencies.nalgebra]
-version = "0.32"
+version = "0.33"
 optional = true
 default-features = false
 features = ["std"]
@@ -48,7 +48,7 @@ criterion = "0.5"
 anyhow = "1.0"
 
 [dev-dependencies.nalgebra]
-version = "0.32"
+version = "0.33"
 default-features = false
 features = ["macros"]
 
