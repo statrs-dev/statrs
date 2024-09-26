@@ -1,5 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
-use crate::statistics::{Distribution, Max, Median, Min, Mode};
+use crate::statistics::{CentralMoment, Entropy, Max, Median, Min, Mode};
 use std::f64;
 
 /// Implements the [Laplace](https://en.wikipedia.org/wiki/Laplace_distribution)
@@ -213,7 +213,11 @@ impl Max<f64> for Laplace {
     }
 }
 
-impl Distribution<f64> for Laplace {
+impl CentralMoment<f64> for Laplace {
+    type Mu = f64;
+    type Var = f64;
+    type Kurt = f64;
+    type Skew = f64;
     /// Returns the mode of the laplace distribution
     ///
     /// # Formula
@@ -223,8 +227,8 @@ impl Distribution<f64> for Laplace {
     /// ```
     ///
     /// where `μ` is the location
-    fn mean(&self) -> Option<f64> {
-        Some(self.location)
+    fn mean(&self) -> Self::Mu {
+        self.location
     }
 
     /// Returns the variance of the laplace distribution
@@ -236,10 +240,20 @@ impl Distribution<f64> for Laplace {
     /// ```
     ///
     /// where `b` is the scale
-    fn variance(&self) -> Option<f64> {
-        Some(2. * self.scale * self.scale)
+    fn variance(&self) -> Self::Var {
+        2. * self.scale * self.scale
     }
 
+    fn skewness(&self) -> Self::Skew {
+        0.
+    }
+
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        3.0
+    }
+}
+
+impl Entropy<f64> for Laplace {
     /// Returns the entropy of the laplace distribution
     ///
     /// # Formula
@@ -249,19 +263,8 @@ impl Distribution<f64> for Laplace {
     /// ```
     ///
     /// where `b` is the scale
-    fn entropy(&self) -> Option<f64> {
-        Some((2. * self.scale).ln() + 1.)
-    }
-
-    /// Returns the skewness of the laplace distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 0
-    /// ```
-    fn skewness(&self) -> Option<f64> {
-        Some(0.)
+    fn entropy(&self) -> f64 {
+        (2. * self.scale).ln() + 1.
     }
 }
 
@@ -365,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |x: Laplace| x.mean().unwrap();
+        let mean = |x: Laplace| x.mean();
         test_exact(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, mean);
         test_exact(-5.0 - 1.0, 1.0, -6.0, mean);
         test_exact(0.0, 5.0, 0.0, mean);
@@ -375,7 +378,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: Laplace| x.variance().unwrap();
+        let variance = |x: Laplace| x.variance();
         test_absolute(f64::NEG_INFINITY, 0.1, 0.02, 1E-12, variance);
         test_absolute(-5.0 - 1.0, 1.0, 2.0, 1E-12, variance);
         test_absolute(0.0, 5.0, 50.0, 1E-12, variance);
@@ -385,7 +388,7 @@ mod tests {
     }
     #[test]
     fn test_entropy() {
-        let entropy = |x: Laplace| x.entropy().unwrap();
+        let entropy = |x: Laplace| x.entropy();
         test_absolute(
             f64::NEG_INFINITY,
             0.1,
@@ -401,7 +404,7 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let skewness = |x: Laplace| x.skewness().unwrap();
+        let skewness = |x: Laplace| x.skewness();
         test_exact(f64::NEG_INFINITY, 0.1, 0.0, skewness);
         test_exact(-6.0, 1.0, 0.0, skewness);
         test_exact(1.0, 7.0, 0.0, skewness);
@@ -554,8 +557,8 @@ mod tests {
     #[cfg(feature = "rand")]
     #[test]
     fn test_sample() {
-        use ::rand::distributions::Distribution;
-        use ::rand::thread_rng;
+        use rand::distributions::Distribution;
+        use rand::thread_rng;
 
         let l = create_ok(0.1, 0.5);
         l.sample(&mut thread_rng());
@@ -564,9 +567,9 @@ mod tests {
     #[cfg(feature = "rand")]
     #[test]
     fn test_sample_distribution() {
-        use ::rand::distributions::Distribution;
-        use ::rand::rngs::StdRng;
-        use ::rand::SeedableRng;
+        use rand::distributions::Distribution;
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
 
         // sanity check sampling
         let location = 0.0;

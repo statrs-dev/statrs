@@ -1,6 +1,6 @@
 use crate::distribution::Continuous;
 use crate::function::gamma;
-use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
+use crate::statistics::{CentralMoment, Max, Min, Mode};
 use nalgebra::{Cholesky, Const, DMatrix, Dim, DimMin, Dyn, OMatrix, OVector};
 use std::f64::consts::PI;
 
@@ -259,52 +259,41 @@ where
     }
 }
 
-impl<D> MeanN<OVector<f64, D>> for MultivariateStudent<D>
+impl<D> CentralMoment<f64> for MultivariateStudent<D>
 where
-    D: Dim,
+    D: DimMin<D>,
     nalgebra::DefaultAllocator:
         nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
 {
-    /// Returns the mean of the student distribution.
-    ///
-    /// # Remarks
-    ///
-    /// This is the same mean used to construct the distribution if
-    /// the degrees of freedom is larger than 1.
-    fn mean(&self) -> Option<OVector<f64, D>> {
+    type Mu = Option<OVector<f64, D>>;
+    type Var = Option<OMatrix<f64, D, D>>;
+    type Kurt = ();
+    type Skew = ();
+
+    fn mean(&self) -> Self::Mu {
         if self.freedom > 1. {
             Some(self.location.clone())
         } else {
             None
         }
     }
-}
 
-impl<D> VarianceN<OMatrix<f64, D, D>> for MultivariateStudent<D>
-where
-    D: Dim,
-    nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
-{
-    /// Returns the covariance matrix of the multivariate student distribution.
-    ///
-    /// # Formula
-    ///
-    /// ```math
-    /// Σ ⋅ ν / (ν - 2)
-    /// ```
-    ///
-    /// where `Σ` is the scale matrix and `ν` is the degrees of freedom.
-    /// Only defined if freedom is larger than 2.
-    fn variance(&self) -> Option<OMatrix<f64, D, D>> {
+    fn variance(&self) -> Self::Var {
         if self.freedom > 2. {
             Some(self.scale.clone() * self.freedom / (self.freedom - 2.))
         } else {
             None
         }
     }
-}
 
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        unimplemented!()
+    }
+
+    fn skewness(&self) -> Self::Skew {
+        unimplemented!()
+    }
+}
 impl<D> Mode<OVector<f64, D>> for MultivariateStudent<D>
 where
     D: Dim,
@@ -399,7 +388,7 @@ mod tests  {
 
     use crate::{
         distribution::{Continuous, MultivariateStudent, MultivariateNormal},
-        statistics::{Max, MeanN, Min, Mode, VarianceN},
+        statistics::{Max,  Min, Mode, CentralMoment},
     };
 
     use super::MultivariateStudentError;

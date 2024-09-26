@@ -97,6 +97,10 @@ impl Normal {
             std_dev: 1.0,
         }
     }
+
+    pub fn std_dev(&self) -> f64 {
+        self.std_dev
+    }
 }
 
 impl std::fmt::Display for Normal {
@@ -206,14 +210,18 @@ impl Max<f64> for Normal {
     }
 }
 
-impl Distribution<f64> for Normal {
+impl CentralMoment<f64> for Normal {
+    type Mu = f64;
+    type Var = f64;
+    type Kurt = f64;
+    type Skew = f64;
     /// Returns the mean of the normal distribution
     ///
     /// # Remarks
     ///
     /// This is the same mean used to construct the distribution
-    fn mean(&self) -> Option<f64> {
-        Some(self.mean)
+    fn mean(&self) -> Self::Mu {
+        self.mean
     }
 
     /// Returns the variance of the normal distribution
@@ -225,17 +233,20 @@ impl Distribution<f64> for Normal {
     /// ```
     ///
     /// where `σ` is the standard deviation
-    fn variance(&self) -> Option<f64> {
-        Some(self.std_dev * self.std_dev)
+    fn variance(&self) -> Self::Var {
+        self.std_dev * self.std_dev
     }
 
-    /// Returns the standard deviation of the normal distribution
-    /// # Remarks
-    /// This is the same standard deviation used to construct the distribution
-    fn std_dev(&self) -> Option<f64> {
-        Some(self.std_dev)
+    fn skewness(&self) -> Self::Skew {
+        0.0
     }
 
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        0.0
+    }
+}
+
+impl Entropy<f64> for Normal {
     /// Returns the entropy of the normal distribution
     ///
     /// # Formula
@@ -245,19 +256,8 @@ impl Distribution<f64> for Normal {
     /// ```
     ///
     /// where `σ` is the standard deviation
-    fn entropy(&self) -> Option<f64> {
-        Some(self.std_dev.ln() + consts::LN_SQRT_2PIE)
-    }
-
-    /// Returns the skewness of the normal distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 0
-    /// ```
-    fn skewness(&self) -> Option<f64> {
-        Some(0.0)
+    fn entropy(&self) -> f64 {
+        self.std_dev.ln() + consts::LN_SQRT_2PIE
     }
 }
 
@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: Normal| x.variance().unwrap();
+        let variance = |x: Normal| x.variance();
         test_exact(0.0, 0.1, 0.1 * 0.1, variance);
         test_exact(0.0, 1.0, 1.0, variance);
         test_exact(0.0, 10.0, 100.0, variance);
@@ -403,7 +403,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: Normal| x.entropy().unwrap();
+        let entropy = |x: Normal| x.entropy();
         test_absolute(0.0, 0.1, -0.8836465597893729422377, 1e-15, entropy);
         test_exact(0.0, 1.0, 1.41893853320467274178, entropy);
         test_exact(0.0, 10.0, 3.721523626198718425798, entropy);
@@ -412,7 +412,7 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let skewness = |x: Normal| x.skewness().unwrap();
+        let skewness = |x: Normal| x.skewness();
         test_exact(0.0, 0.1, 0.0, skewness);
         test_exact(4.0, 1.0, 0.0, skewness);
         test_exact(0.3, 10.0, 0.0, skewness);
@@ -558,8 +558,8 @@ mod tests {
     fn test_default() {
         let n = Normal::default();
 
-        let n_mean = n.mean().unwrap();
-        let n_std  = n.std_dev().unwrap();
+        let n_mean = n.mean();
+        let n_std  = n.std_dev();
 
         // Check that the mean of the distribution is close to 0
         assert_almost_eq!(n_mean, 0.0, 1e-15);

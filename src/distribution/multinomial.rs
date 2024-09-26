@@ -1,7 +1,7 @@
 use crate::distribution::Discrete;
 use crate::function::factorial;
 use crate::statistics::*;
-use nalgebra::{DVector, Dim, Dyn, OMatrix, OVector};
+use nalgebra::{Cholesky, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
 
 /// Implements the
 /// [Multinomial](https://en.wikipedia.org/wiki/Multinomial_distribution)
@@ -257,6 +257,46 @@ where
         }
         cov.fill_lower_triangle_with_upper_triangle();
         Some(cov.scale(self.n as f64))
+    }
+}
+
+impl<D> CentralMoment<f64> for Multinomial<D>
+where
+    D: DimMin<D>,
+    nalgebra::DefaultAllocator:
+        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+{
+    type Mu = OVector<f64, D>;
+    type Var = Cholesky<f64, D>;
+    type Kurt = ();
+    type Skew = ();
+
+    fn mean(&self) -> Self::Mu {
+        self.p.scale(self.n as f64)
+    }
+
+    fn variance(&self) -> Self::Var {
+        let mut cov = OMatrix::from_diagonal(&self.p.map(|x| x * (1.0 - x)));
+        let mut offdiag = |x: usize, y: usize| {
+            let elt = -self.p[x] * self.p[y];
+            // cov[(x, y)] = elt;
+            cov[(y, x)] = elt;
+        };
+
+        for j in 0..self.p.len() {
+            for i in 0..j {
+                offdiag(i, j);
+            }
+        }
+        Cholesky::new_unchecked(cov.scale(self.n as f64))
+    }
+
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        unimplemented!()
+    }
+
+    fn skewness(&self) -> Self::Skew {
+        unimplemented!()
     }
 }
 

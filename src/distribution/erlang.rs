@@ -169,7 +169,12 @@ impl Max<f64> for Erlang {
     }
 }
 
-impl Distribution<f64> for Erlang {
+impl CentralMoment<f64> for Erlang {
+    type Mu = <super::Gamma as CentralMoment<f64>>::Mu;
+    type Var = <super::Gamma as CentralMoment<f64>>::Var;
+    type Kurt = <super::Gamma as CentralMoment<f64>>::Kurt;
+    type Skew = <super::Gamma as CentralMoment<f64>>::Skew;
+
     /// Returns the mean of the erlang distribution
     ///
     /// # Remarks
@@ -184,7 +189,7 @@ impl Distribution<f64> for Erlang {
     /// ```
     ///
     /// where `k` is the shape and `λ` is the rate
-    fn mean(&self) -> Option<f64> {
+    fn mean(&self) -> Self::Mu {
         self.g.mean()
     }
 
@@ -197,23 +202,11 @@ impl Distribution<f64> for Erlang {
     /// ```
     ///
     /// where `α` is the shape and `λ` is the rate
-    fn variance(&self) -> Option<f64> {
+    fn variance(&self) -> Self::Var {
         self.g.variance()
     }
 
-    /// Returns the entropy of the erlang distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// k - ln(λ) + ln(Γ(k)) + (1 - k) * ψ(k)
-    /// ```
-    ///
-    /// where `k` is the shape, `λ` is the rate, `Γ` is the gamma function,
-    /// and `ψ` is the digamma function
-    fn entropy(&self) -> Option<f64> {
-        self.g.entropy()
-    }
+    fn excess_kurtosis(&self) -> Self::Kurt {}
 
     /// Returns the skewness of the erlang distribution
     ///
@@ -224,8 +217,24 @@ impl Distribution<f64> for Erlang {
     /// ```
     ///
     /// where `k` is the shape
-    fn skewness(&self) -> Option<f64> {
+    fn skewness(&self) -> Self::Skew {
         self.g.skewness()
+    }
+}
+
+impl Entropy<f64> for Erlang {
+    /// Returns the entropy of the erlang distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// k - ln(λ) + ln(Γ(k)) + (1 - k) * ψ(k)
+    /// ```
+    ///
+    /// where `k` is the shape, `λ` is the rate, `Γ` is the gamma function,
+    /// and `ψ` is the digamma function
+    fn entropy(&self) -> f64 {
+        self.g.entropy()
     }
 }
 

@@ -105,6 +105,11 @@ impl Uniform {
     pub fn standard() -> Self {
         Self { min: 0.0, max: 1.0 }
     }
+
+    pub fn std_dev(&self) -> f64 {
+        let dist = self.max - self.min;
+        (dist * dist / 12.).sqrt()
+    }
 }
 
 impl Default for Uniform {
@@ -192,7 +197,11 @@ impl Max<f64> for Uniform {
     }
 }
 
-impl Distribution<f64> for Uniform {
+impl CentralMoment<f64> for Uniform {
+    type Mu = f64;
+    type Var = f64;
+    type Kurt = f64;
+    type Skew = f64;
     /// Returns the mean for the continuous uniform distribution
     ///
     /// # Formula
@@ -200,8 +209,8 @@ impl Distribution<f64> for Uniform {
     /// ```text
     /// (min + max) / 2
     /// ```
-    fn mean(&self) -> Option<f64> {
-        Some((self.min + self.max) / 2.0)
+    fn mean(&self) -> Self::Mu {
+        (self.min + self.max) / 2.0
     }
 
     /// Returns the variance for the continuous uniform distribution
@@ -211,19 +220,12 @@ impl Distribution<f64> for Uniform {
     /// ```text
     /// (max - min)^2 / 12
     /// ```
-    fn variance(&self) -> Option<f64> {
-        Some((self.max - self.min) * (self.max - self.min) / 12.0)
+    fn variance(&self) -> Self::Var {
+        (self.max - self.min) * (self.max - self.min) / 12.0
     }
 
-    /// Returns the entropy for the continuous uniform distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// ln(max - min)
-    /// ```
-    fn entropy(&self) -> Option<f64> {
-        Some((self.max - self.min).ln())
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        -1.2
     }
 
     /// Returns the skewness for the continuous uniform distribution
@@ -233,8 +235,21 @@ impl Distribution<f64> for Uniform {
     /// ```text
     /// 0
     /// ```
-    fn skewness(&self) -> Option<f64> {
-        Some(0.0)
+    fn skewness(&self) -> Self::Skew {
+        0.0
+    }
+}
+
+impl Entropy<f64> for Uniform {
+    /// Returns the entropy for the continuous uniform distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// ln(max - min)
+    /// ```
+    fn entropy(&self) -> f64 {
+        (self.max - self.min).ln()
     }
 }
 
@@ -347,7 +362,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: Uniform| x.variance().unwrap();
+        let variance = |x: Uniform| x.variance();
         test_exact(-0.0, 2.0, 1.0 / 3.0, variance);
         test_exact(0.0, 2.0, 1.0 / 3.0, variance);
         test_absolute(0.1, 4.0, 1.2675, 1e-15, variance);
@@ -356,7 +371,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: Uniform| x.entropy().unwrap();
+        let entropy = |x: Uniform| x.entropy();
         test_exact(-0.0, 2.0, 0.6931471805599453094172, entropy);
         test_exact(0.0, 2.0, 0.6931471805599453094172, entropy);
         test_absolute(0.1, 4.0, 1.360976553135600743431, 1e-15, entropy);
@@ -366,7 +381,7 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let skewness = |x: Uniform| x.skewness().unwrap();
+        let skewness = |x: Uniform| x.skewness();
         test_exact(-0.0, 2.0, 0.0, skewness);
         test_exact(0.0, 2.0, 0.0, skewness);
         test_exact(0.1, 4.0, 0.0, skewness);
@@ -524,8 +539,8 @@ mod tests {
     fn test_default() {
         let n = Uniform::default();
 
-        let n_mean = n.mean().unwrap();
-        let n_std  = n.std_dev().unwrap();
+        let n_mean = n.mean();
+        let n_std  = n.std_dev();
 
         // Check that the mean of the distribution is close to 1 / 2
         assert_almost_eq!(n_mean, 0.5, 1e-15);

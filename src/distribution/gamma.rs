@@ -256,7 +256,12 @@ impl Max<f64> for Gamma {
     }
 }
 
-impl Distribution<f64> for Gamma {
+impl CentralMoment<f64> for Gamma {
+    type Mu = f64;
+    type Var = f64;
+    type Kurt = ();
+    type Skew = f64;
+
     /// Returns the mean of the gamma distribution
     ///
     /// # Formula
@@ -266,8 +271,8 @@ impl Distribution<f64> for Gamma {
     /// ```
     ///
     /// where `α` is the shape and `β` is the rate
-    fn mean(&self) -> Option<f64> {
-        Some(self.shape / self.rate)
+    fn mean(&self) -> Self::Mu {
+        self.shape / self.rate
     }
 
     /// Returns the variance of the gamma distribution
@@ -279,26 +284,11 @@ impl Distribution<f64> for Gamma {
     /// ```
     ///
     /// where `α` is the shape and `β` is the rate
-    fn variance(&self) -> Option<f64> {
-        Some(self.shape / (self.rate * self.rate))
+    fn variance(&self) -> Self::Var {
+        self.shape / (self.rate * self.rate)
     }
 
-    /// Returns the entropy of the gamma distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// α - ln(β) + ln(Γ(α)) + (1 - α) * ψ(α)
-    /// ```
-    ///
-    /// where `α` is the shape, `β` is the rate, `Γ` is the gamma function,
-    /// and `ψ` is the digamma function
-    fn entropy(&self) -> Option<f64> {
-        let entr = self.shape - self.rate.ln()
-            + gamma::ln_gamma(self.shape)
-            + (1.0 - self.shape) * gamma::digamma(self.shape);
-        Some(entr)
-    }
+    fn excess_kurtosis(&self) -> Self::Kurt {}
 
     /// Returns the skewness of the gamma distribution
     ///
@@ -309,8 +299,26 @@ impl Distribution<f64> for Gamma {
     /// ```
     ///
     /// where `α` is the shape
-    fn skewness(&self) -> Option<f64> {
-        Some(2.0 / self.shape.sqrt())
+    fn skewness(&self) -> Self::Skew {
+        2.0 / self.shape.sqrt()
+    }
+}
+
+impl Entropy<f64> for Gamma {
+    /// Returns the entropy of the gamma distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// α - ln(β) + ln(Γ(α)) + (1 - α) * ψ(α)
+    /// ```
+    ///
+    /// where `α` is the shape, `β` is the rate, `Γ` is the gamma function,
+    /// and `ψ` is the digamma function
+    fn entropy(&self) -> f64 {
+        self.shape - self.rate.ln()
+            + gamma::ln_gamma(self.shape)
+            + (1.0 - self.shape) * gamma::digamma(self.shape)
     }
 }
 
@@ -478,7 +486,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let f = |x: Gamma| x.mean().unwrap();
+        let f = |x: Gamma| x.mean();
         let test = [
             ((1.0, 0.1), 10.0),
             ((1.0, 1.0), 1.0),
@@ -493,7 +501,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let f = |x: Gamma| x.variance().unwrap();
+        let f = |x: Gamma| x.variance();
         let test = [
             ((1.0, 0.1), 100.0),
             ((1.0, 1.0), 1.0),
@@ -508,7 +516,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let f = |x: Gamma| x.entropy().unwrap();
+        let f = |x: Gamma| x.entropy();
         let test = [
             ((1.0, 0.1), 3.302585092994045628506840223),
             ((1.0, 1.0), 1.0),
@@ -523,7 +531,7 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let f = |x: Gamma| x.skewness().unwrap();
+        let f = |x: Gamma| x.skewness();
         let test = [
             ((1.0, 0.1), 2.0),
             ((1.0, 1.0), 2.0),
