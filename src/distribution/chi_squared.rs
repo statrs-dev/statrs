@@ -185,7 +185,12 @@ impl Max<f64> for ChiSquared {
     }
 }
 
-impl Distribution<f64> for ChiSquared {
+impl CentralMoment<f64> for ChiSquared {
+    type Mu = <super::Gamma as CentralMoment<f64>>::Mu;
+    type Var = <super::Gamma as CentralMoment<f64>>::Var;
+    type Kurt = <super::Gamma as CentralMoment<f64>>::Kurt;
+    type Skew = <super::Gamma as CentralMoment<f64>>::Skew;
+
     /// Returns the mean of the chi-squared distribution
     ///
     /// # Formula
@@ -195,7 +200,7 @@ impl Distribution<f64> for ChiSquared {
     /// ```
     ///
     /// where `k` is the degrees of freedom
-    fn mean(&self) -> Option<f64> {
+    fn mean(&self) -> Self::Mu {
         self.g.mean()
     }
 
@@ -208,22 +213,12 @@ impl Distribution<f64> for ChiSquared {
     /// ```
     ///
     /// where `k` is the degrees of freedom
-    fn variance(&self) -> Option<f64> {
+    fn variance(&self) -> Self::Var {
         self.g.variance()
     }
 
-    /// Returns the entropy of the chi-squared distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (k / 2) + ln(2 * Γ(k / 2)) + (1 - (k / 2)) * ψ(k / 2)
-    /// ```
-    ///
-    /// where `k` is the degrees of freedom, `Γ` is the gamma function,
-    /// and `ψ` is the digamma function
-    fn entropy(&self) -> Option<f64> {
-        self.g.entropy()
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        self.g.excess_kurtosis()
     }
 
     /// Returns the skewness of the chi-squared distribution
@@ -235,8 +230,24 @@ impl Distribution<f64> for ChiSquared {
     /// ```
     ///
     /// where `k` is the degrees of freedom
-    fn skewness(&self) -> Option<f64> {
+    fn skewness(&self) -> Self::Skew {
         self.g.skewness()
+    }
+}
+
+impl Entropy<f64> for ChiSquared {
+    /// Returns the entropy of the chi-squared distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (k / 2) + ln(2 * Γ(k / 2)) + (1 - (k / 2)) * ψ(k / 2)
+    /// ```
+    ///
+    /// where `k` is the degrees of freedom, `Γ` is the gamma function,
+    /// and `ψ` is the digamma function
+    fn entropy(&self) -> f64 {
+        self.g.entropy()
     }
 }
 
