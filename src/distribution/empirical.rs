@@ -31,7 +31,7 @@ impl<T: PartialOrd> Ord for NonNan<T> {
 ///
 /// let samples = vec![0.0, 5.0, 10.0];
 ///
-/// let empirical = Empirical::from_vec(samples);
+/// let empirical = Empirical::from_iter(samples);
 /// assert_eq!(empirical.mean().unwrap(), 5.0);
 /// ```
 #[derive(Clone, PartialEq, Debug)]
@@ -63,14 +63,6 @@ impl Empirical {
             mean_and_var: None,
             data: BTreeMap::new(),
         })
-    }
-
-    pub fn from_vec(src: Vec<f64>) -> Empirical {
-        let mut empirical = Empirical::new().unwrap();
-        for elt in src.into_iter() {
-            empirical.add(elt);
-        }
-        empirical
     }
 
     pub fn add(&mut self, data_point: f64) {
@@ -174,6 +166,16 @@ impl std::fmt::Display for Empirical {
     }
 }
 
+impl FromIterator<f64> for Empirical {
+    fn from_iter<T: IntoIterator<Item = f64>>(iter: T) -> Self {
+        let mut empirical = Self::new().unwrap();
+        for elt in iter {
+            empirical.add(elt);
+        }
+        empirical
+    }
+}
+
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Empirical {
@@ -243,7 +245,7 @@ mod tests {
     #[test]
     fn test_cdf() {
         let samples = vec![5.0, 10.0];
-        let mut empirical = Empirical::from_vec(samples);
+        let mut empirical = Empirical::from_iter(samples);
         assert_eq!(empirical.cdf(0.0), 0.0);
         assert_eq!(empirical.cdf(5.0), 0.5);
         assert_eq!(empirical.cdf(5.5), 0.5);
@@ -271,7 +273,7 @@ mod tests {
     #[test]
     fn test_sf() {
         let samples = vec![5.0, 10.0];
-        let mut empirical = Empirical::from_vec(samples);
+        let mut empirical = Empirical::from_iter(samples);
         assert_eq!(empirical.sf(0.0), 1.0);
         assert_eq!(empirical.sf(5.0), 0.5);
         assert_eq!(empirical.sf(5.5), 0.5);
