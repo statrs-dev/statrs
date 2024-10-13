@@ -50,7 +50,7 @@ pub mod test {
     #[macro_export]
     macro_rules! testing_boiler {
         ($($arg_name:ident: $arg_ty:ty),+; $dist:ty; $dist_err:ty) => {
-            fn make_param_text($($arg_name: $arg_ty),+) -> String {
+            fn make_param_text($($arg_name: &$arg_ty),+) -> String {
                 // ""
                 let mut param_text = String::new();
 
@@ -75,12 +75,13 @@ pub mod test {
             /// Creates and returns a distribution with the given parameters,
             /// panicking if `::new` fails.
             fn create_ok($($arg_name: $arg_ty),+) -> $dist {
+                let param_text = make_param_text($(&$arg_name),+);
                 match <$dist>::new($($arg_name),+) {
                     Ok(d) => d,
                     Err(e) => panic!(
                         "{}::new was expected to succeed, but failed for {} with error: '{}'",
                         stringify!($dist),
-                        make_param_text($($arg_name),+),
+                        param_text,
                         e
                     )
                 }
@@ -90,12 +91,13 @@ pub mod test {
             /// panicking if `::new` succeeds.
             #[allow(dead_code)]
             fn create_err($($arg_name: $arg_ty),+) -> $dist_err {
+                let param_text = make_param_text($(&$arg_name),+);
                 match <$dist>::new($($arg_name),+) {
                     Err(e) => e,
                     Ok(d) => panic!(
                         "{}::new was expected to fail, but succeeded for {} with result: {:?}",
                         stringify!($dist),
-                        make_param_text($($arg_name),+),
+                        param_text,
                         d
                     )
                 }
@@ -124,13 +126,14 @@ pub mod test {
                 F: Fn($dist) -> T,
                 T: ::core::cmp::PartialEq + ::core::fmt::Debug
             {
+                let param_text = make_param_text($(&$arg_name),+);
                 let x = create_and_get($($arg_name),+, get_fn);
                 if x != expected {
                     panic!(
                         "Expected {:?}, got {:?} for {}",
                         expected,
                         x,
-                        make_param_text($($arg_name),+)
+                        param_text
                     );
                 }
             }
@@ -142,10 +145,12 @@ pub mod test {
             ///
             /// Panics if `::new` fails.
             #[allow(dead_code)]
-            fn test_relative<F>($($arg_name: $arg_ty),+, expected: f64, get_fn: F)
+            fn test_relative<F, T>($($arg_name: $arg_ty),+, expected: T, get_fn: F)
             where
-                F: Fn($dist) -> f64,
+                F: Fn($dist) -> T,
+                T: ::std::fmt::Debug + ::approx::RelativeEq<Epsilon = f64>
             {
+                let param_text = make_param_text($(&$arg_name),+);
                 let x = create_and_get($($arg_name),+, get_fn);
                 let max_relative = $crate::consts::ACC;
 
@@ -155,7 +160,7 @@ pub mod test {
                         x,
                         expected,
                         max_relative,
-                        make_param_text($($arg_name),+)
+                        param_text
                     );
                 }
             }
@@ -171,6 +176,7 @@ pub mod test {
             where
                 F: Fn($dist) -> f64,
             {
+                let param_text = make_param_text($(&$arg_name),+);
                 let x = create_and_get($($arg_name),+, get_fn);
 
                 // abs_diff_eq! cannot handle infinities, so we manually accept them here
@@ -184,7 +190,7 @@ pub mod test {
                         x,
                         expected,
                         acc,
-                        make_param_text($($arg_name),+)
+                        param_text
                     );
                 }
             }
@@ -196,6 +202,7 @@ pub mod test {
             #[allow(dead_code)]
             fn test_create_err($($arg_name: $arg_ty),+, expected: $dist_err)
             {
+                let param_text = make_param_text($(&$arg_name),+);
                 let err = create_err($($arg_name),+);
                 if err != expected {
                     panic!(
@@ -203,7 +210,7 @@ pub mod test {
                         stringify!($dist),
                         expected,
                         err,
-                        make_param_text($($arg_name),+)
+                        param_text
                     )
                 }
             }
@@ -231,13 +238,14 @@ pub mod test {
                 F: Fn($dist) -> Option<T>,
                 T: ::core::fmt::Debug,
             {
+                let param_text = make_param_text($(&$arg_name),+);
                 let x = create_and_get($($arg_name),+, get_fn);
 
                 if let Some(inner) = x {
                     panic!(
                         "Expected None, got {:?} for {}",
                         inner,
-                        make_param_text($($arg_name),+)
+                        param_text
                     )
                 }
             }
