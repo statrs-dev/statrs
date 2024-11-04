@@ -2,6 +2,7 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
 use std::f64;
+use std::num::NonZeroU64;
 
 /// Implements the [Chi](https://en.wikipedia.org/wiki/Chi_distribution)
 /// distribution
@@ -13,20 +14,20 @@ use std::f64;
 /// use statrs::statistics::Distribution;
 /// use statrs::prec;
 ///
-/// let n = Chi::new(2.0).unwrap();
+/// let n = Chi::new(2).unwrap();
 /// assert!(prec::almost_eq(n.mean().unwrap(), 1.25331413731550025121, 1e-14));
 /// assert!(prec::almost_eq(n.pdf(1.0), 0.60653065971263342360, 1e-15));
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Chi {
-    freedom: f64,
+    freedom: NonZeroU64,
 }
 
 /// Represents the errors that can occur when creating a [`Chi`].
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
 #[non_exhaustive]
 pub enum ChiError {
-    /// The degrees of freedom are NaN, zero or less than zero.
+    /// The degrees of freedom are zero.
     FreedomInvalid,
 }
 
@@ -49,41 +50,39 @@ impl Chi {
     ///
     /// # Errors
     ///
-    /// Returns an error if `freedom` is `NaN` or
-    /// less than or equal to `0.0`
+    /// Returns an error if `freedom` is equal to `0`.
     ///
     /// # Examples
     ///
     /// ```
     /// use statrs::distribution::Chi;
     ///
-    /// let mut result = Chi::new(2.0);
+    /// let mut result = Chi::new(2);
     /// assert!(result.is_ok());
     ///
-    /// result = Chi::new(0.0);
+    /// result = Chi::new(0);
     /// assert!(result.is_err());
     /// ```
-    pub fn new(freedom: f64) -> Result<Chi, ChiError> {
-        if freedom.is_nan() || freedom <= 0.0 {
-            Err(ChiError::FreedomInvalid)
-        } else {
-            Ok(Chi { freedom })
+    pub fn new(freedom: u64) -> Result<Chi, ChiError> {
+        match NonZeroU64::new(freedom) {
+            Some(freedom) => Ok(Self { freedom }),
+            None => Err(ChiError::FreedomInvalid),
         }
     }
 
-    /// Returns the degrees of freedom of
-    /// the chi distribution.
+    /// Returns the degrees of freedom of the chi distribution.
+    /// Guaranteed to be non-zero.
     ///
     /// # Examples
     ///
     /// ```
     /// use statrs::distribution::Chi;
     ///
-    /// let n = Chi::new(2.0).unwrap();
-    /// assert_eq!(n.freedom(), 2.0);
+    /// let n = Chi::new(2).unwrap();
+    /// assert_eq!(n.freedom(), 2);
     /// ```
-    pub fn freedom(&self) -> f64 {
-        self.freedom
+    pub fn freedom(&self) -> u64 {
+        self.freedom.get()
     }
 }
 
@@ -97,7 +96,7 @@ impl std::fmt::Display for Chi {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<f64> for Chi {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        (0..self.freedom as i64)
+        (0..self.freedom())
             .fold(0.0, |acc, _| {
                 acc + super::normal::sample_unchecked(rng, 0.0, 1.0).powf(2.0)
             })
@@ -118,12 +117,12 @@ impl ContinuousCDF<f64, f64> for Chi {
     /// where `k` is the degrees of freedom and `P` is
     /// the regularized lower incomplete Gamma function
     fn cdf(&self, x: f64) -> f64 {
-        if self.freedom == f64::INFINITY || x == f64::INFINITY {
+        if x == f64::INFINITY {
             1.0
         } else if x <= 0.0 {
             0.0
         } else {
-            gamma::gamma_lr(self.freedom / 2.0, x * x / 2.0)
+            gamma::gamma_lr(self.freedom() as f64 / 2.0, x * x / 2.0)
         }
     }
 
@@ -139,12 +138,12 @@ impl ContinuousCDF<f64, f64> for Chi {
     /// where `k` is the degrees of freedom and `P` is
     /// the regularized upper incomplete Gamma function
     fn sf(&self, x: f64) -> f64 {
-        if self.freedom == f64::INFINITY || x == f64::INFINITY {
+        if x == f64::INFINITY {
             0.0
         } else if x <= 0.0 {
             1.0
         } else {
-            gamma::gamma_ur(self.freedom / 2.0, x * x / 2.0)
+            gamma::gamma_ur(self.freedom() as f64 / 2.0, x * x / 2.0)
         }
     }
 }
@@ -192,23 +191,23 @@ impl Distribution<f64> for Chi {
     ///
     /// where `k` is degrees of freedom and `Γ` is the gamma function
     fn mean(&self) -> Option<f64> {
-        if self.freedom.is_infinite() {
-            None
-        } else if self.freedom > 300.0 {
+        let freedom = self.freedom() as f64;
+
+        if self.freedom() > 300 {
             // Large n approximation based on the Stirling series approximation to the Gamma function
             // This avoids call the Gamma function with large arguments and returning NaN
             //
             // Relative accuracy follows O(1/n^4) and at 300 d.o.f. is better than 1e-12
             // For a f32 impl the threshold should be changed to 150
             Some(
-                self.freedom.sqrt()
-                    / ((1.0 + 0.25 / self.freedom)
-                        * (1.0 + 0.03125 / (self.freedom * self.freedom))
-                        * (1.0 - 0.046875 / (self.freedom * self.freedom * self.freedom))),
+                (freedom.sqrt())
+                    / ((1.0 + 0.25 / freedom)
+                        * (1.0 + 0.03125 / (freedom * freedom))
+                        * (1.0 - 0.046875 / (freedom * freedom * freedom))),
             )
         } else {
-            let mean = f64::consts::SQRT_2 * gamma::gamma((self.freedom + 1.0) / 2.0)
-                / gamma::gamma(self.freedom / 2.0);
+            let mean = f64::consts::SQRT_2 * gamma::gamma((freedom + 1.0) / 2.0)
+                / gamma::gamma(freedom / 2.0);
             Some(mean)
         }
     }
@@ -229,7 +228,7 @@ impl Distribution<f64> for Chi {
     /// of the distribution
     fn variance(&self) -> Option<f64> {
         let mean = self.mean()?;
-        Some(self.freedom - mean * mean)
+        Some(self.freedom() as f64 - mean * mean)
     }
 
     /// Returns the entropy of the chi distribution
@@ -247,14 +246,9 @@ impl Distribution<f64> for Chi {
     /// where `k` is degrees of freedom, `Γ` is the gamma function,
     /// and `ψ` is the digamma function
     fn entropy(&self) -> Option<f64> {
-        if self.freedom.is_infinite() {
-            return None;
-        }
-        let entr = gamma::ln_gamma(self.freedom / 2.0)
-            + (self.freedom
-                - (2.0f64).ln()
-                - (self.freedom - 1.0) * gamma::digamma(self.freedom / 2.0))
-                / 2.0;
+        let freedom = self.freedom() as f64;
+        let entr = gamma::ln_gamma(freedom / 2.0)
+            + (freedom - (2.0f64).ln() - (freedom - 1.0) * gamma::digamma(freedom / 2.0)) / 2.0;
         Some(entr)
     }
 
@@ -293,10 +287,7 @@ impl Mode<Option<f64>> for Chi {
     ///
     /// where `k` is the degrees of freedom
     fn mode(&self) -> Option<f64> {
-        if self.freedom - 1.0 < 0.0 {
-            return None;
-        }
-        Some((self.freedom - 1.0).sqrt())
+        Some(((self.freedom() - 1) as f64).sqrt())
     }
 }
 
@@ -312,15 +303,14 @@ impl Continuous<f64, f64> for Chi {
     ///
     /// where `k` is the degrees of freedom and `Γ` is the gamma function
     fn pdf(&self, x: f64) -> f64 {
-        if self.freedom == f64::INFINITY || x == f64::INFINITY || x <= 0.0 {
+        if x == f64::INFINITY || x <= 0.0 {
             0.0
-        } else if self.freedom > 160.0 {
+        } else if self.freedom() > 160 {
             self.ln_pdf(x).exp()
         } else {
-            (2.0f64).powf(1.0 - self.freedom / 2.0)
-                * x.powf(self.freedom - 1.0)
-                * (-x * x / 2.0).exp()
-                / gamma::gamma(self.freedom / 2.0)
+            let freedom = self.freedom() as f64;
+            (2.0f64).powf(1.0 - freedom / 2.0) * x.powf(freedom - 1.0) * (-x * x / 2.0).exp()
+                / gamma::gamma(freedom / 2.0)
         }
     }
 
@@ -333,12 +323,13 @@ impl Continuous<f64, f64> for Chi {
     /// ln((2^(1 - (k / 2)) * x^(k - 1) * e^(-x^2 / 2)) / Γ(k / 2))
     /// ```
     fn ln_pdf(&self, x: f64) -> f64 {
-        if self.freedom == f64::INFINITY || x == f64::INFINITY || x <= 0.0 {
+        if x == f64::INFINITY || x <= 0.0 {
             f64::NEG_INFINITY
         } else {
-            (1.0 - self.freedom / 2.0) * (2.0f64).ln() + ((self.freedom - 1.0) * x.ln())
+            let freedom = self.freedom() as f64;
+            (1.0 - freedom / 2.0) * (2.0f64).ln() + ((freedom - 1.0) * x.ln())
                 - x * x / 2.0
-                - gamma::ln_gamma(self.freedom / 2.0)
+                - gamma::ln_gamma(freedom / 2.0)
         }
     }
 }
@@ -350,250 +341,177 @@ mod tests {
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
-    testing_boiler!(freedom: f64; Chi; ChiError);
+    testing_boiler!(freedom: u64; Chi; ChiError);
 
     #[test]
     fn test_create() {
-        create_ok(1.0);
-        create_ok(3.0);
-        create_ok(f64::INFINITY);
+        create_ok(1);
+        create_ok(3);
     }
 
     #[test]
     fn test_bad_create() {
-        create_err(0.0);
-        create_err(-1.0);
-        create_err(-100.0);
-        create_err(f64::NEG_INFINITY);
-        create_err(f64::NAN);
+        create_err(0);
     }
 
     #[test]
     fn test_mean() {
         let mean = |x: Chi| x.mean().unwrap();
-        test_absolute(1.0, 0.7978845608028653558799, 1e-15, mean);
-        test_absolute(2.0, 1.25331413731550025121, 1e-14, mean);
-        test_absolute(2.5, 1.43396639245837498609, 1e-14, mean);
-        test_absolute(5.0, 2.12769216214097428235, 1e-14, mean);
-        test_absolute(336.0, 18.31666925443713, 1e-12, mean);
+        test_absolute(1, 0.7978845608028653558799, 1e-15, mean);
+        test_absolute(2, 1.25331413731550025121, 1e-14, mean);
+        test_absolute(5, 2.12769216214097428235, 1e-14, mean);
+        test_absolute(336, 18.31666925443713, 1e-12, mean);
     }
 
     #[test]
     fn test_large_dof_mean_not_nan() {
         for i in 1..1000 {
-            let mean = Chi::new(i as f64).unwrap().mean().unwrap();
+            let mean = Chi::new(i).unwrap().mean().unwrap();
             assert!(!mean.is_nan(), "Chi mean for {i} dof was {mean}");
         }
     }
 
     #[test]
-    fn test_mean_degen() {
-        test_none(f64::INFINITY, |dist| dist.mean());
-    }
-
-    #[test]
     fn test_variance() {
         let variance = |x: Chi| x.variance().unwrap();
-        test_absolute(1.0, 0.3633802276324186569245, 1e-15, variance);
-        test_absolute(2.0, 0.42920367320510338077, 1e-14, variance);
-        test_absolute(2.5, 0.44374038529991368581, 1e-13, variance);
-        test_absolute(3.0, 0.4535209105296746277, 1e-14, variance);
-    }
-
-    #[test]
-    fn test_variance_degen() {
-        test_none(f64::INFINITY, |dist| dist.variance());
+        test_absolute(1, 0.3633802276324186569245, 1e-15, variance);
+        test_absolute(2, 0.42920367320510338077, 1e-14, variance);
+        test_absolute(3, 0.4535209105296746277, 1e-14, variance);
     }
 
     #[test]
     fn test_entropy() {
         let entropy = |x: Chi| x.entropy().unwrap();
-        test_absolute(1.0, 0.7257913526447274323631, 1e-15, entropy);
-        test_absolute(2.0, 0.9420342421707937755946, 1e-15, entropy);
-        test_absolute(2.5, 0.97574472333041323989, 1e-14, entropy);
-        test_absolute(3.0, 0.99615419810620560239, 1e-14, entropy);
-    }
-
-    #[test]
-    fn test_entropy_degen() {
-        test_none(f64::INFINITY, |dist| dist.entropy());
+        test_absolute(1, 0.7257913526447274323631, 1e-15, entropy);
+        test_absolute(2, 0.9420342421707937755946, 1e-15, entropy);
+        test_absolute(3, 0.99615419810620560239, 1e-14, entropy);
     }
 
     #[test]
     fn test_skewness() {
         let skewness = |x: Chi| x.skewness().unwrap();
-        test_absolute(1.0, 0.995271746431156042444, 1e-14, skewness);
-        test_absolute(2.0, 0.6311106578189371382, 1e-13, skewness);
-        test_absolute(2.5, 0.5458487096285153216, 1e-12, skewness);
-        test_absolute(3.0, 0.485692828049590809, 1e-12, skewness);
-    }
-
-    #[test]
-    fn test_skewness_degen() {
-        test_none(f64::INFINITY, |dist| dist.skewness());
+        test_absolute(1, 0.995271746431156042444, 1e-14, skewness);
+        test_absolute(3, 0.485692828049590809, 1e-12, skewness);
     }
 
     #[test]
     fn test_mode() {
         let mode = |x: Chi| x.mode().unwrap();
-        test_exact(1.0, 0.0, mode);
-        test_exact(2.0, 1.0, mode);
-        test_exact(2.5, 1.224744871391589049099, mode);
-        test_exact(3.0, f64::consts::SQRT_2, mode);
-        test_exact(f64::INFINITY, f64::INFINITY, mode);
-    }
-
-    #[test]
-    fn test_mode_freedom_lt_1() {
-        test_none(0.5, |dist| dist.mode());
+        test_exact(1, 0.0, mode);
+        test_exact(2, 1.0, mode);
+        test_exact(3, f64::consts::SQRT_2, mode);
     }
 
     #[test]
     fn test_min_max() {
         let min = |x: Chi| x.min();
         let max = |x: Chi| x.max();
-        test_exact(1.0, 0.0, min);
-        test_exact(2.0, 0.0, min);
-        test_exact(2.5, 0.0, min);
-        test_exact(3.0, 0.0, min);
-        test_exact(f64::INFINITY, 0.0, min);
-        test_exact(1.0, f64::INFINITY, max);
-        test_exact(2.0, f64::INFINITY, max);
-        test_exact(2.5, f64::INFINITY, max);
-        test_exact(3.0, f64::INFINITY, max);
-        test_exact(f64::INFINITY, f64::INFINITY, max);
+        test_exact(1, 0.0, min);
+        test_exact(2, 0.0, min);
+        test_exact(2, 0.0, min);
+        test_exact(3, 0.0, min);
+        test_exact(1, f64::INFINITY, max);
+        test_exact(2, f64::INFINITY, max);
+        test_exact(2, f64::INFINITY, max);
+        test_exact(3, f64::INFINITY, max);
     }
 
     #[test]
     fn test_pdf() {
         let pdf = |arg: f64| move |x: Chi| x.pdf(arg);
-        test_exact(1.0, 0.0, pdf(0.0));
-        test_absolute(1.0, 0.79390509495402353102, 1e-15, pdf(0.1));
-        test_absolute(1.0, 0.48394144903828669960, 1e-15, pdf(1.0));
-        test_absolute(1.0, 2.1539520085086552718e-7, 1e-22, pdf(5.5));
-        test_exact(1.0, 0.0, pdf(f64::INFINITY));
-        test_exact(2.0, 0.0, pdf(0.0));
-        test_absolute(2.0, 0.099501247919268231335, 1e-16, pdf(0.1));
-        test_absolute(2.0, 0.60653065971263342360, 1e-15, pdf(1.0));
-        test_absolute(2.0, 1.4847681768496578863e-6, 1e-21, pdf(5.5));
-        test_exact(2.0, 0.0, pdf(f64::INFINITY));
-        test_exact(2.5, 0.0, pdf(0.0));
-        test_absolute(2.5, 0.029191065334961657461, 1e-16, pdf(0.1));
-        test_absolute(2.5, 0.56269645152636456261, 1e-15, pdf(1.0));
-        test_absolute(2.5, 3.2304380188895211768e-6, 1e-20, pdf(5.5));
-        test_exact(2.5, 0.0, pdf(f64::INFINITY));
-        test_exact(f64::INFINITY, 0.0, pdf(0.0));
-        test_exact(f64::INFINITY, 0.0, pdf(0.1));
-        test_exact(f64::INFINITY, 0.0, pdf(1.0));
-        test_exact(f64::INFINITY, 0.0, pdf(5.5));
-        test_exact(f64::INFINITY, 0.0, pdf(f64::INFINITY));
-        test_absolute(170.0, 0.5644678498668440878, 1e-13, pdf(13.0));
+        test_exact(1, 0.0, pdf(0.0));
+        test_absolute(1, 0.79390509495402353102, 1e-15, pdf(0.1));
+        test_absolute(1, 0.48394144903828669960, 1e-15, pdf(1.0));
+        test_absolute(1, 2.1539520085086552718e-7, 1e-22, pdf(5.5));
+        test_exact(1, 0.0, pdf(f64::INFINITY));
+        test_exact(2, 0.0, pdf(0.0));
+        test_absolute(2, 0.099501247919268231335, 1e-16, pdf(0.1));
+        test_absolute(2, 0.60653065971263342360, 1e-15, pdf(1.0));
+        test_absolute(2, 1.4847681768496578863e-6, 1e-21, pdf(5.5));
+        test_exact(2, 0.0, pdf(f64::INFINITY));
+        test_exact(2, 0.0, pdf(0.0));
+        test_exact(2, 0.0, pdf(f64::INFINITY));
+        test_absolute(170, 0.5644678498668440878, 1e-13, pdf(13.0));
     }
 
     #[test]
     fn test_neg_pdf() {
         let pdf = |arg: f64| move |x: Chi| x.pdf(arg);
-        test_exact(1.0, 0.0, pdf(-1.0));
+        test_exact(1, 0.0, pdf(-1.0));
     }
 
     #[test]
     fn test_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: Chi| x.ln_pdf(arg);
-        test_exact(1.0, f64::NEG_INFINITY, ln_pdf(0.0));
-        test_absolute(1.0, -0.23079135264472743236, 1e-15, ln_pdf(0.1));
-        test_absolute(1.0, -0.72579135264472743236, 1e-15, ln_pdf(1.0));
-        test_absolute(1.0, -15.350791352644727432, 1e-14, ln_pdf(5.5));
-        test_exact(1.0, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
-        test_exact(2.0, f64::NEG_INFINITY, ln_pdf(0.0));
-        test_absolute(2.0, -2.3075850929940456840, 1e-15, ln_pdf(0.1));
-        test_absolute(2.0, -0.5, 1e-15, ln_pdf(1.0));
-        test_absolute(2.0, -13.420251907761574765, 1e-15, ln_pdf(5.5));
-        test_exact(2.0, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
-        test_exact(2.5, f64::NEG_INFINITY, ln_pdf(0.0));
-        test_absolute(2.5, -3.5338925982092416919, 1e-15, ln_pdf(0.1));
-        test_absolute(2.5, -0.57501495871817316589, 1e-15, ln_pdf(1.0));
-        test_absolute(2.5, -12.642892820360535314, 1e-16, ln_pdf(5.5));
-        test_exact(2.5, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
-        test_exact(f64::INFINITY, f64::NEG_INFINITY, ln_pdf(0.0));
-        test_exact(f64::INFINITY, f64::NEG_INFINITY, ln_pdf(0.1));
-        test_exact(f64::INFINITY, f64::NEG_INFINITY, ln_pdf(1.0));
-        test_exact(f64::INFINITY, f64::NEG_INFINITY, ln_pdf(5.5));
-        test_exact(f64::INFINITY, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
-        test_absolute(170.0, -0.57187185030600516424237, 1e-13, ln_pdf(13.0));
+        test_exact(1, f64::NEG_INFINITY, ln_pdf(0.0));
+        test_absolute(1, -0.23079135264472743236, 1e-15, ln_pdf(0.1));
+        test_absolute(1, -0.72579135264472743236, 1e-15, ln_pdf(1.0));
+        test_absolute(1, -15.350791352644727432, 1e-14, ln_pdf(5.5));
+        test_exact(1, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
+        test_exact(2, f64::NEG_INFINITY, ln_pdf(0.0));
+        test_absolute(2, -2.3075850929940456840, 1e-15, ln_pdf(0.1));
+        test_absolute(2, -0.5, 1e-15, ln_pdf(1.0));
+        test_absolute(2, -13.420251907761574765, 1e-15, ln_pdf(5.5));
+        test_exact(2, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
+        test_exact(2, f64::NEG_INFINITY, ln_pdf(0.0));
+        test_exact(2, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
+        test_absolute(170, -0.57187185030600516424237, 1e-13, ln_pdf(13.0));
     }
 
     #[test]
     fn test_neg_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: Chi| x.ln_pdf(arg);
-        test_exact(1.0, f64::NEG_INFINITY, ln_pdf(-1.0));
+        test_exact(1, f64::NEG_INFINITY, ln_pdf(-1.0));
     }
 
     #[test]
     fn test_cdf() {
         let cdf = |arg: f64| move |x: Chi| x.cdf(arg);
-        test_exact(1.0, 0.0, cdf(0.0));
-        test_absolute(1.0, 0.079655674554057962931, 1e-16, cdf(0.1));
-        test_absolute(1.0, 0.68268949213708589717, 1e-15, cdf(1.0));
-        test_exact(1.0, 0.99999996202087506822, cdf(5.5));
-        test_exact(1.0, 1.0, cdf(f64::INFINITY));
-        test_exact(2.0, 0.0, cdf(0.0));
-        test_absolute(2.0, 0.0049875208073176866474, 1e-17, cdf(0.1));
-        test_absolute(2.0, 0.39346934028736657640, 1e-15, cdf(1.0));
-        test_exact(2.0, 0.99999973004214966370, cdf(5.5));
-        test_exact(2.0, 1.0, cdf(f64::INFINITY));
-        test_exact(2.5, 0.0, cdf(0.0));
-        test_absolute(2.5, 0.0011702413714030096290, 1e-18, cdf(0.1));
-        test_absolute(2.5, 0.28378995266531297417, 1e-16, cdf(1.0));
-        test_exact(2.5, 0.99999940337322804750, cdf(5.5));
-        test_exact(2.5, 1.0, cdf(f64::INFINITY));
-        test_exact(f64::INFINITY, 1.0, cdf(0.0));
-        test_exact(f64::INFINITY, 1.0, cdf(0.1));
-        test_exact(f64::INFINITY, 1.0, cdf(1.0));
-        test_exact(f64::INFINITY, 1.0, cdf(5.5));
-        test_exact(f64::INFINITY, 1.0, cdf(f64::INFINITY));
+        test_exact(1, 0.0, cdf(0.0));
+        test_absolute(1, 0.079655674554057962931, 1e-16, cdf(0.1));
+        test_absolute(1, 0.68268949213708589717, 1e-15, cdf(1.0));
+        test_exact(1, 0.99999996202087506822, cdf(5.5));
+        test_exact(1, 1.0, cdf(f64::INFINITY));
+        test_exact(2, 0.0, cdf(0.0));
+        test_absolute(2, 0.0049875208073176866474, 1e-17, cdf(0.1));
+        test_exact(2, 1.0, cdf(f64::INFINITY));
+        test_exact(2, 0.0, cdf(0.0));
+        test_exact(2, 1.0, cdf(f64::INFINITY));
     }
 
     #[test]
     fn test_sf() {
         let sf = |arg: f64| move |x: Chi| x.sf(arg);
-        test_exact(1.0, 1.0, sf(0.0));
-        test_absolute(1.0, 0.920344325445942, 1e-16, sf(0.1));
-        test_absolute(1.0, 0.31731050786291404, 1e-15, sf(1.0));
-        test_absolute(1.0, 3.797912493177544e-8, 1e-15, sf(5.5));
-        test_exact(1.0, 0.0, sf(f64::INFINITY));
-        test_exact(2.0, 1.0, sf(0.0));
-        test_absolute(2.0, 0.9950124791926823, 1e-17, sf(0.1));
-        test_absolute(2.0, 0.6065306597126333, 1e-15, sf(1.0));
-        test_absolute(2.0, 2.699578503363014e-7, 1e-15, sf(5.5));
-        test_exact(2.0, 0.0, sf(f64::INFINITY));
-        test_exact(2.5, 1.0, sf(0.0));
-        test_absolute(2.5, 0.998829758628597, 1e-18, sf(0.1));
-        test_absolute(2.5, 0.716210047334687, 1e-16, sf(1.0));
-        test_absolute(2.5, 5.966267719870189e-7, 1e-15, sf(5.5));
-        test_exact(2.5, 0.0, sf(f64::INFINITY));
-        test_exact(f64::INFINITY, 0.0, sf(0.0));
-        test_exact(f64::INFINITY, 0.0, sf(0.1));
-        test_exact(f64::INFINITY, 0.0, sf(1.0));
-        test_exact(f64::INFINITY, 0.0, sf(5.5));
-        test_exact(f64::INFINITY, 0.0, sf(f64::INFINITY));
+        test_exact(1, 1.0, sf(0.0));
+        test_absolute(1, 0.920344325445942, 1e-16, sf(0.1));
+        test_absolute(1, 0.31731050786291404, 1e-15, sf(1.0));
+        test_absolute(1, 3.797912493177544e-8, 1e-15, sf(5.5));
+        test_exact(1, 0.0, sf(f64::INFINITY));
+        test_exact(2, 1.0, sf(0.0));
+        test_absolute(2, 0.9950124791926823, 1e-17, sf(0.1));
+        test_absolute(2, 0.6065306597126333, 1e-15, sf(1.0));
+        test_absolute(2, 2.699578503363014e-7, 1e-15, sf(5.5));
+        test_exact(2, 0.0, sf(f64::INFINITY));
+        test_exact(2, 1.0, sf(0.0));
+        test_exact(2, 0.0, sf(f64::INFINITY));
     }
 
     #[test]
     fn test_neg_cdf() {
         let cdf = |arg: f64| move |x: Chi| x.cdf(arg);
-        test_exact(1.0, 0.0, cdf(-1.0));
+        test_exact(1, 0.0, cdf(-1.0));
     }
 
     #[test]
     fn test_neg_sf() {
         let sf = |arg: f64| move |x: Chi| x.sf(arg);
-        test_exact(1.0, 1.0, sf(-1.0));
+        test_exact(1, 1.0, sf(-1.0));
     }
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.0), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(2.0), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(5.0), 0.0, 10.0);
+        test::check_continuous_distribution(&create_ok(1), 0.0, 10.0);
+        test::check_continuous_distribution(&create_ok(2), 0.0, 10.0);
+        test::check_continuous_distribution(&create_ok(5), 0.0, 10.0);
     }
 }
