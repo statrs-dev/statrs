@@ -69,15 +69,16 @@ pub trait CovarianceMatrix<T> {
 
 #[cfg(feature = "nalgebra")]
 mod multivariate {
-    use nalgebra::{Cholesky, Dim, OMatrix, OVector};
+    use nalgebra::{Cholesky, Dim, OMatrix, OVector, Scalar};
 
-    impl<D> super::CovarianceMatrix<f64> for OVector<f64, D>
+    impl<T, D> super::CovarianceMatrix<T> for OVector<T, D>
     where
+        T: Scalar + nalgebra::RealField,
         D: Dim,
         nalgebra::DefaultAllocator:
-            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+            nalgebra::allocator::Allocator<T, D> + nalgebra::allocator::Allocator<T, D, D>,
     {
-        type M = OMatrix<f64, D, D>;
+        type M = OMatrix<T, D, D>;
         type V = Self;
 
         fn dense(&self) -> Self::M {
@@ -92,19 +93,20 @@ mod multivariate {
             other.component_div(&self.clone().map(|x| x.sqrt()))
         }
 
-        fn determinant(&self) -> f64 {
+        fn determinant(&self) -> T {
             self.product()
         }
     }
 
-    impl<D> super::CovarianceMatrix<f64> for Cholesky<f64, D>
+    impl<T, D> super::CovarianceMatrix<T> for Cholesky<T, D>
     where
+        T: Scalar + nalgebra::RealField,
         D: Dim,
         nalgebra::DefaultAllocator:
-            nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+            nalgebra::allocator::Allocator<T, D> + nalgebra::allocator::Allocator<T, D, D>,
     {
-        type M = OMatrix<f64, D, D>;
-        type V = OVector<f64, D>;
+        type M = OMatrix<T, D, D>;
+        type V = OVector<T, D>;
 
         fn dense(&self) -> Self::M {
             self.l() * self.l().transpose()
@@ -118,7 +120,7 @@ mod multivariate {
             self.l_dirty().solve_lower_triangular_unchecked(&other)
         }
 
-        fn determinant(&self) -> f64 {
+        fn determinant(&self) -> T {
             self.determinant()
         }
     }
