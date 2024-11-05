@@ -27,7 +27,7 @@ impl<T: PartialOrd> Ord for NonNan<T> {
 ///
 /// ```
 /// use statrs::distribution::{Continuous, Empirical};
-/// use statrs::statistics::Distribution;
+/// use statrs::statistics::*;
 ///
 /// let samples = vec![0.0, 5.0, 10.0];
 ///
@@ -201,12 +201,17 @@ impl Min<f64> for Empirical {
     }
 }
 
-impl Distribution<f64> for Empirical {
-    fn mean(&self) -> Option<f64> {
+impl Mean for Empirical {
+    type Mu = Option<f64>;
+    fn mean(&self) -> Self::Mu {
         self.mean_and_var.map(|(mean, _)| mean)
     }
+}
 
-    fn variance(&self) -> Option<f64> {
+impl Variance for Empirical {
+    type Var = Option<f64>;
+
+    fn variance(&self) -> Self::Var {
         self.mean_and_var.map(|(_, var)| var / (self.sum - 1.))
     }
 }

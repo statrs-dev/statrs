@@ -8,13 +8,14 @@ use crate::statistics::*;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Beta, Continuous};
+/// use statrs::distribution::{Beta, Continuous, BetaError};
 /// use statrs::statistics::*;
 /// use statrs::prec;
 ///
-/// let n = Beta::new(2.0, 2.0).unwrap();
-/// assert_eq!(n.mean().unwrap(), 0.5);
+/// let n = Beta::new(2.0, 2.0)?;
+/// assert_eq!(n.mean(), 0.5);
 /// assert!(prec::almost_eq(n.pdf(0.5), 1.5, 1e-14));
+/// # Ok::<(), BetaError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Beta {
@@ -82,10 +83,11 @@ impl Beta {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Beta;
+    /// use statrs::distribution::{Beta, BetaError};
     ///
-    /// let n = Beta::new(1.0, 2.0).unwrap();
+    /// let n = Beta::new(1.0, 2.0)?;
     /// assert_eq!(n.shape_a(), 1.0);
+    /// # Ok::<(), BetaError>(())
     /// ```
     pub fn shape_a(&self) -> f64 {
         self.shape_a
@@ -96,10 +98,11 @@ impl Beta {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Beta;
+    /// use statrs::distribution::{Beta, BetaError};
     ///
-    /// let n = Beta::new(1.0, 2.0).unwrap();
+    /// let n = Beta::new(1.0, 2.0)?;
     /// assert_eq!(n.shape_b(), 2.0);
+    /// # Ok::<(), BetaError>(())
     /// ```
     pub fn shape_b(&self) -> f64 {
         self.shape_b
@@ -221,38 +224,70 @@ impl Max<f64> for Beta {
     }
 }
 
-impl Distribution<f64> for Beta {
-    /// Returns the mean of the beta distribution.
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// α / (α + β)
-    /// ```
-    ///
-    /// where `α` is shapeA and `β` is shapeB.
-    fn mean(&self) -> Option<f64> {
-        Some(self.shape_a / (self.shape_a + self.shape_b))
+/// Returns the mean of the beta distribution.
+///
+/// # Formula
+///
+/// ```text
+/// α / (α + β)
+/// ```
+///
+/// where `α` is shapeA and `β` is shapeB.
+impl Mean for Beta {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        self.shape_a / (self.shape_a + self.shape_b)
     }
+}
 
-    /// Returns the variance of the beta distribution.
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (α * β) / ((α + β)^2 * (α + β + 1))
-    /// ```
-    ///
-    /// where `α` is shapeA and `β` is shapeB.
-    fn variance(&self) -> Option<f64> {
-        Some(
-            self.shape_a * self.shape_b
-                / ((self.shape_a + self.shape_b)
-                    * (self.shape_a + self.shape_b)
-                    * (self.shape_a + self.shape_b + 1.0)),
-        )
+/// Returns the variance of the beta distribution.
+///
+/// # Formula
+///
+/// ```text
+/// (α * β) / ((α + β)^2 * (α + β + 1))
+/// ```
+///
+/// where `α` is shapeA and `β` is shapeB.
+impl Variance for Beta {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
+        self.shape_a * self.shape_b
+            / ((self.shape_a + self.shape_b)
+                * (self.shape_a + self.shape_b)
+                * (self.shape_a + self.shape_b + 1.0))
     }
+}
 
+/// Returns the skewness of the Beta distribution.
+///
+/// # Formula
+///
+/// ```text
+/// 2(β - α) * sqrt(α + β + 1) / ((α + β + 2) * sqrt(αβ))
+/// ```
+///
+/// where `α` is shapeA and `β` is shapeB.
+impl Skewness for Beta {
+    type Skew = f64;
+    fn skewness(&self) -> Self::Skew {
+        2.0 * (self.shape_b - self.shape_a) * (self.shape_a + self.shape_b + 1.0).sqrt()
+            / ((self.shape_a + self.shape_b + 2.0) * (self.shape_a * self.shape_b).sqrt())
+    }
+}
+
+/// Returns the excess kurtosis of the Beta distribution
+impl ExcessKurtosis for Beta {
+    type Kurt = f64;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        let a = self.shape_a;
+        let b = self.shape_b;
+        let numer = 6. * ((a - b).powi(2) * (a + b + 1.) - a * b * (a + b + 2.));
+        let denom = a * b * (a + b + 2.) * (a + b + 3.);
+        numer / denom
+    }
+}
+impl Entropy<f64> for Beta {
     /// Returns the entropy of the beta distribution.
     ///
     /// # Formula
@@ -262,32 +297,13 @@ impl Distribution<f64> for Beta {
     /// ```
     ///
     /// where `α` is shapeA, `β` is shapeB and `ψ` is the digamma function.
-    fn entropy(&self) -> Option<f64> {
-        Some(
-            beta::ln_beta(self.shape_a, self.shape_b)
-                - (self.shape_a - 1.0) * gamma::digamma(self.shape_a)
-                - (self.shape_b - 1.0) * gamma::digamma(self.shape_b)
-                + (self.shape_a + self.shape_b - 2.0) * gamma::digamma(self.shape_a + self.shape_b),
-        )
-    }
-
-    /// Returns the skewness of the Beta distribution.
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 2(β - α) * sqrt(α + β + 1) / ((α + β + 2) * sqrt(αβ))
-    /// ```
-    ///
-    /// where `α` is shapeA and `β` is shapeB.
-    fn skewness(&self) -> Option<f64> {
-        Some(
-            2.0 * (self.shape_b - self.shape_a) * (self.shape_a + self.shape_b + 1.0).sqrt()
-                / ((self.shape_a + self.shape_b + 2.0) * (self.shape_a * self.shape_b).sqrt()),
-        )
+    fn entropy(&self) -> f64 {
+        beta::ln_beta(self.shape_a, self.shape_b)
+            - (self.shape_a - 1.0) * gamma::digamma(self.shape_a)
+            - (self.shape_b - 1.0) * gamma::digamma(self.shape_b)
+            + (self.shape_a + self.shape_b - 2.0) * gamma::digamma(self.shape_a + self.shape_b)
     }
 }
-
 impl Mode<Option<f64>> for Beta {
     /// Returns the mode of the Beta distribution. Returns `None` if `α <= 1`
     /// or `β <= 1`.
@@ -423,7 +439,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let f = |x: Beta| x.mean().unwrap();
+        let f = |x: Beta| x.mean();
         let test = [
             ((1.0, 1.0), 0.5),
             ((9.0, 1.0), 0.9),
@@ -436,7 +452,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let f = |x: Beta| x.variance().unwrap();
+        let f = |x: Beta| x.variance();
         let test = [
             ((1.0, 1.0), 1.0 / 12.0),
             ((9.0, 1.0), 9.0 / 1100.0),
@@ -449,7 +465,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let f = |x: Beta| x.entropy().unwrap();
+        let f = |x: Beta| x.entropy();
         let test = [
             ((9.0, 1.0), -1.3083356884473304939016015),
             ((5.0, 100.0), -2.52016231876027436794592),
@@ -462,7 +478,7 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let skewness = |x: Beta| x.skewness().unwrap();
+        let skewness = |x: Beta| x.skewness();
         test_relative(1.0, 1.0, 0.0, skewness);
         test_relative(9.0, 1.0, -1.4740554623801777107177478829, skewness);
         test_relative(5.0, 100.0, 0.817594109275534303545831591, skewness);

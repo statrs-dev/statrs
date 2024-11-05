@@ -2,8 +2,8 @@
 //! and provides
 //! concrete implementations for a variety of distributions.
 use super::statistics::{Max, Min};
-use ::num_traits::{Float, Num};
 use num_traits::NumAssignOps;
+use num_traits::{Float, Num};
 
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::{Beta, BetaError};
@@ -265,8 +265,7 @@ pub trait Continuous<K, T> {
 /// # Remarks
 ///
 /// All methods provided by the `Discrete` trait are unchecked, meaning
-/// they can panic if in an invalid state or encountering invalid input
-/// depending on the implementing distribution.
+/// they can panic if in an invalid state or encountering invalid input depending on the implementing distribution.
 pub trait Discrete<K, T> {
     /// Returns the probability mass function calculated at `x` for a given
     /// distribution.

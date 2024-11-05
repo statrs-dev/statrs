@@ -10,13 +10,14 @@ use crate::statistics::*;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Erlang, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{Erlang, Continuous, GammaError};
+/// use statrs::statistics::*;
 /// use statrs::prec;
 ///
-/// let n = Erlang::new(3, 1.0).unwrap();
-/// assert_eq!(n.mean().unwrap(), 3.0);
+/// let n = Erlang::new(3, 1.0)?;
+/// assert_eq!(n.mean(), 3.0);
 /// assert!(prec::almost_eq(n.pdf(2.0), 0.270670566473225383788, 1e-15));
+/// # Ok::<(), GammaError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Erlang {
@@ -52,10 +53,11 @@ impl Erlang {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Erlang;
+    /// use statrs::distribution::{Erlang, GammaError};
     ///
-    /// let n = Erlang::new(3, 1.0).unwrap();
+    /// let n = Erlang::new(3, 1.0)?;
     /// assert_eq!(n.shape(), 3);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn shape(&self) -> u64 {
         self.g.shape() as u64
@@ -66,10 +68,11 @@ impl Erlang {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Erlang;
+    /// use statrs::distribution::{Erlang, GammaError};
     ///
     /// let n = Erlang::new(3, 1.0).unwrap();
     /// assert_eq!(n.rate(), 1.0);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn rate(&self) -> f64 {
         self.g.rate()
@@ -169,38 +172,68 @@ impl Max<f64> for Erlang {
     }
 }
 
-impl Distribution<f64> for Erlang {
-    /// Returns the mean of the erlang distribution
-    ///
-    /// # Remarks
-    ///
-    /// Returns `shape` if `rate == f64::INFINITY`. This behavior
-    /// is borrowed from the Math.NET implementation
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// k / λ
-    /// ```
-    ///
-    /// where `k` is the shape and `λ` is the rate
-    fn mean(&self) -> Option<f64> {
+/// Returns the mean of the erlang distribution
+///
+/// # Remarks
+///
+/// Returns `shape` if `rate == f64::INFINITY`. This behavior
+/// is borrowed from the Math.NET implementation
+///
+/// # Formula
+///
+/// ```text
+/// k / λ
+/// ```
+///
+/// where `k` is the shape and `λ` is the rate
+impl Mean for Erlang {
+    type Mu = <super::Gamma as Mean>::Mu;
+    fn mean(&self) -> Self::Mu {
         self.g.mean()
     }
+}
 
-    /// Returns the variance of the erlang distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// k / λ^2
-    /// ```
-    ///
-    /// where `α` is the shape and `λ` is the rate
-    fn variance(&self) -> Option<f64> {
+/// Returns the variance of the erlang distribution
+///
+/// # Formula
+///
+/// ```text
+/// k / λ^2
+/// ```
+///
+/// where `α` is the shape and `λ` is the rate
+impl Variance for Erlang {
+    type Var = <super::Gamma as Variance>::Var;
+    fn variance(&self) -> Self::Var {
         self.g.variance()
     }
+}
 
+/// Returns the skewness of the erlang distribution
+///
+/// # Formula
+///
+/// ```text
+/// 2 / sqrt(k)
+/// ```
+///
+/// where `k` is the shape
+impl Skewness for Erlang {
+    type Skew = <super::Gamma as Skewness>::Skew;
+    fn skewness(&self) -> Self::Skew {
+        self.g.skewness()
+    }
+}
+
+/// docs
+impl ExcessKurtosis for Erlang {
+    type Kurt = <super::Gamma as ExcessKurtosis>::Kurt;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        self.g.excess_kurtosis()
+    }
+}
+
+impl Entropy<f64> for Erlang {
     /// Returns the entropy of the erlang distribution
     ///
     /// # Formula
@@ -211,21 +244,8 @@ impl Distribution<f64> for Erlang {
     ///
     /// where `k` is the shape, `λ` is the rate, `Γ` is the gamma function,
     /// and `ψ` is the digamma function
-    fn entropy(&self) -> Option<f64> {
+    fn entropy(&self) -> f64 {
         self.g.entropy()
-    }
-
-    /// Returns the skewness of the erlang distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 2 / sqrt(k)
-    /// ```
-    ///
-    /// where `k` is the shape
-    fn skewness(&self) -> Option<f64> {
-        self.g.skewness()
     }
 }
 

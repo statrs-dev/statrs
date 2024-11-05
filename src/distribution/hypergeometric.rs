@@ -12,13 +12,13 @@ use std::f64;
 ///
 /// ```
 /// use statrs::distribution::{Hypergeometric, Discrete};
-/// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use statrs::statistics::*;
+/// use approx::assert_relative_eq;
 ///
 /// let n = Hypergeometric::new(500, 50, 100).unwrap();
 /// assert_eq!(n.mean().unwrap(), 10.);
-/// assert!(prec::almost_eq(n.pmf(10), 0.14736784, 1e-8));
-/// assert!(prec::almost_eq(n.pmf(25), 3.537e-7, 1e-10));
+/// assert_relative_eq!(n.pmf(10), 0.14736784, epsilon=1e-8);
+/// assert_relative_eq!(n.pmf(25), 3.537e-7, epsilon=1e-10);
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Hypergeometric {
@@ -292,42 +292,48 @@ impl Max<u64> for Hypergeometric {
     }
 }
 
-impl Distribution<f64> for Hypergeometric {
-    /// Returns the mean of the hypergeometric distribution
-    ///
-    /// # None
-    ///
-    /// If `N` is `0`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// K * n / N
-    /// ```
-    ///
-    /// where `N` is population, `K` is successes, and `n` is draws
-    fn mean(&self) -> Option<f64> {
+/// Returns the mean of the hypergeometric distribution
+///
+/// # None
+///
+/// If `N` is `0`
+///
+/// # Formula
+///
+/// ```text
+/// K * n / N
+/// ```
+///
+/// where `N` is population, `K` is successes, and `n` is draws
+
+impl Mean for Hypergeometric {
+    type Mu = Option<f64>;
+    fn mean(&self) -> Self::Mu {
         if self.population == 0 {
             None
         } else {
             Some(self.successes as f64 * self.draws as f64 / self.population as f64)
         }
     }
+}
 
-    /// Returns the variance of the hypergeometric distribution
-    ///
-    /// # None
-    ///
-    /// If `N <= 1`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// n * (K / N) * ((N - K) / N) * ((N - n) / (N - 1))
-    /// ```
-    ///
-    /// where `N` is population, `K` is successes, and `n` is draws
-    fn variance(&self) -> Option<f64> {
+/// Returns the variance of the hypergeometric distribution
+///
+/// # None
+///
+/// If `N <= 1`
+///
+/// # Formula
+///
+/// ```text
+/// n * (K / N) * ((N - K) / N) * ((N - n) / (N - 1))
+/// ```
+///
+/// where `N` is population, `K` is successes, and `n` is draws
+
+impl Variance for Hypergeometric {
+    type Var = Option<f64>;
+    fn variance(&self) -> Self::Var {
         if self.population <= 1 {
             None
         } else {
@@ -337,22 +343,26 @@ impl Distribution<f64> for Hypergeometric {
             Some(val)
         }
     }
+}
 
-    /// Returns the skewness of the hypergeometric distribution
-    ///
-    /// # None
-    ///
-    /// If `N <= 2`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// ((N - 2K) * (N - 1)^(1 / 2) * (N - 2n)) / ([n * K * (N - K) * (N -
-    /// n)]^(1 / 2) * (N - 2))
-    /// ```
-    ///
-    /// where `N` is population, `K` is successes, and `n` is draws
-    fn skewness(&self) -> Option<f64> {
+/// Returns the skewness of the hypergeometric distribution
+///
+/// # None
+///
+/// If `N <= 2`
+///
+/// # Formula
+///
+/// ```text
+/// ((N - 2K) * (N - 1)^(1 / 2) * (N - 2n)) / ([n * K * (N - K) * (N -
+/// n)]^(1 / 2) * (N - 2))
+/// ```
+///
+/// where `N` is population, `K` is successes, and `n` is draws
+
+impl Skewness for Hypergeometric {
+    type Skew = Option<f64>;
+    fn skewness(&self) -> Self::Skew {
         if self.population <= 2 {
             None
         } else {
@@ -364,6 +374,41 @@ impl Distribution<f64> for Hypergeometric {
                     * (population - 2.0));
             Some(val)
         }
+    }
+}
+
+/// Returns the excess kurtosis of the hypergeometric distribution
+///
+/// # Formula
+/// if N >= 3
+/// ```text
+/// $$
+/// \frac{1}{n K (N - K)(N-n)(N-2)(N-3)}\left[N^2(N-1)\left(N(N+1) - 6K(N-K) - 6n(N-n)\right) + 6 n K (N-K)(N-n)(5N-6)\right]
+/// $$
+/// ```
+/// `None` otherwise
+
+impl ExcessKurtosis for Hypergeometric {
+    type Kurt = Option<f64>;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        if self.population < 3 {
+            return None;
+        }
+        let pop = self.population as f64;
+        let succ = self.successes as f64;
+        let n = self.draws as f64;
+
+        let pop_sqr = (self.population * self.population) as f64;
+        let pop_m2 = (self.population - 2) as f64;
+        let pop_m3 = (self.population - 3) as f64;
+        let pop_mn = (self.population - self.draws) as f64;
+        let pop_msucc = (self.population - self.successes) as f64;
+
+        let kurt_a_inv = n * succ * pop_msucc * pop_mn * pop_m2 * pop_m3;
+        let kurt_b =
+            pop * (pop_sqr - pop) * (pop_sqr + pop - 6. * succ * pop_msucc - 6. * n * pop_mn)
+                + 6. * n * succ * pop_msucc * pop_mn * (5. * pop - 6.);
+        Some(kurt_b / kurt_a_inv)
     }
 }
 

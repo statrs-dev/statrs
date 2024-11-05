@@ -25,13 +25,13 @@ use std::f64;
 ///
 /// ```
 /// use statrs::distribution::{NegativeBinomial, Discrete};
-/// use statrs::statistics::DiscreteDistribution;
-/// use statrs::prec::almost_eq;
+/// use statrs::statistics::*;
+/// use approx::assert_relative_eq;
 ///
 /// let r = NegativeBinomial::new(4.0, 0.5).unwrap();
-/// assert_eq!(r.mean().unwrap(), 4.0);
-/// assert!(almost_eq(r.pmf(0), 0.0625, 1e-8));
-/// assert!(almost_eq(r.pmf(3), 0.15625, 1e-8));
+/// assert_eq!(r.mean(), 4.0);
+/// assert_relative_eq!(r.pmf(0), 0.0625, epsilon=1e-8);
+/// assert_relative_eq!(r.pmf(3), 0.15625, epsilon=1e-8);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct NegativeBinomial {
@@ -212,38 +212,65 @@ impl Max<u64> for NegativeBinomial {
     }
 }
 
-impl DiscreteDistribution<f64> for NegativeBinomial {
-    /// Returns the mean of the negative binomial distribution.
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// r * (1-p) / p
-    /// ```
-    fn mean(&self) -> Option<f64> {
-        Some(self.r * (1.0 - self.p) / self.p)
-    }
+/// Returns the mean of the negative binomial distribution.
+///
+/// # Formula
+///
+/// ```text
+/// r * (1-p) / p
+/// ```
 
-    /// Returns the variance of the negative binomial distribution.
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// r * (1-p) / p^2
-    /// ```
-    fn variance(&self) -> Option<f64> {
-        Some(self.r * (1.0 - self.p) / (self.p * self.p))
+impl Mean for NegativeBinomial {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        self.r * (1.0 - self.p) / self.p
     }
+}
 
-    /// Returns the skewness of the negative binomial distribution.
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (2-p) / sqrt(r * (1-p))
-    /// ```
-    fn skewness(&self) -> Option<f64> {
-        Some((2.0 - self.p) / f64::sqrt(self.r * (1.0 - self.p)))
+/// Returns the variance of the negative binomial distribution.
+///
+/// # Formula
+///
+/// ```text
+/// r * (1-p) / p^2
+/// ```
+
+impl Variance for NegativeBinomial {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
+        // use logarithm as p on (0,1) as a way to multiply without relying on subtraction in 1-p
+        let ln_var = self.r.ln() + (-self.p).ln_1p() - 2. * self.p.ln();
+        ln_var.exp()
+    }
+}
+
+/// Returns the skewness of the negative binomial distribution.
+///
+/// # Formula
+///
+/// ```text
+/// (2-p) / sqrt(r * (1-p))
+/// ```
+
+impl Skewness for NegativeBinomial {
+    type Skew = f64;
+    fn skewness(&self) -> Self::Skew {
+        (2.0 - self.p) / f64::sqrt(self.r * (1.0 - self.p))
+    }
+}
+
+/// Returns the skewness of the negative binomial distribution.
+///
+/// # Formula
+///
+/// ```text
+/// 6/r + p^2 / (r * (1-p))
+/// ```
+
+impl ExcessKurtosis for NegativeBinomial {
+    type Kurt = f64;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        6. / self.r + self.variance().recip()
     }
 }
 
@@ -343,7 +370,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |x: NegativeBinomial| x.mean().unwrap();
+        let mean = |x: NegativeBinomial| x.mean();
         test_exact(4.0, 0.0, f64::INFINITY, mean);
         test_absolute(3.0, 0.3, 7.0, 1e-15 , mean);
         test_exact(2.0, 1.0, 0.0, mean);
@@ -351,7 +378,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: NegativeBinomial| x.variance().unwrap();
+        let variance = |x: NegativeBinomial| x.variance();
         test_exact(4.0, 0.0, f64::INFINITY, variance);
         test_absolute(3.0, 0.3, 23.333333333333, 1e-12, variance);
         test_exact(2.0, 1.0, 0.0, variance);
@@ -359,7 +386,7 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let skewness = |x: NegativeBinomial| x.skewness().unwrap();
+        let skewness = |x: NegativeBinomial| x.skewness();
         test_exact(0.0, 0.0, f64::INFINITY, skewness);
         test_absolute(0.1, 0.3, 6.425396041, 1e-09, skewness);
         test_exact(1.0, 1.0, f64::INFINITY, skewness);

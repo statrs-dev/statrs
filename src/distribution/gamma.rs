@@ -9,13 +9,14 @@ use crate::statistics::*;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Gamma, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{Gamma, Continuous, GammaError};
+/// use statrs::statistics::*;
 /// use statrs::prec;
 ///
-/// let n = Gamma::new(3.0, 1.0).unwrap();
-/// assert_eq!(n.mean().unwrap(), 3.0);
+/// let n = Gamma::new(3.0, 1.0)?;
+/// assert_eq!(n.mean(), 3.0);
 /// assert!(prec::almost_eq(n.pdf(2.0), 0.270670566473225383788, 1e-15));
+/// # Ok::<(), GammaError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Gamma {
@@ -91,10 +92,11 @@ impl Gamma {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Gamma;
+    /// use statrs::distribution::{Gamma, GammaError};
     ///
-    /// let n = Gamma::new(3.0, 1.0).unwrap();
+    /// let n = Gamma::new(3.0, 1.0)?;
     /// assert_eq!(n.shape(), 3.0);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn shape(&self) -> f64 {
         self.shape
@@ -105,10 +107,11 @@ impl Gamma {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Gamma;
+    /// use statrs::distribution::{Gamma, GammaError};
     ///
     /// let n = Gamma::new(3.0, 1.0).unwrap();
     /// assert_eq!(n.rate(), 1.0);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn rate(&self) -> f64 {
         self.rate
@@ -256,33 +259,63 @@ impl Max<f64> for Gamma {
     }
 }
 
-impl Distribution<f64> for Gamma {
-    /// Returns the mean of the gamma distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// α / β
-    /// ```
-    ///
-    /// where `α` is the shape and `β` is the rate
-    fn mean(&self) -> Option<f64> {
-        Some(self.shape / self.rate)
+/// Returns the mean of the gamma distribution
+///
+/// # Formula
+///
+/// ```text
+/// α / β
+/// ```
+///
+/// where `α` is the shape and `β` is the rate
+impl Mean for Gamma {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        self.shape / self.rate
     }
+}
 
-    /// Returns the variance of the gamma distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// α / β^2
-    /// ```
-    ///
-    /// where `α` is the shape and `β` is the rate
-    fn variance(&self) -> Option<f64> {
-        Some(self.shape / (self.rate * self.rate))
+/// Returns the variance of the gamma distribution
+///
+/// # Formula
+///
+/// ```text
+/// α / β^2
+/// ```
+///
+/// where `α` is the shape and `β` is the rate
+impl Variance for Gamma {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
+        self.shape / (self.rate * self.rate)
     }
+}
 
+/// Returns the skewness of the gamma distribution
+///
+/// # Formula
+///
+/// ```text
+/// 2 / sqrt(α)
+/// ```
+///
+/// where `α` is the shape
+impl Skewness for Gamma {
+    type Skew = f64;
+    fn skewness(&self) -> Self::Skew {
+        2.0 / self.shape.sqrt()
+    }
+}
+
+/// docs
+impl ExcessKurtosis for Gamma {
+    type Kurt = ();
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        unimplemented!()
+    }
+}
+
+impl Entropy<f64> for Gamma {
     /// Returns the entropy of the gamma distribution
     ///
     /// # Formula
@@ -293,24 +326,10 @@ impl Distribution<f64> for Gamma {
     ///
     /// where `α` is the shape, `β` is the rate, `Γ` is the gamma function,
     /// and `ψ` is the digamma function
-    fn entropy(&self) -> Option<f64> {
-        let entr = self.shape - self.rate.ln()
+    fn entropy(&self) -> f64 {
+        self.shape - self.rate.ln()
             + gamma::ln_gamma(self.shape)
-            + (1.0 - self.shape) * gamma::digamma(self.shape);
-        Some(entr)
-    }
-
-    /// Returns the skewness of the gamma distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 2 / sqrt(α)
-    /// ```
-    ///
-    /// where `α` is the shape
-    fn skewness(&self) -> Option<f64> {
-        Some(2.0 / self.shape.sqrt())
+            + (1.0 - self.shape) * gamma::digamma(self.shape)
     }
 }
 
@@ -478,7 +497,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let f = |x: Gamma| x.mean().unwrap();
+        let f = |x: Gamma| x.mean();
         let test = [
             ((1.0, 0.1), 10.0),
             ((1.0, 1.0), 1.0),
@@ -493,7 +512,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let f = |x: Gamma| x.variance().unwrap();
+        let f = |x: Gamma| x.variance();
         let test = [
             ((1.0, 0.1), 100.0),
             ((1.0, 1.0), 1.0),
@@ -508,7 +527,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let f = |x: Gamma| x.entropy().unwrap();
+        let f = |x: Gamma| x.entropy();
         let test = [
             ((1.0, 0.1), 3.302585092994045628506840223),
             ((1.0, 1.0), 1.0),
@@ -523,7 +542,7 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let f = |x: Gamma| x.skewness().unwrap();
+        let f = |x: Gamma| x.skewness();
         let test = [
             ((1.0, 0.1), 2.0),
             ((1.0, 1.0), 2.0),

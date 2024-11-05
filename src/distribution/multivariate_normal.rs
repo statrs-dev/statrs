@@ -1,5 +1,5 @@
 use crate::distribution::Continuous;
-use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
+use crate::statistics::*;
 use nalgebra::{Cholesky, Const, DMatrix, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
 use std::f64;
 use std::f64::consts::{E, PI};
@@ -78,11 +78,11 @@ where
 /// ```
 /// use statrs::distribution::{MultivariateNormal, Continuous};
 /// use nalgebra::{matrix, vector};
-/// use statrs::statistics::{MeanN, VarianceN};
+/// use statrs::statistics::*;
 ///
 /// let mvn = MultivariateNormal::new_from_nalgebra(vector![0., 0.], matrix![1., 0.; 0., 1.]).unwrap();
-/// assert_eq!(mvn.mean().unwrap(), vector![0., 0.]);
-/// assert_eq!(mvn.variance().unwrap(), matrix![1., 0.; 0., 1.]);
+/// assert_eq!(mvn.mean(), vector![0., 0.]);
+/// assert_eq!(mvn.variance(), matrix![1., 0.; 0., 1.]);
 /// assert_eq!(mvn.pdf(&vector![1.,  1.]), 0.05854983152431917);
 /// ```
 #[derive(Clone, PartialEq, Debug)]
@@ -216,14 +216,11 @@ where
     ///
     /// where `Σ` is the covariance matrix and `det` is the determinant
     pub fn entropy(&self) -> Option<f64> {
-        Some(
-            0.5 * self
-                .variance()
-                .unwrap()
-                .scale(2. * PI * E)
-                .determinant()
-                .ln(),
-        )
+        Some(0.5 * self.variance().scale(2. * PI * E).determinant().ln())
+    }
+
+    pub fn cov(&self) -> &OMatrix<f64, D, D> {
+        &self.cov
     }
 }
 
@@ -264,6 +261,30 @@ where
     }
 }
 
+impl<D> Mean for MultivariateNormal<D>
+where
+    D: DimMin<D>,
+    nalgebra::DefaultAllocator:
+        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+{
+    type Mu = OVector<f64, D>;
+    fn mean(&self) -> Self::Mu {
+        self.mu.clone()
+    }
+}
+
+impl<D> Variance for MultivariateNormal<D>
+where
+    D: DimMin<D>,
+    nalgebra::DefaultAllocator:
+        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+{
+    type Var = OMatrix<f64, D, D>;
+    fn variance(&self) -> Self::Var {
+        self.cov.clone()
+    }
+}
+
 impl<D> Min<OVector<f64, D>> for MultivariateNormal<D>
 where
     D: Dim,
@@ -287,34 +308,6 @@ where
     /// multivariate normal distribution represented by a real vector
     fn max(&self) -> OVector<f64, D> {
         OMatrix::repeat_generic(self.mu.shape_generic().0, Const::<1>, f64::INFINITY)
-    }
-}
-
-impl<D> MeanN<OVector<f64, D>> for MultivariateNormal<D>
-where
-    D: Dim,
-    nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
-{
-    /// Returns the mean of the normal distribution
-    ///
-    /// # Remarks
-    ///
-    /// This is the same mean used to construct the distribution
-    fn mean(&self) -> Option<OVector<f64, D>> {
-        Some(self.mu.clone())
-    }
-}
-
-impl<D> VarianceN<OMatrix<f64, D, D>> for MultivariateNormal<D>
-where
-    D: Dim,
-    nalgebra::DefaultAllocator:
-        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
-{
-    /// Returns the covariance matrix of the multivariate normal distribution
-    fn variance(&self) -> Option<OMatrix<f64, D, D>> {
-        Some(self.cov.clone())
     }
 }
 
@@ -379,7 +372,7 @@ mod tests  {
 
     use crate::{
         distribution::{Continuous, MultivariateNormal},
-        statistics::{Max, MeanN, Min, Mode, VarianceN},
+        statistics::*,
     };
 
     use super::MultivariateNormalError;
@@ -404,8 +397,8 @@ mod tests  {
             + nalgebra::allocator::Allocator<(usize, usize), D>,
     {
         let mvn = try_create(mean.clone(), covariance.clone());
-        assert_eq!(mean, mvn.mean().unwrap());
-        assert_eq!(covariance, mvn.variance().unwrap());
+        assert_eq!(mean, mvn.mean());
+        assert_eq!(covariance, mvn.variance());
     }
 
     fn bad_create_case<D>(mean: OVector<f64, D>, covariance: OMatrix<f64, D, D>)
@@ -477,7 +470,7 @@ mod tests  {
 
     #[test]
     fn test_variance() {
-        let variance = |x: MultivariateNormal<_>| x.variance().unwrap();
+        let variance = |x: MultivariateNormal<_>| x.variance();
         test_case(
             vector![0., 0.],
             matrix![1., 0.; 0., 1.],

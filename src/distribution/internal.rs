@@ -335,7 +335,7 @@ pub mod test {
         #[test]
         #[should_panic]
         fn test_is_nan_failure() {
-            test_is_nan(0.8, 1.2, |dist| dist.mean().unwrap());
+            test_is_nan(0.8, 1.2, |dist| dist.mean());
         }
 
         #[test]
@@ -346,7 +346,7 @@ pub mod test {
         #[test]
         #[should_panic]
         fn test_is_none_failure() {
-            test_none(0.8, 1.2, |dist| dist.mean());
+            test_none(0.8, 1.2, |dist| Some(dist.mean()));
         }
     }
 

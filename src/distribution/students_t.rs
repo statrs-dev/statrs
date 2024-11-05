@@ -10,12 +10,12 @@ use std::f64;
 ///
 /// ```
 /// use statrs::distribution::{StudentsT, Continuous};
-/// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use statrs::statistics::*;
+/// use approx::assert_relative_eq;
 ///
 /// let n = StudentsT::new(0.0, 1.0, 2.0).unwrap();
-/// assert_eq!(n.mean().unwrap(), 0.0);
-/// assert!(prec::almost_eq(n.pdf(0.0), 0.353553390593274, 1e-15));
+/// assert_eq!(n.mean(), Some(0.0));
+/// assert_relative_eq!(n.pdf(0.0), 0.353553390593274, epsilon=1e-14);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct StudentsT {
@@ -271,48 +271,54 @@ impl Max<f64> for StudentsT {
     }
 }
 
-impl Distribution<f64> for StudentsT {
-    /// Returns the mean of the student's t-distribution
-    ///
-    /// # None
-    ///
-    /// If `freedom <= 1.0`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// μ
-    /// ```
-    ///
-    /// where `μ` is the location
-    fn mean(&self) -> Option<f64> {
+/// Returns the mean of the student's t-distribution
+///
+/// # None
+///
+/// If `freedom <= 1.0`
+///
+/// # Formula
+///
+/// ```text
+/// μ
+/// ```
+///
+/// where `μ` is the location
+
+impl Mean for StudentsT {
+    type Mu = Option<f64>;
+    fn mean(&self) -> Self::Mu {
         if self.freedom <= 1.0 {
             None
         } else {
             Some(self.location)
         }
     }
+}
 
-    /// Returns the variance of the student's t-distribution
-    ///
-    /// # None
-    ///
-    /// If `freedom <= 2.0`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// if v == f64::INFINITY {
-    ///     Some(σ^2)
-    /// } else if freedom > 2.0 {
-    ///     Some(v * σ^2 / (v - 2))
-    /// } else {
-    ///     None
-    /// }
-    /// ```
-    ///
-    /// where `σ` is the scale and `v` is the freedom
-    fn variance(&self) -> Option<f64> {
+/// Returns the variance of the student's t-distribution
+///
+/// # None
+///
+/// If `freedom <= 2.0`
+///
+/// # Formula
+///
+/// ```text
+/// if v == f64::INFINITY {
+///     Some(σ^2)
+/// } else if freedom > 2.0 {
+///     Some(v * σ^2 / (v - 2))
+/// } else {
+///     None
+/// }
+/// ```
+///
+/// where `σ` is the scale and `v` is the freedom
+
+impl Variance for StudentsT {
+    type Var = Option<f64>;
+    fn variance(&self) -> Self::Var {
         if self.freedom.is_infinite() {
             Some(self.scale * self.scale)
         } else if self.freedom > 2.0 {
@@ -321,7 +327,48 @@ impl Distribution<f64> for StudentsT {
             None
         }
     }
+}
 
+/// Returns the skewness of the student's t-distribution
+///
+/// # None
+///
+/// If `x <= 3.0`
+///
+/// # Formula
+///
+/// ```text
+/// 0
+/// ```
+
+impl Skewness for StudentsT {
+    type Skew = Option<f64>;
+    fn skewness(&self) -> Self::Skew {
+        if self.freedom <= 3.0 {
+            None
+        } else {
+            Some(0.0)
+        }
+    }
+}
+
+/// docs
+/// moar docs
+
+impl ExcessKurtosis for StudentsT {
+    type Kurt = Option<f64>;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        if self.freedom <= 2.0 {
+            None
+        } else if self.freedom <= 4.0 {
+            Some(f64::INFINITY)
+        } else {
+            Some(6.0 / (self.freedom - 4.0))
+        }
+    }
+}
+
+impl Entropy<f64> for StudentsT {
     /// Returns the entropy for the student's t-distribution
     ///
     /// # Formula
@@ -333,7 +380,7 @@ impl Distribution<f64> for StudentsT {
     ///
     /// where `σ` is the scale, `v` is the freedom, `ψ` is the digamma function, and `B` is the
     /// beta function
-    fn entropy(&self) -> Option<f64> {
+    fn entropy(&self) -> f64 {
         // generalised Student's T is related to normal Student's T by `Y = μ + σ X`
         // where `X` is distributed as Student's T, plugging into the definition
         // of entropy shows scaling affects the entropy by an additive constant `- ln σ`
@@ -341,26 +388,7 @@ impl Distribution<f64> for StudentsT {
         let result = (self.freedom + 1.0) / 2.0
             * (gamma::digamma((self.freedom + 1.0) / 2.0) - gamma::digamma(self.freedom / 2.0))
             + (self.freedom.sqrt() * beta::beta(self.freedom / 2.0, 0.5)).ln();
-        Some(result + shift)
-    }
-
-    /// Returns the skewness of the student's t-distribution
-    ///
-    /// # None
-    ///
-    /// If `x <= 3.0`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 0
-    /// ```
-    fn skewness(&self) -> Option<f64> {
-        if self.freedom <= 3.0 {
-            None
-        } else {
-            Some(0.0)
-        }
+        result + shift
     }
 }
 

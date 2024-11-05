@@ -11,13 +11,14 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{ChiSquared, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{ChiSquared, Continuous, GammaError};
+/// use statrs::statistics::*;
 /// use statrs::prec;
 ///
-/// let n = ChiSquared::new(3.0).unwrap();
-/// assert_eq!(n.mean().unwrap(), 3.0);
+/// let n = ChiSquared::new(3.0)?;
+/// assert_eq!(n.mean(), 3.0);
 /// assert!(prec::almost_eq(n.pdf(4.0), 0.107981933026376103901, 1e-15));
+/// # Ok::<(), GammaError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct ChiSquared {
@@ -56,10 +57,11 @@ impl ChiSquared {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::ChiSquared;
+    /// use statrs::distribution::{ChiSquared, GammaError};
     ///
-    /// let n = ChiSquared::new(3.0).unwrap();
+    /// let n = ChiSquared::new(3.0)?;
     /// assert_eq!(n.freedom(), 3.0);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn freedom(&self) -> f64 {
         self.freedom
@@ -70,10 +72,11 @@ impl ChiSquared {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::ChiSquared;
+    /// use statrs::distribution::{ChiSquared, GammaError};
     ///
-    /// let n = ChiSquared::new(3.0).unwrap();
+    /// let n = ChiSquared::new(3.0)?;
     /// assert_eq!(n.shape(), 3.0 / 2.0);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn shape(&self) -> f64 {
         self.g.shape()
@@ -84,10 +87,11 @@ impl ChiSquared {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::ChiSquared;
+    /// use statrs::distribution::{ChiSquared, GammaError};
     ///
-    /// let n = ChiSquared::new(3.0).unwrap();
+    /// let n = ChiSquared::new(3.0)?;
     /// assert_eq!(n.rate(), 0.5);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn rate(&self) -> f64 {
         self.g.rate()
@@ -185,33 +189,62 @@ impl Max<f64> for ChiSquared {
     }
 }
 
-impl Distribution<f64> for ChiSquared {
-    /// Returns the mean of the chi-squared distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// k
-    /// ```
-    ///
-    /// where `k` is the degrees of freedom
-    fn mean(&self) -> Option<f64> {
+/// Returns the mean of the chi-squared distribution
+///
+/// # Formula
+///
+/// ```text
+/// k
+/// ```
+///
+/// where `k` is the degrees of freedom
+impl Mean for ChiSquared {
+    type Mu = <super::Gamma as Mean>::Mu;
+    fn mean(&self) -> Self::Mu {
         self.g.mean()
     }
+}
 
-    /// Returns the variance of the chi-squared distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 2k
-    /// ```
-    ///
-    /// where `k` is the degrees of freedom
-    fn variance(&self) -> Option<f64> {
+/// Returns the variance of the chi-squared distribution
+///
+/// # Formula
+///
+/// ```text
+/// 2k
+/// ```
+///
+/// where `k` is the degrees of freedom
+impl Variance for ChiSquared {
+    type Var = <super::Gamma as Variance>::Var;
+    fn variance(&self) -> Self::Var {
         self.g.variance()
     }
+}
 
+/// Returns the skewness of the chi-squared distribution
+///
+/// # Formula
+///
+/// ```text
+/// sqrt(8 / k)
+/// ```
+///
+/// where `k` is the degrees of freedom
+impl Skewness for ChiSquared {
+    type Skew = <super::Gamma as Skewness>::Skew;
+    fn skewness(&self) -> Self::Skew {
+        self.g.skewness()
+    }
+}
+
+impl ExcessKurtosis for ChiSquared {
+    type Kurt = <super::Gamma as ExcessKurtosis>::Kurt;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        self.g.excess_kurtosis()
+    }
+}
+
+impl Entropy<f64> for ChiSquared {
     /// Returns the entropy of the chi-squared distribution
     ///
     /// # Formula
@@ -222,21 +255,8 @@ impl Distribution<f64> for ChiSquared {
     ///
     /// where `k` is the degrees of freedom, `Γ` is the gamma function,
     /// and `ψ` is the digamma function
-    fn entropy(&self) -> Option<f64> {
+    fn entropy(&self) -> f64 {
         self.g.entropy()
-    }
-
-    /// Returns the skewness of the chi-squared distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// sqrt(8 / k)
-    /// ```
-    ///
-    /// where `k` is the degrees of freedom
-    fn skewness(&self) -> Option<f64> {
-        self.g.skewness()
     }
 }
 

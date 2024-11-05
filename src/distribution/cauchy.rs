@@ -8,12 +8,13 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Cauchy, Continuous};
-/// use statrs::statistics::Mode;
+/// use statrs::distribution::{Cauchy, Continuous, CauchyError};
+/// use statrs::statistics::*;
 ///
-/// let n = Cauchy::new(0.0, 1.0).unwrap();
+/// let n = Cauchy::new(0.0, 1.0)?;
 /// assert_eq!(n.mode().unwrap(), 0.0);
 /// assert_eq!(n.pdf(1.0), 0.1591549430918953357689);
+/// # Ok::<(), CauchyError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Cauchy {
@@ -80,10 +81,11 @@ impl Cauchy {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Cauchy;
+    /// use statrs::distribution::{Cauchy, CauchyError};
     ///
-    /// let n = Cauchy::new(0.0, 1.0).unwrap();
+    /// let n = Cauchy::new(0.0, 1.0)?;
     /// assert_eq!(n.location(), 0.0);
+    /// # Ok::<(), CauchyError>(())
     /// ```
     pub fn location(&self) -> f64 {
         self.location
@@ -94,10 +96,11 @@ impl Cauchy {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Cauchy;
+    /// use statrs::distribution::{Cauchy, CauchyError};
     ///
-    /// let n = Cauchy::new(0.0, 1.0).unwrap();
+    /// let n = Cauchy::new(0.0, 1.0)?;
     /// assert_eq!(n.scale(), 1.0);
+    /// # Ok::<(), CauchyError>(())
     /// ```
     pub fn scale(&self) -> f64 {
         self.scale
@@ -196,7 +199,13 @@ impl Max<f64> for Cauchy {
     }
 }
 
-impl Distribution<f64> for Cauchy {
+/// This is implemented so that there are docs stating that Cauchy does not have the convergence for a mean.
+impl Mean for Cauchy {
+    type Mu = ();
+    fn mean(&self) -> Self::Mu {}
+}
+
+impl Entropy<f64> for Cauchy {
     /// Returns the entropy of the cauchy distribution
     ///
     /// # Formula
@@ -206,8 +215,8 @@ impl Distribution<f64> for Cauchy {
     /// ```
     ///
     /// where `γ` is the scale
-    fn entropy(&self) -> Option<f64> {
-        Some((4.0 * f64::consts::PI * self.scale).ln())
+    fn entropy(&self) -> f64 {
+        (4.0 * f64::consts::PI * self.scale).ln()
     }
 }
 
@@ -311,7 +320,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: Cauchy| x.entropy().unwrap();
+        let entropy = |x: Cauchy| x.entropy();
         test_exact(0.0, 2.0, 3.224171427529236102395, entropy);
         test_exact(0.1, 4.0, 3.917318608089181411812, entropy);
         test_exact(1.0, 10.0, 4.833609339963336476996, entropy);

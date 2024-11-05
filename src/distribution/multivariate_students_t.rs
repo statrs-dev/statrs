@@ -1,6 +1,6 @@
 use crate::distribution::Continuous;
 use crate::function::gamma;
-use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
+use crate::statistics::*;
 use nalgebra::{Cholesky, Const, DMatrix, Dim, DimMin, Dyn, OMatrix, OVector};
 use std::f64::consts::PI;
 
@@ -14,11 +14,11 @@ use std::f64::consts::PI;
 /// ```
 /// use statrs::distribution::{MultivariateStudent, Continuous};
 /// use nalgebra::{DVector, DMatrix};
-/// use statrs::statistics::{MeanN, VarianceN};
+/// use statrs::statistics::*;
 ///
 /// let mvs = MultivariateStudent::new(vec![0., 0.], vec![1., 0., 0., 1.], 4.).unwrap();
-/// assert_eq!(mvs.mean().unwrap(), DVector::from_vec(vec![0., 0.]));
-/// assert_eq!(mvs.variance().unwrap(), DMatrix::from_vec(2, 2, vec![2., 0., 0., 2.]));
+/// assert_eq!(mvs.mean(), Some(DVector::from_vec(vec![0., 0.])));
+/// assert_eq!(mvs.variance(), Some(DMatrix::from_vec(2, 2, vec![2., 0., 0., 2.])));
 /// assert_eq!(mvs.pdf(&DVector::from_vec(vec![1.,  1.])), 0.04715702017537655);
 /// ```
 #[derive(Debug, Clone, PartialEq)]
@@ -259,19 +259,14 @@ where
     }
 }
 
-impl<D> MeanN<OVector<f64, D>> for MultivariateStudent<D>
+impl<D> Mean for MultivariateStudent<D>
 where
-    D: Dim,
+    D: DimMin<D>,
     nalgebra::DefaultAllocator:
         nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
 {
-    /// Returns the mean of the student distribution.
-    ///
-    /// # Remarks
-    ///
-    /// This is the same mean used to construct the distribution if
-    /// the degrees of freedom is larger than 1.
-    fn mean(&self) -> Option<OVector<f64, D>> {
+    type Mu = Option<OVector<f64, D>>;
+    fn mean(&self) -> Self::Mu {
         if self.freedom > 1. {
             Some(self.location.clone())
         } else {
@@ -280,23 +275,14 @@ where
     }
 }
 
-impl<D> VarianceN<OMatrix<f64, D, D>> for MultivariateStudent<D>
+impl<D> Variance for MultivariateStudent<D>
 where
-    D: Dim,
+    D: DimMin<D>,
     nalgebra::DefaultAllocator:
         nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
 {
-    /// Returns the covariance matrix of the multivariate student distribution.
-    ///
-    /// # Formula
-    ///
-    /// ```math
-    /// Σ ⋅ ν / (ν - 2)
-    /// ```
-    ///
-    /// where `Σ` is the scale matrix and `ν` is the degrees of freedom.
-    /// Only defined if freedom is larger than 2.
-    fn variance(&self) -> Option<OMatrix<f64, D, D>> {
+    type Var = Option<OMatrix<f64, D, D>>;
+    fn variance(&self) -> Self::Var {
         if self.freedom > 2. {
             Some(self.scale.clone() * self.freedom / (self.freedom - 2.))
         } else {
@@ -399,7 +385,7 @@ mod tests  {
 
     use crate::{
         distribution::{Continuous, MultivariateStudent, MultivariateNormal},
-        statistics::{Max, MeanN, Min, Mode, VarianceN},
+        statistics::*,
     };
 
     use super::MultivariateStudentError;
