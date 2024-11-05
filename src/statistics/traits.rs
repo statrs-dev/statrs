@@ -230,3 +230,51 @@ pub trait Mode<T> {
     /// ```
     fn mode(&self) -> T;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn covariance_scalar() {
+        let x = 4.0_f64;
+        assert_eq!(x.colorize(1.0), 2.0);
+        assert_eq!(x.whiten(2.0), 1.0);
+        assert_eq!(x.determinant(), 4.0);
+    }
+
+    #[cfg(feature = "nalgebra")]
+    #[test]
+    fn covariance_vector() {
+        use approx::assert_relative_eq;
+        use nalgebra::{vector, OMatrix};
+        let v = vector![1.0_f64, 4.0, 9.0];
+        assert_relative_eq!(v.dense(), OMatrix::from_diagonal(&v));
+        assert_relative_eq!(v.colorize(vector![1.0, 1.0, 1.0]), vector![1.0, 2.0, 3.0]);
+        assert_relative_eq!(v.whiten(vector![1.0, 2.0, 3.0]), vector![1.0, 1.0, 1.0]);
+    }
+
+    #[cfg(feature = "nalgebra")]
+    #[test]
+    fn covariance_matrix() {
+        use approx::assert_relative_eq;
+        use nalgebra::{matrix, vector, Cholesky};
+        let m = matrix![5.0_f64, 8.0; 8.0, 13.0];
+        let c = Cholesky::new(m).unwrap();
+        assert_relative_eq!(c.dense(), m);
+
+        for v in [vector![1.0, 0.0], vector![0.0, 1.0], vector![1.0, 1.0]] {
+            assert_relative_eq!(
+                c.colorize(v).norm_squared(),
+                (v.transpose() * m * v)[(0, 0)]
+            );
+        }
+
+        for v in [vector![1.0, 0.0], vector![0.0, 1.0], vector![1.0, 1.0]] {
+            assert_relative_eq!(
+                c.whiten(v).norm_squared(),
+                (v.transpose() * (m.solve_lower_triangular_unchecked(&v)))[(0, 0)]
+            );
+        }
+    }
+}
