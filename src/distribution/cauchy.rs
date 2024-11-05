@@ -8,12 +8,13 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Cauchy, Continuous};
-/// use statrs::statistics::Mode;
+/// use statrs::distribution::{Cauchy, Continuous, CauchyError};
+/// use statrs::statistics::*;
 ///
-/// let n = Cauchy::new(0.0, 1.0).unwrap();
+/// let n = Cauchy::new(0.0, 1.0)?;
 /// assert_eq!(n.mode().unwrap(), 0.0);
 /// assert_eq!(n.pdf(1.0), 0.1591549430918953357689);
+/// # Ok::<(), CauchyError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Cauchy {
@@ -80,10 +81,11 @@ impl Cauchy {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Cauchy;
+    /// use statrs::distribution::{Cauchy, CauchyError};
     ///
-    /// let n = Cauchy::new(0.0, 1.0).unwrap();
+    /// let n = Cauchy::new(0.0, 1.0)?;
     /// assert_eq!(n.location(), 0.0);
+    /// # Ok::<(), CauchyError>(())
     /// ```
     pub fn location(&self) -> f64 {
         self.location
@@ -94,10 +96,11 @@ impl Cauchy {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Cauchy;
+    /// use statrs::distribution::{Cauchy, CauchyError};
     ///
-    /// let n = Cauchy::new(0.0, 1.0).unwrap();
+    /// let n = Cauchy::new(0.0, 1.0)?;
     /// assert_eq!(n.scale(), 1.0);
+    /// # Ok::<(), CauchyError>(())
     /// ```
     pub fn scale(&self) -> f64 {
         self.scale

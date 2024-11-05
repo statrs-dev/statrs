@@ -10,13 +10,14 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Categorical, Discrete};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{Categorical, CategoricalError, Discrete};
+/// use statrs::statistics::*;
 /// use statrs::prec;
 ///
-/// let n = Categorical::new(&[0.0, 1.0, 2.0]).unwrap();
-/// assert!(prec::almost_eq(n.mean().unwrap(), 5.0 / 3.0, 1e-15));
+/// let n = Categorical::new(&[0.0, 1.0, 2.0])?;
+/// assert!(prec::almost_eq(n.mean(), 5.0 / 3.0, 1e-15));
 /// assert_eq!(n.pmf(1), 1.0 / 3.0);
+/// # Ok::<(), CategoricalError>(())
 /// ```
 #[derive(Clone, PartialEq, Debug)]
 pub struct Categorical {

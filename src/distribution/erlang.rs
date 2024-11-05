@@ -10,13 +10,14 @@ use crate::statistics::*;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Erlang, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{Erlang, Continuous, GammaError};
+/// use statrs::statistics::*;
 /// use statrs::prec;
 ///
-/// let n = Erlang::new(3, 1.0).unwrap();
-/// assert_eq!(n.mean().unwrap(), 3.0);
+/// let n = Erlang::new(3, 1.0)?;
+/// assert_eq!(n.mean(), 3.0);
 /// assert!(prec::almost_eq(n.pdf(2.0), 0.270670566473225383788, 1e-15));
+/// # Ok::<(), GammaError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Erlang {
@@ -52,10 +53,11 @@ impl Erlang {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Erlang;
+    /// use statrs::distribution::{Erlang, GammaError};
     ///
-    /// let n = Erlang::new(3, 1.0).unwrap();
+    /// let n = Erlang::new(3, 1.0)?;
     /// assert_eq!(n.shape(), 3);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn shape(&self) -> u64 {
         self.g.shape() as u64
@@ -66,10 +68,11 @@ impl Erlang {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Erlang;
+    /// use statrs::distribution::{Erlang, GammaError};
     ///
     /// let n = Erlang::new(3, 1.0).unwrap();
     /// assert_eq!(n.rate(), 1.0);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn rate(&self) -> f64 {
         self.g.rate()

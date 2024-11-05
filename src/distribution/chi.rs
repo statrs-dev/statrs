@@ -9,13 +9,14 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Chi, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{Chi, Continuous, ChiError};
+/// use statrs::statistics::*;
 /// use statrs::prec;
 ///
-/// let n = Chi::new(2.0).unwrap();
+/// let n = Chi::new(2.0)?;
 /// assert!(prec::almost_eq(n.mean().unwrap(), 1.25331413731550025121, 1e-14));
 /// assert!(prec::almost_eq(n.pdf(1.0), 0.60653065971263342360, 1e-15));
+/// # Ok::<(), ChiError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Chi {
@@ -77,10 +78,12 @@ impl Chi {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Chi;
+    /// use statrs::distribution::{Chi, ChiError};
     ///
-    /// let n = Chi::new(2.0).unwrap();
+    ///
+    /// let n = Chi::new(2.0)?;
     /// assert_eq!(n.freedom(), 2.0);
+    /// # Ok::<(), ChiError>(())
     /// ```
     pub fn freedom(&self) -> f64 {
         self.freedom

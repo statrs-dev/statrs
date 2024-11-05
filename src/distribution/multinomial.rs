@@ -13,11 +13,11 @@ use nalgebra::{Cholesky, Dim, DimMin, Dyn, OMatrix, OVector};
 ///
 /// ```
 /// use statrs::distribution::Multinomial;
-/// use statrs::statistics::MeanN;
+/// use statrs::statistics::*;
 /// use nalgebra::vector;
 ///
 /// let n = Multinomial::new_from_nalgebra(vector![0.3, 0.7], 5).unwrap();
-/// assert_eq!(n.mean().unwrap(), (vector![1.5, 3.5]));
+/// assert_eq!(n.mean(), (vector![1.5, 3.5]));
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct Multinomial<D>

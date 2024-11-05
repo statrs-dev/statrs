@@ -20,13 +20,13 @@
 //! Statrs also comes with a number of useful utility traits for more detailed introspection of distributions.
 //! ```
 //! use statrs::distribution::{Exp, Continuous, ContinuousCDF}; // `cdf` and `pdf`
-//! use statrs::statistics::Distribution; // statistical moments and entropy
+//! use statrs::statistics::*; // statistical moments and entropy
 //!
 //! let n = Exp::new(1.0).unwrap();
-//! assert_eq!(n.mean(), Some(1.0));
-//! assert_eq!(n.variance(), Some(1.0));
-//! assert_eq!(n.entropy(), Some(1.0));
-//! assert_eq!(n.skewness(), Some(2.0));
+//! assert_eq!(n.mean(), 1.0);
+//! assert_eq!(n.variance(), 1.0);
+//! assert_eq!(n.entropy(), 1.0);
+//! assert_eq!(n.skewness(), 2.0);
 //! assert_eq!(n.cdf(1.0), 0.6321205588285576784045);
 //! assert_eq!(n.pdf(1.0), 0.3678794411714423215955);
 //! ```
@@ -36,7 +36,7 @@
 //!
 //! ```
 //! use statrs::distribution::FisherSnedecor;
-//! use statrs::statistics::Distribution;
+//! use statrs::statistics::*;
 //!
 //! let n = FisherSnedecor::new(1.0, 1.0).unwrap();
 //! assert!(n.variance().is_none());

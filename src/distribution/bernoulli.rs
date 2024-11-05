@@ -10,13 +10,14 @@ use crate::statistics::*;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Bernoulli, Discrete};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{Bernoulli, BinomialError, Discrete};
+/// use statrs::statistics::*;
 ///
-/// let n = Bernoulli::new(0.5).unwrap();
-/// assert_eq!(n.mean().unwrap(), 0.5);
+/// let n = Bernoulli::new(0.5)?;
+/// assert_eq!(n.mean(), 0.5);
 /// assert_eq!(n.pmf(0), 0.5);
 /// assert_eq!(n.pmf(1), 0.5);
+/// # Ok::<(), BinomialError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Bernoulli {
@@ -53,10 +54,11 @@ impl Bernoulli {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Bernoulli;
+    /// use statrs::distribution::{Bernoulli, BinomialError};
     ///
-    /// let n = Bernoulli::new(0.5).unwrap();
+    /// let n = Bernoulli::new(0.5)?;
     /// assert_eq!(n.p(), 0.5);
+    /// # Ok::<(), BinomialError>(())
     /// ```
     pub fn p(&self) -> f64 {
         self.b.p()
@@ -68,10 +70,11 @@ impl Bernoulli {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Bernoulli;
+    /// use statrs::distribution::{Bernoulli, BinomialError};
     ///
-    /// let n = Bernoulli::new(0.5).unwrap();
+    /// let n = Bernoulli::new(0.5)?;
     /// assert_eq!(n.n(), 1);
+    /// # Ok::<(), BinomialError>(())
     /// ```
     pub fn n(&self) -> u64 {
         1

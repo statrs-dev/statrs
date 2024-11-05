@@ -9,13 +9,14 @@ use std::f64::{self, consts::PI};
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Gumbel, Continuous};
-/// use statrs::{consts::EULER_MASCHERONI, statistics::Distribution};
+/// use statrs::distribution::{Gumbel, Continuous, GumbelError};
+/// use statrs::{consts::EULER_MASCHERONI, statistics::*};
 ///
-/// let n = Gumbel::new(0.0, 1.0).unwrap();
+/// let n = Gumbel::new(0.0, 1.0)?;
 /// assert_eq!(n.location(), 0.0);
-/// assert_eq!(n.skewness().unwrap(), 1.13955);
+/// assert_eq!(n.mean(), 0.5772156649015329);
 /// assert_eq!(n.pdf(0.0), 0.36787944117144233);
+/// # Ok::<(), GumbelError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Gumbel {
@@ -82,10 +83,11 @@ impl Gumbel {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Gumbel;
+    /// use statrs::distribution::{Gumbel, GumbelError};
     ///
-    /// let n = Gumbel::new(0.0, 1.0).unwrap();
+    /// let n = Gumbel::new(0.0, 1.0)?;
     /// assert_eq!(n.location(), 0.0);
+    /// # Ok::<(), GumbelError>(())
     /// ```
     pub fn location(&self) -> f64 {
         self.location
@@ -96,13 +98,18 @@ impl Gumbel {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Gumbel;
+    /// use statrs::distribution::{Gumbel, GumbelError};
     ///
-    /// let n = Gumbel::new(0.0, 1.0).unwrap();
+    /// let n = Gumbel::new(0.0, 1.0)?;
     /// assert_eq!(n.scale(), 1.0);
+    /// # Ok::<(), GumbelError>(())
     /// ```
     pub fn scale(&self) -> f64 {
         self.scale
+    }
+
+    pub fn std_dev(&self) -> f64 {
+        (PI * self.scale) / 6_f64.sqrt()
     }
 }
 

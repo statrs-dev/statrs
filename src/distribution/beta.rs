@@ -8,13 +8,14 @@ use crate::statistics::*;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Beta, Continuous};
+/// use statrs::distribution::{Beta, Continuous, BetaError};
 /// use statrs::statistics::*;
 /// use statrs::prec;
 ///
-/// let n = Beta::new(2.0, 2.0).unwrap();
-/// assert_eq!(n.mean().unwrap(), 0.5);
+/// let n = Beta::new(2.0, 2.0)?;
+/// assert_eq!(n.mean(), 0.5);
 /// assert!(prec::almost_eq(n.pdf(0.5), 1.5, 1e-14));
+/// # Ok::<(), BetaError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Beta {
@@ -82,10 +83,11 @@ impl Beta {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Beta;
+    /// use statrs::distribution::{Beta, BetaError};
     ///
-    /// let n = Beta::new(1.0, 2.0).unwrap();
+    /// let n = Beta::new(1.0, 2.0)?;
     /// assert_eq!(n.shape_a(), 1.0);
+    /// # Ok::<(), BetaError>(())
     /// ```
     pub fn shape_a(&self) -> f64 {
         self.shape_a
@@ -96,10 +98,11 @@ impl Beta {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Beta;
+    /// use statrs::distribution::{Beta, BetaError};
     ///
-    /// let n = Beta::new(1.0, 2.0).unwrap();
+    /// let n = Beta::new(1.0, 2.0)?;
     /// assert_eq!(n.shape_b(), 2.0);
+    /// # Ok::<(), BetaError>(())
     /// ```
     pub fn shape_b(&self) -> f64 {
         self.shape_b

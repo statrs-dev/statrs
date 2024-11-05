@@ -9,13 +9,14 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Geometric, Discrete};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{Geometric, GeometricError, Discrete};
+/// use statrs::statistics::*;
 ///
-/// let n = Geometric::new(0.3).unwrap();
-/// assert_eq!(n.mean().unwrap(), 1.0 / 0.3);
+/// let n = Geometric::new(0.3)?;
+/// assert_eq!(n.mean(), 1.0 / 0.3);
 /// assert_eq!(n.pmf(1), 0.3);
 /// assert_eq!(n.pmf(2), 0.21);
+/// # Ok::<(), GeometricError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Geometric {
@@ -75,9 +76,11 @@ impl Geometric {
     ///
     /// ```
     /// use statrs::distribution::Geometric;
+    /// # use statrs::distribution::GeometricError;
     ///
-    /// let n = Geometric::new(0.5).unwrap();
+    /// let n = Geometric::new(0.5)?;
     /// assert_eq!(n.p(), 0.5);
+    /// # Ok::<(), GeometricError>(())
     /// ```
     pub fn p(&self) -> f64 {
         self.p

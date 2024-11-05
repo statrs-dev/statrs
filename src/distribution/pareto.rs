@@ -9,12 +9,12 @@ use std::f64;
 ///
 /// ```
 /// use statrs::distribution::{Pareto, Continuous};
-/// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use statrs::statistics::*;
+/// use approx::assert_relative_eq;
 ///
 /// let p = Pareto::new(1.0, 2.0).unwrap();
-/// assert_eq!(p.mean().unwrap(), 2.0);
-/// assert!(prec::almost_eq(p.pdf(2.0), 0.25, 1e-15));
+/// assert_eq!(p.mean(), Some(2.0));
+/// assert_relative_eq!(p.pdf(2.0), 0.25);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Pareto {
@@ -223,11 +223,7 @@ impl Max<f64> for Pareto {
 /// # Formula
 ///
 /// ```text
-/// if α <= 1 {
-///     f64::INFINITY
-/// } else {
-///     (α * x_m)/(α - 1)
-/// }
+///     (α * x_m)/(α - 1), where α > 1
 /// ```
 ///
 /// where `x_m` is the scale and `α` is the shape

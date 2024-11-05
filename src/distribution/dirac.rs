@@ -7,11 +7,12 @@ use crate::statistics::*;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Dirac, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{Dirac, Continuous, DiracError};
+/// use statrs::statistics::*;
 ///
-/// let n = Dirac::new(3.0).unwrap();
-/// assert_eq!(n.mean().unwrap(), 3.0);
+/// let n = Dirac::new(3.0)?;
+/// assert_eq!(n.mean(), 3.0);
+/// # Ok::<(), DiracError>(())
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Dirac(f64);

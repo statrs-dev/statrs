@@ -11,13 +11,14 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{ChiSquared, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{ChiSquared, Continuous, GammaError};
+/// use statrs::statistics::*;
 /// use statrs::prec;
 ///
-/// let n = ChiSquared::new(3.0).unwrap();
-/// assert_eq!(n.mean().unwrap(), 3.0);
+/// let n = ChiSquared::new(3.0)?;
+/// assert_eq!(n.mean(), 3.0);
 /// assert!(prec::almost_eq(n.pdf(4.0), 0.107981933026376103901, 1e-15));
+/// # Ok::<(), GammaError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct ChiSquared {
@@ -56,10 +57,11 @@ impl ChiSquared {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::ChiSquared;
+    /// use statrs::distribution::{ChiSquared, GammaError};
     ///
-    /// let n = ChiSquared::new(3.0).unwrap();
+    /// let n = ChiSquared::new(3.0)?;
     /// assert_eq!(n.freedom(), 3.0);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn freedom(&self) -> f64 {
         self.freedom
@@ -70,10 +72,11 @@ impl ChiSquared {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::ChiSquared;
+    /// use statrs::distribution::{ChiSquared, GammaError};
     ///
-    /// let n = ChiSquared::new(3.0).unwrap();
+    /// let n = ChiSquared::new(3.0)?;
     /// assert_eq!(n.shape(), 3.0 / 2.0);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn shape(&self) -> f64 {
         self.g.shape()
@@ -84,10 +87,11 @@ impl ChiSquared {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::ChiSquared;
+    /// use statrs::distribution::{ChiSquared, GammaError};
     ///
-    /// let n = ChiSquared::new(3.0).unwrap();
+    /// let n = ChiSquared::new(3.0)?;
     /// assert_eq!(n.rate(), 0.5);
+    /// # Ok::<(), GammaError>(())
     /// ```
     pub fn rate(&self) -> f64 {
         self.g.rate()

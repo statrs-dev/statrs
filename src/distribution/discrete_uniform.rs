@@ -8,12 +8,13 @@ use crate::statistics::*;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{DiscreteUniform, Discrete};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{DiscreteUniform, Discrete, DiscreteUniformError};
+/// use statrs::statistics::*;
 ///
-/// let n = DiscreteUniform::new(0, 5).unwrap();
-/// assert_eq!(n.mean().unwrap(), 2.5);
+/// let n = DiscreteUniform::new(0, 5)?;
+/// assert_eq!(n.mean(), 2.5);
 /// assert_eq!(n.pmf(3), 1.0 / 6.0);
+/// # Ok::<(), DiscreteUniformError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct DiscreteUniform {
@@ -65,6 +66,11 @@ impl DiscreteUniform {
         } else {
             Ok(DiscreteUniform { min, max })
         }
+    }
+
+    pub fn std_dev(&self) -> f64 {
+        let dist = self.max - self.min + 1;
+        (dist * dist) as f64 / 12.
     }
 }
 

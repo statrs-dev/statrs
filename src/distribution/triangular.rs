@@ -10,10 +10,10 @@ use std::f64;
 ///
 /// ```
 /// use statrs::distribution::{Triangular, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::statistics::*;
 ///
 /// let n = Triangular::new(0.0, 5.0, 2.5).unwrap();
-/// assert_eq!(n.mean().unwrap(), 7.5 / 3.0);
+/// assert_eq!(n.mean(), 7.5 / 3.0);
 /// assert_eq!(n.pdf(2.5), 5.0 / 12.5);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]

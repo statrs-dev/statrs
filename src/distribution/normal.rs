@@ -11,11 +11,12 @@ use std::f64;
 ///
 /// ```
 /// use statrs::distribution::{Normal, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::statistics::*;
+/// use approx::assert_relative_eq;
 ///
 /// let n = Normal::new(0.0, 1.0).unwrap();
-/// assert_eq!(n.mean().unwrap(), 0.0);
-/// assert_eq!(n.pdf(1.0), 0.2419707245191433497978);
+/// assert_eq!(n.mean(), 0.0);
+/// assert_relative_eq!(n.pdf(1.0), 0.2419707245191433497978);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Normal {

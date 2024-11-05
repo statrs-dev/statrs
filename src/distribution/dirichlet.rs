@@ -12,14 +12,14 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Dirichlet, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{Dirichlet, Continuous, DirichletError};
+/// use statrs::statistics::*;
 /// use nalgebra::DVector;
-/// use statrs::statistics::MeanN;
 ///
-/// let n = Dirichlet::new(vec![1.0, 2.0, 3.0]).unwrap();
-/// assert_eq!(n.mean().unwrap(), DVector::from_vec(vec![1.0 / 6.0, 1.0 / 3.0, 0.5]));
+/// let n = Dirichlet::new(vec![1.0, 2.0, 3.0])?;
+/// assert_eq!(n.mean(), DVector::from_vec(vec![1.0 / 6.0, 1.0 / 3.0, 0.5]));
 /// assert_eq!(n.pdf(&DVector::from_vec(vec![0.33333, 0.33333, 0.33333])), 2.222155556222205);
+/// # Ok::<(), DirichletError>(())
 /// ```
 #[derive(Clone, PartialEq, Debug)]
 pub struct Dirichlet<D>
@@ -138,11 +138,12 @@ where
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Dirichlet;
+    /// use statrs::distribution::{Dirichlet, DirichletError};
     /// use nalgebra::DVector;
     ///
-    /// let n = Dirichlet::new(vec![1.0, 2.0, 3.0]).unwrap();
+    /// let n = Dirichlet::new(vec![1.0, 2.0, 3.0])?;
     /// assert_eq!(n.alpha(), &DVector::from_vec(vec![1.0, 2.0, 3.0]));
+    /// # Ok::<(), DirichletError>(())
     /// ```
     pub fn alpha(&self) -> &nalgebra::OVector<f64, D> {
         &self.alpha

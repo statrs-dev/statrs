@@ -10,12 +10,12 @@ use std::f64;
 ///
 /// ```
 /// use statrs::distribution::{Poisson, Discrete};
-/// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use statrs::statistics::*;
+/// use approx::assert_relative_eq;
 ///
 /// let n = Poisson::new(1.0).unwrap();
-/// assert_eq!(n.mean().unwrap(), 1.0);
-/// assert!(prec::almost_eq(n.pmf(1), 0.367879441171442, 1e-15));
+/// assert_eq!(n.mean(), 1.0);
+/// assert_relative_eq!(n.pmf(1), 0.367879441171442, epsilon=1e-14);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Poisson {

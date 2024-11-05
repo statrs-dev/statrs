@@ -10,13 +10,14 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{FisherSnedecor, Continuous};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{FisherSnedecor, Continuous, FisherSnedecorError};
+/// use statrs::statistics::*;
 /// use statrs::prec;
 ///
-/// let n = FisherSnedecor::new(3.0, 3.0).unwrap();
+/// let n = FisherSnedecor::new(3.0, 3.0)?;
 /// assert_eq!(n.mean().unwrap(), 3.0);
 /// assert!(prec::almost_eq(n.pdf(1.0), 0.318309886183790671538, 1e-15));
+/// # Ok::<(), FisherSnedecorError>(())
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FisherSnedecor {
@@ -92,10 +93,11 @@ impl FisherSnedecor {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::FisherSnedecor;
+    /// use statrs::distribution::{FisherSnedecor, FisherSnedecorError};
     ///
-    /// let n = FisherSnedecor::new(2.0, 3.0).unwrap();
+    /// let n = FisherSnedecor::new(2.0, 3.0)?;
     /// assert_eq!(n.freedom_1(), 2.0);
+    /// # Ok::<(), FisherSnedecorError>(())
     /// ```
     pub fn freedom_1(&self) -> f64 {
         self.freedom_1
@@ -107,10 +109,11 @@ impl FisherSnedecor {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::FisherSnedecor;
+    /// use statrs::distribution::{FisherSnedecor, FisherSnedecorError};
     ///
     /// let n = FisherSnedecor::new(2.0, 3.0).unwrap();
     /// assert_eq!(n.freedom_2(), 3.0);
+    /// # Ok::<(), FisherSnedecorError>(())
     /// ```
     pub fn freedom_2(&self) -> f64 {
         self.freedom_2

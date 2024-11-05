@@ -14,11 +14,11 @@ use std::f64::consts::PI;
 /// ```
 /// use statrs::distribution::{MultivariateStudent, Continuous};
 /// use nalgebra::{DVector, DMatrix};
-/// use statrs::statistics::{MeanN, VarianceN};
+/// use statrs::statistics::*;
 ///
 /// let mvs = MultivariateStudent::new(vec![0., 0.], vec![1., 0., 0., 1.], 4.).unwrap();
-/// assert_eq!(mvs.mean().unwrap(), DVector::from_vec(vec![0., 0.]));
-/// assert_eq!(mvs.variance().unwrap(), DMatrix::from_vec(2, 2, vec![2., 0., 0., 2.]));
+/// assert_eq!(mvs.mean(), Some(DVector::from_vec(vec![0., 0.])));
+/// assert_eq!(mvs.variance(), Some(DMatrix::from_vec(2, 2, vec![2., 0., 0., 2.])));
 /// assert_eq!(mvs.pdf(&DVector::from_vec(vec![1.,  1.])), 0.04715702017537655);
 /// ```
 #[derive(Debug, Clone, PartialEq)]

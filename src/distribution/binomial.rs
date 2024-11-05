@@ -10,13 +10,14 @@ use std::f64;
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Binomial, Discrete};
-/// use statrs::statistics::Distribution;
+/// use statrs::distribution::{Binomial, BinomialError, Discrete};
+/// use statrs::statistics::*;
 ///
-/// let n = Binomial::new(0.5, 5).unwrap();
-/// assert_eq!(n.mean().unwrap(), 2.5);
+/// let n = Binomial::new(0.5, 5)?;
+/// assert_eq!(n.mean(), 2.5);
 /// assert_eq!(n.pmf(0), 0.03125);
 /// assert_eq!(n.pmf(3), 0.3125);
+/// # Ok::<(), BinomialError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Binomial {
@@ -78,10 +79,11 @@ impl Binomial {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Binomial;
+    /// use statrs::distribution::{Binomial, BinomialError};
     ///
-    /// let n = Binomial::new(0.5, 5).unwrap();
+    /// let n = Binomial::new(0.5, 5)?;
     /// assert_eq!(n.p(), 0.5);
+    /// # Ok::<(), BinomialError>(())
     /// ```
     pub fn p(&self) -> f64 {
         self.p
@@ -93,10 +95,11 @@ impl Binomial {
     /// # Examples
     ///
     /// ```
-    /// use statrs::distribution::Binomial;
+    /// use statrs::distribution::{Binomial, BinomialError};
     ///
-    /// let n = Binomial::new(0.5, 5).unwrap();
+    /// let n = Binomial::new(0.5, 5)?;
     /// assert_eq!(n.n(), 5);
+    /// # Ok::<(), BinomialError>(())
     /// ```
     pub fn n(&self) -> u64 {
         self.n

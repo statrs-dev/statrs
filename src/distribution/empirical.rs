@@ -27,7 +27,7 @@ impl<T: PartialOrd> Ord for NonNan<T> {
 ///
 /// ```
 /// use statrs::distribution::{Continuous, Empirical};
-/// use statrs::statistics::Distribution;
+/// use statrs::statistics::*;
 ///
 /// let samples = vec![0.0, 5.0, 10.0];
 ///

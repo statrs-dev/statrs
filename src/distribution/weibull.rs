@@ -11,13 +11,12 @@ use std::f64;
 ///
 /// ```
 /// use statrs::distribution::{Weibull, Continuous};
-/// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use statrs::statistics::*;
+/// use approx::assert_relative_eq;
 ///
 /// let n = Weibull::new(10.0, 1.0).unwrap();
-/// assert!(prec::almost_eq(n.mean().unwrap(),
-/// 0.95135076986687318362924871772654021925505786260884, 1e-15));
-/// assert_eq!(n.pdf(1.0), 3.6787944117144232159552377016146086744581113103177);
+/// assert_relative_eq!(n.mean(), 0.951350769866873183629, epsilon = 1e-14);
+/// assert_relative_eq!(n.pdf(1.0), 3.67879441171442321595, epsilon = 1e-14);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Weibull {
