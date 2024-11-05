@@ -199,12 +199,17 @@ impl Min<f64> for Empirical {
     }
 }
 
-impl Distribution<f64> for Empirical {
-    fn mean(&self) -> Option<f64> {
+impl Mean for Empirical {
+    type Mu = Option<f64>;
+    fn mean(&self) -> Self::Mu {
         self.mean_and_var.map(|(mean, _)| mean)
     }
+}
 
-    fn variance(&self) -> Option<f64> {
+impl Variance for Empirical {
+    type Var = Option<f64>;
+
+    fn variance(&self) -> Self::Var {
         self.mean_and_var.map(|(_, var)| var / (self.sum - 1.))
     }
 }

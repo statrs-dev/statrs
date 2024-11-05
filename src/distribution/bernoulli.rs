@@ -160,58 +160,6 @@ impl Max<u64> for Bernoulli {
     }
 }
 
-impl Distribution<f64> for Bernoulli {
-    /// Returns the mean of the bernoulli
-    /// distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// p
-    /// ```
-    fn mean(&self) -> Option<f64> {
-        self.b.mean()
-    }
-
-    /// Returns the variance of the bernoulli
-    /// distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// p * (1 - p)
-    /// ```
-    fn variance(&self) -> Option<f64> {
-        self.b.variance()
-    }
-
-    /// Returns the entropy of the bernoulli
-    /// distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// q = (1 - p)
-    /// -q * ln(q) - p * ln(p)
-    /// ```
-    fn entropy(&self) -> Option<f64> {
-        self.b.entropy()
-    }
-
-    /// Returns the skewness of the bernoulli
-    /// distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// q = (1 - p)
-    /// (1 - 2p) / sqrt(p * q)
-    /// ```
-    fn skewness(&self) -> Option<f64> {
-        self.b.skewness()
-    }
-}
-
 impl Median<f64> for Bernoulli {
     /// Returns the median of the bernoulli
     /// distribution
@@ -267,6 +215,65 @@ impl Discrete<u64, f64> for Bernoulli {
     /// ```
     fn ln_pmf(&self, x: u64) -> f64 {
         self.b.ln_pmf(x)
+    }
+}
+
+/// returns the mean of a bernoulli variable
+///
+/// this is also it's probability parameter
+
+impl Mean for Bernoulli {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        self.p()
+    }
+}
+
+/// returns the variance of a bernoulli variable
+///
+/// # Formula
+/// ```text
+/// p (1 - p)
+/// ```
+
+impl Variance for Bernoulli {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
+        let p = self.p();
+        p.mul_add(-p, p)
+    }
+}
+
+/// Returns the skewness of a bernoulli variable
+///
+/// # Formula
+///
+/// ```text
+/// (1 - 2p) / sqrt(p * (1 - p)))
+/// ```
+
+impl Skewness for Bernoulli {
+    type Skew = f64;
+    fn skewness(&self) -> Self::Skew {
+        let d = 0.5 - self.p();
+        2.0 * d / (0.25 - d * d).sqrt()
+    }
+}
+
+/// Returns the excess kurtosis of a bernoulli variable
+///
+/// # Formula
+///
+/// ```text
+/// pq^-1 - 6; pq = p (1-p)
+/// ```
+
+impl ExcessKurtosis for Bernoulli {
+    type Kurt = f64;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        let p = self.p();
+        let pq = p.mul_add(-p, p);
+        pq.recip() - 6.0
     }
 }
 

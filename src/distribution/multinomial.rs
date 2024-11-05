@@ -1,7 +1,7 @@
 use crate::distribution::Discrete;
 use crate::function::factorial;
 use crate::statistics::*;
-use nalgebra::{DVector, Dim, Dyn, OMatrix, OVector};
+use nalgebra::{Cholesky, Dim, DimMin, Dyn, OMatrix, OVector};
 
 /// Implements the
 /// [Multinomial](https://en.wikipedia.org/wiki/Multinomial_distribution)
@@ -204,45 +204,26 @@ where
     res
 }
 
-impl<D> MeanN<DVector<f64>> for Multinomial<D>
+impl<D> Mean for Multinomial<D>
 where
-    D: Dim,
-    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
-{
-    /// Returns the mean of the multinomial distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// n * p_i for i in 1...k
-    /// ```
-    ///
-    /// where `n` is the number of trials, `p_i` is the `i`th probability,
-    /// and `k` is the total number of probabilities
-    fn mean(&self) -> Option<DVector<f64>> {
-        Some(DVector::from_vec(
-            self.p.iter().map(|x| x * self.n as f64).collect(),
-        ))
-    }
-}
-
-impl<D> VarianceN<OMatrix<f64, D, D>> for Multinomial<D>
-where
-    D: Dim,
+    D: DimMin<D>,
     nalgebra::DefaultAllocator:
         nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
 {
-    /// Returns the variance of the multinomial distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// n * p_i * (1 - p_i) for i in 1...k
-    /// ```
-    ///
-    /// where `n` is the number of trials, `p_i` is the `i`th probability,
-    /// and `k` is the total number of probabilities
-    fn variance(&self) -> Option<OMatrix<f64, D, D>> {
+    type Mu = OVector<f64, D>;
+    fn mean(&self) -> Self::Mu {
+        self.p.scale(self.n as f64)
+    }
+}
+
+impl<D> Variance for Multinomial<D>
+where
+    D: DimMin<D>,
+    nalgebra::DefaultAllocator:
+        nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
+{
+    type Var = Cholesky<f64, D>;
+    fn variance(&self) -> Self::Var {
         let mut cov = OMatrix::from_diagonal(&self.p.map(|x| x * (1.0 - x)));
         let mut offdiag = |x: usize, y: usize| {
             let elt = -self.p[x] * self.p[y];
@@ -250,13 +231,12 @@ where
             cov[(y, x)] = elt;
         };
 
-        for i in 0..self.p.len() {
-            for j in 0..i {
+        for j in 0..self.p.len() {
+            for i in 0..j {
                 offdiag(i, j);
             }
         }
-        cov.fill_lower_triangle_with_upper_triangle();
-        Some(cov.scale(self.n as f64))
+        Cholesky::new_unchecked(cov.scale(self.n as f64))
     }
 }
 
@@ -364,7 +344,7 @@ where
 mod tests {
     use crate::{
         distribution::{Discrete, Multinomial, MultinomialError},
-        statistics::{MeanN, VarianceN},
+        statistics::{Mean, Variance},
     };
     use nalgebra::{dmatrix, dvector, vector, DimMin, Dyn, OVector};
     use std::fmt::{Debug, Display};
@@ -434,7 +414,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |x: Multinomial<_>| x.mean().unwrap();
+        let mean = |x: Multinomial<_>| x.mean();
         test_almost(dvector![0.3, 0.7], 5, dvector![1.5, 3.5], 1e-12, mean);
         test_almost(
             dvector![0.1, 0.3, 0.6],
@@ -461,7 +441,10 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: Multinomial<_>| x.variance().unwrap();
+        let variance = |x: Multinomial<Dyn>| {
+            let l = x.variance().l();
+            l.clone()*l.transpose()
+        };
         test_almost(
             dvector![0.3, 0.7],
             5,

@@ -212,11 +212,12 @@ where
     }
 }
 
-impl<D> MeanN<OVector<f64, D>> for Dirichlet<D>
+impl<D> Mean for Dirichlet<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<f64, D>,
 {
+    type Mu = OVector<f64, D>;
     /// Returns the means of the dirichlet distribution
     ///
     /// # Formula
@@ -227,18 +228,19 @@ where
     ///
     /// for the `i`th element where `α_i` is the `i`th concentration parameter
     /// and `α_0` is the sum of all concentration parameters
-    fn mean(&self) -> Option<OVector<f64, D>> {
+    fn mean(&self) -> Self::Mu {
         let sum = self.alpha_sum();
-        Some(self.alpha.map(|x| x / sum))
+        self.alpha.map(|x| x / sum)
     }
 }
 
-impl<D> VarianceN<OMatrix<f64, D, D>> for Dirichlet<D>
+impl<D> Variance for Dirichlet<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
         nalgebra::allocator::Allocator<f64, D> + nalgebra::allocator::Allocator<f64, D, D>,
 {
+    type Var = OMatrix<f64, D, D>;
     /// Returns the variances of the dirichlet distribution
     ///
     /// # Formula
@@ -249,7 +251,7 @@ where
     ///
     /// for the `i`th element where `α_i` is the `i`th concentration parameter
     /// and `α_0` is the sum of all concentration parameters
-    fn variance(&self) -> Option<OMatrix<f64, D, D>> {
+    fn variance(&self) -> Self::Var {
         let sum = self.alpha_sum();
         let normalizing = sum * sum * (sum + 1.0);
         let mut cov = OMatrix::from_diagonal(&self.alpha.map(|x| x * (sum - x) / normalizing));
@@ -263,7 +265,7 @@ where
                 offdiag(i, j);
             }
         }
-        Some(cov)
+        cov
     }
 }
 
@@ -426,7 +428,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |dd: Dirichlet<_>| dd.mean().unwrap();
+        let mean = |dd: Dirichlet<_>| dd.mean();
 
         test_almost(vec![0.5; 5].into(), vec![1.0 / 5.0; 5].into(), 1e-15, mean);
 
@@ -447,7 +449,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |dd: Dirichlet<_>| dd.variance().unwrap();
+        let variance = |dd: Dirichlet<_>| dd.variance();
 
         test_almost(
             dvector![1.0, 2.0],

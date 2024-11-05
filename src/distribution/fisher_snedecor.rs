@@ -1,5 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
-use crate::function::beta;
+use crate::function::{beta, gamma};
 use crate::statistics::*;
 use std::f64;
 
@@ -239,51 +239,50 @@ impl Max<f64> for FisherSnedecor {
     }
 }
 
-impl Distribution<f64> for FisherSnedecor {
-    /// Returns the mean of the fisher-snedecor distribution
-    ///
-    /// # Panics
-    ///
-    /// If `freedom_2 <= 2.0`
-    ///
-    /// # Remarks
-    ///
-    /// Returns `NaN` if `freedom_2` is `INF`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// d2 / (d2 - 2)
-    /// ```
-    ///
-    /// where `d2` is the second degree of freedom
-    fn mean(&self) -> Option<f64> {
+/// Returns the mean of the fisher-snedecor distribution as `Some` if defined
+///
+/// # Remarks
+///
+/// Returns `NaN` if `freedom_2` is `INF`
+///
+/// # Formula
+///
+/// ```text
+/// d2 / (d2 - 2)
+/// ```
+///
+/// where `d2` is the second degree of freedom
+
+impl Mean for FisherSnedecor {
+    type Mu = Option<f64>;
+    fn mean(&self) -> Self::Mu {
         if self.freedom_2 <= 2.0 {
             None
         } else {
             Some(self.freedom_2 / (self.freedom_2 - 2.0))
         }
     }
+}
 
-    /// Returns the variance of the fisher-snedecor distribution
-    ///
-    /// # Panics
-    ///
-    /// If `freedom_2 <= 4.0`
-    ///
-    /// # Remarks
-    ///
-    /// Returns `NaN` if `freedom_1` or `freedom_2` is `INF`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (2 * d2^2 * (d1 + d2 - 2)) / (d1 * (d2 - 2)^2 * (d2 - 4))
-    /// ```
-    ///
-    /// where `d1` is the first degree of freedom and `d2` is
-    /// the second degree of freedom
-    fn variance(&self) -> Option<f64> {
+/// Returns the variance of the fisher-snedecor distribution
+///
+/// # Remarks
+///
+/// Returns `NaN` if `freedom_1` or `freedom_2` is `INF`
+/// Return `None` if `freedom_2` <= 4
+///
+/// # Formula
+///
+/// ```text
+/// (2 * d2^2 * (d1 + d2 - 2)) / (d1 * (d2 - 2)^2 * (d2 - 4))
+/// ```
+///
+/// where `d1` is the first degree of freedom and `d2` is
+/// the second degree of freedom
+
+impl Variance for FisherSnedecor {
+    type Var = Option<f64>;
+    fn variance(&self) -> Self::Var {
         if self.freedom_2 <= 4.0 {
             None
         } else {
@@ -296,27 +295,27 @@ impl Distribution<f64> for FisherSnedecor {
             Some(val)
         }
     }
+}
 
-    /// Returns the skewness of the fisher-snedecor distribution
-    ///
-    /// # Panics
-    ///
-    /// If `freedom_2 <= 6.0`
-    ///
-    /// # Remarks
-    ///
-    /// Returns `NaN` if `freedom_1` or `freedom_2` is `INF`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// ((2d1 + d2 - 2) * sqrt(8 * (d2 - 4))) / ((d2 - 6) * sqrt(d1 * (d1 + d2
-    /// - 2)))
-    /// ```
-    ///
-    /// where `d1` is the first degree of freedom and `d2` is
-    /// the second degree of freedom
-    fn skewness(&self) -> Option<f64> {
+/// Returns the skewness of the fisher-snedecor distribution
+///
+/// # Remarks
+///
+/// Returns `NaN` if `freedom_1` or `freedom_2` is `INF`
+///
+/// # Formula
+///
+/// ```text
+/// ((2d1 + d2 - 2) * sqrt(8 * (d2 - 4))) / ((d2 - 6) * sqrt(d1 * (d1 + d2
+/// - 2)))
+/// ```
+///
+/// where `d1` is the first degree of freedom and `d2` is
+/// the second degree of freedom
+
+impl Skewness for FisherSnedecor {
+    type Skew = Option<f64>;
+    fn skewness(&self) -> Self::Skew {
         if self.freedom_2 <= 6.0 {
             None
         } else {
@@ -326,6 +325,33 @@ impl Distribution<f64> for FisherSnedecor {
                     * (self.freedom_1 * (self.freedom_1 + self.freedom_2 - 2.0)).sqrt());
             Some(val)
         }
+    }
+}
+
+impl ExcessKurtosis for FisherSnedecor {
+    type Kurt = Option<f64>;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        if self.freedom_2 <= 8.0 {
+            None
+        } else {
+            let d1 = self.freedom_1;
+            let d2 = self.freedom_2;
+            let numer = (5. * d1 - 22.) * (d1 + d2 - 2.) + (d2 - 4.) * (d2 - 2.) * (d2 - 2.);
+            let denom = d1 * (d2 - 6.) * (d2 - 8.) * (d1 + d2 - 2.);
+            Some(12. * numer / denom)
+        }
+    }
+}
+
+impl Entropy<f64> for FisherSnedecor {
+    fn entropy(&self) -> f64 {
+        let d1 = self.freedom_1;
+        let d2 = self.freedom_2;
+        gamma::ln_gamma(d1 / 2.) + gamma::ln_gamma(d2 / 2.) - gamma::ln_gamma((d1 + d2) / 2.)
+            + (1. - d1 / 2.) * gamma::digamma(1. + d1 / 2.)
+            - (1. + d2 / 2.) * gamma::digamma(1. + d2 / 2.)
+            + (d1 + d2) / 2. * gamma::digamma((d1 + d2) / 2.)
+            + (d2 / d1).ln()
     }
 }
 

@@ -298,71 +298,89 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Max<f64> for Data<D> {
     }
 }
 
-impl<D: AsMut<[f64]> + AsRef<[f64]>> Distribution<f64> for Data<D> {
-    /// Evaluates the sample mean, an estimate of the population
-    /// mean.
-    ///
-    /// # Remarks
-    ///
-    /// Returns `f64::NAN` if data is empty or an entry is `f64::NAN`
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
-    ///
-    /// use statrs::statistics::Distribution;
-    /// use statrs::statistics::Data;
-    ///
-    /// # fn main() {
-    /// let x = [];
-    /// let x = Data::new(x);
-    /// assert!(x.mean().unwrap().is_nan());
-    ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
-    /// let y = Data::new(y);
-    /// assert!(y.mean().unwrap().is_nan());
-    ///
-    /// let z = [0.0, 3.0, -2.0];
-    /// let z = Data::new(z);
-    /// assert_almost_eq!(z.mean().unwrap(), 1.0 / 3.0, 1e-15);
-    /// # }
-    /// ```
-    fn mean(&self) -> Option<f64> {
-        Some(Statistics::mean(self.iter()))
-    }
+/// Evaluates the sample mean, an estimate of the population
+/// mean.
+///
+/// # Remarks
+///
+/// Returns `None` if data is empty or `f64::NAN` if entry is `f64::NAN`
+///
+/// # Examples
+///
+/// ```
+/// #[macro_use]
+/// extern crate statrs;
+///
+/// use statrs::statistics::Mean;
+/// use statrs::statistics::Data;
+///
+/// # fn main() {
+/// let x = [];
+/// let x = Data::new(x);
+/// assert!(x.mean().is_none());
+///
+/// let y = [0.0, f64::NAN, 3.0, -2.0];
+/// let y = Data::new(y);
+/// assert!(y.mean().unwrap().is_nan());
+///
+/// let z = [0.0, 3.0, -2.0];
+/// let z = Data::new(z);
+/// assert_almost_eq!(z.mean().unwrap(), 1.0 / 3.0, 1e-15);
+/// # }
+/// ```
+impl<D> Mean for Data<D>
+where
+    D: AsMut<[f64]> + AsRef<[f64]>,
+{
+    type Mu = Option<f64>;
+    fn mean(&self) -> Self::Mu {
+        if self.0.as_ref().is_empty() {
+            return None;
+        }
 
-    /// Estimates the unbiased population variance from the provided samples
-    ///
-    /// # Remarks
-    ///
-    /// On a dataset of size `N`, `N-1` is used as a normalizer (Bessel's
-    /// correction).
-    ///
-    /// Returns `f64::NAN` if data has less than two entries or if any entry is
-    /// `f64::NAN`
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use statrs::statistics::Distribution;
-    /// use statrs::statistics::Data;
-    ///
-    /// let x = [];
-    /// let x = Data::new(x);
-    /// assert!(x.variance().unwrap().is_nan());
-    ///
-    /// let y = [0.0, f64::NAN, 3.0, -2.0];
-    /// let y = Data::new(y);
-    /// assert!(y.variance().unwrap().is_nan());
-    ///
-    /// let z = [0.0, 3.0, -2.0];
-    /// let z = Data::new(z);
-    /// assert_eq!(z.variance().unwrap(), 19.0 / 3.0);
-    /// ```
-    fn variance(&self) -> Option<f64> {
-        Some(Statistics::variance(self.iter()))
+        Some(self.0.as_ref().iter().mean())
+    }
+}
+
+/// Estimates the unbiased population variance from the provided samples
+///
+/// # Remarks
+///
+/// On a dataset of size `N`, `N-1` is used as a normalizer (Bessel's
+/// correction).
+///
+/// Returns `None` if data has less than two entries or `f64::NAN` if any entry is
+/// `f64::NAN`
+///
+/// # Examples
+///
+/// ```
+/// use statrs::statistics::Variance;
+/// use statrs::statistics::Data;
+///
+/// let x = [];
+/// let x = Data::new(x);
+/// assert!(x.variance().is_none());
+///
+/// let y = [0.0, f64::NAN, 3.0, -2.0];
+/// let y = Data::new(y);
+/// assert!(y.variance().unwrap().is_nan());
+///
+/// let z = [0.0, 3.0, -2.0];
+/// let z = Data::new(z);
+/// assert_eq!(z.variance().unwrap(), 19.0 / 3.0);
+/// ```
+impl<D> Variance for Data<D>
+where
+    D: AsMut<[f64]> + AsRef<[f64]>,
+{
+    type Var = Option<f64>;
+    fn variance(&self) -> Self::Var {
+        // TODO: rewrite iterator statistics and rely on them instead
+        if self.0.as_ref().len() < 2 {
+            return None;
+        }
+        Some(self.0.as_ref().iter().variance())
     }
 }
 

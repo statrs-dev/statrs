@@ -238,51 +238,53 @@ impl Max<u64> for Categorical {
     }
 }
 
-impl Distribution<f64> for Categorical {
-    /// Returns the mean of the categorical distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// Σ(j * p_j)
-    /// ```
-    ///
-    /// where `p_j` is the `j`th probability mass,
-    /// `Σ` is the sum from `0` to `k - 1`,
-    /// and `k` is the number of categories
-    fn mean(&self) -> Option<f64> {
-        Some(
-            self.norm_pmf
-                .iter()
-                .enumerate()
-                .fold(0.0, |acc, (idx, &val)| acc + idx as f64 * val),
-        )
-    }
-
-    /// Returns the variance of the categorical distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// Σ(p_j * (j - μ)^2)
-    /// ```
-    ///
-    /// where `p_j` is the `j`th probability mass, `μ` is the mean,
-    /// `Σ` is the sum from `0` to `k - 1`,
-    /// and `k` is the number of categories
-    fn variance(&self) -> Option<f64> {
-        let mu = self.mean()?;
-        let var = self
-            .norm_pmf
+/// Returns the mean of the categorical distribution
+///
+/// # Formula
+///
+/// ```text
+/// Σ(j * p_j)
+/// ```
+///
+/// where `p_j` is the `j`th probability mass,
+/// `Σ` is the sum from `0` to `k - 1`,
+/// and `k` is the number of categories
+impl Mean for Categorical {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        self.norm_pmf
             .iter()
             .enumerate()
-            .fold(0.0, |acc, (idx, &val)| {
-                let r = idx as f64 - mu;
-                acc + r * r * val
-            });
-        Some(var)
+            .fold(0.0, |acc, (idx, &val)| acc + idx as f64 * val)
     }
+}
 
+/// Returns the variance of the categorical distribution, 0-indexed
+///
+/// Preserved for backward compatibility
+///
+/// # Formula
+///
+/// ```text
+/// Σ(p_j * (j - μ)^2)
+/// ```
+///
+/// where `p_j` is the `j`th probability mass, `μ` is the mean,
+/// `Σ` is the sum from `0` to `k - 1`,
+/// and `k` is the number of categories
+impl Variance for Categorical {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
+        let mu = self.mean();
+        self.norm_pmf
+            .iter()
+            .enumerate()
+            .map(|(k, &p)| (k as f64 - mu).powi(2) * p)
+            .sum()
+    }
+}
+
+impl Entropy<f64> for Categorical {
     /// Returns the entropy of the categorical distribution
     ///
     /// # Formula
@@ -294,14 +296,13 @@ impl Distribution<f64> for Categorical {
     /// where `p_j` is the `j`th probability mass,
     /// `Σ` is the sum from `0` to `k - 1`,
     /// and `k` is the number of categories
-    fn entropy(&self) -> Option<f64> {
-        let entr = -self
+    fn entropy(&self) -> f64 {
+        -self
             .norm_pmf
             .iter()
             .filter(|&&p| p > 0.0)
             .map(|p| p * p.ln())
-            .sum::<f64>();
-        Some(entr)
+            .sum::<f64>()
     }
 }
 impl Median<f64> for Categorical {
@@ -434,7 +435,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |x: Categorical| x.mean().unwrap();
+        let mean = |x: Categorical| x.mean();
         test_exact(&[0.0, 0.25, 0.5, 0.25], 2.0, mean);
         test_exact(&[0.0, 1.0, 2.0, 1.0], 2.0, mean);
         test_exact(&[0.0, 0.5, 0.5], 1.5, mean);
@@ -444,7 +445,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: Categorical| x.variance().unwrap();
+        let variance = |x: Categorical| x.variance();
         test_exact(&[0.0, 0.25, 0.5, 0.25], 0.5, variance);
         test_exact(&[0.0, 1.0, 2.0, 1.0], 0.5, variance);
         test_exact(&[0.0, 0.5, 0.5], 0.25, variance);
@@ -454,7 +455,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: Categorical| x.entropy().unwrap();
+        let entropy = |x: Categorical| x.entropy();
         test_exact(&[0.0, 1.0], 0.0, entropy);
         test_absolute(&[0.0, 1.0, 1.0], 2f64.ln(), 1e-15, entropy);
         test_absolute(&[1.0, 1.0, 1.0], 3f64.ln(), 1e-15, entropy);

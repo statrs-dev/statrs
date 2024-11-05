@@ -1,5 +1,5 @@
 use super::{Continuous, ContinuousCDF};
-use crate::consts::EULER_MASCHERONI;
+use crate::consts::{self, EULER_MASCHERONI};
 use crate::statistics::*;
 use std::f64::{self, consts::PI};
 
@@ -199,7 +199,76 @@ impl Max<f64> for Gumbel {
     }
 }
 
-impl Distribution<f64> for Gumbel {
+/// Returns the mean of the Gumbel distribution
+///
+/// # Formula
+///
+/// ```text
+/// μ + γβ
+/// ```
+///
+/// where `μ` is the location, `β` is the scale
+/// and `γ` is the Euler-Mascheroni constant (approx 0.57721)
+
+impl Mean for Gumbel {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        self.location + (EULER_MASCHERONI * self.scale)
+    }
+}
+
+/// Returns the variance of the Gumbel distribution
+///
+/// # Formula
+///
+/// ```text
+/// (π^2 / 6) * β^2
+/// ```
+///
+/// where `β` is the scale and `π` is the constant PI (approx 3.14159)
+
+impl Variance for Gumbel {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
+        ((PI * PI) / 6.0) * self.scale * self.scale
+    }
+}
+
+/// Returns the skewness of the Gumbel distribution
+///
+/// # Formula
+///
+/// ```text
+/// 12 * sqrt(6) * ζ(3) / π^3 ≈ 1.13955
+/// ```
+/// ζ(3) is the Riemann zeta function evaluated at 3 (approx 1.20206)
+/// and π is the constant PI (approx 3.14159)
+///
+/// This approximately evaluates to 1.13955
+
+impl Skewness for Gumbel {
+    type Skew = f64;
+    fn skewness(&self) -> Self::Skew {
+        12. * 6_f64.sqrt() * consts::ZETA_3 * PI.powi(-3)
+    }
+}
+
+/// Return the excess kurtosis of the Gumbel Distribution
+///
+/// # Formula
+///
+/// ```text
+/// 12 / 5
+/// ```
+
+impl ExcessKurtosis for Gumbel {
+    type Kurt = f64;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        2.4
+    }
+}
+
+impl Entropy<f64> for Gumbel {
     /// Returns the entropy of the Gumbel distribution
     ///
     /// # Formula
@@ -210,63 +279,8 @@ impl Distribution<f64> for Gumbel {
     ///
     /// where `β` is the scale
     /// and `γ` is the Euler-Mascheroni constant (approx 0.57721)
-    fn entropy(&self) -> Option<f64> {
-        Some(1.0 + EULER_MASCHERONI + (self.scale).ln())
-    }
-
-    /// Returns the mean of the Gumbel distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// μ + γβ
-    /// ```
-    ///
-    /// where `μ` is the location, `β` is the scale
-    /// and `γ` is the Euler-Mascheroni constant (approx 0.57721)
-    fn mean(&self) -> Option<f64> {
-        Some(self.location + (EULER_MASCHERONI * self.scale))
-    }
-
-    /// Returns the skewness of the Gumbel distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 12 * sqrt(6) * ζ(3) / π^3 ≈ 1.13955
-    /// ```
-    /// ζ(3) is the Riemann zeta function evaluated at 3 (approx 1.20206)
-    /// and π is the constant PI (approx 3.14159)
-    ///
-    /// This approximately evaluates to 1.13955
-    fn skewness(&self) -> Option<f64> {
-        Some(1.13955)
-    }
-
-    /// Returns the variance of the Gumbel distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (π^2 / 6) * β^2
-    /// ```
-    ///
-    /// where `β` is the scale and `π` is the constant PI (approx 3.14159)
-    fn variance(&self) -> Option<f64> {
-        Some(((PI * PI) / 6.0) * self.scale * self.scale)
-    }
-
-    /// Returns the standard deviation of the Gumbel distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// β * π / sqrt(6)
-    /// ```
-    ///
-    /// where `β` is the scale and `π` is the constant PI (approx 3.14159)
-    fn std_dev(&self) -> Option<f64> {
-        Some(self.scale * PI / 6.0_f64.sqrt())
+    fn entropy(&self) -> f64 {
+        1.0 + EULER_MASCHERONI + (self.scale).ln()
     }
 }
 
@@ -379,7 +393,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: Gumbel| x.entropy().unwrap();
+        let entropy = |x: Gumbel| x.entropy();
         test_exact(0.0, 2.0, 2.270362845461478, entropy);
         test_exact(0.1, 4.0, 2.9635100260214235, entropy);
         test_exact(1.0, 10.0, 3.8798007578955787, entropy);
@@ -388,7 +402,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |x: Gumbel| x.mean().unwrap();
+        let mean = |x: Gumbel| x.mean();
         test_exact(0.0, 2.0, 1.1544313298030658, mean);
         test_exact(0.1, 4.0, 2.4088626596061316, mean);
         test_exact(1.0, 10.0, 6.772156649015328, mean);
@@ -398,17 +412,19 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let skewness = |x: Gumbel| x.skewness().unwrap();
-        test_exact(0.0, 2.0, 1.13955, skewness);
-        test_exact(0.1, 4.0, 1.13955, skewness);
-        test_exact(1.0, 10.0, 1.13955, skewness);
-        test_exact(10.0, 11.0, 1.13955, skewness);
-        test_exact(10.0, f64::INFINITY, 1.13955, skewness);
+        let skewness = |x: Gumbel| x.skewness();
+        let value = skewness(Gumbel{location: 0.0, scale: 1.0});
+
+        test_exact(0.0, 2.0, value, skewness);
+        test_exact(0.1, 4.0, value, skewness);
+        test_exact(1.0, 10.0, value, skewness);
+        test_exact(10.0, 11.0, value, skewness);
+        test_exact(10.0, f64::INFINITY, value, skewness);
     }
 
     #[test]
     fn test_variance() {
-        let variance = |x: Gumbel| x.variance().unwrap();
+        let variance = |x: Gumbel| x.variance();
         test_exact(0.0, 2.0, 6.579736267392906, variance);
         test_exact(0.1, 4.0, 26.318945069571624, variance);
         test_exact(1.0, 10.0, 164.49340668482265, variance);
@@ -417,7 +433,7 @@ mod tests {
 
     #[test]
     fn test_std_dev() {
-        let std_dev = |x: Gumbel| x.std_dev().unwrap();
+        let std_dev = |x: Gumbel| x.std_dev();
         test_exact(0.0, 2.0, 2.565099660323728, std_dev);
         test_exact(0.1, 4.0, 5.130199320647456, std_dev);
         test_exact(1.0, 10.0, 12.82549830161864, std_dev);

@@ -213,36 +213,89 @@ impl Max<f64> for Weibull {
     }
 }
 
-impl Distribution<f64> for Weibull {
-    /// Returns the mean of the weibull distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// λΓ(1 + 1 / k)
-    /// ```
-    ///
-    /// where `k` is the shape, `λ` is the scale, and `Γ` is
-    /// the gamma function
-    fn mean(&self) -> Option<f64> {
-        Some(self.scale * gamma::gamma(1.0 + 1.0 / self.shape))
-    }
+/// Returns the mean of the weibull distribution
+///
+/// # Formula
+///
+/// ```text
+/// λΓ(1 + 1 / k)
+/// ```
+///
+/// where `k` is the shape, `λ` is the scale, and `Γ` is
+/// the gamma function
 
-    /// Returns the variance of the weibull distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// λ^2 * (Γ(1 + 2 / k) - Γ(1 + 1 / k)^2)
-    /// ```
-    ///
-    /// where `k` is the shape, `λ` is the scale, and `Γ` is
-    /// the gamma function
-    fn variance(&self) -> Option<f64> {
-        let mean = self.mean()?;
-        Some(self.scale * self.scale * gamma::gamma(1.0 + 2.0 / self.shape) - mean * mean)
+impl Mean for Weibull {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        self.scale * gamma::gamma(1.0 + 1.0 / self.shape)
     }
+}
 
+/// Returns the variance of the weibull distribution
+///
+/// # Formula
+///
+/// ```text
+/// λ^2 * (Γ(1 + 2 / k) - Γ(1 + 1 / k)^2)
+/// ```
+///
+/// where `k` is the shape, `λ` is the scale, and `Γ` is
+/// the gamma function
+
+impl Variance for Weibull {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
+        let mean = self.mean();
+        self.scale * self.scale * gamma::gamma(1.0 + 2.0 / self.shape) - mean * mean
+    }
+}
+
+/// Returns the skewness of the weibull distribution
+///
+/// # Formula
+///
+/// ```text
+/// (Γ(1 + 3 / k) * λ^3 - 3μσ^2 - μ^3) / σ^3
+/// ```
+///
+/// where `k` is the shape, `λ` is the scale, and `Γ` is
+/// the gamma function, `μ` is the mean of the distribution.
+/// and `σ` the standard deviation of the distribution
+
+impl Skewness for Weibull {
+    type Skew = f64;
+    fn skewness(&self) -> Self::Skew {
+        let mu = self.mean();
+        let sigma2 = self.variance();
+        let sigma3 = self.variance().powf(1.5);
+
+        (self.scale * self.scale * self.scale * gamma::gamma(1.0 + 3.0 / self.shape)
+            - 3.0 * sigma2 * mu
+            - (mu * mu * mu))
+            / sigma3
+    }
+}
+
+impl ExcessKurtosis for Weibull {
+    type Kurt = f64;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        let gam_i = |i: f64| gamma::gamma(1. + i / self.shape);
+        let gam_1 = gam_i(1.);
+        let gam_2 = gam_i(2.);
+        let gam_3 = gam_i(3.);
+        let gam_4 = gam_i(4.);
+
+        let numer = -6. * gam_1.powi(4) + 12. * gam_1.powi(2) * gam_2
+            - 3. * gam_2.powi(2)
+            - 4. * gam_1 * gam_3
+            + gam_4;
+
+        let denom = (gam_2 - gam_1.powi(2)).powi(2);
+        numer / denom
+    }
+}
+
+impl Entropy<f64> for Weibull {
     /// Returns the entropy of the weibull distribution
     ///
     /// # Formula
@@ -253,34 +306,8 @@ impl Distribution<f64> for Weibull {
     ///
     /// where `k` is the shape, `λ` is the scale, and `γ` is
     /// the Euler-Mascheroni constant
-    fn entropy(&self) -> Option<f64> {
-        let entr = consts::EULER_MASCHERONI * (1.0 - 1.0 / self.shape)
-            + (self.scale / self.shape).ln()
-            + 1.0;
-        Some(entr)
-    }
-
-    /// Returns the skewness of the weibull distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (Γ(1 + 3 / k) * λ^3 - 3μσ^2 - μ^3) / σ^3
-    /// ```
-    ///
-    /// where `k` is the shape, `λ` is the scale, and `Γ` is
-    /// the gamma function, `μ` is the mean of the distribution.
-    /// and `σ` the standard deviation of the distribution
-    fn skewness(&self) -> Option<f64> {
-        let mu = self.mean()?;
-        let sigma = self.std_dev()?;
-        let sigma2 = sigma * sigma;
-        let sigma3 = sigma2 * sigma;
-        let skew = (self.scale * self.scale * self.scale * gamma::gamma(1.0 + 3.0 / self.shape)
-            - 3.0 * sigma2 * mu
-            - (mu * mu * mu))
-            / sigma3;
-        Some(skew)
+    fn entropy(&self) -> f64 {
+        consts::EULER_MASCHERONI * (1.0 - 1.0 / self.shape) + (self.scale / self.shape).ln() + 1.0
     }
 }
 
@@ -406,7 +433,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |x: Weibull| x.mean().unwrap();
+        let mean = |x: Weibull| x.mean();
         test_exact(1.0, 0.1, 0.1, mean);
         test_exact(1.0, 1.0, 1.0, mean);
         test_absolute(10.0, 10.0, 9.5135076986687318362924871772654021925505786260884, 1e-14, mean);
@@ -415,7 +442,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: Weibull| x.variance().unwrap();
+        let variance = |x: Weibull| x.variance();
         test_absolute(1.0, 0.1, 0.01, 1e-16, variance);
         test_absolute(1.0, 1.0, 1.0, 1e-14, variance);
         test_absolute(10.0, 10.0, 1.3100455073468309147154581687505295026863354547057, 1e-12, variance);
@@ -424,7 +451,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: Weibull| x.entropy().unwrap();
+        let entropy = |x: Weibull| x.entropy();
         test_absolute(1.0, 0.1, -1.302585092994045684018, 1e-15, entropy);
         test_exact(1.0, 1.0, 1.0, entropy);
         test_exact(10.0, 10.0, 1.519494098411379574546, entropy);
@@ -433,7 +460,7 @@ mod tests {
 
     #[test]
     fn test_skewnewss() {
-        let skewness = |x: Weibull| x.skewness().unwrap();
+        let skewness = |x: Weibull| x.skewness();
         test_absolute(1.0, 0.1, 2.0, 1e-13, skewness);
         test_absolute(1.0, 1.0, 2.0, 1e-13, skewness);
         test_absolute(10.0, 10.0, -0.63763713390314440916597757156663888653981696212127, 1e-11, skewness);

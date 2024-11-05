@@ -130,30 +130,56 @@ impl Max<f64> for Dirac {
     }
 }
 
-impl Distribution<f64> for Dirac {
-    /// Returns the mean of the dirac distribution
-    ///
-    /// # Remarks
-    ///
-    /// Since the only value that can be produced by this distribution is `v` with probability
-    /// 1, it is just `v`.
-    fn mean(&self) -> Option<f64> {
-        Some(self.0)
-    }
+/// Returns the mean of the dirac distribution
+///
+/// # Remarks
+///
+/// Since the only value that can be produced by this distribution is `v` with probability
+/// 1, it is just `v`.
 
-    /// Returns the variance of the dirac distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 0
-    /// ```
-    ///
-    /// Since only one value can be produced there is no variance.
-    fn variance(&self) -> Option<f64> {
-        Some(0.0)
+impl Mean for Dirac {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        self.0
     }
+}
 
+/// Returns the variance of the dirac distribution
+///
+/// # Formula
+///
+/// ```text
+/// 0
+/// ```
+///
+/// Since only one value can be produced there is no variance.
+
+impl Variance for Dirac {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
+        0.0
+    }
+}
+
+/// Returns the skewness of the dirac distribution
+///
+/// # Formula
+///
+/// ```text
+/// 0
+/// ```
+
+impl Skewness for Dirac {
+    type Skew = ();
+    fn skewness(&self) -> Self::Skew {}
+}
+
+impl ExcessKurtosis for Dirac {
+    type Kurt = ();
+    fn excess_kurtosis(&self) -> Self::Kurt {}
+}
+
+impl Entropy<f64> for Dirac {
     /// Returns the entropy of the dirac distribution
     ///
     /// # Formula
@@ -161,21 +187,8 @@ impl Distribution<f64> for Dirac {
     /// ```text
     /// 0
     /// ```
-    ///
-    /// Since this distribution has full certainty, it encodes no information
-    fn entropy(&self) -> Option<f64> {
-        Some(0.0)
-    }
-
-    /// Returns the skewness of the dirac distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 0
-    /// ```
-    fn skewness(&self) -> Option<f64> {
-        Some(0.0)
+    fn entropy(&self) -> f64 {
+        0.0
     }
 }
 
@@ -233,7 +246,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: Dirac| x.variance().unwrap();
+        let variance = |x: Dirac| x.variance();
         test_exact(0.0, 0.0, variance);
         test_exact(-5.0, 0.0, variance);
         test_exact(f64::INFINITY, 0.0, variance);
@@ -241,18 +254,9 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: Dirac| x.entropy().unwrap();
+        let entropy = |x: Dirac| x.entropy();
         test_exact(0.0, 0.0, entropy);
         test_exact(f64::INFINITY, 0.0, entropy);
-    }
-
-    #[test]
-    fn test_skewness() {
-        let skewness = |x: Dirac| x.skewness().unwrap();
-        test_exact(0.0, 0.0, skewness);
-        test_exact(4.0, 0.0, skewness);
-        test_exact(0.3, 0.0, skewness);
-        test_exact(f64::INFINITY, 0.0, skewness);
     }
 
     #[test]

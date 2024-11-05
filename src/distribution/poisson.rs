@@ -173,33 +173,67 @@ impl Max<u64> for Poisson {
     }
 }
 
-impl Distribution<f64> for Poisson {
-    /// Returns the mean of the poisson distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// λ
-    /// ```
-    ///
-    /// where `λ` is the rate
-    fn mean(&self) -> Option<f64> {
-        Some(self.lambda)
-    }
+/// Returns the mean of the poisson distribution
+///
+/// # Formula
+///
+/// ```text
+/// λ
+/// ```
+///
+/// where `λ` is the rate
 
-    /// Returns the variance of the poisson distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// λ
-    /// ```
-    ///
-    /// where `λ` is the rate
-    fn variance(&self) -> Option<f64> {
-        Some(self.lambda)
+impl Mean for Poisson {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        self.lambda
     }
+}
 
+/// Returns the variance of the poisson distribution
+///
+/// # Formula
+///
+/// ```text
+/// λ
+/// ```
+///
+/// where `λ` is the rate
+
+impl Variance for Poisson {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
+        self.lambda
+    }
+}
+
+/// Returns the skewness of the poisson distribution
+///
+/// # Formula
+///
+/// ```text
+/// λ^(-1/2)
+/// ```
+///
+/// where `λ` is the rate
+
+impl Skewness for Poisson {
+    type Skew = f64;
+    fn skewness(&self) -> Self::Skew {
+        self.lambda.sqrt().recip()
+    }
+}
+
+/// Returns the excess kurtosis for the Poisson distribution
+
+impl ExcessKurtosis for Poisson {
+    type Kurt = f64;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        self.lambda.recip()
+    }
+}
+
+impl Entropy<f64> for Poisson {
     /// Returns the entropy of the poisson distribution
     ///
     /// # Formula
@@ -209,26 +243,12 @@ impl Distribution<f64> for Poisson {
     /// ```
     ///
     /// where `λ` is the rate
-    fn entropy(&self) -> Option<f64> {
-        Some(
-            0.5 * (2.0 * f64::consts::PI * f64::consts::E * self.lambda).ln()
-                - 1.0 / (12.0 * self.lambda)
-                - 1.0 / (24.0 * self.lambda * self.lambda)
-                - 19.0 / (360.0 * self.lambda * self.lambda * self.lambda),
-        )
-    }
-
-    /// Returns the skewness of the poisson distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// λ^(-1/2)
-    /// ```
-    ///
-    /// where `λ` is the rate
-    fn skewness(&self) -> Option<f64> {
-        Some(1.0 / self.lambda.sqrt())
+    fn entropy(&self) -> f64 {
+        // TODO: this is only valid for large lambda
+        0.5 * (2.0 * f64::consts::PI * f64::consts::E * self.lambda).ln()
+            - 1.0 / (12.0 * self.lambda)
+            - 1.0 / (24.0 * self.lambda * self.lambda)
+            - 19.0 / (360.0 * self.lambda * self.lambda * self.lambda)
     }
 }
 
@@ -361,7 +381,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |x: Poisson| x.mean().unwrap();
+        let mean = |x: Poisson| x.mean();
         test_exact(1.5, 1.5, mean);
         test_exact(5.4, 5.4, mean);
         test_exact(10.8, 10.8, mean);
@@ -369,7 +389,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: Poisson| x.variance().unwrap();
+        let variance = |x: Poisson| x.variance();
         test_exact(1.5, 1.5, variance);
         test_exact(5.4, 5.4, variance);
         test_exact(10.8, 10.8, variance);
@@ -377,7 +397,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: Poisson| x.entropy().unwrap();
+        let entropy = |x: Poisson| x.entropy();
         test_absolute(1.5, 1.531959153102376331946, 1e-15, entropy);
         test_absolute(5.4, 2.244941839577643504608, 1e-15, entropy);
         test_exact(10.8, 2.600596429676975222694, entropy);
@@ -385,7 +405,7 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let skewness = |x: Poisson| x.skewness().unwrap();
+        let skewness = |x: Poisson| x.skewness();
         test_absolute(1.5, 0.8164965809277260327324, 1e-15, skewness);
         test_absolute(5.4, 0.4303314829119352094644, 1e-16, skewness);
         test_absolute(10.8, 0.3042903097250922852539, 1e-16, skewness);

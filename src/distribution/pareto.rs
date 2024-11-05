@@ -218,42 +218,48 @@ impl Max<f64> for Pareto {
     }
 }
 
-impl Distribution<f64> for Pareto {
-    /// Returns the mean of the Pareto distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// if α <= 1 {
-    ///     f64::INFINITY
-    /// } else {
-    ///     (α * x_m)/(α - 1)
-    /// }
-    /// ```
-    ///
-    /// where `x_m` is the scale and `α` is the shape
-    fn mean(&self) -> Option<f64> {
+/// Returns the mean of the Pareto distribution
+///
+/// # Formula
+///
+/// ```text
+/// if α <= 1 {
+///     f64::INFINITY
+/// } else {
+///     (α * x_m)/(α - 1)
+/// }
+/// ```
+///
+/// where `x_m` is the scale and `α` is the shape
+
+impl Mean for Pareto {
+    type Mu = Option<f64>;
+    fn mean(&self) -> Self::Mu {
         if self.shape <= 1.0 {
             None
         } else {
             Some((self.shape * self.scale) / (self.shape - 1.0))
         }
     }
+}
 
-    /// Returns the variance of the Pareto distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// if α <= 2 {
-    ///     f64::INFINITY
-    /// } else {
-    ///     (x_m/(α - 1))^2 * (α/(α - 2))
-    /// }
-    /// ```
-    ///
-    /// where `x_m` is the scale and `α` is the shape
-    fn variance(&self) -> Option<f64> {
+/// Returns the variance of the Pareto distribution
+///
+/// # Formula
+///
+/// ```text
+/// if α <= 2 {
+///     f64::INFINITY
+/// } else {
+///     (x_m/(α - 1))^2 * (α/(α - 2))
+/// }
+/// ```
+///
+/// where `x_m` is the scale and `α` is the shape
+
+impl Variance for Pareto {
+    type Var = Option<f64>;
+    fn variance(&self) -> Self::Var {
         if self.shape <= 2.0 {
             None
         } else {
@@ -261,7 +267,57 @@ impl Distribution<f64> for Pareto {
             Some(a * a * self.shape / (self.shape - 2.0))
         }
     }
+}
 
+/// Returns the skewness of the Pareto distribution
+///
+/// # Panics
+///
+/// If `α <= 3.0`
+///
+/// where `α` is the shape
+///
+/// # Formula
+///
+/// ```text
+///     (2*(α + 1)/(α - 3))*sqrt((α - 2)/α)
+/// ```
+///
+/// where `α` is the shape
+
+impl Skewness for Pareto {
+    type Skew = Option<f64>;
+    fn skewness(&self) -> Self::Skew {
+        if self.shape <= 3.0 {
+            None
+        } else {
+            Some(
+                (2.0 * (self.shape + 1.0) / (self.shape - 3.0))
+                    * ((self.shape - 2.0) / self.shape).sqrt(),
+            )
+        }
+    }
+}
+
+/// Returns the excess kurtosis of the Pareto distribution
+
+impl ExcessKurtosis for Pareto {
+    type Kurt = Option<f64>;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        if self.shape <= 4.0 {
+            None
+        } else {
+            Some(
+                6.0 * (self.shape.powi(3) + self.shape.powi(2) - 6.0 * self.shape - 2.0)
+                    / self.shape
+                    / (self.shape - 3.0)
+                    / (self.shape - 4.0),
+            )
+        }
+    }
+}
+
+impl Entropy<f64> for Pareto {
     /// Returns the entropy for the Pareto distribution
     ///
     /// # Formula
@@ -271,34 +327,8 @@ impl Distribution<f64> for Pareto {
     /// ```
     ///
     /// where `x_m` is the scale and `α` is the shape
-    fn entropy(&self) -> Option<f64> {
-        Some(self.shape.ln() - self.scale.ln() - (1.0 / self.shape) - 1.0)
-    }
-
-    /// Returns the skewness of the Pareto distribution
-    ///
-    /// # Panics
-    ///
-    /// If `α <= 3.0`
-    ///
-    /// where `α` is the shape
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    ///     (2*(α + 1)/(α - 3))*sqrt((α - 2)/α)
-    /// ```
-    ///
-    /// where `α` is the shape
-    fn skewness(&self) -> Option<f64> {
-        if self.shape <= 3.0 {
-            None
-        } else {
-            Some(
-                (2.0 * (self.shape + 1.0) / (self.shape - 3.0))
-                    * ((self.shape - 2.0) / self.shape).sqrt(),
-            )
-        }
+    fn entropy(&self) -> f64 {
+        self.shape.ln() - self.scale.ln() - (1.0 / self.shape) - 1.0
     }
 }
 
@@ -422,7 +452,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: Pareto| x.entropy().unwrap();
+        let entropy = |x: Pareto| x.entropy();
         test_exact(0.1, 0.1, -11.0, entropy);
         test_exact(1.0, 1.0, -2.0, entropy);
         test_exact(10.0, 10.0, -1.1, entropy);

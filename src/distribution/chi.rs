@@ -177,21 +177,23 @@ impl Max<f64> for Chi {
     }
 }
 
-impl Distribution<f64> for Chi {
-    /// Returns the mean of the chi distribution
-    ///
-    /// # Remarks
-    ///
-    /// Returns `NaN` if `freedom` is `INF`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// sqrt2 * Γ((k + 1) / 2) / Γ(k / 2)
-    /// ```
-    ///
-    /// where `k` is degrees of freedom and `Γ` is the gamma function
-    fn mean(&self) -> Option<f64> {
+/// Returns the mean of the chi distribution
+///
+/// # Remarks
+///
+/// Returns `None` if `freedom` is `INF`
+///
+/// # Formula
+///
+/// ```text
+/// sqrt2 * Γ((k + 1) / 2) / Γ(k / 2)
+/// ```
+///
+/// where `k` is degrees of freedom and `Γ` is the gamma function
+
+impl Mean for Chi {
+    type Mu = Option<f64>;
+    fn mean(&self) -> Self::Mu {
         if self.freedom.is_infinite() {
             None
         } else if self.freedom > 300.0 {
@@ -212,26 +214,78 @@ impl Distribution<f64> for Chi {
             Some(mean)
         }
     }
+}
 
-    /// Returns the variance of the chi distribution
-    ///
-    /// # Remarks
-    ///
-    /// Returns `NaN` if `freedom` is `INF`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// k - μ^2
-    /// ```
-    ///
-    /// where `k` is degrees of freedom and `μ` is the mean
-    /// of the distribution
-    fn variance(&self) -> Option<f64> {
+/// Returns the variance of the chi distribution
+///
+/// # Remarks
+///
+/// Returns `None` if `freedom` is `INF`
+///
+/// # Formula
+///
+/// ```text
+/// k - μ^2
+/// ```
+///
+/// where `k` is degrees of freedom and `μ` is the mean
+/// of the distribution
+
+impl Variance for Chi {
+    type Var = Option<f64>;
+    fn variance(&self) -> Self::Var {
         let mean = self.mean()?;
         Some(self.freedom - mean * mean)
     }
+}
 
+/// Returns the skewness of the chi distribution
+///
+/// # Remarks
+///
+/// Returns `None` if `freedom` is `INF`
+///
+/// # Formula
+///
+/// ```text
+/// (μ / σ^3) * (1 - 2σ^2)
+/// ```
+/// where `μ` is the mean and `σ` the standard deviation
+/// of the distribution
+
+impl Skewness for Chi {
+    type Skew = Option<f64>;
+    fn skewness(&self) -> Self::Skew {
+        let sigma = self.variance()?.sqrt();
+        let skew = self.mean()? * (1.0 - 2.0 * sigma * sigma) / (sigma * sigma * sigma);
+        Some(skew)
+    }
+}
+
+/// Returns the excess kurtosis of the chi distribution
+///
+/// # Remarks
+///
+/// Returns `None` if `freedom` is `INF`
+///
+/// # Formula
+///
+/// ```text
+/// 2 / σ^2 (1 - μσγ - σ^2)
+/// ```
+/// where `μ` is the mean, `σ` the standard deviation, and `γ` the skewness
+/// of the distribution
+
+impl ExcessKurtosis for Chi {
+    type Kurt = Option<f64>;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        let sig_sqr = self.variance()?;
+        let mu_over_var = self.mean()? / sig_sqr;
+        Some(2. / sig_sqr - 2. * mu_over_var.powi(2) * (1. - 2. * sig_sqr) - 2.)
+    }
+}
+
+impl Entropy<Option<f64>> for Chi {
     /// Returns the entropy of the chi distribution
     ///
     /// # Remarks
@@ -256,25 +310,6 @@ impl Distribution<f64> for Chi {
                 - (self.freedom - 1.0) * gamma::digamma(self.freedom / 2.0))
                 / 2.0;
         Some(entr)
-    }
-
-    /// Returns the skewness of the chi distribution
-    ///
-    /// # Remarks
-    ///
-    /// Returns `NaN` if `freedom` is `INF`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (μ / σ^3) * (1 - 2σ^2)
-    /// ```
-    /// where `μ` is the mean and `σ` the standard deviation
-    /// of the distribution
-    fn skewness(&self) -> Option<f64> {
-        let sigma = self.std_dev()?;
-        let skew = self.mean()? * (1.0 - 2.0 * sigma * sigma) / (sigma * sigma * sigma);
-        Some(skew)
     }
 }
 

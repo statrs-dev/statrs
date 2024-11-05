@@ -159,30 +159,62 @@ impl Max<i64> for DiscreteUniform {
     }
 }
 
-impl Distribution<f64> for DiscreteUniform {
-    /// Returns the mean of the discrete uniform distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (min + max) / 2
-    /// ```
-    fn mean(&self) -> Option<f64> {
-        Some((self.min + self.max) as f64 / 2.0)
-    }
+/// Returns the mean of the discrete uniform distribution
+///
+/// # Formula
+///
+/// ```text
+/// (min + max) / 2
+/// ```
 
-    /// Returns the variance of the discrete uniform distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// ((max - min + 1)^2 - 1) / 12
-    /// ```
-    fn variance(&self) -> Option<f64> {
+impl Mean for DiscreteUniform {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        (self.min + self.max) as f64 / 2.0
+    }
+}
+
+/// Returns the variance of the discrete uniform distribution
+///
+/// # Formula
+///
+/// ```text
+/// ((max - min + 1)^2 - 1) / 12
+/// ```
+
+impl Variance for DiscreteUniform {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
         let diff = (self.max - self.min) as f64;
-        Some(((diff + 1.0) * (diff + 1.0) - 1.0) / 12.0)
+        ((diff + 1.0) * (diff + 1.0) - 1.0) / 12.0
     }
+}
 
+/// Returns the skewness of the discrete uniform distribution
+///
+/// # Formula
+///
+/// ```text
+/// 0
+/// ```
+
+impl Skewness for DiscreteUniform {
+    type Skew = f64;
+    fn skewness(&self) -> Self::Skew {
+        0.0
+    }
+}
+
+/// docs
+
+impl ExcessKurtosis for DiscreteUniform {
+    type Kurt = f64;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        -1.2
+    }
+}
+
+impl Entropy<f64> for DiscreteUniform {
     /// Returns the entropy of the discrete uniform distribution
     ///
     /// # Formula
@@ -190,20 +222,9 @@ impl Distribution<f64> for DiscreteUniform {
     /// ```text
     /// ln(max - min + 1)
     /// ```
-    fn entropy(&self) -> Option<f64> {
+    fn entropy(&self) -> f64 {
         let diff = (self.max - self.min) as f64;
-        Some((diff + 1.0).ln())
-    }
-
-    /// Returns the skewness of the discrete uniform distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 0
-    /// ```
-    fn skewness(&self) -> Option<f64> {
-        Some(0.0)
+        (diff + 1.0).ln()
     }
 }
 
@@ -304,7 +325,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |x: DiscreteUniform| x.mean().unwrap();
+        let mean = |x: DiscreteUniform| x.mean();
         test_exact(-10, 10, 0.0, mean);
         test_exact(0, 4, 2.0, mean);
         test_exact(10, 20, 15.0, mean);
@@ -313,7 +334,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: DiscreteUniform| x.variance().unwrap();
+        let variance = |x: DiscreteUniform| x.variance();
         test_exact(-10, 10, 36.66666666666666666667, variance);
         test_exact(0, 4, 2.0, variance);
         test_exact(10, 20, 10.0, variance);
@@ -322,7 +343,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: DiscreteUniform| x.entropy().unwrap();
+        let entropy = |x: DiscreteUniform| x.entropy();
         test_exact(-10, 10, 3.0445224377234229965005979803657054342845752874046093, entropy);
         test_exact(0, 4, 1.6094379124341003746007593332261876395256013542685181, entropy);
         test_exact(10, 20, 2.3978952727983705440619435779651292998217068539374197, entropy);
@@ -331,7 +352,7 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let skewness = |x: DiscreteUniform| x.skewness().unwrap();
+        let skewness = |x: DiscreteUniform| x.skewness();
         test_exact(-10, 10, 0.0, skewness);
         test_exact(0, 4, 0.0, skewness);
         test_exact(10, 20, 0.0, skewness);

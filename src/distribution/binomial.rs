@@ -202,57 +202,90 @@ impl Max<u64> for Binomial {
     }
 }
 
-impl Distribution<f64> for Binomial {
-    /// Returns the mean of the binomial distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// p * n
-    /// ```
-    fn mean(&self) -> Option<f64> {
-        Some(self.p * self.n as f64)
-    }
+/// Returns the mean of the binomial distribution
+///
+/// # Formula
+///
+/// ```text
+/// p * n
+/// ```
 
-    /// Returns the variance of the binomial distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// n * p * (1 - p)
-    /// ```
-    fn variance(&self) -> Option<f64> {
-        Some(self.p * (1.0 - self.p) * self.n as f64)
+impl Mean for Binomial {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        self.n() as f64 * self.p()
     }
+}
 
+/// Returns the variance of the binomial distribution
+///
+/// # Formula
+///
+/// ```text
+/// n * p * (1 - p)
+/// ```
+
+impl Variance for Binomial {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
+        let n = self.n() as f64;
+        let p = self.p();
+        let pq = p.mul_add(-p, p);
+        n * pq
+    }
+}
+
+/// Returns the skewness of the binomial distribution
+///
+/// # Formula
+///
+/// ```text
+/// (1 - 2p) / sqrt(n * p * (1 - p)))
+/// ```
+
+impl Skewness for Binomial {
+    type Skew = f64;
+    fn skewness(&self) -> Self::Skew {
+        let n = self.n as f64;
+        (1.0 - 2.0 * self.p) / (n * self.p * (1.0 - self.p)).sqrt()
+    }
+}
+
+/// Returns the excess kurtosis of the binomial distribution
+///
+/// # Formula
+///
+/// ```text
+/// (1 - 6 pq) / (n pq); pq = p - p^2
+/// ```
+
+impl ExcessKurtosis for Binomial {
+    type Kurt = f64;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        let n = self.n() as f64;
+        let pq = self.p() - (1.0 - self.p());
+        (1.0 - 6.0 * pq) / (n * pq)
+    }
+}
+
+impl Entropy<f64> for Binomial {
     /// Returns the entropy of the binomial distribution
     ///
     /// # Formula
+    /// via Stirling approximation to O(1/n)
     ///
     /// ```text
     /// (1 / 2) * ln (2 * π * e * n * p * (1 - p))
     /// ```
-    fn entropy(&self) -> Option<f64> {
-        let entr = if self.p == 0.0 || ulps_eq!(self.p, 1.0) {
+    fn entropy(&self) -> f64 {
+        if self.p == 0.0 || ulps_eq!(self.p, 1.0) {
             0.0
         } else {
             (0..self.n + 1).fold(0.0, |acc, x| {
                 let p = self.pmf(x);
                 acc - p * p.ln()
             })
-        };
-        Some(entr)
-    }
-
-    /// Returns the skewness of the binomial distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (1 - 2p) / sqrt(n * p * (1 - p)))
-    /// ```
-    fn skewness(&self) -> Option<f64> {
-        Some((1.0 - 2.0 * self.p) / (self.n as f64 * self.p * (1.0 - self.p)).sqrt())
+        }
     }
 }
 
@@ -377,7 +410,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |x: Binomial| x.mean().unwrap();
+        let mean = |x: Binomial| x.mean();
         test_exact(0.0, 4, 0.0, mean);
         test_absolute(0.3, 3, 0.9, 1e-15, mean);
         test_exact(1.0, 2, 2.0, mean);
@@ -385,7 +418,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: Binomial| x.variance().unwrap();
+        let variance = |x: Binomial| x.variance();
         test_exact(0.0, 4, 0.0, variance);
         test_exact(0.3, 3, 0.63, variance);
         test_exact(1.0, 2, 0.0, variance);
@@ -393,7 +426,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: Binomial| x.entropy().unwrap();
+        let entropy = |x: Binomial| x.entropy();
         test_exact(0.0, 4, 0.0, entropy);
         test_absolute(0.3, 3, 1.1404671643037712668976423399228972051669206536461, 1e-15, entropy);
         test_exact(1.0, 2, 0.0, entropy);
@@ -401,7 +434,7 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let skewness = |x: Binomial| x.skewness().unwrap();
+        let skewness = |x: Binomial| x.skewness();
         test_exact(0.0, 4, f64::INFINITY, skewness);
         test_exact(0.3, 3, 0.503952630678969636286, skewness);
         test_exact(1.0, 2, f64::NEG_INFINITY, skewness);

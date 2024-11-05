@@ -204,34 +204,78 @@ impl Max<f64> for LogNormal {
     }
 }
 
-impl Distribution<f64> for LogNormal {
-    /// Returns the mean of the log-normal distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// e^(μ + σ^2 / 2)
-    /// ```
-    ///
-    /// where `μ` is the location and `σ` is the scale
-    fn mean(&self) -> Option<f64> {
-        Some((self.location + self.scale * self.scale / 2.0).exp())
-    }
+/// Returns the mean of the log-normal distribution
+///
+/// # Formula
+///
+/// ```text
+/// e^(μ + σ^2 / 2)
+/// ```
+///
+/// where `μ` is the location and `σ` is the scale
 
-    /// Returns the variance of the log-normal distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (e^(σ^2) - 1) * e^(2μ + σ^2)
-    /// ```
-    ///
-    /// where `μ` is the location and `σ` is the scale
-    fn variance(&self) -> Option<f64> {
+impl Mean for LogNormal {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        (self.location + self.scale * self.scale / 2.0).exp()
+    }
+}
+
+/// Returns the variance of the log-normal distribution
+///
+/// # Formula
+///
+/// ```text
+/// (e^(σ^2) - 1) * e^(2μ + σ^2)
+/// ```
+///
+/// where `μ` is the location and `σ` is the scale
+
+impl Variance for LogNormal {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
         let sigma2 = self.scale * self.scale;
-        Some((sigma2.exp() - 1.0) * (self.location + self.location + sigma2).exp())
+        (sigma2.exp() - 1.0) * (self.location + self.location + sigma2).exp()
     }
+}
 
+/// Returns the skewness of the log-normal distribution
+///
+/// # Formula
+///
+/// ```text
+/// (e^(σ^2) + 2) * sqrt(e^(σ^2) - 1)
+/// ```
+///
+/// where `μ` is the location and `σ` is the scale
+
+impl Skewness for LogNormal {
+    type Skew = f64;
+    fn skewness(&self) -> Self::Skew {
+        let expsigma2 = (self.scale * self.scale).exp();
+        (expsigma2 + 2.0) * (expsigma2 - 1.0).sqrt()
+    }
+}
+
+/// Returns the excess kurtosis of the log-normal distribution
+///
+/// # Formula
+///
+/// ```text
+///
+/// ```
+///
+/// where `μ` is the location and `σ` is the scale
+
+impl ExcessKurtosis for LogNormal {
+    type Kurt = f64;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        let expsigma2 = (self.scale * self.scale).exp();
+        expsigma2.powi(4) + 2. * expsigma2.powi(3) + 3. * expsigma2.powi(2) - 6.
+    }
+}
+
+impl Entropy<f64> for LogNormal {
     /// Returns the entropy of the log-normal distribution
     ///
     /// # Formula
@@ -241,22 +285,8 @@ impl Distribution<f64> for LogNormal {
     /// ```
     ///
     /// where `μ` is the location and `σ` is the scale
-    fn entropy(&self) -> Option<f64> {
-        Some(0.5 + self.scale.ln() + self.location + consts::LN_SQRT_2PI)
-    }
-
-    /// Returns the skewness of the log-normal distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (e^(σ^2) + 2) * sqrt(e^(σ^2) - 1)
-    /// ```
-    ///
-    /// where `μ` is the location and `σ` is the scale
-    fn skewness(&self) -> Option<f64> {
-        let expsigma2 = (self.scale * self.scale).exp();
-        Some((expsigma2 + 2.0) * (expsigma2 - 1.0).sqrt())
+    fn entropy(&self) -> f64 {
+        0.5 + self.scale.ln() + self.location + consts::LN_SQRT_2PI
     }
 }
 
@@ -359,7 +389,7 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |x: LogNormal| x.mean().unwrap();
+        let mean = |x: LogNormal| x.mean();
         test_exact(-1.0, 0.1, 0.369723444544058982601, mean);
         test_exact(-1.0, 1.5, 1.133148453066826316829, mean);
         test_exact(-1.0, 2.5, 8.372897488127264663205, mean);
@@ -388,7 +418,7 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let variance = |x: LogNormal| x.variance().unwrap();
+        let variance = |x: LogNormal| x.variance();
         test_absolute(-1.0, 0.1, 0.001373811865368952608715, 1e-16, variance);
         test_exact(-1.0, 1.5, 10.898468544015731954, variance);
         test_exact(-1.0, 2.5, 36245.39726189994988081, variance);
@@ -417,7 +447,7 @@ mod tests {
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: LogNormal| x.entropy().unwrap();
+        let entropy = |x: LogNormal| x.entropy();
         test_exact(-1.0, 0.1, -1.8836465597893728867265104870209210873020761202386, entropy);
         test_exact(-1.0, 1.5, 0.82440364131283712375834285186996677643338789710028, entropy);
         test_exact(-1.0, 2.5, 1.335229265078827806963856948173628711311498693546, entropy);
@@ -446,7 +476,7 @@ mod tests {
 
     #[test]
     fn test_skewness() {
-        let skewness = |x: LogNormal| x.skewness().unwrap();
+        let skewness = |x: LogNormal| x.skewness();
         test_absolute(-1.0, 0.1, 0.30175909933883402945387113824982918009810212213629, 1e-14, skewness);
         test_exact(-1.0, 1.5, 33.46804679732172529147579024311650645764144530123, skewness);
         test_absolute(-1.0, 2.5, 11824.007933610287521341659465200553739278936344799, 1e-11, skewness);

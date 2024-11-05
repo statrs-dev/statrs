@@ -183,29 +183,64 @@ impl Max<u64> for Geometric {
     }
 }
 
-impl Distribution<f64> for Geometric {
-    /// Returns the mean of the geometric distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// 1 / p
-    /// ```
-    fn mean(&self) -> Option<f64> {
-        Some(1.0 / self.p)
-    }
+/// Returns the mean of the geometric distribution
+///
+/// # Formula
+///
+/// ```text
+/// 1 / p
+/// ```
 
-    /// Returns the standard deviation of the geometric distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (1 - p) / p^2
-    /// ```
-    fn variance(&self) -> Option<f64> {
-        Some((1.0 - self.p) / (self.p * self.p))
+impl Mean for Geometric {
+    type Mu = f64;
+    fn mean(&self) -> Self::Mu {
+        self.p.recip()
     }
+}
 
+/// Returns the standard deviation of the geometric distribution
+///
+/// # Formula
+///
+/// ```text
+/// (1 - p) / p^2
+/// ```
+
+impl Variance for Geometric {
+    type Var = f64;
+    fn variance(&self) -> Self::Var {
+        (1.0 - self.p) / (self.p * self.p)
+    }
+}
+
+/// Returns the skewness of the geometric distribution
+///
+/// # Formula
+///
+/// ```text
+/// (2 - p) / sqrt(1 - p)
+/// ```
+
+impl Skewness for Geometric {
+    type Skew = f64;
+    fn skewness(&self) -> Self::Skew {
+        if ulps_eq!(self.p, 1.0) {
+            return f64::INFINITY;
+        };
+        (2.0 - self.p) / (1.0 - self.p).sqrt()
+    }
+}
+
+/// Returns the excess kurtosis of the geometric distribution
+
+impl ExcessKurtosis for Geometric {
+    type Kurt = f64;
+    fn excess_kurtosis(&self) -> Self::Kurt {
+        6. + self.p.powi(2) / (1. - self.p)
+    }
+}
+
+impl Entropy<f64> for Geometric {
     /// Returns the entropy of the geometric distribution
     ///
     /// # Formula
@@ -213,23 +248,9 @@ impl Distribution<f64> for Geometric {
     /// ```text
     /// (-(1 - p) * log_2(1 - p) - p * log_2(p)) / p
     /// ```
-    fn entropy(&self) -> Option<f64> {
-        let inv = 1.0 / self.p;
-        Some(-inv * (1. - self.p).log(2.0) + (inv - 1.).log(2.0))
-    }
-
-    /// Returns the skewness of the geometric distribution
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// (2 - p) / sqrt(1 - p)
-    /// ```
-    fn skewness(&self) -> Option<f64> {
-        if ulps_eq!(self.p, 1.0) {
-            return Some(f64::INFINITY);
-        };
-        Some((2.0 - self.p) / (1.0 - self.p).sqrt())
+    fn entropy(&self) -> f64 {
+        let inv = self.p.recip();
+        -inv * (1. - self.p).log(2.0) + (inv - 1.).log(2.0)
     }
 }
 
@@ -324,28 +345,28 @@ mod tests {
 
     #[test]
     fn test_mean() {
-        let mean = |x: Geometric| x.mean().unwrap();
+        let mean = |x: Geometric| x.mean();
         test_exact(0.3, 1.0 / 0.3, mean);
         test_exact(1.0, 1.0, mean);
     }
 
     #[test]
     fn test_variance() {
-        let variance = |x: Geometric| x.variance().unwrap();
+        let variance = |x: Geometric| x.variance();
         test_exact(0.3, 0.7 / (0.3 * 0.3), variance);
         test_exact(1.0, 0.0, variance);
     }
 
     #[test]
     fn test_entropy() {
-        let entropy = |x: Geometric| x.entropy().unwrap();
+        let entropy = |x: Geometric| x.entropy();
         test_absolute(0.3, 2.937636330768973333333, 1e-14, entropy);
         test_is_nan(1.0, entropy);
     }
 
     #[test]
     fn test_skewness() {
-        let skewness = |x: Geometric| x.skewness().unwrap();
+        let skewness = |x: Geometric| x.skewness();
         test_absolute(0.3, 2.031888635868469187947, 1e-15, skewness);
         test_exact(1.0, f64::INFINITY, skewness);
     }
