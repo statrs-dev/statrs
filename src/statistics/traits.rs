@@ -41,7 +41,7 @@ pub trait Entropy<T> {
     fn entropy(&self) -> T;
 }
 
-/// Trait to express covariance operations as if the implementing type were a matrix,
+/// Trait to express covariance operations as if the implementing type were an operator.
 ///
 /// For scalars this is variance and scalar
 ///
@@ -57,11 +57,13 @@ pub trait CovarianceMatrix<T> {
     /// returns a covariance matrix, M_ij = Sigma_ij
     fn dense(&self) -> Self::M;
 
-    /// returns a vector scaled by covariance, (Sigma)^1/2 * vec{v}
-    fn forward(&self, other: Self::V) -> Self::V;
+    /// transforms vector of uncorrelated samples to have correlations from self, (Sigma)^1/2 * vec{v}
+    #[doc(alias = "matvec")]
+    fn colorize(&self, other: Self::V) -> Self::V;
 
-    /// returns a vector unscaled by covariance, (Sigma)^-1/2 * vec{v}
-    fn inverse(&self, other: Self::V) -> Self::V;
+    /// transforms vector sampled with correlations from self to uncorrelated, (Sigma)^1/2 \ vec{v}
+    #[doc(alias = "solve")]
+    fn whiten(&self, other: Self::V) -> Self::V;
 
     /// returns the determinant of the covariance matrix, det(Sigma)
     fn determinant(&self) -> T;
@@ -85,11 +87,11 @@ mod multivariate {
             OMatrix::from_diagonal(self)
         }
 
-        fn forward(&self, other: Self::V) -> Self::V {
+        fn colorize(&self, other: Self::V) -> Self::V {
             self.clone().map(|x| x.sqrt()).component_mul(&other)
         }
 
-        fn inverse(&self, other: Self::V) -> Self::V {
+        fn whiten(&self, other: Self::V) -> Self::V {
             other.component_div(&self.clone().map(|x| x.sqrt()))
         }
 
@@ -112,11 +114,11 @@ mod multivariate {
             self.l() * self.l().transpose()
         }
 
-        fn forward(&self, other: Self::V) -> Self::V {
-            self.l() * other
+        fn colorize(&self, other: Self::V) -> Self::V {
+            self.l().transpose() * other
         }
 
-        fn inverse(&self, other: Self::V) -> Self::V {
+        fn whiten(&self, other: Self::V) -> Self::V {
             self.l_dirty().solve_lower_triangular_unchecked(&other)
         }
 
@@ -132,10 +134,10 @@ impl<T: Float> CovarianceMatrix<T> for T {
     fn dense(&self) -> Self::M {
         *self
     }
-    fn forward(&self, other: Self::V) -> Self::V {
+    fn colorize(&self, other: Self::V) -> Self::V {
         self.sqrt() * other
     }
-    fn inverse(&self, other: Self::V) -> Self::V {
+    fn whiten(&self, other: Self::V) -> Self::V {
         other / self.sqrt()
     }
     fn determinant(&self) -> T {
