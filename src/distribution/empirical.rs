@@ -2,6 +2,7 @@ use crate::distribution::ContinuousCDF;
 use crate::statistics::*;
 use non_nan::NonNan;
 use std::collections::BTreeMap;
+use std::ops::Bound;
 
 mod non_nan {
     use core::cmp::Ordering;
@@ -249,24 +250,18 @@ impl Distribution<f64> for Empirical {
 
 impl ContinuousCDF<f64, f64> for Empirical {
     fn cdf(&self, x: f64) -> f64 {
-        let mut sum = 0;
-        for (keys, values) in &self.data {
-            if keys.get() > x {
-                return sum as f64 / self.sum as f64;
-            }
-            sum += values;
-        }
+        let start = Bound::Unbounded;
+        let end = Bound::Included(NonNan::new(x).expect("x must not be NaN"));
+
+        let sum: u64 = self.data.range((start, end)).map(|(_, v)| v).sum();
         sum as f64 / self.sum as f64
     }
 
     fn sf(&self, x: f64) -> f64 {
-        let mut sum = 0;
-        for (keys, values) in self.data.iter().rev() {
-            if keys.get() <= x {
-                return sum as f64 / self.sum as f64;
-            }
-            sum += values;
-        }
+        let start = Bound::Excluded(NonNan::new(x).expect("x must not be NaN"));
+        let end = Bound::Unbounded;
+
+        let sum: u64 = self.data.range((start, end)).map(|(_, v)| v).sum();
         sum as f64 / self.sum as f64
     }
 
