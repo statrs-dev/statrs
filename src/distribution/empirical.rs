@@ -1,22 +1,43 @@
 use crate::distribution::ContinuousCDF;
 use crate::statistics::*;
-use core::cmp::Ordering;
+use non_nan::NonNan;
 use std::collections::BTreeMap;
 
-#[derive(Clone, PartialEq, Debug)]
-struct NonNan<T>(T);
+mod non_nan {
+    use core::cmp::Ordering;
 
-impl<T: PartialEq> Eq for NonNan<T> {}
+    #[derive(Clone, Copy, PartialEq, Debug)]
+    pub struct NonNan<T>(T);
 
-impl<T: PartialOrd> PartialOrd for NonNan<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
+    impl<T: Copy> NonNan<T> {
+        pub fn get(self) -> T {
+            self.0
+        }
     }
-}
 
-impl<T: PartialOrd> Ord for NonNan<T> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.0.partial_cmp(&other.0).unwrap()
+    impl NonNan<f64> {
+        #[inline]
+        pub fn new(x: f64) -> Option<Self> {
+            if x.is_nan() {
+                None
+            } else {
+                Some(Self(x))
+            }
+        }
+    }
+
+    impl<T: PartialEq> Eq for NonNan<T> {}
+
+    impl<T: PartialOrd> PartialOrd for NonNan<T> {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+
+    impl<T: PartialOrd> Ord for NonNan<T> {
+        fn cmp(&self, other: &Self) -> Ordering {
+            self.0.partial_cmp(&other.0).unwrap()
+        }
     }
 }
 
@@ -66,43 +87,46 @@ impl Empirical {
     }
 
     pub fn add(&mut self, data_point: f64) {
-        if !data_point.is_nan() {
-            self.sum += 1.;
-            match self.mean_and_var {
-                Some((mean, var)) => {
-                    let sum = self.sum;
-                    let var = var + (sum - 1.) * (data_point - mean) * (data_point - mean) / sum;
-                    let mean = mean + (data_point - mean) / sum;
-                    self.mean_and_var = Some((mean, var));
-                }
-                None => {
-                    self.mean_and_var = Some((data_point, 0.));
-                }
+        let map_key = match NonNan::new(data_point) {
+            Some(valid) => valid,
+            None => return,
+        };
+
+        self.sum += 1.;
+        match self.mean_and_var {
+            Some((mean, var)) => {
+                let sum = self.sum;
+                let var = var + (sum - 1.) * (data_point - mean) * (data_point - mean) / sum;
+                let mean = mean + (data_point - mean) / sum;
+                self.mean_and_var = Some((mean, var));
             }
-            *self.data.entry(NonNan(data_point)).or_insert(0) += 1;
+            None => {
+                self.mean_and_var = Some((data_point, 0.));
+            }
         }
+        *self.data.entry(map_key).or_insert(0) += 1;
     }
 
     pub fn remove(&mut self, data_point: f64) {
-        if !data_point.is_nan() {
-            if let (Some(val), Some((mean, var))) =
-                (self.data.remove(&NonNan(data_point)), self.mean_and_var)
-            {
-                if val == 1 && self.data.is_empty() {
-                    self.mean_and_var = None;
-                    self.sum = 0.;
-                    return;
-                };
-                // reset mean and var
-                let mean = (self.sum * mean - data_point) / (self.sum - 1.);
-                let var =
-                    var - (self.sum - 1.) * (data_point - mean) * (data_point - mean) / self.sum;
-                self.sum -= 1.;
-                if val != 1 {
-                    self.data.insert(NonNan(data_point), val - 1);
-                };
-                self.mean_and_var = Some((mean, var));
-            }
+        let map_key = match NonNan::new(data_point) {
+            Some(valid) => valid,
+            None => return,
+        };
+
+        if let (Some(val), Some((mean, var))) = (self.data.remove(&map_key), self.mean_and_var) {
+            if val == 1 && self.data.is_empty() {
+                self.mean_and_var = None;
+                self.sum = 0.;
+                return;
+            };
+            // reset mean and var
+            let mean = (self.sum * mean - data_point) / (self.sum - 1.);
+            let var = var - (self.sum - 1.) * (data_point - mean) * (data_point - mean) / self.sum;
+            self.sum -= 1.;
+            if val != 1 {
+                self.data.insert(map_key, val - 1);
+            };
+            self.mean_and_var = Some((mean, var));
         }
     }
 
@@ -148,7 +172,7 @@ impl std::fmt::Display for Empirical {
         let mut enumerated_values = self
             .data
             .iter()
-            .flat_map(|(&NonNan(x), &count)| std::iter::repeat(x).take(count as usize));
+            .flat_map(|(x, &count)| std::iter::repeat(x.get()).take(count as usize));
 
         if let Some(x) = enumerated_values.next() {
             write!(f, "Empirical([{x:.3e}")?;
@@ -190,14 +214,14 @@ impl ::rand::distributions::Distribution<f64> for Empirical {
 /// Panics if number of samples is zero
 impl Max<f64> for Empirical {
     fn max(&self) -> f64 {
-        self.data.keys().rev().map(|key| key.0).next().unwrap()
+        self.data.keys().rev().map(|key| key.get()).next().unwrap()
     }
 }
 
 /// Panics if number of samples is zero
 impl Min<f64> for Empirical {
     fn min(&self) -> f64 {
-        self.data.keys().map(|key| key.0).next().unwrap()
+        self.data.keys().map(|key| key.get()).next().unwrap()
     }
 }
 
@@ -215,7 +239,7 @@ impl ContinuousCDF<f64, f64> for Empirical {
     fn cdf(&self, x: f64) -> f64 {
         let mut sum = 0;
         for (keys, values) in &self.data {
-            if keys.0 > x {
+            if keys.get() > x {
                 return sum as f64 / self.sum;
             }
             sum += values;
@@ -226,7 +250,7 @@ impl ContinuousCDF<f64, f64> for Empirical {
     fn sf(&self, x: f64) -> f64 {
         let mut sum = 0;
         for (keys, values) in self.data.iter().rev() {
-            if keys.0 <= x {
+            if keys.get() <= x {
                 return sum as f64 / self.sum;
             }
             sum += values;
