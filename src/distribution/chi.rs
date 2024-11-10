@@ -36,7 +36,7 @@ impl std::fmt::Display for ChiError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             ChiError::FreedomInvalid => {
-                write!(f, "Degrees of freedom are NaN, zero or less than zero")
+                write!(f, "Degrees of freedom are zero")
             }
         }
     }
