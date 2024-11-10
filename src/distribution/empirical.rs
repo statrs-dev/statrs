@@ -57,10 +57,14 @@ mod non_nan {
 /// ```
 #[derive(Clone, PartialEq, Debug)]
 pub struct Empirical {
-    sum: f64,
     mean_and_var: Option<(f64, f64)>,
     // keys are data points, values are number of data points with equal value
     data: BTreeMap<NonNan<f64>, u64>,
+
+    // The following fields are only logically valid if !data.is_empty():
+    /// Total amount of data points (== sum of all _values_ inside self.data).
+    /// Must be 0 iff data.is_empty()
+    sum: u64,
 }
 
 impl Empirical {
@@ -80,7 +84,7 @@ impl Empirical {
     #[allow(clippy::result_unit_err)]
     pub fn new() -> Result<Empirical, ()> {
         Ok(Empirical {
-            sum: 0.,
+            sum: 0,
             mean_and_var: None,
             data: BTreeMap::new(),
         })
@@ -92,10 +96,10 @@ impl Empirical {
             None => return,
         };
 
-        self.sum += 1.;
+        self.sum += 1;
         match self.mean_and_var {
             Some((mean, var)) => {
-                let sum = self.sum;
+                let sum = self.sum as f64;
                 let var = var + (sum - 1.) * (data_point - mean) * (data_point - mean) / sum;
                 let mean = mean + (data_point - mean) / sum;
                 self.mean_and_var = Some((mean, var));
@@ -116,13 +120,14 @@ impl Empirical {
         if let (Some(val), Some((mean, var))) = (self.data.remove(&map_key), self.mean_and_var) {
             if val == 1 && self.data.is_empty() {
                 self.mean_and_var = None;
-                self.sum = 0.;
+                self.sum = 0;
                 return;
             };
             // reset mean and var
-            let mean = (self.sum * mean - data_point) / (self.sum - 1.);
-            let var = var - (self.sum - 1.) * (data_point - mean) * (data_point - mean) / self.sum;
-            self.sum -= 1.;
+            let sum = self.sum as f64;
+            let mean = (sum * mean - data_point) / (sum - 1.);
+            let var = var - (sum - 1.) * (data_point - mean) * (data_point - mean) / sum;
+            self.sum -= 1;
             if val != 1 {
                 self.data.insert(map_key, val - 1);
             };
@@ -231,7 +236,8 @@ impl Distribution<f64> for Empirical {
     }
 
     fn variance(&self) -> Option<f64> {
-        self.mean_and_var.map(|(_, var)| var / (self.sum - 1.))
+        self.mean_and_var
+            .map(|(_, var)| var / (self.sum as f64 - 1.))
     }
 }
 
@@ -240,22 +246,22 @@ impl ContinuousCDF<f64, f64> for Empirical {
         let mut sum = 0;
         for (keys, values) in &self.data {
             if keys.get() > x {
-                return sum as f64 / self.sum;
+                return sum as f64 / self.sum as f64;
             }
             sum += values;
         }
-        sum as f64 / self.sum
+        sum as f64 / self.sum as f64
     }
 
     fn sf(&self, x: f64) -> f64 {
         let mut sum = 0;
         for (keys, values) in self.data.iter().rev() {
             if keys.get() <= x {
-                return sum as f64 / self.sum;
+                return sum as f64 / self.sum as f64;
             }
             sum += values;
         }
-        sum as f64 / self.sum
+        sum as f64 / self.sum as f64
     }
 
     fn inverse_cdf(&self, p: f64) -> f64 {
