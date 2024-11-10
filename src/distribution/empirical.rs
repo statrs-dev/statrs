@@ -104,7 +104,10 @@ impl Empirical {
         self.var += (sum - 1.) * (data_point - self.mean) * (data_point - self.mean) / sum;
         self.mean += (data_point - self.mean) / sum;
 
-        *self.data.entry(map_key).or_insert(0) += 1;
+        self.data
+            .entry(map_key)
+            .and_modify(|c| *c += 1)
+            .or_insert(1);
     }
 
     pub fn remove(&mut self, data_point: f64) {
