@@ -242,6 +242,78 @@ impl ContinuousCDF<f64, f64> for Empirical {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_add_nan() {
+        let mut empirical = Empirical::new().unwrap();
+
+        // should not panic
+        empirical.add(f64::NAN);
+    }
+
+    #[test]
+    fn test_remove_nan() {
+        let mut empirical = Empirical::new().unwrap();
+
+        empirical.add(5.2);
+        // should not panic
+        empirical.remove(f64::NAN);
+    }
+
+    #[test]
+    fn test_remove_nonexisting() {
+        let mut empirical = Empirical::new().unwrap();
+        
+        empirical.add(5.2);
+        // should not panic
+        empirical.remove(10.0);
+    }
+
+    #[test]
+    fn test_remove_all() {
+        let mut empirical = Empirical::new().unwrap();
+
+        empirical.add(17.123);
+        empirical.add(-10.0);
+        empirical.add(0.0);
+        empirical.remove(-10.0);
+        empirical.remove(17.123);
+        empirical.remove(0.0);
+
+        assert!(empirical.mean().is_none());
+        assert!(empirical.variance().is_none());
+    }
+
+    #[test]
+    fn test_mean() {
+        fn test_mean_for_samples(expected_mean: f64, samples: Vec<f64>) {
+            let dist = Empirical::from_iter(samples);
+            assert_relative_eq!(dist.mean().unwrap(), expected_mean);
+        }
+
+        let dist = Empirical::from_iter(vec![]);
+        assert!(dist.mean().is_none());
+
+        test_mean_for_samples(4.0, vec![4.0; 100]);
+        test_mean_for_samples(-0.2, vec![-0.2; 100]);
+        test_mean_for_samples(28.5, vec![21.3, 38.4, 12.7, 41.6]);
+    }
+
+    #[test]
+    fn test_var() {
+        fn test_var_for_samples(expected_var: f64, samples: Vec<f64>) {
+            let dist = Empirical::from_iter(samples);
+            assert_relative_eq!(dist.variance().unwrap(), expected_var);
+        }
+
+        let dist = Empirical::from_iter(vec![]);
+        assert!(dist.variance().is_none());
+
+        test_var_for_samples(0.0, vec![4.0; 100]);
+        test_var_for_samples(0.0, vec![-0.2; 100]);
+        test_var_for_samples(190.36666666666667, vec![21.3, 38.4, 12.7, 41.6]);
+    }
+
     #[test]
     fn test_cdf() {
         let samples = vec![5.0, 10.0];
