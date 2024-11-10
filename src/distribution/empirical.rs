@@ -1,7 +1,7 @@
 use crate::distribution::ContinuousCDF;
 use crate::statistics::*;
 use non_nan::NonNan;
-use std::collections::BTreeMap;
+use std::collections::btree_map::{BTreeMap, Entry};
 use std::ops::Bound;
 
 mod non_nan {
@@ -113,26 +113,30 @@ impl Empirical {
             None => return,
         };
 
-        let val = match self.data.remove(&map_key) {
-            Some(v) => v,
-            None => return,
+        let mut entry = match self.data.entry(map_key) {
+            Entry::Occupied(entry) => entry,
+            Entry::Vacant(_) => return, // no entry found
         };
 
-        if val == 1 && self.data.is_empty() {
-            self.sum = 0;
-            self.mean = 0.0;
-            self.var = 0.0;
-            return;
-        };
+        if *entry.get() == 1 {
+            entry.remove();
+            if self.data.is_empty() {
+                // logically, this should not need special handling.
+                // FP math can result in mean or var being != 0.0 though.
+                self.sum = 0;
+                self.mean = 0.0;
+                self.var = 0.0;
+                return;
+            }
+        } else {
+            *entry.get_mut() -= 1;
+        }
 
         // reset mean and var
         let sum = self.sum as f64;
         self.mean = (sum * self.mean - data_point) / (sum - 1.);
         self.var -= (sum - 1.) * (data_point - self.mean) * (data_point - self.mean) / sum;
         self.sum -= 1;
-        if val != 1 {
-            self.data.insert(map_key, val - 1);
-        }
     }
 
     // Due to issues with rounding and floating-point accuracy the default
