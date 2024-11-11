@@ -2,6 +2,7 @@ use crate::distribution::ContinuousCDF;
 use crate::statistics::*;
 use non_nan::NonNan;
 use std::collections::btree_map::{BTreeMap, Entry};
+use std::convert::Infallible;
 use std::ops::Bound;
 
 mod non_nan {
@@ -83,8 +84,7 @@ impl Empirical {
     /// let mut result = Empirical::new();
     /// assert!(result.is_ok());
     /// ```
-    #[allow(clippy::result_unit_err)]
-    pub fn new() -> Result<Empirical, ()> {
+    pub fn new() -> Result<Empirical, Infallible> {
         Ok(Empirical {
             data: BTreeMap::new(),
             sum: 0,
