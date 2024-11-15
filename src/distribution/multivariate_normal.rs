@@ -350,7 +350,7 @@ where
     /// # Formula
     ///
     /// ```text
-    /// (2 * π) ^ (-k / 2) * det(Σ) ^ (1 / 2) * e ^ ( -(1 / 2) * transpose(x - μ) * inv(Σ) * (x - μ))
+    /// (2 * π) ^ (-k / 2) * det(Σ) ^ (-1 / 2) * e ^ ( -(1 / 2) * transpose(x - μ) * inv(Σ) * (x - μ))
     /// ```
     ///
     /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
