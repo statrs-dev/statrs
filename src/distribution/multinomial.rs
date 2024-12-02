@@ -280,7 +280,7 @@ where
 //     }
 // }
 
-impl<'a, D> Discrete<&'a OVector<u64, D>, f64> for Multinomial<D>
+impl<D> Discrete<&OVector<u64, D>, f64> for Multinomial<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,

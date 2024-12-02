@@ -267,7 +267,7 @@ where
     }
 }
 
-impl<'a, D> Continuous<&'a OVector<f64, D>, f64> for Dirichlet<D>
+impl<D> Continuous<&OVector<f64, D>, f64> for Dirichlet<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>

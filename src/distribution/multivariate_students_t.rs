@@ -325,7 +325,7 @@ where
     }
 }
 
-impl<'a, D> Continuous<&'a OVector<f64, D>, f64> for MultivariateStudent<D>
+impl<D> Continuous<&OVector<f64, D>, f64> for MultivariateStudent<D>
 where
     D: Dim + DimMin<D, Output = D>,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>
@@ -348,7 +348,7 @@ where
     /// - `inv(Σ)` is the precision matrix,
     /// - `det(Σ)` is the determinant of the scale matrix, and
     /// - `k` is the dimension of the distribution.
-    fn pdf(&self, x: &'a OVector<f64, D>) -> f64 {
+    fn pdf(&self, x: &OVector<f64, D>) -> f64 {
         if self.freedom.is_infinite() {
             use super::multivariate_normal::density_normalization_and_exponential;
             let (pdf_const, exp_arg) = density_normalization_and_exponential(
@@ -369,7 +369,7 @@ where
 
     /// Calculates the log probability density function for the multivariate
     /// student distribution at `x`. Equivalent to pdf(x).ln().
-    fn ln_pdf(&self, x: &'a OVector<f64, D>) -> f64 {
+    fn ln_pdf(&self, x: &OVector<f64, D>) -> f64 {
         if self.freedom.is_infinite() {
             use super::multivariate_normal::density_normalization_and_exponential;
             let (pdf_const, exp_arg) = density_normalization_and_exponential(

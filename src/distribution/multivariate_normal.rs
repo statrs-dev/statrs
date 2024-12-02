@@ -337,7 +337,7 @@ where
     }
 }
 
-impl<'a, D> Continuous<&'a OVector<f64, D>, f64> for MultivariateNormal<D>
+impl<D> Continuous<&OVector<f64, D>, f64> for MultivariateNormal<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
