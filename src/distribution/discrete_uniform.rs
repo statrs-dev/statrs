@@ -15,7 +15,7 @@ use crate::statistics::*;
 /// assert_eq!(n.mean().unwrap(), 2.5);
 /// assert_eq!(n.pmf(3), 1.0 / 6.0);
 /// ```
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct DiscreteUniform {
     min: i64,
     max: i64,

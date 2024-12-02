@@ -24,15 +24,11 @@ pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
     loop {
         let mid = (lb.clone() + ub.clone()) / two.clone();
         if !(f(&lb)..=f(&ub)).contains(&f(&mid)) {
-            // if f found not monotone on the interval
-            return None;
+            return None; // f found not monotone on interval
         } else if f(&lb) == z {
             return Some(lb);
-        } else if f(&ub) == z {
-            return Some(ub);
-        } else if (lb.clone() + K::one()) == ub {
-            // no more elements to search
-            return Some(ub);
+        } else if f(&ub) == z || (lb.clone() + K::one()) == ub {
+            return Some(ub); // found or no more integers between
         } else if f(&mid) >= z {
             ub = mid;
         } else {
