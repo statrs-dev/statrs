@@ -41,7 +41,7 @@ jobs:
           cargo llvm-cov report --doctests --lcov --output-path lcov.info
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: lcov.info
           token: ${{secrets.CODECOV_TOKEN}}
