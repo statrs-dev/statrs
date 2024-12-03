@@ -1,7 +1,7 @@
 use crate::distribution::Discrete;
 use crate::function::factorial;
 use crate::statistics::*;
-use nalgebra::{DVector, Dim, Dyn, OMatrix, OVector};
+use nalgebra::{Dim, Dyn, OMatrix, OVector};
 
 /// Implements the
 /// [Multinomial](https://en.wikipedia.org/wiki/Multinomial_distribution)
@@ -203,7 +203,7 @@ where
     res
 }
 
-impl<D> MeanN<DVector<f64>> for Multinomial<D>
+impl<D> MeanN<OVector<f64, D>> for Multinomial<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
@@ -218,10 +218,8 @@ where
     ///
     /// where `n` is the number of trials, `p_i` is the `i`th probability,
     /// and `k` is the total number of probabilities
-    fn mean(&self) -> Option<DVector<f64>> {
-        Some(DVector::from_vec(
-            self.p.iter().map(|x| x * self.n as f64).collect(),
-        ))
+    fn mean(&self) -> Option<OVector<f64, D>> {
+        Some(self.p.map(|x| x * self.n as f64))
     }
 }
 
