@@ -203,6 +203,23 @@ where
     res
 }
 
+impl<D> Mode<OVector<u64, D>> for Multinomial<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
+{
+    fn mode(&self) -> OVector<u64, D> {
+        let n = self.n() as f64;
+        let (nr, nc) = self.p.shape_generic();
+        OVector::<u64, D>::from_iterator_generic(
+            nr,
+            nc,
+            self.p.iter().map(|&p| ((n + 1.0) * p).floor() as u64),
+        )
+    }
+}
+
 impl<D> MeanN<DVector<f64>> for Multinomial<D>
 where
     D: Dim,
