@@ -49,6 +49,7 @@ impl core::fmt::Display for InverseGammaError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for InverseGammaError {}
 
 impl InverseGamma {

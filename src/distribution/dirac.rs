@@ -33,6 +33,7 @@ impl core::fmt::Display for DiracError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for DiracError {}
 
 impl Dirac {

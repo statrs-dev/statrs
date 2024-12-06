@@ -49,6 +49,7 @@ impl core::fmt::Display for FisherSnedecorError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for FisherSnedecorError {}
 
 impl FisherSnedecor {

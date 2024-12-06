@@ -39,6 +39,7 @@ impl core::fmt::Display for GeometricError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for GeometricError {}
 
 impl Geometric {

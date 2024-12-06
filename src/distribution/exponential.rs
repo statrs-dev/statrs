@@ -40,6 +40,7 @@ impl core::fmt::Display for ExpError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for ExpError {}
 
 impl Exp {

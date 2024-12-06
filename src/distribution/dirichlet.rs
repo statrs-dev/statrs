@@ -54,6 +54,7 @@ impl core::fmt::Display for DirichletError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for DirichletError {}
 
 impl Dirichlet<Dyn> {

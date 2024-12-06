@@ -82,6 +82,7 @@ impl core::fmt::Display for MultivariateStudentError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for MultivariateStudentError {}
 
 impl MultivariateStudent<Dyn> {

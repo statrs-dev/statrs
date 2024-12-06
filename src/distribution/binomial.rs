@@ -41,6 +41,7 @@ impl core::fmt::Display for BinomialError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for BinomialError {}
 
 impl Binomial {
