@@ -369,7 +369,7 @@ mod tests {
                 Alternative::TwoSided,
             ]
             .iter()
-            .zip(vec![less_expected, greater_expected, two_sided_expected])
+            .zip([less_expected, greater_expected, two_sided_expected])
             {
                 let p_value = fishers_exact(table, *alternative).unwrap();
                 assert!(prec::almost_eq(p_value, *expected, 1e-12));
