@@ -197,6 +197,7 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> OrderStatistics<f64> for Data<D> {
         self.upper_quartile() - self.lower_quartile()
     }
 
+    #[cfg(feature = "std")]
     fn ranks(&mut self, tie_breaker: RankTieBreaker) -> Vec<f64> {
         let n = self.len();
         let mut ranks: Vec<f64> = vec![0.0; n];
@@ -392,6 +393,7 @@ impl<D: AsMut<[f64]> + AsRef<[f64]> + Clone> Median<f64> for Data<D> {
     }
 }
 
+#[cfg(feature = "std")]
 fn handle_rank_ties(
     ranks: &mut [f64],
     index: &[(usize, &f64)],
@@ -446,6 +448,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn test_ranks() {
         let sorted_distinct = [1.0, 2.0, 4.0, 7.0, 8.0, 9.0, 10.0, 12.0];
         let mut sorted_distinct = Data::new(sorted_distinct);
@@ -534,6 +537,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn test_median_long_constant_seq() {
         let even = vec![2.0; 100000];
         let even = Data::new(even);
