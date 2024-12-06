@@ -135,6 +135,7 @@ impl core::fmt::Display for MultivariateNormalError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for MultivariateNormalError {}
 
 impl MultivariateNormal<Dyn> {

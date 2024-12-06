@@ -47,6 +47,7 @@ impl core::fmt::Display for WeibullError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for WeibullError {}
 
 impl Weibull {

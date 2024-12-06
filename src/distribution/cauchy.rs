@@ -42,6 +42,7 @@ impl core::fmt::Display for CauchyError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for CauchyError {}
 
 impl Cauchy {

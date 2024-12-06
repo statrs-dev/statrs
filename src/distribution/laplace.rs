@@ -42,6 +42,7 @@ impl core::fmt::Display for LaplaceError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for LaplaceError {}
 
 impl Laplace {

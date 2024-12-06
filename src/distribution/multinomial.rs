@@ -59,6 +59,7 @@ impl core::fmt::Display for MultinomialError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for MultinomialError {}
 
 impl Multinomial<Dyn> {

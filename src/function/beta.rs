@@ -30,6 +30,7 @@ impl core::fmt::Display for BetaFuncError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for BetaFuncError {}
 
 /// Computes the natural logarithm

@@ -51,6 +51,7 @@ impl core::fmt::Display for StudentsTError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for StudentsTError {}
 
 impl StudentsT {

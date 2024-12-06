@@ -45,6 +45,7 @@ impl core::fmt::Display for GumbelError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for GumbelError {}
 
 impl Gumbel {

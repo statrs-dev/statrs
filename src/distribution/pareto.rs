@@ -43,6 +43,7 @@ impl core::fmt::Display for ParetoError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for ParetoError {}
 
 impl Pareto {

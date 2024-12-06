@@ -42,6 +42,7 @@ impl core::fmt::Display for ChiError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for ChiError {}
 
 impl Chi {

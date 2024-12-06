@@ -58,6 +58,7 @@ impl core::fmt::Display for TriangularError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for TriangularError {}
 
 impl Triangular {
