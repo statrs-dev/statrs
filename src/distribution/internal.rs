@@ -40,12 +40,12 @@ pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
 #[macro_use]
 #[cfg(test)]
 pub mod test {
-    use super::*;
     use crate::distribution::{Continuous, ContinuousCDF, Discrete, DiscreteCDF};
 
     #[macro_export]
     macro_rules! testing_boiler {
         ($($arg_name:ident: $arg_ty:ty),+; $dist:ty; $dist_err:ty) => {
+            #[cfg(feature = "std")]
             fn make_param_text($($arg_name: $arg_ty),+) -> String {
                 // ""
                 let mut param_text = String::new();
@@ -66,6 +66,12 @@ pub mod test {
                 param_text.pop();
 
                 param_text
+            }
+
+            #[cfg(not(feature = "std"))]
+            #[allow(unused)]
+            fn make_param_text($($arg_name: $arg_ty),+) -> &'static str {
+                "(params N/A)"
             }
 
             /// Creates and returns a distribution with the given parameters,
@@ -453,7 +459,10 @@ pub mod test {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn test_integer_bisection() {
+        use super::*;
+
         fn search(z: usize, data: &[usize]) -> Option<usize> {
             integral_bisection_search(|idx: &usize| data[*idx], z, 0, data.len() - 1)
         }

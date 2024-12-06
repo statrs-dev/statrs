@@ -8,6 +8,7 @@ use num_traits::NumAssignOps;
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::{Beta, BetaError};
 pub use self::binomial::{Binomial, BinomialError};
+#[cfg(feature = "std")]
 pub use self::categorical::{Categorical, CategoricalError};
 pub use self::cauchy::{Cauchy, CauchyError};
 pub use self::chi::{Chi, ChiError};
@@ -16,6 +17,7 @@ pub use self::dirac::{Dirac, DiracError};
 #[cfg(feature = "nalgebra")]
 pub use self::dirichlet::{Dirichlet, DirichletError};
 pub use self::discrete_uniform::{DiscreteUniform, DiscreteUniformError};
+#[cfg(feature = "std")]
 pub use self::empirical::Empirical;
 pub use self::erlang::Erlang;
 pub use self::exponential::{Exp, ExpError};
@@ -45,6 +47,7 @@ pub use self::weibull::{Weibull, WeibullError};
 mod bernoulli;
 mod beta;
 mod binomial;
+#[cfg(feature = "std")]
 mod categorical;
 mod cauchy;
 mod chi;
@@ -54,6 +57,7 @@ mod dirac;
 #[cfg_attr(docsrs, doc(cfg(feature = "nalgebra")))]
 mod dirichlet;
 mod discrete_uniform;
+#[cfg(feature = "std")]
 mod empirical;
 mod erlang;
 mod exponential;
