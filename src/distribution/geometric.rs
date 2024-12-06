@@ -1,6 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Geometric](https://en.wikipedia.org/wiki/Geometric_distribution)
@@ -30,15 +30,16 @@ pub enum GeometricError {
     ProbabilityInvalid,
 }
 
-impl std::fmt::Display for GeometricError {
+impl core::fmt::Display for GeometricError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             GeometricError::ProbabilityInvalid => write!(f, "Probability is NaN or not in (0, 1]"),
         }
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for GeometricError {}
 
 impl Geometric {
@@ -84,8 +85,8 @@ impl Geometric {
     }
 }
 
-impl std::fmt::Display for Geometric {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Geometric {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Geom({})", self.p)
     }
 }

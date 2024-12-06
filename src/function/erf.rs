@@ -2,7 +2,7 @@
 //! related functions
 
 use crate::function::evaluate;
-use std::f64;
+use core::f64;
 
 /// `erf` calculates the error function at `x`.
 pub fn erf(x: f64) -> f64 {
@@ -738,7 +738,7 @@ fn erf_inv_impl(p: f64, q: f64, s: f64) -> f64 {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use std::f64;
+    use core::f64;
 
     #[test]
     fn test_erf() {
