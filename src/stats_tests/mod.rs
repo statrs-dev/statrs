@@ -1,5 +1,6 @@
 pub mod f_oneway;
 pub mod fisher;
+pub mod mannwhitneyu;
 pub mod ttest_onesample;
 
 /// Specifies an [alternative hypothesis](https://en.wikipedia.org/wiki/Alternative_hypothesis)
