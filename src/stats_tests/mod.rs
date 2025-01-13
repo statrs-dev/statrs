@@ -1,3 +1,4 @@
+pub mod chisquare;
 pub mod f_oneway;
 pub mod fisher;
 pub mod mannwhitneyu;
