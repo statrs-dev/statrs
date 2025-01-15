@@ -224,6 +224,66 @@ where
                 .ln(),
         )
     }
+
+    /// Returns the Cholesky decomposition of the covariance matrix
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nalgebra::OMatrix;
+    /// use statrs::distribution::MultivariateNormal;
+    ///
+    /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(mvn.cov_chol_decomp().shape(), (2, 2));
+    /// ```
+    pub fn cov_chol_decomp(&self) -> &OMatrix<f64, D, D> {
+        &self.cov_chol_decomp
+    }
+
+    /// Returns the mean of the multivariate normal distribution
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nalgebra::OVector;
+    /// use statrs::distribution::MultivariateNormal;
+    ///
+    /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(mvn.mu(), &OVector::from_vec(vec![0., 0.]));
+    /// ```
+    pub fn mu(&self) -> &OVector<f64, D> {
+        &self.mu
+    }
+
+    /// Returns the mean of the multivariate normal distribution
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nalgebra::OVector;
+    /// use statrs::distribution::MultivariateNormal;
+    ///
+    /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(mvn.mean(), &OVector::from_vec(vec![0., 0.]));
+    /// ```
+    pub fn cov(&self) -> &OMatrix<f64, D, D> {
+        &self.cov
+    }
+
+    /// Returns the precision matrix of the multivariate normal distribution
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nalgebra::OMatrix;
+    /// use statrs::distribution::MultivariateNormal;
+    ///
+    /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(mvn.precision().shape(), (2, 2));
+    /// ```
+    pub fn precision(&self) -> &OMatrix<f64, D, D> {
+        &self.precision
+    }
 }
 
 impl<D> std::fmt::Display for MultivariateNormal<D>
