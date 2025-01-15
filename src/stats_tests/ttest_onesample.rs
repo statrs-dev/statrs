@@ -39,6 +39,8 @@ impl std::error::Error for TTestOneSampleError {}
 ///
 /// Implementation based on [scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_1samp.html).
 ///
+/// `a` needs to be mutable in case needing to filter out NaNs for NaNPolicy::Emit
+///
 /// # Examples
 ///
 /// ```
@@ -48,14 +50,11 @@ impl std::error::Error for TTestOneSampleError {}
 /// let (statistic, pvalue) = ttest_onesample(data, 13f64, Alternative::TwoSided, NaNPolicy::Error).unwrap();
 /// ```
 pub fn ttest_onesample(
-    a: Vec<f64>,
+    mut a: Vec<f64>,
     popmean: f64,
     alternative: Alternative,
     nan_policy: NaNPolicy,
 ) -> Result<(f64, f64), TTestOneSampleError> {
-    // make a mutable in case it needs to be modified due to NaNPolicy::Emit
-    let mut a = a;
-
     let has_nans = a.iter().any(|x| x.is_nan());
     if has_nans {
         match nan_policy {

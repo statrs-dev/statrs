@@ -55,6 +55,8 @@ fn calc_root_b1(data: &[f64]) -> f64 {
 /// and [fintools.com](https://www.fintools.com/docs/normality_correlation.pdf) which both
 /// reference D'Agostino, 1970 (but direct access to the paper has been challenging to find)
 ///
+/// `a` needs to be mutable in case needing to filter out NaNs for NaNPolicy::Emit
+///
 /// # Examples
 ///
 /// ```
@@ -64,13 +66,10 @@ fn calc_root_b1(data: &[f64]) -> f64 {
 /// let (statistic, pvalue) = skewtest(data, Alternative::TwoSided, NaNPolicy::Error).unwrap();
 /// ```
 pub fn skewtest(
-    a: Vec<f64>,
+    mut a: Vec<f64>,
     alternative: Alternative,
     nan_policy: NaNPolicy,
 ) -> Result<(f64, f64), SkewTestError> {
-    // make a mutable in case it needs to be modified due to NaNPolicy::Emit
-    let mut a = a;
-
     let has_nans = a.iter().any(|x| x.is_nan());
     if has_nans {
         match nan_policy {

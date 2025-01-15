@@ -58,9 +58,8 @@ pub enum MannWhitneyUMethod {
 }
 
 /// ranks data and accounts for ties to calculate the U statistic
-fn rankdata_mwu<T: PartialOrd>(xy: Vec<T>) -> Result<(Vec<f64>, Vec<usize>), MannWhitneyUError> {
-    let mut j = (0..xy.len()).collect::<Vec<usize>>();
-    let mut y = xy;
+fn rankdata_mwu<T: PartialOrd>(mut y: Vec<T>) -> Result<(Vec<f64>, Vec<usize>), MannWhitneyUError> {
+    let mut j = (0..y.len()).collect::<Vec<usize>>();
 
     // check to make sure data can be compared to generate the ranks
     for i in 0..y.len() {

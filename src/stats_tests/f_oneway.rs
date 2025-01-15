@@ -49,6 +49,8 @@ impl std::error::Error for FOneWayTestError {}
 /// Implementation based on [statsdirect](https://www.statsdirect.com/help/analysis_of_variance/one_way.htm)
 /// and [scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.f_oneway.html#scipy.stats.f_oneway)
 ///
+/// `samples` needs to be mutable in case needing to filter out NaNs for NaNPolicy::Emit
+///
 /// # Examples
 ///
 /// ```
@@ -63,11 +65,9 @@ impl std::error::Error for FOneWayTestError {}
 /// let (statistic, pvalue) = f_oneway(sample_input, NaNPolicy::Error).unwrap(); // (9.3, 0.002)
 /// ```
 pub fn f_oneway(
-    samples: Vec<Vec<f64>>,
+    mut samples: Vec<Vec<f64>>,
     nan_policy: NaNPolicy,
 ) -> Result<(f64, f64), FOneWayTestError> {
-    // samples as mutable in case it needs to be modified via NaNPolicy::Emit
-    let mut samples = samples;
     let k = samples.len();
 
     // initial input validation
