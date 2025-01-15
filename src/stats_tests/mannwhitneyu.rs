@@ -476,6 +476,31 @@ mod tests {
         assert_eq!(result, Err(MannWhitneyUError::ExactMethodWithTiesInData));
     }
     #[test]
+    fn test_automatic_asymptotic() {
+        // compare to running same inputs in scipy
+        // both samples len > 8
+        let (statistic, pvalue) = mannwhitneyu(
+            &[19, 22, 16, 29, 24, 28, 7, 10, 30],
+            &[20, 11, 17, 12, 5, 31, 18, 2, 34],
+            MannWhitneyUMethod::Automatic,
+            Alternative::TwoSided,
+        )
+        .unwrap();
+        assert_eq!(statistic, 49.0);
+        assert!(prec::almost_eq(pvalue, 0.47992869214595724, 1e-9));
+
+        // ties in data
+        let (statistic, pvalue) = mannwhitneyu(
+            &[1, 2, 3, 4, 5, 6],
+            &[6, 7, 8, 9, 10],
+            MannWhitneyUMethod::Automatic,
+            Alternative::TwoSided,
+        )
+        .unwrap();
+        assert_eq!(statistic, 0.5);
+        assert!(prec::almost_eq(pvalue, 0.010411098147110422, 1e-9));
+    }
+    #[test]
     fn test_rankdata_mwu() {
         let data = Vec::from([1, 4, 3]);
         let (rank, t) = rankdata_mwu(data).expect("data is good");
