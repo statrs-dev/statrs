@@ -207,6 +207,16 @@ mod tests {
         assert!(prec::almost_eq(pvalue, 0.0002812242314534544, 1e-12));
     }
     #[test]
+    fn test_group_length_one_ok() {
+        // group length 1 doesn't result in error
+        let group1 = Vec::from([0.5]);
+        let group2 = Vec::from([0.25, 0.75]);
+        let sample_input = Vec::from([group1, group2]);
+        let (statistic, pvalue) = f_oneway(sample_input, NaNPolicy::Propogate).unwrap();
+        assert!(prec::almost_eq(statistic, 0.0, 1e-1));
+        assert!(prec::almost_eq(pvalue, 1.0, 1e-12));
+    }
+    #[test]
     fn test_nan_in_data_w_propogate() {
         let group1 = Vec::from([0.0571, 0.0813, f64::NAN, 0.0836]);
         let group2 = Vec::from([0.0873, 0.0662, 0.0672, 0.0819, 0.0749]);
