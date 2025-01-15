@@ -105,6 +105,36 @@ impl Uniform {
     pub fn standard() -> Self {
         Self { min: 0.0, max: 1.0 }
     }
+
+    /// Returns the lower bound of the uniform distribution
+    /// as a `f64`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Uniform;
+    ///
+    /// let uniform = Uniform::new(0.0, 1.0).unwrap();
+    /// assert_eq!(uniform.min(), 0.0);
+    /// ```
+    pub fn min(&self) -> f64 {
+        self.min
+    }
+
+    /// Returns the upper bound of the uniform distribution
+    /// as a `f64`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Uniform;
+    ///
+    /// let uniform = Uniform::new(0.0, 1.0).unwrap();
+    /// assert_eq!(uniform.max(), 1.0);
+    /// ```
+    pub fn max(&self) -> f64 {
+        self.max
+    }
 }
 
 impl Default for Uniform {
