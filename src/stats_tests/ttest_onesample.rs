@@ -37,9 +37,11 @@ impl std::error::Error for TTestOneSampleError {}
 ///
 /// # Remarks
 ///
-/// Implementation based on [scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_1samp.html).
-///
 /// `a` needs to be mutable in case needing to filter out NaNs for NaNPolicy::Emit
+///
+/// Implementation based on [jmp](https://www.jmp.com/en_us/statistics-knowledge-portal/t-test/one-sample-t-test.html)
+/// while aligning to [scipy's](https://docs.scipy.org/doc/scipy-1.14.1/reference/generated/scipy.stats.ttest_1samp.html)
+/// function header where possible.
 ///
 /// # Examples
 ///

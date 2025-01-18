@@ -46,10 +46,14 @@ impl std::error::Error for FOneWayTestError {}
 /// Takes in a set (outer vector) of samples (inner vector) and returns the F-statistic and p-value
 ///
 /// # Remarks
-/// Implementation based on [statsdirect](https://www.statsdirect.com/help/analysis_of_variance/one_way.htm)
-/// and [scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.f_oneway.html#scipy.stats.f_oneway)
 ///
 /// `samples` needs to be mutable in case needing to filter out NaNs for NaNPolicy::Emit
+///
+/// Implementation based on [statsdirect](https://www.statsdirect.com/help/analysis_of_variance/one_way.htm)
+/// while aligning to [scipy's](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.f_oneway.html#scipy.stats.f_oneway)
+/// function header where possible. The scipy implementation was also used for testing and
+/// validation. Includes the use of [McDonald et al. (1991)](doi.org/10.1007/BF01319403) for
+/// testing and validation.
 ///
 /// # Examples
 ///
@@ -57,7 +61,6 @@ impl std::error::Error for FOneWayTestError {}
 /// use statrs::stats_tests::f_oneway::f_oneway;
 /// use statrs::stats_tests::NaNPolicy;
 ///
-/// // based on wikipedia example
 /// let a1 = Vec::from([6f64, 8f64, 4f64, 5f64, 3f64, 4f64]);
 /// let a2 = Vec::from([8f64, 12f64, 9f64, 11f64, 6f64, 8f64]);
 /// let a3 = Vec::from([13f64, 9f64, 11f64, 8f64, 7f64, 12f64]);
@@ -149,8 +152,6 @@ mod tests {
 
     #[test]
     fn test_scipy_example() {
-        // Test against the scipy example
-        // https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.f_oneway.html#scipy.stats.f_oneway
         let tillamook = Vec::from([
             0.0571, 0.0813, 0.0831, 0.0976, 0.0817, 0.0859, 0.0735, 0.0659, 0.0923, 0.0836,
         ]);

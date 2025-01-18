@@ -213,10 +213,17 @@ fn calc_mwu_exact_pvalue(u: f64, n1: usize, n2: usize) -> f64 {
 /// samples sizes (length of `x` + length of `y`) above 20 are approximated fairly well using the
 /// asymptotic (normal) methods.
 ///
-/// Implementation was largely based on the [scipy version](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mannwhitneyu.html#scipy.stats.mannwhitneyu).
-/// There are a few deviations including, not supporting calculation of the value via permutation
-/// tests, not supporting calculation of the exact p-value where input data includes ties, and not
-/// supporting the NaN policy due to being generic on T which might not have NaN values.
+///
+/// Implementation based on [wikipedia](https://en.wikipedia.org/wiki/Mann–Whitney_U_test)
+/// while aligning to [scipy's](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mannwhitneyu.html#scipy.stats.mannwhitneyu)
+/// function header where possible. The scipy implementation was also used for testing and
+/// validation. Includes the use of [Shier (2004)](https://www.statstutor.ac.uk/resources/uploaded/mannwhitney.pdf) for
+/// testing and validation.
+///
+/// There are a few deviations from the scipy version including, not supporting calculation
+/// of the value via permutation tests, not supporting calculation of the exact p-value
+/// where input data includes ties, and not supporting the NaN policy due to being generic
+/// on T which might not have NaN values.
 ///
 /// # Examples
 ///

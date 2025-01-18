@@ -51,11 +51,14 @@ fn calc_root_b1(data: &[f64]) -> f64 {
 ///
 /// # Remarks
 ///
-/// Implementation based on [scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.skewtest.html#scipy.stats.skewtest).
-/// and [fintools.com](https://www.fintools.com/docs/normality_correlation.pdf) which both
-/// reference D'Agostino, 1970 (but direct access to the paper has been challenging to find)
-///
 /// `a` needs to be mutable in case needing to filter out NaNs for NaNPolicy::Emit
+///
+/// Implementation based on [fintools.com](https://www.fintools.com/docs/normality_correlation.pdf)
+/// which indirectly uses [D'Agostino, (1970)](https://doi.org/10.2307/2684359)
+/// while aligning to [scipy's](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.skewtest.html#scipy.stats.skewtest)
+/// function header where possible. The scipy implementation was also used for testing and validation.
+/// Includes the use of [Shapiro & Wilk (1965)](https://doi.org/10.2307/2333709) for
+/// testing and validation.
 ///
 /// # Examples
 ///

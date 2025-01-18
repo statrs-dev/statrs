@@ -40,11 +40,12 @@ impl std::error::Error for ChiSquareTestError {}
 ///
 /// # Remarks
 ///
-/// Implementation based on the one-way chi-square test of [scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html#scipy.stats.chisquare).
-/// and Pearson's chi-squared test [wikipedia] article.
-///
 /// `ddof` represents an adjustment that can be made to the degrees of freedom where the unadjusted
 /// degrees of freedom is `f_obs.len() - 1`.
+///
+/// Implementation based on [wikipedia](https://en.wikipedia.org/wiki/Pearson%27s_chi-squared_test)
+/// while aligning to [scipy's](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html)
+/// function header where possible. The scipy implementation was also used for testing and validation.
 ///
 /// # Examples
 ///
