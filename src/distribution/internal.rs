@@ -418,6 +418,34 @@ pub mod test {
         assert!(sum <= 1.0 + 1e-10);
     }
 
+    /// cdf should be the integral of the pdf
+    fn check_derivative_of_cdf_is_pdf<D: ContinuousCDF<f64, f64> + Continuous<f64, f64>>(
+        dist: &D,
+        x_min: f64,
+        x_max: f64,
+        step: f64,
+    ) {
+        const DELTA: f64 = 1e-6;
+        let mut prev_x = x_min;
+
+        loop {
+            let x = prev_x + step;
+            let x_ahead = x + DELTA;
+            let x_behind = x - DELTA;
+            let density = dist.pdf(x);
+
+            let d_cdf = (dist.cdf(x_ahead) - dist.cdf(x_behind)) / (2.0 * DELTA);
+
+            assert_almost_eq!(d_cdf, density, 1e-6);
+
+            if x >= x_max {
+                break;
+            } else {
+                prev_x = x;
+            }
+        }
+    }
+
     /// Does a series of checks that all continuous distributions must obey.
     /// 99% of the probability mass should be between x_min and x_max.
     pub fn check_continuous_distribution<D: ContinuousCDF<f64, f64> + Continuous<f64, f64>>(
@@ -433,6 +461,7 @@ pub mod test {
         assert_eq!(dist.cdf(f64::INFINITY), 1.0);
 
         check_integrate_pdf_is_cdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
+        check_derivative_of_cdf_is_pdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
     }
 
     /// Does a series of checks that all positive discrete distributions must
