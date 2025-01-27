@@ -425,7 +425,7 @@ pub mod test {
         x_max: f64,
         step: f64,
     ) {
-        const DELTA: f64 = 1e-6;
+        const DELTA: f64 = 1e-12;
         let mut prev_x = x_min;
 
         loop {
@@ -433,10 +433,11 @@ pub mod test {
             let x_ahead = x + DELTA;
             let x_behind = x - DELTA;
             let density = dist.pdf(x);
+            let dx = 2.0 * DELTA;
 
-            let d_cdf = (dist.cdf(x_ahead) - dist.cdf(x_behind)) / (2.0 * DELTA);
+            let d_cdf = dist.cdf(x_ahead) - dist.cdf(x_behind);
 
-            assert_almost_eq!(d_cdf, density, 1e-6);
+            assert_almost_eq!(d_cdf, dx * density, 1e-11);
 
             if x >= x_max {
                 break;
