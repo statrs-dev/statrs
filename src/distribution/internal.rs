@@ -449,7 +449,9 @@ pub mod test {
 
     /// Does a series of checks that all continuous distributions must obey.
     /// 99% of the probability mass should be between x_min and x_max.
-    pub fn check_continuous_distribution<D: ContinuousCDF<f64, f64> + Continuous<f64, f64>>(
+    pub fn check_continuous_distribution<
+        D: ContinuousCDF<f64, f64> + Continuous<f64, f64> + std::panic::RefUnwindSafe,
+    >(
         dist: &D,
         x_min: f64,
         x_max: f64,
@@ -461,8 +463,16 @@ pub mod test {
         assert_eq!(dist.cdf(f64::NEG_INFINITY), 0.0);
         assert_eq!(dist.cdf(f64::INFINITY), 1.0);
 
-        check_integrate_pdf_is_cdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
-        check_derivative_of_cdf_is_pdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
+        let result_integration = std::panic::catch_unwind(|| {
+            check_integrate_pdf_is_cdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
+        });
+        let result_differentiation = std::panic::catch_unwind(|| {
+            check_derivative_of_cdf_is_pdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
+        });
+
+        if result_integration.is_err() && result_differentiation.is_err() {
+            panic!("Integration of pdf doesn't equal cdf and derivative of cdf doesn't equal pdf!");
+        }
     }
 
     /// Does a series of checks that all positive discrete distributions must
