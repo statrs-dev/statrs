@@ -418,7 +418,7 @@ pub mod test {
         assert!(sum <= 1.0 + 1e-10);
     }
 
-    /// cdf should be the integral of the pdf
+    /// pdf should be derivative of cdf
     fn check_derivative_of_cdf_is_pdf<D: ContinuousCDF<f64, f64> + Continuous<f64, f64>>(
         dist: &D,
         x_min: f64,
@@ -426,6 +426,7 @@ pub mod test {
         step: f64,
     ) {
         const DELTA: f64 = 1e-12;
+        const DX: f64 = 2.0 * DELTA;
         let mut prev_x = x_min;
 
         loop {
@@ -433,11 +434,10 @@ pub mod test {
             let x_ahead = x + DELTA;
             let x_behind = x - DELTA;
             let density = dist.pdf(x);
-            let dx = 2.0 * DELTA;
 
             let d_cdf = dist.cdf(x_ahead) - dist.cdf(x_behind);
 
-            assert_almost_eq!(d_cdf, dx * density, 1e-11);
+            assert_almost_eq!(d_cdf, DX * density, 1e-11);
 
             if x >= x_max {
                 break;
@@ -448,7 +448,8 @@ pub mod test {
     }
 
     /// Does a series of checks that all continuous distributions must obey.
-    /// 99% of the probability mass should be between x_min and x_max.
+    /// 99% of the probability mass should be between x_min and x_max or the finite
+    /// difference of cdf should be near to the pdf for much of the support.
     pub fn check_continuous_distribution<
         D: ContinuousCDF<f64, f64> + Continuous<f64, f64> + std::panic::RefUnwindSafe,
     >(
@@ -463,14 +464,14 @@ pub mod test {
         assert_eq!(dist.cdf(f64::NEG_INFINITY), 0.0);
         assert_eq!(dist.cdf(f64::INFINITY), 1.0);
 
-        let result_integration = std::panic::catch_unwind(|| {
+        if std::panic::catch_unwind(|| {
             check_integrate_pdf_is_cdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
-        });
-        let result_differentiation = std::panic::catch_unwind(|| {
+        })
+        .or(std::panic::catch_unwind(|| {
             check_derivative_of_cdf_is_pdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
-        });
-
-        if result_integration.is_err() && result_differentiation.is_err() {
+        }))
+        .is_err()
+        {
             panic!("Integration of pdf doesn't equal cdf and derivative of cdf doesn't equal pdf!");
         }
     }
