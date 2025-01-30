@@ -458,8 +458,8 @@ impl Continuous<f64, f64> for StudentsT {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consts::ACC;
     use crate::distribution::internal::*;
+    use crate::prec::DEFAULT_RELATIVE_ACC;
     use crate::testing_boiler;
 
     testing_boiler!(location: f64, scale: f64, freedom: f64; StudentsT; StudentsTError);
@@ -1121,7 +1121,11 @@ mod tests {
         let test = |x: f64, freedom: f64, expected: f64| {
             use approx::assert_relative_eq;
             let d = StudentsT::new(0., 1., freedom).unwrap();
-            assert_relative_eq!(d.inverse_cdf(x), expected, max_relative = ACC);
+            assert_relative_eq!(
+                d.inverse_cdf(x),
+                expected,
+                max_relative = DEFAULT_RELATIVE_ACC
+            );
         };
         // The data in this table of expected values was generated in
         // Python, using the mpsci package (based on mpmath):
