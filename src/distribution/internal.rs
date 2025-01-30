@@ -150,7 +150,7 @@ pub mod test {
                 F: Fn($dist) -> f64,
             {
                 let x = create_and_get($($arg_name),+, get_fn);
-                let max_relative = $crate::consts::ACC;
+                let max_relative = $crate::prec::DEFAULT_RELATIVE_ACC;
 
                 if !::approx::relative_eq!(expected, x, max_relative = max_relative) {
                     panic!(
