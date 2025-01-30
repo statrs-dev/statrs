@@ -9,6 +9,10 @@ pub const F64_PREC: f64 = 0.00000000000000011102230246251565;
 /// Default accuracy for `f64`, equivalent to `0.0 * F64_PREC`
 pub const DEFAULT_F64_ACC: f64 = 0.0000000000000011102230246251565;
 
+/// Targeted accuracy over `f64` results used in tests
+pub const DEFAULT_RELATIVE_ACC: f64 = 10e-11;
+pub const DEFAULT_ABSOLUTE_ACC: f64 = 10e-11;
+
 /// Compares if two floats are close via `approx::abs_diff_eq`
 /// using a maximum absolute difference (epsilon) of `acc`.
 pub fn almost_eq(a: f64, b: f64, acc: f64) -> bool {
@@ -22,7 +26,7 @@ pub fn almost_eq(a: f64, b: f64, acc: f64) -> bool {
 /// and `crate::consts::ACC` relative precision.
 /// Updates first argument to value of second argument
 pub fn convergence(x: &mut f64, x_new: f64) -> bool {
-    let res = approx::relative_eq!(*x, x_new, max_relative = crate::consts::ACC);
+    let res = approx::relative_eq!(*x, x_new, max_relative = DEFAULT_RELATIVE_ACC);
     *x = x_new;
     res
 }
