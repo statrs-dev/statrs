@@ -59,6 +59,9 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Test no_std
+        run: cargo test --no-default-features -F rand
+
       - name: Test default features
         run: cargo test
 

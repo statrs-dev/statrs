@@ -22,11 +22,13 @@ path = "src/lib.rs"
 [[bench]]
 name = "order_statistics"
 harness = false
-required-features = ["rand"]
+required-features = ["rand", "std"]
 
 [features]
-default = ["nalgebra", "rand"]
-nalgebra = ["dep:nalgebra"]
+default = ["std", "nalgebra", "rand"]
+std = ["nalgebra?/std", "rand?/std"]
+# at the moment, all nalgebra features needs std
+nalgebra = ["dep:nalgebra", "std"]
 rand = ["dep:rand", "nalgebra?/rand"]
 
 [dependencies]
@@ -36,12 +38,12 @@ num-traits = "0.2.14"
 [dependencies.rand]
 version = "0.8"
 optional = true
+default-features = false
 
 [dependencies.nalgebra]
 version = "0.33"
 optional = true
 default-features = false
-features = ["std"]
 
 [dev-dependencies]
 criterion = "0.5"

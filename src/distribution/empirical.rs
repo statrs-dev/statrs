@@ -179,12 +179,12 @@ impl Empirical {
     }
 }
 
-impl std::fmt::Display for Empirical {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Empirical {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut enumerated_values = self
             .data
             .iter()
-            .flat_map(|(x, &count)| std::iter::repeat(x.get()).take(count as usize));
+            .flat_map(|(x, &count)| core::iter::repeat(x.get()).take(count as usize));
 
         if let Some(x) = enumerated_values.next() {
             write!(f, "Empirical([{x:.3e}")?;

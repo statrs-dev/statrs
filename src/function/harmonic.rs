@@ -33,7 +33,7 @@ pub fn gen_harmonic(n: u64, m: f64) -> f64 {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use std::f64;
+    use core::f64;
 
     #[test]
     fn test_harmonic() {
