@@ -60,6 +60,20 @@ impl Dirac {
             Ok(Dirac(v))
         }
     }
+
+    /// Returns the value `v` of the dirac distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Dirac;
+    ///
+    /// let n = Dirac::new(3.0).unwrap();
+    /// assert_eq!(n.v(), 3.0);
+    /// ```
+    pub fn v(&self) -> f64 {
+        self.0
+    }
 }
 
 impl std::fmt::Display for Dirac {

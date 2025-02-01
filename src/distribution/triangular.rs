@@ -103,6 +103,44 @@ impl Triangular {
 
         Ok(Triangular { min, max, mode })
     }
+
+    /// Returns the minimum value in the domain of the
+    /// triangular distribution
+    ///
+    /// # Remarks
+    ///
+    /// The return value is the same min used to construct the distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Triangular;
+    ///
+    /// let n = Triangular::new(0.0, 5.0, 2.5).unwrap();
+    /// assert_eq!(n.min(), 0.0);
+    /// ```
+    pub fn min(&self) -> f64 {
+        self.min
+    }
+
+    /// Returns the maximum value in the domain of the
+    /// triangular distribution
+    ///
+    /// # Remarks
+    ///
+    /// The return value is the same max used to construct the distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Triangular;
+    ///
+    /// let n = Triangular::new(0.0, 5.0, 2.5).unwrap();
+    /// assert_eq!(n.max(), 5.0);
+    /// ```
+    pub fn max(&self) -> f64 {
+        self.max
+    }
 }
 
 impl std::fmt::Display for Triangular {

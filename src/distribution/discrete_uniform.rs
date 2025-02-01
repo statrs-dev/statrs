@@ -66,6 +66,44 @@ impl DiscreteUniform {
             Ok(DiscreteUniform { min, max })
         }
     }
+
+    /// Returns the minimum value in the domain of the discrete uniform
+    /// distribution
+    ///
+    /// # Remarks
+    ///
+    /// This is the same value as the minimum passed into the constructor
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::DiscreteUniform;
+    ///
+    /// let n = DiscreteUniform::new(0, 5).unwrap();
+    /// assert_eq!(n.min(), 0);
+    /// ```
+    pub fn min(&self) -> i64 {
+        self.min
+    }
+
+    /// Returns the maximum value in the domain of the discrete uniform
+    /// distribution
+    ///
+    /// # Remarks
+    ///
+    /// This is the same value as the maximum passed into the constructor
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::DiscreteUniform;
+    ///
+    /// let n = DiscreteUniform::new(0, 5).unwrap();
+    /// assert_eq!(n.max(), 5);
+    /// ```
+    pub fn max(&self) -> i64 {
+        self.max
+    }
 }
 
 impl std::fmt::Display for DiscreteUniform {

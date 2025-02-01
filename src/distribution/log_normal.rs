@@ -79,6 +79,34 @@ impl LogNormal {
 
         Ok(LogNormal { location, scale })
     }
+
+    /// Returns the location of the log-normal distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::LogNormal;
+    ///
+    /// let n = LogNormal::new(0.0, 1.0).unwrap();
+    /// assert_eq!(n.location(), 0.0);
+    /// ```
+    pub fn location(&self) -> f64 {
+        self.location
+    }
+
+    /// Returns the scale of the log-normal distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::LogNormal;
+    ///
+    /// let n = LogNormal::new(0.0, 1.0).unwrap();
+    /// assert_eq!(n.scale(), 1.0);
+    /// ```
+    pub fn scale(&self) -> f64 {
+        self.scale
+    }
 }
 
 impl std::fmt::Display for LogNormal {
