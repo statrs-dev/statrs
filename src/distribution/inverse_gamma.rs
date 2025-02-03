@@ -1,5 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
+use crate::prec;
 use crate::statistics::*;
 use std::f64;
 
@@ -314,7 +315,7 @@ impl Continuous<f64, f64> for InverseGamma {
     fn pdf(&self, x: f64) -> f64 {
         if x <= 0.0 || x.is_infinite() {
             0.0
-        } else if ulps_eq!(self.shape, 1.0) {
+        } else if prec::ulps_eq!(self.shape, 1.0) {
             self.rate / (x * x) * (-self.rate / x).exp()
         } else {
             self.rate.powf(self.shape) * x.powf(-self.shape - 1.0) * (-self.rate / x).exp()

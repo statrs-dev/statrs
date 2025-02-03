@@ -8,13 +8,14 @@ pub const F64_PREC: f64 = 0.00000000000000011102230246251565;
 /// Default accuracy for `f64`, equivalent to `0.0 * F64_PREC`
 pub const DEFAULT_F64_ACC: f64 = 0.0000000000000011102230246251565;
 
-/// Targeted accuracy over `f64` results used in tests
+/// Default and target accuracy for f64 operations
 pub const DEFAULT_RELATIVE_ACC: f64 = 1e-10;
 pub const DEFAULT_EPS: f64 = 1e-9;
 pub const DEFAULT_ULPS: u32 = 5;
 
 /// Compares if two floats are close via `approx::abs_diff_eq`
 /// using a maximum absolute difference (epsilon) of `acc`.
+#[deprecated]
 pub fn almost_eq(a: f64, b: f64, acc: f64) -> bool {
     use approx::AbsDiffEq;
     if a.is_infinite() && b.is_infinite() {

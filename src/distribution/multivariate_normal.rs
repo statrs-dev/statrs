@@ -372,7 +372,7 @@ where
 #[cfg(test)]
 mod tests  {
     use core::fmt::Debug;
-
+    use crate::prec;
     use nalgebra::{dmatrix, dvector, matrix, vector, DimMin, OMatrix, OVector};
 
     use crate::{
@@ -443,7 +443,7 @@ mod tests  {
     {
         let mvn = try_create(mean, covariance);
         let x = eval(mvn);
-        assert_almost_eq!(expected, x, acc);
+        prec::assert_abs_diff_eq!(expected, x, epsilon = acc);
     }
 
     #[test]
