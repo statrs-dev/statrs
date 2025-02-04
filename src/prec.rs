@@ -86,6 +86,9 @@ macro_rules! redefine_two_opt_approx_macro {
 
 #[macro_use]
 pub mod macros {
+    pub(crate) use redefine_one_opt_approx_macro;
+    pub(crate) use redefine_two_opt_approx_macro;
+
     // Non-asserting wrappers:
 
     redefine_one_opt_approx_macro!(

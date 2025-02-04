@@ -5,6 +5,11 @@ use crate::function::gamma;
 use crate::prec;
 use std::f64;
 
+use prec::redefine_one_opt_approx_macro;
+/// sample case of module level precision
+const DEFAULT_EPS: f64 = 1e-14;
+redefine_one_opt_approx_macro!(ulps_eq, { epsilon: DEFAULT_EPS });
+
 /// Represents the errors that can occur when computing the natural logarithm
 /// of the beta function or the regularized lower incomplete beta function.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
@@ -147,7 +152,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
         return Err(BetaFuncError::XOutOfRange);
     }
 
-    let bt = if x == 0.0 || prec::ulps_eq!(x, 1.0) {
+    let bt = if x == 0.0 || ulps_eq!(x, 1.0) {
         0.0
     } else {
         (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
@@ -427,17 +432,20 @@ pub fn inv_beta_reg(mut a: f64, mut b: f64, mut x: f64) -> f64 {
 mod tests {
     use super::*;
 
+    // sample of module level
+    redefine_one_opt_approx_macro!(assert_abs_diff_eq, { epsilon: DEFAULT_EPS });
+
     #[test]
     fn test_ln_beta() {
-        prec::assert_abs_diff_eq!(ln_beta(0.5, 0.5), 1.144729885849400174144, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(ln_beta(1.0, 0.5), 0.6931471805599453094172, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(ln_beta(2.5, 0.5), 0.163900632837673937284, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(ln_beta(0.5, 1.0), 0.6931471805599453094172, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(ln_beta(1.0, 1.0), 0.0, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(ln_beta(2.5, 1.0), -0.9162907318741550651835, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(ln_beta(0.5, 2.5), 0.163900632837673937284, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(ln_beta(1.0, 2.5), -0.9162907318741550651835, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(ln_beta(2.5, 2.5), -2.608688089402107300388, epsilon = 1e-14);
+        assert_abs_diff_eq!(ln_beta(0.5, 0.5), 1.144729885849400174144);
+        assert_abs_diff_eq!(ln_beta(1.0, 0.5), 0.6931471805599453094172);
+        assert_abs_diff_eq!(ln_beta(2.5, 0.5), 0.163900632837673937284);
+        assert_abs_diff_eq!(ln_beta(0.5, 1.0), 0.6931471805599453094172);
+        assert_abs_diff_eq!(ln_beta(1.0, 1.0), 0.0);
+        assert_abs_diff_eq!(ln_beta(2.5, 1.0), -0.9162907318741550651835);
+        assert_abs_diff_eq!(ln_beta(0.5, 2.5), 0.163900632837673937284);
+        assert_abs_diff_eq!(ln_beta(1.0, 2.5), -0.9162907318741550651835);
+        assert_abs_diff_eq!(ln_beta(2.5, 2.5), -2.608688089402107300388);
     }
 
     #[test]
