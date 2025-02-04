@@ -126,14 +126,15 @@ pub mod macros {
     pub(crate) use assert_relative_eq;
     pub(crate) use assert_ulps_eq;
 
-    #[deprecated = "phasing this macro out from internal testing for consistency"]
+    #[deprecated(
+        since = "0.19.0",
+        note = "phasing this macro out from internal testing for consistency"
+    )]
     macro_rules! assert_almost_eq {
         ($a:expr, $b:expr, $eps:expr $(,)?) => {
             approx::assert_abs_diff_eq!($a, $b, epsilon = $eps)
         };
     }
-
-    pub(crate) use assert_almost_eq;
 }
 
 pub use macros::*;
