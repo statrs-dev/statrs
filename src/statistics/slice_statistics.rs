@@ -309,8 +309,7 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Distribution<f64> for Data<D> {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use statrs::statistics::Distribution;
     /// use statrs::statistics::Data;
@@ -326,7 +325,7 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Distribution<f64> for Data<D> {
     ///
     /// let z = [0.0, 3.0, -2.0];
     /// let z = Data::new(z);
-    /// assert_almost_eq!(z.mean().unwrap(), 1.0 / 3.0, 1e-15);
+    /// assert_abs_diff_eq!(z.mean().unwrap(), 1.0 / 3.0, epsilon = 1e-15);
     /// # }
     /// ```
     fn mean(&self) -> Option<f64> {
