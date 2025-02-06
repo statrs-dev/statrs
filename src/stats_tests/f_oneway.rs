@@ -166,9 +166,10 @@ mod tests {
         let sample_input = Vec::from([tillamook, newport, petersburg, magadan, tvarminne]);
         let (statistic, pvalue) = f_oneway(sample_input, NaNPolicy::Error).unwrap();
 
-        assert!(prec::almost_eq(statistic, 7.121019471642447, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.0002812242314534544, 1e-12));
+        prec::assert_relative_eq!(statistic, 7.121019471642447);
+        prec::assert_abs_diff_eq!(pvalue, 0.0002812242314534544);
     }
+
     #[test]
     fn test_nan_in_data_w_emit() {
         // same as scipy example above with NaNs added should give same result
@@ -204,9 +205,10 @@ mod tests {
         let sample_input = Vec::from([tillamook, newport, petersburg, magadan, tvarminne]);
         let (statistic, pvalue) = f_oneway(sample_input, NaNPolicy::Emit).unwrap();
 
-        assert!(prec::almost_eq(statistic, 7.121019471642447, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.0002812242314534544, 1e-12));
+        prec::assert_relative_eq!(statistic, 7.121019471642447);
+        prec::assert_abs_diff_eq!(pvalue, 0.0002812242314534544);
     }
+
     #[test]
     fn test_group_length_one_ok() {
         // group length 1 doesn't result in error
@@ -214,9 +216,10 @@ mod tests {
         let group2 = Vec::from([0.25, 0.75]);
         let sample_input = Vec::from([group1, group2]);
         let (statistic, pvalue) = f_oneway(sample_input, NaNPolicy::Propogate).unwrap();
-        assert!(prec::almost_eq(statistic, 0.0, 1e-1));
-        assert!(prec::almost_eq(pvalue, 1.0, 1e-12));
+        prec::assert_relative_eq!(statistic, 0.0);
+        prec::assert_abs_diff_eq!(pvalue, 1.0);
     }
+
     #[test]
     fn test_nan_in_data_w_propogate() {
         let group1 = Vec::from([0.0571, 0.0813, f64::NAN, 0.0836]);
@@ -226,6 +229,7 @@ mod tests {
         assert!(statistic.is_nan());
         assert!(pvalue.is_nan());
     }
+
     #[test]
     fn test_nan_in_data_w_error() {
         let group1 = Vec::from([0.0571, 0.0813, f64::NAN, 0.0836]);
@@ -234,6 +238,7 @@ mod tests {
         let result = f_oneway(sample_input, NaNPolicy::Error);
         assert_eq!(result, Err(FOneWayTestError::SampleContainsNaN));
     }
+
     #[test]
     fn test_bad_data_not_enough_samples() {
         let group1 = Vec::from([0.0, 0.0]);
@@ -241,6 +246,7 @@ mod tests {
         let result = f_oneway(sample_input, NaNPolicy::Propogate);
         assert_eq!(result, Err(FOneWayTestError::NotEnoughSamples))
     }
+
     #[test]
     fn test_bad_data_sample_too_small() {
         let group1 = Vec::new();
@@ -267,6 +273,7 @@ mod tests {
         let result = f_oneway(sample_input, NaNPolicy::Emit);
         assert_eq!(result, Err(FOneWayTestError::SampleTooSmall));
     }
+
     #[test]
     fn test_bad_data_sample_contains_same_constants() {
         let group1 = Vec::from([1.0, 1.0]);

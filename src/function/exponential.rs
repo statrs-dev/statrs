@@ -85,23 +85,26 @@ pub fn integral(x: f64, n: u64) -> Option<f64> {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
+    use crate::prec;
+    use super::*;
+
     #[test]
     fn test_integral() {
-        assert_eq!(super::integral(0.001, 1).unwrap(), 6.33153936413614904);
-        assert_almost_eq!(super::integral(0.1, 1).unwrap(), 1.82292395841939059, 1e-15);
-        assert_eq!(super::integral(1.0, 1).unwrap(), 0.219383934395520286);
-        assert_almost_eq!(super::integral(2.0, 1).unwrap(), 0.0489005107080611248, 1e-15);
-        assert_almost_eq!(super::integral(2.5, 1).unwrap(), 0.0249149178702697399, 1e-15);
-        assert_almost_eq!(super::integral(10.0, 1).unwrap(), 4.15696892968532464e-06, 1e-20);
-        assert_eq!(super::integral(0.001, 2).unwrap(), 0.992668960469238915);
-        assert_almost_eq!(super::integral(0.1, 2).unwrap(), 0.722545022194020392, 1e-15);
-        assert_almost_eq!(super::integral(1.0, 2).unwrap(), 0.148495506775922048, 1e-16);
-        assert_almost_eq!(super::integral(2.0, 2).unwrap(), 0.0375342618204904527, 1e-16);
-        assert_almost_eq!(super::integral(10.0, 2).unwrap(), 3.830240465631608e-06, 1e-20);
-        assert_eq!(super::integral(0.001, 0).unwrap(), 999.000499833375);
-        assert_eq!(super::integral(0.1, 0).unwrap(), 9.048374180359595);
-        assert_almost_eq!(super::integral(1.0, 0).unwrap(), 0.3678794411714423, 1e-16);
-        assert_eq!(super::integral(2.0, 0).unwrap(), 0.06766764161830635);
-        assert_eq!(super::integral(10.0, 0).unwrap(), 4.539992976248485e-06);
+        assert_eq!(integral(0.001, 1).unwrap(), 6.33153936413614904);
+        prec::assert_abs_diff_eq!(integral(0.1, 1).unwrap(), 1.82292395841939059, epsilon = 1e-15);
+        assert_eq!(integral(1.0, 1).unwrap(), 0.219383934395520286);
+        prec::assert_abs_diff_eq!(integral(2.0, 1).unwrap(), 0.0489005107080611248, epsilon = 1e-15);
+        prec::assert_abs_diff_eq!(integral(2.5, 1).unwrap(), 0.0249149178702697399, epsilon = 1e-15);
+        prec::assert_abs_diff_eq!(integral(10.0, 1).unwrap(), 4.15696892968532464e-06, epsilon = 1e-20);
+        assert_eq!(integral(0.001, 2).unwrap(), 0.992668960469238915);
+        prec::assert_abs_diff_eq!(integral(0.1, 2).unwrap(), 0.722545022194020392, epsilon = 1e-15);
+        prec::assert_abs_diff_eq!(integral(1.0, 2).unwrap(), 0.148495506775922048, epsilon = 1e-16);
+        prec::assert_abs_diff_eq!(integral(2.0, 2).unwrap(), 0.0375342618204904527, epsilon = 1e-16);
+        prec::assert_abs_diff_eq!(integral(10.0, 2).unwrap(), 3.830240465631608e-06, epsilon = 1e-20);
+        assert_eq!(integral(0.001, 0).unwrap(), 999.000499833375);
+        assert_eq!(integral(0.1, 0).unwrap(), 9.048374180359595);
+        prec::assert_abs_diff_eq!(integral(1.0, 0).unwrap(), 0.3678794411714423, epsilon = 1e-16);
+        assert_eq!(integral(2.0, 0).unwrap(), 0.06766764161830635);
+        assert_eq!(integral(10.0, 0).unwrap(), 4.539992976248485e-06);
     }
 }
