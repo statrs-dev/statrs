@@ -141,7 +141,7 @@ impl ::rand::distributions::Distribution<u64> for NegativeBinomial {
     fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> u64 {
         use crate::distribution::{gamma, poisson};
 
-        let lambda = gamma::sample_unchecked(r, self.r, (1.0 - self.p) / self.p);
+        let lambda = gamma::sample_unchecked(r, self.r, self.p / (1.0 - self.p));
         poisson::sample_unchecked(r, lambda).floor() as u64
     }
 }
