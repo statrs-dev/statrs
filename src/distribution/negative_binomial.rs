@@ -141,7 +141,7 @@ impl ::rand::distributions::Distribution<u64> for NegativeBinomial {
     fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> u64 {
         use crate::distribution::{gamma, poisson};
 
-        let lambda = gamma::sample_unchecked(r, self.r, (1.0 - self.p) / self.p);
+        let lambda = gamma::sample_unchecked(r, self.r, self.p / (1.0 - self.p));
         poisson::sample_unchecked(r, lambda).floor() as u64
     }
 }
@@ -486,5 +486,26 @@ mod tests {
     fn test_sf_upper_bound() {
         let sf = |arg: u64| move |x: NegativeBinomial| x.sf(arg);
         test_absolute(3.0, 0.5, 5.282409836586059e-28, 1e-28, sf(100));
+    }
+
+    #[test]
+    fn test_sample() {
+        use crate::prec;
+        use rand::{distributions::Distribution, SeedableRng, rngs::StdRng};
+
+        let dist = NegativeBinomial::new(4.0, 0.5).unwrap();
+        let mut rng = StdRng::seed_from_u64(1600);
+        let n_samples = 10_000;
+        let tol = 0.1;
+
+        let samples: Vec<u64> = dist.sample_iter(&mut rng).take(n_samples).collect();
+        let sample_mean = samples.iter().sum::<u64>() as f64 / n_samples as f64;
+        let sample_variance = samples.iter().map(|&x| (x as f64 - sample_mean).powi(2)).sum::<f64>() / n_samples as f64;
+
+        let theoretical_mean = dist.mean().unwrap();
+        let theoretical_variance = dist.variance().unwrap();
+
+        assert!(prec::almost_eq(sample_mean, theoretical_mean, tol));
+        assert!(prec::almost_eq(sample_variance, theoretical_variance, tol));
     }
 }
