@@ -317,8 +317,8 @@ fn twosample_schroer_and_trenkler_twosided_pvalue(d: f64, m: usize, n: usize) ->
     let d_scaled = (0.5 + (d * md * nd - 1e-7).floor()) / (md * nd);
     let total_paths = binomial((m + n) as u64, m as u64);
 
-    let mut a = DMatrix::<f64>::zeros(m + 1, n + 1);
-    a[(0, 0)] = 1.0;
+    let mut a = vec![vec![0.0; n + 1]; m + 1];
+    a[0][0] = 1.0;
 
     for x in 0..=m {
         for y in 0..=n {
@@ -328,14 +328,14 @@ fn twosample_schroer_and_trenkler_twosided_pvalue(d: f64, m: usize, n: usize) ->
 
             // outside of constraint
             if (x as f64 / md - y as f64 / nd).abs() > d_scaled {
-                a[(x, y)] = 0.0;
+                a[x][y] = 0.0;
             } else {
-                a[(x, y)] = (if x > 0 { a[(x - 1, y)] } else { 0.0 })
-                    + (if y > 0 { a[(x, y - 1)] } else { 0.0 });
+                a[x][y] = (if x > 0 { a[x - 1][y] } else { 0.0 })
+                    + (if y > 0 { a[x][y - 1] } else { 0.0 });
             }
         }
     }
-    let valid_paths = a[(m, n)];
+    let valid_paths = a[m][n];
     1.0 - valid_paths / total_paths
 }
 
