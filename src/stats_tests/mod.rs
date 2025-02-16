@@ -1,6 +1,7 @@
 pub mod chisquare;
 pub mod f_oneway;
 pub mod fisher;
+pub mod ks_test;
 pub mod mannwhitneyu;
 pub mod skewtest;
 pub mod ttest_onesample;
