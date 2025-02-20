@@ -489,6 +489,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "rand")]
     fn test_sample() {
         use crate::prec;
         use rand::{distributions::Distribution, SeedableRng, rngs::StdRng};
