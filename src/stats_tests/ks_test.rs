@@ -4,12 +4,11 @@
 use core::f64;
 use std::iter::zip;
 
-use nalgebra::DMatrix;
 use num_traits::clamp;
 
 use crate::distribution::ContinuousCDF;
 
-use crate::function::factorial::{binomial, factorial};
+use crate::function::factorial;
 
 use super::NaNPolicy;
 
@@ -74,7 +73,9 @@ pub enum KSOneSampleAlternativeMethod {
     /// p-value for the two-sided hypothesis test. This implementation can become slow for larger
     /// `n`s and will error with if there are ties in the input data or the input data is too
     /// large. The threshold for too large is data with length 170 lining up with the
-    /// implementation of [`factorial`] being used.
+    /// implementation of [`factorial::factorial`] being used. Exact calculation requires the use of
+    /// [`nalgebra`] crate/feature.
+    #[cfg(feature = "nalgebra")]
     TwoSidedExact,
     /// calculates an approximated p-value based on asymptotic approximation described in
     /// Kolmogorov (1933). The asymptotic approximation is commonly used in other languages when
@@ -89,7 +90,7 @@ fn onesample_birnbaum_tingey_onesided_pvalue(d: f64, n: f64) -> f64 {
     // Birnbaum & Tingey (1951)
     let mut sum = 0.0;
     for j in 0..=(n * (1.0 - d)).floor() as u64 {
-        sum += binomial(n as u64, j)
+        sum += factorial::binomial(n as u64, j)
             * (j as f64 / n + d).powi(j as i32 - 1)
             * (1.0 - d - j as f64 / n).powi(n as i32 - j as i32);
     }
@@ -116,7 +117,9 @@ fn onesample_kolmogorov_twosided_pvalue(d: f64, n: f64) -> f64 {
     2.0 * sum
 }
 
+#[cfg(feature = "nalgebra")]
 fn onesample_marsaglia_et_al_twosided_pvalue(d: f64, n: f64) -> Result<f64, KSTestError> {
+    use nalgebra::DMatrix;
     // Marsaglia, Tsang & Wang (2003)
     // `factorial` can only handle up to 170... could use ln factorial
     if n as usize >= 170 {
@@ -134,17 +137,17 @@ fn onesample_marsaglia_et_al_twosided_pvalue(d: f64, n: f64) -> Result<f64, KSTe
     for j in 0..m {
         for i in 0..m {
             if j == 0 {
-                mm[(i, j)] = (1.0 - h.powi(i as i32 + 1)) / factorial(i as u64 + 1);
+                mm[(i, j)] = (1.0 - h.powi(i as i32 + 1)) / factorial::factorial(i as u64 + 1);
                 if i == (m - 1) {
                     // bottom left corner
                     mm[(i, j)] = (1.0 - 2.0 * h.powi(m as i32)
                         + (2.0 * h - 1.0).powi(m as i32).max(0.0))
-                        / factorial(m as u64);
+                        / factorial::factorial(m as u64);
                 }
             } else if i == (m - 1) {
                 mm[(i, j)] = mm[(m - j - 1, 0)]
             } else if (i as isize - j as isize + 1) >= 0 {
-                mm[(i, j)] = 1.0 / factorial((i as isize - j as isize + 1) as u64)
+                mm[(i, j)] = 1.0 / factorial::factorial((i as isize - j as isize + 1) as u64)
             } else {
                 continue;
             }
@@ -156,7 +159,7 @@ fn onesample_marsaglia_et_al_twosided_pvalue(d: f64, n: f64) -> Result<f64, KSTe
         t = &mm * t;
     }
 
-    Ok(t[(k as usize - 1, k as usize - 1)] * factorial(n as u64) / n.powi(n as i32))
+    Ok(t[(k as usize - 1, k as usize - 1)] * factorial::factorial(n as u64) / n.powi(n as i32))
 }
 
 /// Kolmogorov-Smirnov (KS) Test for one sample against [`ContinuousCDF`]
@@ -243,6 +246,7 @@ where
             let pvalue = onesample_birnbaum_tingey_onesided_pvalue(statistic, n);
             (statistic, pvalue)
         }
+        #[cfg(feature = "nalgebra")]
         KSOneSampleAlternativeMethod::TwoSidedExact => {
             let mut duplicate_check = data.clone(); // should be for small n so not a big deal
             duplicate_check.dedup(); // data should already be sorted above
@@ -315,7 +319,7 @@ fn twosample_schroer_and_trenkler_twosided_pvalue(d: f64, m: usize, n: usize) ->
 
     // scale + adjustment for rounding
     let d_scaled = (0.5 + (d * md * nd - 1e-7).floor()) / (md * nd);
-    let total_paths = binomial((m + n) as u64, m as u64);
+    let total_paths = factorial::binomial((m + n) as u64, m as u64);
 
     let mut a = vec![vec![0.0; n + 1]; m + 1];
     a[0][0] = 1.0;
