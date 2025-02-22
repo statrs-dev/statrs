@@ -119,7 +119,7 @@ fn onesample_kolmogorov_twosided_pvalue(d: f64, n: f64) -> f64 {
 
 #[cfg(feature = "nalgebra")]
 fn onesample_marsaglia_et_al_twosided_pvalue(d: f64, n: f64) -> Result<f64, KSTestError> {
-    use nalgebra::DMatrix;
+    use nalgebra::{DMatrix, DVector};
     // Marsaglia, Tsang & Wang (2003)
     // `factorial` can only handle up to 170... could use ln factorial
     if n as usize >= 170 {
@@ -132,8 +132,6 @@ fn onesample_marsaglia_et_al_twosided_pvalue(d: f64, n: f64) -> Result<f64, KSTe
 
     let mut mm = DMatrix::<f64>::zeros(m, m);
 
-    // PERF: definitely a better way to fill the matrix. Also could cache the
-    // factorial calculations to save time as well
     for j in 0..m {
         for i in 0..m {
             if j == 0 {
@@ -153,13 +151,22 @@ fn onesample_marsaglia_et_al_twosided_pvalue(d: f64, n: f64) -> Result<f64, KSTe
             }
         }
     }
+    let mut nn = n as usize;
+    let k = k as usize - 1; // now have k reflect the index
 
-    let mut t = mm.clone();
-    for _ in 0..(n as usize - 1) {
-        t = &mm * t;
+    let mut v = DVector::<f64>::zeros(m); // unit vector
+    v[k] = 1.0;
+    let mut a = mm.clone();
+
+    while nn > 0 {
+        if nn % 2 != 0 {
+            v = &a * v;
+        }
+        a = &a * &a;
+        nn /= 2; //floor division
     }
 
-    Ok(t[(k as usize - 1, k as usize - 1)] * factorial::factorial(n as u64) / n.powi(n as i32))
+    Ok(v[k] * factorial::factorial(n as u64) / n.powi(n as i32))
 }
 
 /// Kolmogorov-Smirnov (KS) Test for one sample against [`ContinuousCDF`]
