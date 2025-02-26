@@ -57,7 +57,6 @@ pub mod distribution;
 pub mod euclid;
 pub mod function;
 pub mod generate;
-#[macro_use]
 pub mod prec;
 pub mod statistics;
 pub mod stats_tests;
