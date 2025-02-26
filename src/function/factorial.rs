@@ -100,9 +100,11 @@ const FCACHE: [f64; MAX_FACTORIAL + 1] = {
     fcache
 };
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prec;
 
     #[test]
     fn test_fcache() {
@@ -135,7 +137,11 @@ mod tests {
     #[test]
     fn test_ln_factorial_does_not_overflow() {
         assert_eq!(ln_factorial(1 << 10), 6078.2118847500501140);
-        assert_almost_eq!(ln_factorial(1 << 12), 29978.648060844048236, 1e-11);
+        prec::assert_abs_diff_eq!(
+            ln_factorial(1 << 12),
+            29978.648060844048236,
+            epsilon = 1e-11
+        );
         assert_eq!(ln_factorial(1 << 15), 307933.81973375485425);
         assert_eq!(ln_factorial(1 << 17), 1413421.9939462073242);
     }
@@ -153,8 +159,8 @@ mod tests {
     #[test]
     fn test_ln_binomial() {
         assert_eq!(ln_binomial(1, 1), 1f64.ln());
-        assert_almost_eq!(ln_binomial(5, 2), 10f64.ln(), 1e-14);
-        assert_almost_eq!(ln_binomial(7, 3), 35f64.ln(), 1e-14);
+        prec::assert_abs_diff_eq!(ln_binomial(5, 2), 10f64.ln(), epsilon = 1e-14);
+        prec::assert_abs_diff_eq!(ln_binomial(7, 3), 35f64.ln(), epsilon = 1e-14);
         assert_eq!(ln_binomial(1, 0), 1f64.ln());
         assert_eq!(ln_binomial(0, 1), 0f64.ln());
         assert_eq!(ln_binomial(5, 7), 0f64.ln());
