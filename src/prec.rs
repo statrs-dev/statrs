@@ -33,7 +33,6 @@ pub fn convergence(x: &mut f64, x_new: f64) -> bool {
     res
 }
 
-#[macro_export(local_inner_macros)]
 macro_rules! redefine_one_opt_approx_macro {
     (
         $approx_macro:ident,
@@ -52,7 +51,6 @@ macro_rules! redefine_one_opt_approx_macro {
     };
 }
 
-#[macro_export(local_inner_macros)]
 macro_rules! redefine_two_opt_approx_macro {
     (
         $approx_macro:ident,
@@ -84,7 +82,6 @@ macro_rules! redefine_two_opt_approx_macro {
     };
 }
 
-#[macro_use]
 pub mod macros {
     // Non-asserting wrappers:
 
