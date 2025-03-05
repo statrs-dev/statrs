@@ -1,5 +1,7 @@
 //! Provides the [beta](https://en.wikipedia.org/wiki/Beta_function) and related
 //! function
+//!
+//! This module sets the default precision more tightly than crate defaults for `DEFAULT_EPS`
 
 use crate::function::gamma;
 use crate::prec;
