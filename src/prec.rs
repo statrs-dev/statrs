@@ -133,7 +133,7 @@ mod macros {
     pub(crate) use redefine_one_opt_approx_macro;
     pub(crate) use redefine_two_opt_approx_macro;
 
-    // Non-asserting wrappers
+    // Non-asserting wrappers:
     redefine_one_opt_approx_macro!(
         abs_diff_eq,
         { epsilon: crate::prec::DEFAULT_EPS }
@@ -177,4 +177,4 @@ mod macros {
     }
 }
 
-pub use macros::*;
+pub(crate) use macros::*;

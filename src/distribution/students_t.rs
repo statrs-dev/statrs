@@ -11,11 +11,11 @@ use core::f64;
 /// ```
 /// use statrs::distribution::{StudentsT, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = StudentsT::new(0.0, 1.0, 2.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), 0.0);
-/// assert!(prec::almost_eq(n.pdf(0.0), 0.353553390593274, 1e-15));
+/// assert_abs_diff_eq!(n.pdf(0.0), 0.353553390593274, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct StudentsT {

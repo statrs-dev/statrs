@@ -13,12 +13,12 @@ use core::f64;
 /// ```
 /// use statrs::distribution::{Hypergeometric, Discrete};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Hypergeometric::new(500, 50, 100).unwrap();
 /// assert_eq!(n.mean().unwrap(), 10.);
-/// assert!(prec::almost_eq(n.pmf(10), 0.14736784, 1e-8));
-/// assert!(prec::almost_eq(n.pmf(25), 3.537e-7, 1e-10));
+/// assert_abs_diff_eq!(n.pmf(10), 0.14736784, epsilon = 1e-8);
+/// assert_abs_diff_eq!(n.pmf(25), 3.537e-7, epsilon = 1e-10);
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Hypergeometric {
