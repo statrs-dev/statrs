@@ -51,7 +51,7 @@ impl std::error::Error for KSTestError {}
 ///
 /// There are numerous algorithms for calculation the p-value of for the KS
 /// test with various trade-offs related to speed and precision for when to use them (see
-/// [Simard & L’Ecuyer (2011)](doi.org/10.18637/jss.v039.i11) for an overview of some of the
+/// [Simard & L'Ecuyer (2011)](doi.org/10.18637/jss.v039.i11) for an overview of some of the
 /// different options related to two-sided p-value calculation). The implementation here does not
 /// currently provide functionality that accounts for all the trade-offs. Instead, it aims to be
 /// somewhat serviceable while leaving the door open for future enhancements. The `TwoSidedExact`,
