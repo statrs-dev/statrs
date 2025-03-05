@@ -13,11 +13,11 @@ use core::f64;
 /// ```
 /// use statrs::distribution::{LogNormal, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = LogNormal::new(0.0, 1.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), (0.5f64).exp());
-/// assert!(prec::almost_eq(n.pdf(1.0), 0.3989422804014326779399, 1e-16));
+/// assert_abs_diff_eq!(n.pdf(1.0), 0.3989422804014326779399, epsilon = 1e-16);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct LogNormal {

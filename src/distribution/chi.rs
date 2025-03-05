@@ -12,11 +12,11 @@ use core::num::NonZeroU64;
 /// ```
 /// use statrs::distribution::{Chi, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Chi::new(2).unwrap();
-/// assert!(prec::almost_eq(n.mean().unwrap(), 1.25331413731550025121, 1e-14));
-/// assert!(prec::almost_eq(n.pdf(1.0), 0.60653065971263342360, 1e-15));
+/// assert_abs_diff_eq!(n.mean().unwrap(), 1.25331413731550025121, epsilon = 1e-14);
+/// assert_abs_diff_eq!(n.pdf(1.0), 0.60653065971263342360, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Chi {

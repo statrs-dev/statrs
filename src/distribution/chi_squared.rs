@@ -13,11 +13,11 @@ use core::f64;
 /// ```
 /// use statrs::distribution::{ChiSquared, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = ChiSquared::new(3.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), 3.0);
-/// assert!(prec::almost_eq(n.pdf(4.0), 0.107981933026376103901, 1e-15));
+/// assert_abs_diff_eq!(n.pdf(4.0), 0.107981933026376103901, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct ChiSquared {

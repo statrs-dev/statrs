@@ -10,11 +10,11 @@ use core::f64;
 /// ```
 /// use statrs::distribution::{Pareto, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let p = Pareto::new(1.0, 2.0).unwrap();
 /// assert_eq!(p.mean().unwrap(), 2.0);
-/// assert!(prec::almost_eq(p.pdf(2.0), 0.25, 1e-15));
+/// assert_abs_diff_eq!(p.pdf(2.0), 0.25, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Pareto {

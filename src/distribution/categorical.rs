@@ -13,9 +13,10 @@ use core::f64;
 /// use statrs::distribution::{Categorical, Discrete};
 /// use statrs::statistics::Distribution;
 /// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Categorical::new(&[0.0, 1.0, 2.0]).unwrap();
-/// assert!(prec::almost_eq(n.mean().unwrap(), 5.0 / 3.0, 1e-15));
+/// assert_abs_diff_eq!(n.mean().unwrap(), 5.0 / 3.0, epsilon = 1e-15);
 /// assert_eq!(n.pmf(1), 1.0 / 3.0);
 /// ```
 #[derive(Clone, PartialEq, Debug)]

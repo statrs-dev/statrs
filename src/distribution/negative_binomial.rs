@@ -26,12 +26,12 @@ use core::f64;
 /// ```
 /// use statrs::distribution::{NegativeBinomial, Discrete};
 /// use statrs::statistics::DiscreteDistribution;
-/// use statrs::prec::almost_eq;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let r = NegativeBinomial::new(4.0, 0.5).unwrap();
 /// assert_eq!(r.mean().unwrap(), 4.0);
-/// assert!(almost_eq(r.pmf(0), 0.0625, 1e-8));
-/// assert!(almost_eq(r.pmf(3), 0.15625, 1e-8));
+/// assert_abs_diff_eq!(r.pmf(0), 0.0625, epsilon = 1e-8);
+/// assert_abs_diff_eq!(r.pmf(3), 0.15625, epsilon = 1e-8);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct NegativeBinomial {
