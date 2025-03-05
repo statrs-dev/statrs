@@ -55,10 +55,60 @@ If you'd like to modify where the data is downloaded, you can use the environmen
 
 This crate requires a Rust version of 1.65.0 or higher. Increases in MSRV will be considered a semver non-breaking API change and require a version increase (PATCH until 1.0.0, MINOR after 1.0.0).
 
+## Precision
+Floating-point numbers cannot always represent decimal values exactly, which can introduce small (and in some cases catastrophically large) errors in computations.
+In statistical applications, these errors can accumulate, making careful precision control important.
+
+### For Users and Evaluators
+
+The `statrs` crate takes precision seriously:
+
+- We use standardized precision checks throughout the codebase
+- Default precision levels are carefully chosen to balance correctness and performance
+- Module-specific precision requirements are explicitly documented where they differ from defaults
+- Our test suite verifies numerical accuracy against common reference libraries
+
+Key precision constants in the crate are set by pub consts in the `prec` module:
+- Default relative accuracy: `pub const DEFAULT_RELATIVE_ACC`
+- Default epsilon: `pub const DEFAULT_EPS`
+- Default ULPs (Units in Last Place): `pub const DEFAULT_ULPS`
+
+Some modules/submodules have default precision that is different from the crate defaults, for searchability the names of such constants are the `MODULE_RELATIVE_ACC`, `MODULE_EPS`, and `MODULE_ULPS`.
+
+> [!IMPORTANT]
+> Starting from v0.19.0, the `prec` module is no longer public (`pub mod prec` → `mod prec`). This change reflects that precision handling is an internal implementation detail.
+>
+> The precision constants mentioned above remain stable and documented and will be reexported at the crate level, but direct access to the module's utilities is now restricted to maintain better API boundaries.
+
+
+### For Contributors
+// express your sentiment about the intended use of `prec` module in this section. The reason is that this section is for contributors and the users need not know about internal functionality.
+To help maintain consistent precision checking, `statrs` provides:
+
+1. A `prec` module that wraps and standardizes common approximation checks from the `approx` crate with crate-specific defaults
+2. Macros for common precision comparison patterns
+3. Helper functions for convergence testing
+
+When contributing:
+- Use the provided precision utilities rather than hard-coding values
+- Maintain or improve precision in existing tests when making changes, new modules can start at lesser precision than the crate defaults if need be
+  - when doing so, one should use the same names as defined in the `prec` module, this helps with searchabiliy.
+- Document any module-specific precision requirements
+
+### Learning Resources
+
+If you're new to floating-point precision, these resources provide helpful introductions:
+
+- [Comparing Floating Point Numbers, 2012 Edition](https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/)
+- [The Floating Point Guide - Comparison](http://floating-point-gui.de/errors/comparison/)
+- [What Every Computer Scientist Should Know About Floating-Point Arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)
+
 ## Contributing
 
 Thanks for your help to improve the project!
 **No contribution is too small and all contributions are valued.**
+
+If you're not familiar with precision in floating point operations, please read the section on [precision](#precision) specifically, the [For Contributors](#for-contributors) section.
 
 Suggestions if you don't know where to start,
 - if you're an existing user, file an issue or feature request.
@@ -104,10 +154,6 @@ gh pr create --head <your_branch> # with GitHub's cli
 
 Then submit a PR, preferably referencing the relevant issue, if it exists.
 
-### Precision for contributors
-Take a look at the (Precision section)[#precision] to get a sense of what we have built in. Also take a look at tests and various assertions.
-If you'd like to improve precision, please also make existing tests more precise, perhaps up to the crate's default set in the `crate::prec` module or better.
-
 ### Commit messages
 
 Please be explicit and and purposeful with commit messages.
@@ -116,32 +162,3 @@ Please be explicit and and purposeful with commit messages.
 ### Communication Expectations
 
 Please allow at least one week before pinging issues/pr's.
-
-## Precision
-Floating-point numbers cannot always represent decimal values exactly, which can introduce small (and in some cases catastrophically large) errors in computations.
-In statistical applications, these errors can accumulate, making careful precision control important.
-
-To help us consistently inspect for inaccuracy, `statrs` provides a `prec` module that wraps and standardizes common approximation checks from the `approx` crate, but sets default values relevant to the crate.
-The crate-wide defaults are in the `prec` module, and in some sense establish expectations across the crate.
-One case of module level defaults are in the special function `beta` module.
-
-We encourage contributors to maintain or improve precision in existing tests when making changes.
-Our default precision levels aim to balance correctness and performance.
-To see where precision is explicited outside the default, you can search for relevant comparisons using:
-
-```sh
-rg '(?:abs_diff|relative|ulps)_eq\(.+?(?:epsilon|max_relative|ulps)\s?='
-```
-
-or using `grep` as an alternative:
-
-```sh
-grep -E '(abs_diff|relative|ulps)_eq' -r .
-```
-
-If you're new to floating-point precision, and wish to understand what kind of precision checking to use, these resources provide helpful introductions:
-
-- [Comparing Floating Point Numbers, 2012 Edition](https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/)
-- [The Floating Point Guide - Comparison](http://floating-point-gui.de/errors/comparison/)
-- [What Every Computer Scientist Should Know About Floating-Point Arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)
-This section on precision was a concerted effort with GPT-4o mini to ensure that it's inclusive to folks within and outside of numerics programming.

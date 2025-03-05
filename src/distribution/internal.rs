@@ -141,7 +141,7 @@ pub mod test {
             /// Gets a value for the given parameters by calling `create_and_get`
             /// and compares it to `expected`.
             ///
-            /// Allows relative error of up to [`crate::consts::ACC`].
+            /// Allows relative error of up to [`crate::prec::DEFAULT_RELATIVE_ACC`].
             ///
             /// Panics if `::new` fails.
             #[allow(dead_code)]
