@@ -307,10 +307,8 @@ impl Continuous<f64, f64> for ChiSquared {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
-    testing_boiler!(freedom: f64; ChiSquared; GammaError);
+    use crate::distribution::internal::density_util;
+    crate::distribution::internal::testing_boiler!(freedom: f64; ChiSquared; GammaError);
 
     #[test]
     fn test_median() {
@@ -325,8 +323,8 @@ mod tests {
     #[test]
     fn test_continuous() {
         // TODO: figure out why this test fails:
-        //test::check_continuous_distribution(&create_ok(1.0), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(2.0), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(5.0), 0.0, 50.0);
+        //check_continuous_distribution(&create_ok(1.0), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(2.0), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(5.0), 0.0, 50.0);
     }
 }

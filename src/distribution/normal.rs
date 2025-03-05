@@ -370,10 +370,8 @@ impl std::default::Default for Normal {
 mod tests {
     use super::*;
     use crate::prec;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
-    testing_boiler!(mean: f64, std_dev: f64; Normal; NormalError);
+    use crate::distribution::internal::density_util;
+    crate::distribution::internal::testing_boiler!(mean: f64, std_dev: f64; Normal; NormalError);
 
     #[test]
     fn test_create() {
@@ -536,8 +534,8 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(0.0, 1.0), -10.0, 10.0);
-        test::check_continuous_distribution(&create_ok(20.0, 0.5), 10.0, 30.0);
+        density_util::check_continuous_distribution(&create_ok(0.0, 1.0), -10.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(20.0, 0.5), 10.0, 30.0);
     }
 
     #[test]

@@ -512,8 +512,8 @@ mod tests {
         .unwrap();
         // exp_cdf = scipy.stats.expon(scale=mean).cdf
         // scipy.stats.ks_1samp(x=data, cdf=exp_cdf, alternative="less")
-        assert!(prec::almost_eq(statistic, 0.35308934158478106, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.01768990758651141, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.35308934158478106, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.01768990758651141, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_onesample(
             data.clone(),
@@ -523,8 +523,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_1samp(x=data, cdf=exp_cdf, alternative="greater")
-        assert!(prec::almost_eq(statistic, 0.22591345268298602, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.18683781649758202, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.22591345268298602, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.18683781649758202, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_onesample(
             data.clone(),
@@ -534,8 +534,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_1samp(x=data, cdf=exp_cdf, alternative="two-sided", method="approx")
-        assert!(prec::almost_eq(statistic, 0.35308934158478106, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.047499850721610656, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.35308934158478106, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.047499850721610656, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_onesample(
             data.clone(),
@@ -545,8 +545,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_1samp(x=data, cdf=exp_cdf, alternative="two-sided", method="asymp")
-        assert!(prec::almost_eq(statistic, 0.35308934158478106, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.03537981517302282, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.35308934158478106, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.03537981517302282, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_onesample(
             data.clone(),
@@ -556,8 +556,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_1samp(x=data, cdf=exp_cdf, alternative="two-sided", method="exact")
-        assert!(prec::almost_eq(statistic, 0.35308934158478106, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.03537978433644373, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.35308934158478106, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.03537978433644373, epsilon = 1e-9);
     }
     #[test]
     fn test_ks_onesample_against_r() {
@@ -571,8 +571,8 @@ mod tests {
         )
         .unwrap();
         // ks.test(-150:150/100, "pnorm", alternative="less", exact=TRUE)
-        assert!(prec::almost_eq(statistic, 0.066807, 1e-6));
-        assert!(prec::almost_eq(pvalue, 0.06508, 1e-3));
+        prec::assert_abs_diff_eq!(statistic, 0.066807, epsilon = 1e-6);
+        prec::assert_abs_diff_eq!(pvalue, 0.06508, epsilon = 1e-3);
 
         let (statistic, pvalue) = ks_onesample(
             data.clone(),
@@ -582,8 +582,8 @@ mod tests {
         )
         .unwrap();
         // ks.test(-150:150/100, "pnorm", alternative="two", exact=NULL)
-        assert!(prec::almost_eq(statistic, 0.066807, 1e-6));
-        assert!(prec::almost_eq(pvalue, 0.1361, 1e-3));
+        prec::assert_abs_diff_eq!(statistic, 0.066807, epsilon = 1e-6);
+        prec::assert_abs_diff_eq!(pvalue, 0.1361, epsilon = 1e-3);
 
         // can't test this since n would be too large
         // let (statistic, pvalue) = ks_onesample(
@@ -594,8 +594,8 @@ mod tests {
         // )
         // .unwrap();
         // ks.test(-150:150/100, "pnorm", alternative="two", exact=TRUE)
-        // assert!(prec::almost_eq(statistic, 0.066807, 1e-6));
-        // assert!(prec::almost_eq(pvalue, 0.1301, 1e-3));
+        // prec::assert_abs_diff_eq!(statistic, 0.066807, epsilon = 1e-6);
+        // prec::assert_abs_diff_eq!(pvalue, 0.1301, epsilon = 1e-3);
 
         // ensure that the ks test can handle non trivial small sizes
         let data_small_enough: Vec<f64> = (0..140).map(|i| i as f64 * 0.01).collect();
@@ -606,8 +606,8 @@ mod tests {
             NaNPolicy::Error,
         )
         .unwrap();
-        assert!(prec::almost_eq(statistic, 0.28571, 1e-5));
-        assert!(prec::almost_eq(pvalue, 1.311e-10, 1e-12));
+        prec::assert_abs_diff_eq!(statistic, 0.28571, epsilon = 1e-5);
+        prec::assert_abs_diff_eq!(pvalue, 1.311e-10, epsilon = 1e-12);
 
         let (statistic, pvalue) = ks_onesample(
             data.clone(),
@@ -617,8 +617,8 @@ mod tests {
         )
         .unwrap();
         // ks.test(-150:150/100, "punif", alternative="two", exact=NULL)
-        assert!(prec::almost_eq(statistic, 0.50166, 1e-5));
-        assert!(prec::almost_eq(pvalue, 0.0, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.50166, epsilon = 1e-5);
+        prec::assert_abs_diff_eq!(pvalue, 0.0, epsilon = 1e-9);
     }
     #[test]
     fn test_ks_onesample_marsaglia_tsang_wang_2003_exact() {
@@ -628,7 +628,7 @@ mod tests {
         let n = 10;
 
         let pvalue = onesample_marsaglia_et_al_twosided_pvalue(d, n as f64).unwrap();
-        assert!(prec::almost_eq(pvalue, 0.6284796154565043, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.6284796154565043, epsilon = 1e-9);
     }
     #[test]
     fn test_ks_onesample_bad_data_data_too_small() {
@@ -704,8 +704,8 @@ mod tests {
         .unwrap();
         // exp_cdf = scipy.stats.expon(scale=mean).cdf
         // scipy.stats.ks_1samp(x=data, cdf=exp_cdf, alternative="less")
-        assert!(prec::almost_eq(statistic, 0.35308934158478106, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.01768990758651141, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.35308934158478106, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.01768990758651141, epsilon = 1e-9);
     }
     #[test]
     fn test_ks_onesample_nan_in_data_w_propogate() {
@@ -774,8 +774,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_2samp(data1, data2)
-        assert!(prec::almost_eq(statistic, 0.26666666666666666, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.7315422361996597, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.26666666666666666, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.7315422361996597, epsilon = 1e-9);
         let (statistic, pvalue) = ks_twosample(
             data2.clone(),
             data1.clone(),
@@ -784,8 +784,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_2samp(data2, data1)
-        assert!(prec::almost_eq(statistic, 0.26666666666666666, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.7315422361996597, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.26666666666666666, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.7315422361996597, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_twosample(
             data1.clone(),
@@ -795,8 +795,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_2samp(data1, data2, method="asymp", alternative="less")
-        assert!(prec::almost_eq(statistic, 0.1, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.8078867967299911, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.1, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.8078867967299911, epsilon = 1e-9);
         let (statistic, pvalue) = ks_twosample(
             data2.clone(),
             data1.clone(),
@@ -805,8 +805,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_2samp(data2, data1, method="asymp", alternative="less")
-        assert!(prec::almost_eq(statistic, 0.26666666666666666, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.33213219147418116, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.26666666666666666, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.33213219147418116, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_twosample(
             data1.clone(),
@@ -816,8 +816,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_2samp(data1, data2, method="asymp", alternative="greater")
-        assert!(prec::almost_eq(statistic, 0.26666666666666666, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.33213219147418116, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.26666666666666666, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.33213219147418116, epsilon = 1e-9);
         let (statistic, pvalue) = ks_twosample(
             data2.clone(),
             data1.clone(),
@@ -826,8 +826,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_2samp(data2, data1, method="asymp", alternative="greater")
-        assert!(prec::almost_eq(statistic, 0.1, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.8078867967299911, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.1, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.8078867967299911, epsilon = 1e-9);
 
         // NOTE: scipy two-sided asymptotic basically defaults to the one
         // sample "automatic" implementation which may be an exact calculation
@@ -844,8 +844,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_2samp(data1, data2, method="asymp")
-        assert!(prec::almost_eq(statistic, 0.06450000000000002, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.0003435848163318721, 1e-4));
+        prec::assert_abs_diff_eq!(statistic, 0.06450000000000002, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.0003435848163318721, epsilon = 1e-4);
         let (statistic, pvalue) = ks_twosample(
             data2.clone(),
             data1.clone(),
@@ -854,8 +854,8 @@ mod tests {
         )
         .unwrap();
         // scipy.stats.ks_2samp(data2, data1, method="asymp"")
-        assert!(prec::almost_eq(statistic, 0.06450000000000002, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.0003435848163318721, 1e-4));
+        prec::assert_abs_diff_eq!(statistic, 0.06450000000000002, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.0003435848163318721, epsilon = 1e-4);
     }
     #[test]
     fn test_ks_twosample_hodges() {
@@ -881,14 +881,14 @@ mod tests {
             NaNPolicy::Error,
         )
         .unwrap();
-        assert!(prec::almost_eq(statistic, 1.0 / 3.0, 1e-9));
-        assert!(prec::almost_eq(pvalue, 97.0 / 105.0, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 1.0 / 3.0, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 97.0 / 105.0, epsilon = 1e-9);
 
         let pvalue = twosample_schroer_and_trenkler_twosided_pvalue(1.0 / 3.0, 6, 4);
-        assert!(prec::almost_eq(pvalue, 97.0 / 105.0, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 97.0 / 105.0, epsilon = 1e-9);
 
         let pvalue = twosample_schroer_and_trenkler_twosided_pvalue(1.0 / 3.0, 4, 6);
-        assert!(prec::almost_eq(pvalue, 97.0 / 105.0, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 97.0 / 105.0, epsilon = 1e-9);
     }
     #[test]
     fn test_ks_twosample_against_r() {
@@ -903,8 +903,8 @@ mod tests {
         )
         .unwrap();
         // ks.test(data1, data2)
-        assert!(prec::almost_eq(statistic, 0.06450000000000002, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.0003604729, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.06450000000000002, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.0003604729, epsilon = 1e-9);
         let (statistic, pvalue) = ks_twosample(
             data2.clone(),
             data1.clone(),
@@ -913,8 +913,8 @@ mod tests {
         )
         .unwrap();
         //ks.test(data2, data1)
-        assert!(prec::almost_eq(statistic, 0.06450000000000002, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.0003604729, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.06450000000000002, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.0003604729, epsilon = 1e-9);
 
         // test against R's `chickwts` built-in dataset from an annon source
         let casein = Vec::from([
@@ -931,8 +931,8 @@ mod tests {
         )
         .unwrap();
         //ks.test(casein, meatmeal)
-        assert!(prec::almost_eq(statistic, 0.4090909, 1e-6));
-        assert!(prec::almost_eq(pvalue, 0.1956825, 1e-6));
+        prec::assert_abs_diff_eq!(statistic, 0.4090909, epsilon = 1e-6);
+        prec::assert_abs_diff_eq!(pvalue, 0.1956825, epsilon = 1e-6);
 
         let (statistic, pvalue) = ks_twosample(
             meatmeal.clone(),
@@ -942,8 +942,8 @@ mod tests {
         )
         .unwrap();
         //ks.test(meatmeal, casein)
-        assert!(prec::almost_eq(statistic, 0.4090909, 1e-6));
-        assert!(prec::almost_eq(pvalue, 0.1956825, 1e-6));
+        prec::assert_abs_diff_eq!(statistic, 0.4090909, epsilon = 1e-6);
+        prec::assert_abs_diff_eq!(pvalue, 0.1956825, epsilon = 1e-6);
     }
     #[test]
     fn test_ks_twosample_bad_data_exact_too_large() {
@@ -1041,8 +1041,8 @@ mod tests {
             NaNPolicy::Emit,
         )
         .unwrap();
-        assert!(prec::almost_eq(statistic, 0.26666666666666666, 1e-9));
-        assert!(prec::almost_eq(pvalue, 0.7315422361996597, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 0.26666666666666666, epsilon = 1e-9);
+        prec::assert_abs_diff_eq!(pvalue, 0.7315422361996597, epsilon = 1e-9);
     }
     #[test]
     fn test_ks_twosample_nan_in_data_w_propogate() {
