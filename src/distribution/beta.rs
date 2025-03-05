@@ -385,14 +385,12 @@ impl Continuous<f64, f64> for Beta {
     }
 }
 
-#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
 
-    testing_boiler!(a: f64, b: f64; Beta; BetaError);
+    crate::distribution::internal::testing_boiler!(a: f64, b: f64; Beta; BetaError);
 
     #[test]
     fn test_create() {
@@ -507,7 +505,7 @@ mod tests {
             ((5.0, 100.0), 0.0, 0.0),
             ((5.0, 100.0), 0.5, 4.534102298350337661e-23),
             ((5.0, 100.0), 1.0, 0.0),
-            ((5.0, 100.0), 1.0, 0.0)
+            ((5.0, 100.0), 1.0, 0.0),
         ];
         for ((a, b), x, expect) in test {
             test_relative(a, b, expect, f(x));
@@ -612,8 +610,8 @@ mod tests {
             ((5.0, 100.0), 1.0, 1.0),
         ];
         for ((a, b), x, expect) in test {
-           test_relative(a, b, expect, func(x));
-        };
+            test_relative(a, b, expect, func(x));
+        }
     }
 
     #[test]
@@ -642,7 +640,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.2, 3.4), 0.0, 1.0);
-        test::check_continuous_distribution(&create_ok(4.5, 6.7), 0.0, 1.0);
+        density_util::check_continuous_distribution(&create_ok(1.2, 3.4), 0.0, 1.0);
+        density_util::check_continuous_distribution(&create_ok(4.5, 6.7), 0.0, 1.0);
     }
 }

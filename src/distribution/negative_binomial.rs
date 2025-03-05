@@ -322,8 +322,8 @@ impl Discrete<u64, f64> for NegativeBinomial {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::test;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(r: f64, p: f64; NegativeBinomial; NegativeBinomialError);
 
@@ -479,8 +479,8 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(5.0, 0.3), 35);
-        test::check_discrete_distribution(&create_ok(10.0, 0.7), 21);
+        density_util::check_discrete_distribution(&create_ok(5.0, 0.3), 35);
+        density_util::check_discrete_distribution(&create_ok(10.0, 0.7), 21);
     }
     
     #[test]
@@ -507,8 +507,8 @@ mod tests {
         let theoretical_mean = dist.mean().unwrap();
         let theoretical_variance = dist.variance().unwrap();
 
-        assert!(prec::almost_eq(sample_mean, theoretical_mean, tol));
-        assert!(prec::almost_eq(sample_variance, theoretical_variance, tol));
+        prec::assert_abs_diff_eq!(sample_mean, theoretical_mean, epsilon = tol);
+        prec::assert_abs_diff_eq!(sample_variance, theoretical_variance, epsilon = tol);
     }
 
     #[test]

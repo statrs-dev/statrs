@@ -552,13 +552,13 @@ mod tests {
     //         let large_p = &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
     //         let n = Multinomial::new(large_p, 45).unwrap();
     //         let x = &[1, 2, 3, 4, 5, 6, 7, 8, 9];
-    //         assert_almost_eq!(n.pmf(x).ln(), n.ln_pmf(x), 1e-13);
+    //         prec::assert_abs_diff_eq!(n.pmf(x).ln(), n.ln_pmf(x), epsilon = 1e-13);
     //         let n2 = Multinomial::new(large_p, 18).unwrap();
     //         let x2 = &[1, 1, 1, 2, 2, 2, 3, 3, 3];
-    //         assert_almost_eq!(n2.pmf(x2).ln(), n2.ln_pmf(x2), 1e-13);
+    //         prec::assert_abs_diff_eq!(n2.pmf(x2).ln(), n2.ln_pmf(x2), epsilon = 1e-13);
     //         let n3 = Multinomial::new(large_p, 51).unwrap();
     //         let x3 = &[5, 6, 7, 8, 7, 6, 5, 4, 3];
-    //         assert_almost_eq!(n3.pmf(x3).ln(), n3.ln_pmf(x3), 1e-13);
+    //         prec::assert_abs_diff_eq!(n3.pmf(x3).ln(), n3.ln_pmf(x3), epsilon = 1e-13);
     //     }
 
     //     #[test]

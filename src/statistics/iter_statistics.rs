@@ -243,7 +243,6 @@ where
 #[cfg(test)]
 mod tests {
     use core::f64::consts;
-    use super::*;
     use crate::generate::{InfinitePeriodic, InfiniteSinusoidal};
     use crate::prec;
     use crate::statistics::Statistics;

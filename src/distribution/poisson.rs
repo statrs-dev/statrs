@@ -341,9 +341,8 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, lambda: f64) -> f6
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
     testing_boiler!(lambda: f64; Poisson; PoissonError);
 
     #[test]
@@ -478,8 +477,8 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(0.3), 10);
-        test::check_discrete_distribution(&create_ok(4.5), 30);
+        density_util::check_discrete_distribution(&create_ok(0.3), 10);
+        density_util::check_discrete_distribution(&create_ok(4.5), 30);
     }
 
     #[test]

@@ -347,8 +347,8 @@ impl Continuous<f64, f64> for Uniform {
 mod tests {
     use super::*;
     use crate::prec;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(min: f64, max: f64; Uniform; UniformError);
 
@@ -522,8 +522,8 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(0.0, 10.0), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(-2.0, 15.0), -2.0, 15.0);
+        density_util::check_continuous_distribution(&create_ok(0.0, 10.0), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(-2.0, 15.0), -2.0, 15.0);
     }
 
     #[cfg(feature = "rand")]

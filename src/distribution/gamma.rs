@@ -439,8 +439,8 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, shape: f64, rate: 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(shape: f64, rate: f64; Gamma; GammaError);
 
@@ -709,7 +709,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.0, 0.5), 0.0, 20.0);
-        test::check_continuous_distribution(&create_ok(9.0, 2.0), 0.0, 20.0);
+        density_util::check_continuous_distribution(&create_ok(1.0, 0.5), 0.0, 20.0);
+        density_util::check_continuous_distribution(&create_ok(9.0, 2.0), 0.0, 20.0);
     }
 }

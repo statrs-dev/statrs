@@ -459,11 +459,10 @@ impl Continuous<f64, f64> for StudentsT {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
+    use crate::distribution::internal::density_util;
     use crate::prec;
-    use crate::testing_boiler;
 
-    testing_boiler!(location: f64, scale: f64, freedom: f64; StudentsT; StudentsTError);
+    crate::distribution::internal::testing_boiler!(location: f64, scale: f64, freedom: f64; StudentsT; StudentsTError);
 
     #[test]
     fn test_create() {
@@ -663,15 +662,14 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(0.0, 1.0, 3.0), -30.0, 30.0);
-        test::check_continuous_distribution(&create_ok(0.0, 1.0, 10.0), -10.0, 10.0);
-        test::check_continuous_distribution(&create_ok(20.0, 0.5, 10.0), 10.0, 30.0);
+        density_util::check_continuous_distribution(&create_ok(0.0, 1.0, 3.0), -30.0, 30.0);
+        density_util::check_continuous_distribution(&create_ok(0.0, 1.0, 10.0), -10.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(20.0, 0.5, 10.0), 10.0, 30.0);
     }
 
     #[test]
     fn test_inv_cdf() {
         let test = |x: f64, freedom: f64, expected: f64| {
-            use crate::prec;
             let d = StudentsT::new(0., 1., freedom).unwrap();
             // Checks that left == right to 4 significant figures, unlike
             // test_almost() which uses decimal places

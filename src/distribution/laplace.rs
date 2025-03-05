@@ -331,7 +331,7 @@ mod tests {
     use super::*;
     use crate::prec;
 
-    use crate::testing_boiler;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(location: f64, scale: f64; Laplace; LaplaceError);
 
