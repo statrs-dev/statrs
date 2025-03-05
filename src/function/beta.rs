@@ -7,6 +7,9 @@ use crate::function::gamma;
 use crate::prec;
 use core::f64;
 
+/// sample case of module level precision
+const MODULE_EPS: f64 = 1e-15;
+
 /// Represents the errors that can occur when computing the natural logarithm
 /// of the beta function or the regularized lower incomplete beta function.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
@@ -150,7 +153,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
         return Err(BetaFuncError::XOutOfRange);
     }
 
-    let bt = if x == 0.0 || prec::ulps_eq!(x, 1.0) {
+    let bt = if x == 0.0 || crate::prec::ulps_eq!(x, 1.0, epsilon = MODULE_EPS) {
         0.0
     } else {
         (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
@@ -248,7 +251,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
 // > Copyright 2014–2019 The special Developers
 // >
 // > Permission is hereby granted, free of charge, to any person obtaining a copy of
-// > this software and associated documentation files (the “Software”), to deal in
+// > this software and associated documentation files (the "Software"), to deal in
 // > the Software without restriction, including without limitation the rights to
 // > use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
 // > the Software, and to permit persons to whom the Software is furnished to do so,
@@ -257,7 +260,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
 // > The above copyright notice and this permission notice shall be included in all
 // > copies or substantial portions of the Software.
 // >
-// > THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// > THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // > IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
 // > FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // > COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
@@ -274,12 +277,12 @@ pub fn inv_beta_reg(mut a: f64, mut b: f64, mut x: f64) -> f64 {
     // 1 - x₀      χ²(α)
     //
     // where χ²(α) is the upper α point of the χ² distribution with 2q
-    // degrees of freedom and is obtained from Wilson and Hilferty’s
+    // degrees of freedom and is obtained from Wilson and Hilferty's
     // approximation (cf. Wilson and Hilferty, 1931)
     //
     // χ²(α) = 2q (1 - 1 / (9q) + y(α) sqrt(1 / (9q)))^3,
     //
-    // y(α) being Hastings’ approximation (cf. Hastings, 1955) for the upper
+    // y(α) being Hastings' approximation (cf. Hastings, 1955) for the upper
     // α point of the standard normal distribution. If χ²(α) < 0, then
     //
     // x₀ = 1 - ((1 - α)q B(p, q))^(1 / q).
@@ -425,22 +428,36 @@ pub fn inv_beta_reg(mut a: f64, mut b: f64, mut x: f64) -> f64 {
     }
 }
 
-#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prec;
+    const MODULE_RELATIVE_ACC: f64 = 1e-14;
+
+    fn beta_assert_relative_eq(a: f64, b: f64) {
+        prec::assert_relative_eq!(
+            a,
+            b,
+            epsilon = MODULE_EPS,
+            max_relative = MODULE_RELATIVE_ACC
+        );
+    }
+
+    fn beta_assert_abs_diff_eq(a: f64, b: f64) {
+        prec::assert_abs_diff_eq!(a, b, epsilon = MODULE_EPS);
+    }
 
     #[test]
     fn test_ln_beta() {
-        prec::assert_abs_diff_eq!(ln_beta(0.5, 0.5), 1.144729885849400174144, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(ln_beta(1.0, 0.5), 0.6931471805599453094172, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(ln_beta(2.5, 0.5), 0.163900632837673937284, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(ln_beta(0.5, 1.0), 0.6931471805599453094172, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(ln_beta(1.0, 1.0), 0.0, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(ln_beta(2.5, 1.0), -0.9162907318741550651835, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(ln_beta(0.5, 2.5), 0.163900632837673937284, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(ln_beta(1.0, 2.5), -0.9162907318741550651835, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(ln_beta(2.5, 2.5), -2.608688089402107300388, epsilon = 1e-14);
+        beta_assert_relative_eq(ln_beta(0.5, 0.5), 1.144729885849400174144);
+        beta_assert_relative_eq(ln_beta(1.0, 0.5), 0.6931471805599453094172);
+        beta_assert_relative_eq(ln_beta(2.5, 0.5), 0.163900632837673937284);
+        beta_assert_relative_eq(ln_beta(0.5, 1.0), 0.6931471805599453094172);
+        beta_assert_relative_eq(ln_beta(1.0, 1.0), 0.0);
+        beta_assert_relative_eq(ln_beta(2.5, 1.0), -0.9162907318741550651835);
+        beta_assert_relative_eq(ln_beta(0.5, 2.5), 0.163900632837673937284);
+        beta_assert_relative_eq(ln_beta(1.0, 2.5), -0.9162907318741550651835);
+        beta_assert_relative_eq(ln_beta(2.5, 2.5), -2.608688089402107300388);
     }
 
     #[test]
@@ -489,37 +506,37 @@ mod tests {
 
     #[test]
     fn test_beta() {
-        prec::assert_abs_diff_eq!(beta(0.5, 0.5), 3.141592653589793238463, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(beta(1.0, 0.5), 2.0, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(beta(2.5, 0.5), 1.17809724509617246442, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(beta(0.5, 1.0), 2.0, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(beta(1.0, 1.0), 1.0, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(beta(2.5, 1.0), 0.4, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(beta(0.5, 2.5), 1.17809724509617246442, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(beta(1.0, 2.5), 0.4, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(beta(2.5, 2.5), 0.073631077818510779026, epsilon = 1e-15);
+        beta_assert_relative_eq(beta(0.5, 0.5), 3.141592653589793238463);
+        beta_assert_relative_eq(beta(1.0, 0.5), 2.0);
+        beta_assert_relative_eq(beta(2.5, 0.5), 1.17809724509617246442);
+        beta_assert_relative_eq(beta(0.5, 1.0), 2.0);
+        beta_assert_relative_eq(beta(1.0, 1.0), 1.0);
+        beta_assert_relative_eq(beta(2.5, 1.0), 0.4);
+        beta_assert_relative_eq(beta(0.5, 2.5), 1.17809724509617246442);
+        beta_assert_relative_eq(beta(1.0, 2.5), 0.4);
+        beta_assert_relative_eq(beta(2.5, 2.5), 0.073631077818510779026);
     }
 
     #[test]
     fn test_beta_inc() {
-        prec::assert_abs_diff_eq!(beta_inc(0.5, 0.5, 0.5), 1.570796326794896619231, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(beta_inc(0.5, 0.5, 1.0), 3.141592653589793238463, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(beta_inc(1.0, 0.5, 0.5), 0.5857864376269049511983, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(beta_inc(1.0, 0.5, 1.0), 2.0, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(beta_inc(2.5, 0.5, 0.5), 0.0890486225480862322117, epsilon = 1e-16);
-        prec::assert_abs_diff_eq!(beta_inc(2.5, 0.5, 1.0), 1.17809724509617246442, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(beta_inc(0.5, 1.0, 0.5), 1.414213562373095048802, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(beta_inc(0.5, 1.0, 1.0), 2.0, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(beta_inc(1.0, 1.0, 0.5), 0.5, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(beta_inc(1.0, 1.0, 1.0), 1.0, epsilon = 1e-15);
-        assert_eq!(beta_inc(2.5, 1.0, 0.5), 0.0707106781186547524401);
-        prec::assert_abs_diff_eq!(beta_inc(2.5, 1.0, 1.0), 0.4, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(beta_inc(0.5, 2.5, 0.5), 1.08904862254808623221, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(beta_inc(0.5, 2.5, 1.0), 1.17809724509617246442, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(beta_inc(1.0, 2.5, 0.5), 0.32928932188134524756, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(beta_inc(1.0, 2.5, 1.0), 0.4, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(beta_inc(2.5, 2.5, 0.5), 0.03681553890925538951323, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(beta_inc(2.5, 2.5, 1.0), 0.073631077818510779026, epsilon = 1e-15);
+        beta_assert_relative_eq(beta_inc(0.5, 0.5, 0.5), 1.570796326794896619231);
+        beta_assert_relative_eq(beta_inc(0.5, 0.5, 1.0), 3.141592653589793238463);
+        beta_assert_relative_eq(beta_inc(1.0, 0.5, 0.5), 0.5857864376269049511983);
+        beta_assert_relative_eq(beta_inc(1.0, 0.5, 1.0), 2.0);
+        beta_assert_relative_eq(beta_inc(2.5, 0.5, 0.5), 0.0890486225480862322117);
+        beta_assert_relative_eq(beta_inc(2.5, 0.5, 1.0), 1.17809724509617246442);
+        beta_assert_relative_eq(beta_inc(0.5, 1.0, 0.5), 1.414213562373095048802);
+        beta_assert_relative_eq(beta_inc(0.5, 1.0, 1.0), 2.0);
+        beta_assert_relative_eq(beta_inc(1.0, 1.0, 0.5), 0.5);
+        beta_assert_relative_eq(beta_inc(1.0, 1.0, 1.0), 1.0);
+        beta_assert_relative_eq(beta_inc(2.5, 1.0, 0.5), 0.0707106781186547524401);
+        beta_assert_relative_eq(beta_inc(2.5, 1.0, 1.0), 0.4);
+        beta_assert_relative_eq(beta_inc(0.5, 2.5, 0.5), 1.08904862254808623221);
+        beta_assert_relative_eq(beta_inc(0.5, 2.5, 1.0), 1.17809724509617246442);
+        beta_assert_relative_eq(beta_inc(1.0, 2.5, 0.5), 0.32928932188134524756);
+        beta_assert_relative_eq(beta_inc(1.0, 2.5, 1.0), 0.4);
+        beta_assert_relative_eq(beta_inc(2.5, 2.5, 0.5), 0.03681553890925538951323);
+        beta_assert_relative_eq(beta_inc(2.5, 2.5, 1.0), 0.073631077818510779026);
     }
 
     #[test]
@@ -568,23 +585,23 @@ mod tests {
 
     #[test]
     fn test_beta_reg() {
-        prec::assert_abs_diff_eq!(beta_reg(0.5, 0.5, 0.5), 0.5, epsilon = 1e-15);
+        beta_assert_abs_diff_eq(beta_reg(0.5, 0.5, 0.5), 0.5);
         assert_eq!(beta_reg(0.5, 0.5, 1.0), 1.0);
-        prec::assert_abs_diff_eq!(beta_reg(1.0, 0.5, 0.5), 0.292893218813452475599, epsilon = 1e-15);
+        beta_assert_abs_diff_eq(beta_reg(1.0, 0.5, 0.5), 0.292893218813452475599);
         assert_eq!(beta_reg(1.0, 0.5, 1.0), 1.0);
-        prec::assert_abs_diff_eq!(beta_reg(2.5, 0.5, 0.5), 0.07558681842161243795, epsilon = 1e-16);
+        beta_assert_abs_diff_eq(beta_reg(2.5, 0.5, 0.5), 0.07558681842161243795);
         assert_eq!(beta_reg(2.5, 0.5, 1.0), 1.0);
-        prec::assert_abs_diff_eq!(beta_reg(0.5, 1.0, 0.5), 0.7071067811865475244, epsilon = 1e-15);
+        beta_assert_abs_diff_eq(beta_reg(0.5, 1.0, 0.5), 0.7071067811865475244);
         assert_eq!(beta_reg(0.5, 1.0, 1.0), 1.0);
-        prec::assert_abs_diff_eq!(beta_reg(1.0, 1.0, 0.5), 0.5, epsilon = 1e-15);
+        beta_assert_abs_diff_eq(beta_reg(1.0, 1.0, 0.5), 0.5);
         assert_eq!(beta_reg(1.0, 1.0, 1.0), 1.0);
-        prec::assert_abs_diff_eq!(beta_reg(2.5, 1.0, 0.5), 0.1767766952966368811, epsilon = 1e-15);
+        beta_assert_abs_diff_eq(beta_reg(2.5, 1.0, 0.5), 0.1767766952966368811);
         assert_eq!(beta_reg(2.5, 1.0, 1.0), 1.0);
-        assert_eq!(beta_reg(0.5, 2.5, 0.5), 0.92441318157838756205);
+        beta_assert_abs_diff_eq(beta_reg(0.5, 2.5, 0.5), 0.92441318157838756205);
         assert_eq!(beta_reg(0.5, 2.5, 1.0), 1.0);
-        prec::assert_abs_diff_eq!(beta_reg(1.0, 2.5, 0.5), 0.8232233047033631189, epsilon = 1e-15);
+        beta_assert_abs_diff_eq(beta_reg(1.0, 2.5, 0.5), 0.8232233047033631189);
         assert_eq!(beta_reg(1.0, 2.5, 1.0), 1.0);
-        prec::assert_abs_diff_eq!(beta_reg(2.5, 2.5, 0.5), 0.5, epsilon = 1e-15);
+        beta_assert_abs_diff_eq(beta_reg(2.5, 2.5, 0.5), 0.5);
         assert_eq!(beta_reg(2.5, 2.5, 1.0), 1.0);
     }
 

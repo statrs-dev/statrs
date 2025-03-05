@@ -380,8 +380,8 @@ impl Continuous<f64, f64> for Weibull {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(shape: f64, scale: f64; Weibull; WeibullError);
 
@@ -553,6 +553,6 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.0, 0.2), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(1.0, 0.2), 0.0, 10.0);
     }
 }

@@ -482,7 +482,7 @@ mod tests {
     //     let res = n.std_dev();
     //     for i in 1..11 {
     //         let f = i as f64;
-    //         assert_almost_eq!(res[i-1], (f * (sum - f) / (sum * sum * (sum + 1.0))).sqrt(), 1e-15);
+    //         prec::assert_abs_diff_eq!(res[i-1], (f * (sum - f) / (sum * sum * (sum + 1.0))).sqrt(), epsilon = 1e-15);
     //     }
     // }
 

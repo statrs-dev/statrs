@@ -323,7 +323,7 @@ impl Discrete<i64, f64> for DiscreteUniform {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(min: i64, max: i64; DiscreteUniform; DiscreteUniformError);
 

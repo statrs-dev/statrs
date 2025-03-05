@@ -358,10 +358,8 @@ impl Discrete<u64, f64> for Binomial {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
-    testing_boiler!(p: f64, n: u64; Binomial; BinomialError);
+    use crate::distribution::internal::density_util;
+    crate::distribution::internal::testing_boiler!(p: f64, n: u64; Binomial; BinomialError);
 
     #[test]
     fn test_create() {
@@ -585,7 +583,7 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(0.3, 5), 5);
-        test::check_discrete_distribution(&create_ok(0.7, 10), 10);
+        density_util::check_discrete_distribution(&create_ok(0.3, 5), 5);
+        density_util::check_discrete_distribution(&create_ok(0.7, 10), 10);
     }
 }

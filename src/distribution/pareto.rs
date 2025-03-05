@@ -383,10 +383,9 @@ impl Continuous<f64, f64> for Pareto {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
 
-    testing_boiler!(scale: f64, shape: f64; Pareto; ParetoError);
+    crate::distribution::internal::testing_boiler!(scale: f64, shape: f64; Pareto; ParetoError);
 
     #[test]
     fn test_create() {
@@ -548,7 +547,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.0, 10.0), 1.0, 10.0);
-        test::check_continuous_distribution(&create_ok(0.1, 2.0), 0.1, 100.0);
+        density_util::check_continuous_distribution(&create_ok(1.0, 10.0), 1.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(0.1, 2.0), 0.1, 100.0);
     }
 }

@@ -339,10 +339,8 @@ impl Continuous<f64, f64> for Chi {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
-    testing_boiler!(freedom: u64; Chi; ChiError);
+    use crate::distribution::internal::density_util;
+    crate::distribution::internal::testing_boiler!(freedom: u64; Chi; ChiError);
 
     #[test]
     fn test_create() {
@@ -511,8 +509,8 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(2), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(5), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(1), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(2), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(5), 0.0, 10.0);
     }
 }

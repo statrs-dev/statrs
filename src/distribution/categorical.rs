@@ -411,8 +411,8 @@ fn test_binary_index() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(prob_mass: &[f64]; Categorical; CategoricalError);
 
@@ -576,7 +576,7 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(&[1.0, 2.0, 3.0, 4.0]), 4);
-        test::check_discrete_distribution(&create_ok(&[0.0, 1.0, 2.0, 3.0, 4.0]), 5);
+        density_util::check_discrete_distribution(&create_ok(&[1.0, 2.0, 3.0, 4.0]), 4);
+        density_util::check_discrete_distribution(&create_ok(&[0.0, 1.0, 2.0, 3.0, 4.0]), 5);
     }
 }

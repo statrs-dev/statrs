@@ -305,11 +305,10 @@ impl Discrete<u64, f64> for Geometric {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::distribution::internal::density_util;
     use crate::prec;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
 
-    testing_boiler!(p: f64; Geometric; GeometricError);
+    crate::distribution::internal::testing_boiler!(p: f64; Geometric; GeometricError);
 
     #[test]
     fn test_create() {
@@ -509,9 +508,9 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(0.3), 100);
-        test::check_discrete_distribution(&create_ok(0.6), 100);
-        test::check_discrete_distribution(&create_ok(1.0), 1);
+        density_util::check_discrete_distribution(&create_ok(0.3), 100);
+        density_util::check_discrete_distribution(&create_ok(0.6), 100);
+        density_util::check_discrete_distribution(&create_ok(1.0), 1);
     }
 
     #[test]

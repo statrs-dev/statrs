@@ -336,13 +336,10 @@ impl Continuous<f64, f64> for Levy {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use core::f64;
-
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
-    testing_boiler!(mu: f64, c: f64; Levy; LevyError);
+    use core::f64;
+    use crate::distribution::internal::density_util;
+    crate::distribution::internal::testing_boiler!(mu: f64, c: f64; Levy; LevyError);
 
     #[test]
     fn test_create() {
@@ -713,32 +710,32 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(
+        density_util::check_continuous_distribution(
             &create_ok(1.0, 0.05),
             1.0,
             319.2932192553111008237465284764766693115234375,
         );
-        test::check_continuous_distribution(
+        density_util::check_continuous_distribution(
             &create_ok(3.0, 0.05),
             3.0,
             321.2932192553111008237465284764766693115234375,
         );
-        test::check_continuous_distribution(
+        density_util::check_continuous_distribution(
             &create_ok(3.0, 0.05),
             3.0,
             321.2932192553111008237465284764766693115234375,
         );
-        test::check_continuous_distribution(
+        density_util::check_continuous_distribution(
             &create_ok(1.0, 0.05),
             1.0,
             319.2932192553111008237465284764766693115234375,
         );
-        test::check_continuous_distribution(
+        density_util::check_continuous_distribution(
             &create_ok(10.0, 0.05),
             10.0,
             328.2932192553111008237465284764766693115234375,
         );
-        test::check_continuous_distribution(
+        density_util::check_continuous_distribution(
             &create_ok(10.0, 0.05),
             10.0,
             328.2932192553111008237465284764766693115234375,

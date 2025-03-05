@@ -425,8 +425,8 @@ impl Discrete<u64, f64> for Hypergeometric {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(population: u64, successes: u64, draws: u64; Hypergeometric; HypergeometricError);
 
@@ -597,8 +597,8 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(5, 4, 3), 4);
-        test::check_discrete_distribution(&create_ok(3, 2, 1), 2);
+        density_util::check_discrete_distribution(&create_ok(5, 4, 3), 4);
+        density_util::check_discrete_distribution(&create_ok(3, 2, 1), 2);
     }
 
     #[test]

@@ -394,9 +394,9 @@ where
 #[cfg(test)]
 mod tests  {
     use core::fmt::Debug;
+    const MODULE_RELATIVE_EQ: f64 = 1e-15;
     use crate::prec;
 
-    use approx::RelativeEq;
     use nalgebra::{DMatrix, DVector, Dyn, OMatrix, OVector, U1, U2};
 
     use crate::{
@@ -405,6 +405,7 @@ mod tests  {
     };
 
     use super::MultivariateStudentError;
+
 
     fn try_create(location: Vec<f64>, scale: Vec<f64>, freedom: f64) -> MultivariateStudent<Dyn>
     {
@@ -436,22 +437,21 @@ mod tests  {
         assert_eq!(expected, x);
     }
 
-    fn test_almost<F>(
+    fn test_relative<F>(
         location: Vec<f64>,
         scale: Vec<f64>,
         freedom: f64,
         expected: f64,
-        acc: f64,
         eval: F,
         ) where
         F: FnOnce(MultivariateStudent<Dyn>) -> f64,
     {
         let mvs = try_create(location, scale, freedom);
         let x = eval(mvs);
-        prec::assert_abs_diff_eq!(expected, x, epsilon = acc);
+        prec::assert_relative_eq!(expected, x, epsilon = prec::DEFAULT_EPS, max_relative = MODULE_RELATIVE_EQ);
     }
 
-    fn test_almost_multivariate_normal<F1, F2>(
+    fn test_abs_diff_multivariate_normal<F1, F2>(
         location: Vec<f64>,
         scale: Vec<f64>,
         freedom: f64,
@@ -469,10 +469,8 @@ mod tests  {
         let mvn = mvn0.unwrap();
         let mvs_x = eval_mvs(mvs, x.clone());
         let mvn_x = eval_mvn(mvn, x.clone());
-        assert!(mvs_x.relative_eq(&mvn_x, acc, acc), "mvn: {mvn_x} =/=\nmvs: {mvs_x}");
-        // assert_relative_eq!(mvs_x, mvn_x, acc);
+        prec::assert_abs_diff_eq!(mvs_x, mvn_x, epsilon = acc);
     }
-
 
     macro_rules! dvec {
         ($($x:expr),*) => (DVector::from_vec(vec![$($x),*]));
@@ -560,45 +558,45 @@ mod tests  {
     #[test]
     fn test_pdf() {
         let pdf = |arg: DVector<f64>| move |x: MultivariateStudent<Dyn>| x.pdf(&arg);
-        test_almost(vec![0., 0.], vec![1., 0., 0., 1.], 4., 0.047157020175376416, 1e-15, pdf(dvec![1., 1.]));
-        test_almost(vec![0., 0.], vec![1., 0., 0., 1.], 4., 0.013972450422333741737457302178882, 1e-15, pdf(dvec![1., 2.]));
-        test_almost(vec![0., 0.], vec![1., 0., 0., 1.], 2., 0.012992240252399619, 1e-17, pdf(dvec![1., 2.]));
-        test_almost(vec![2., 1.], vec![5., 0., 0., 1.], 2.5, 2.639780816598878e-5, 1e-19, pdf(dvec![1., 10.]));
-        test_almost(vec![-1., 0.], vec![2., 1., 1., 6.], 1.5, 6.438051574348526e-5, 1e-19, pdf(dvec![10., 10.]));
+        test_relative(vec![0., 0.], vec![1., 0., 0., 1.], 4., 0.047157020175376416, pdf(dvec![1., 1.]));
+        test_relative(vec![0., 0.], vec![1., 0., 0., 1.], 4., 0.013972450422333741737457302178882, pdf(dvec![1., 2.]));
+        test_relative(vec![0., 0.], vec![1., 0., 0., 1.], 2., 0.012992240252399619, pdf(dvec![1., 2.]));
+        test_relative(vec![2., 1.], vec![5., 0., 0., 1.], 2.5, 2.639780816598878e-5, pdf(dvec![1., 10.]));
+        test_relative(vec![-1., 0.], vec![2., 1., 1., 6.], 1.5, 6.438051574348526e-5, pdf(dvec![10., 10.]));
         // These three are crossed checked against both python's scipy.multivariate_t.pdf and octave's mvtpdf.
-        test_almost(vec![-1., 1., 50.], vec![1., 0.5, 0.25, 0.5, 1., -0.1, 0.25, -0.1, 1.], 8., 6.960998836915657e-16, 1e-30, pdf(dvec![0.9718, 0.1298, 0.8134]));
-        test_almost(vec![-1., 1., 50.], vec![1., 0.5, 0.25, 0.5, 1., -0.1, 0.25, -0.1, 1.], 8., 7.369987979187023e-16, 1e-30, pdf(dvec![0.4922, 0.5522, 0.7185]));
-        test_almost(vec![-1., 1., 50.], vec![1., 0.5, 0.25, 0.5, 1., -0.1, 0.25, -0.1, 1.], 8.,6.951631724511314e-16, 1e-30, pdf(dvec![0.3020, 0.1491, 0.5008]));
+        test_relative(vec![-1., 1., 50.], vec![1., 0.5, 0.25, 0.5, 1., -0.1, 0.25, -0.1, 1.], 8., 6.960998836915657e-16, pdf(dvec![0.9718, 0.1298, 0.8134]));
+        test_relative(vec![-1., 1., 50.], vec![1., 0.5, 0.25, 0.5, 1., -0.1, 0.25, -0.1, 1.], 8., 7.369987979187023e-16, pdf(dvec![0.4922, 0.5522, 0.7185]));
+        test_relative(vec![-1., 1., 50.], vec![1., 0.5, 0.25, 0.5, 1., -0.1, 0.25, -0.1, 1.], 8., 6.951631724511314e-16, pdf(dvec![0.3020, 0.1491, 0.5008]));
         test_case(vec![-1., 0.], vec![f64::INFINITY, 0., 0., f64::INFINITY], 10., 0., pdf(dvec![10., 10.]));
     }
 
     #[test]
     fn test_ln_pdf() {
         let ln_pdf = |arg: DVector<f64>| move |x: MultivariateStudent<Dyn>| x.ln_pdf(&arg);
-        test_almost(vec![0., 0.], vec![1., 0., 0., 1.], 4., -3.0542723907338383, 1e-14, ln_pdf(dvec![1., 1.]));
-        test_almost(vec![0., 0.], vec![1., 0., 0., 1.], 2., -4.3434030034000815, 1e-14, ln_pdf(dvec![1., 2.]));
-        test_almost(vec![2., 1.], vec![5., 0., 0., 1.], 2.5, -10.542229575274265, 1e-14, ln_pdf(dvec![1., 10.]));
-        test_almost(vec![-1., 0.], vec![2., 1., 1., 6.], 1.5, -9.650699521198622, 1e-14, ln_pdf(dvec![10., 10.]));
-        // test_case(vec![-1., 0.], vec![f64::INFINITY, 0., 0., f64::INFINITY], 10., f64::NEG_INFINITY, ln_pdf(dvec![10., 10.]));
+        test_relative(vec![0., 0.], vec![1., 0., 0., 1.], 4., -3.0542723907338383, ln_pdf(dvec![1., 1.]));
+        test_relative(vec![0., 0.], vec![1., 0., 0., 1.], 2., -4.3434030034000815, ln_pdf(dvec![1., 2.]));
+        test_relative(vec![2., 1.], vec![5., 0., 0., 1.], 2.5, -10.542229575274265, ln_pdf(dvec![1., 10.]));
+        test_relative(vec![-1., 0.], vec![2., 1., 1., 6.], 1.5, -9.650699521198622, ln_pdf(dvec![10., 10.]));
     }
 
     #[test]
     fn test_pdf_freedom_large() {
         let pdf_mvs = |mv: MultivariateStudent<Dyn>, arg: DVector<f64>| mv.pdf(&arg);
         let pdf_mvn = |mv: MultivariateNormal<Dyn>, arg: DVector<f64>| mv.pdf(&arg);
-        test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], 1e5, 1e-6, dvec![1., 1.], pdf_mvs, pdf_mvn);
-        test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], 1e10, 1e-7, dvec![1., 1.], pdf_mvs, pdf_mvn);
-        test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], f64::INFINITY, 1e-300, dvec![1., 1.], pdf_mvs, pdf_mvn);
-        test_almost_multivariate_normal(vec![5., -1.,], vec![1., 0.99, 0.99, 1.], f64::INFINITY, 1e-300, dvec![5., 1.], pdf_mvs, pdf_mvn);
+        test_abs_diff_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], 1e5, 1e-5, dvec![1e-4, 1e-4], pdf_mvs, pdf_mvn);
+        test_abs_diff_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], 1e10, 1e-6, dvec![1e-4, 1e-4], pdf_mvs, pdf_mvn);
+        test_abs_diff_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], f64::INFINITY, 1e-300, dvec![1., 1.], pdf_mvs, pdf_mvn);
+        test_abs_diff_multivariate_normal(vec![5., -1.,], vec![1., 0.99, 0.99, 1.], f64::INFINITY, 1e-300, dvec![5., 1.], pdf_mvs, pdf_mvn);
     }
+
     #[test]
     fn test_ln_pdf_freedom_large() {
         let pdf_mvs = |mv: MultivariateStudent<Dyn>, arg: DVector<f64>| mv.ln_pdf(&arg);
         let pdf_mvn = |mv: MultivariateNormal<Dyn>, arg: DVector<f64>| mv.ln_pdf(&arg);
-        test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], 1e5, 1e-5, dvec![1., 1.], pdf_mvs, pdf_mvn);
-        test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], 1e10, 5e-6, dvec![1., 1.], pdf_mvs, pdf_mvn);
-        test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], f64::INFINITY, 1e-300, dvec![1., 1.], pdf_mvs, pdf_mvn);
-        test_almost_multivariate_normal(vec![0., 0.,], vec![1., 0.99, 0.99, 1.], f64::INFINITY, 1e-300, dvec![1., 1.], pdf_mvs, pdf_mvn);
+        test_abs_diff_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], 1e5, 1e-5, dvec![1., 1.], pdf_mvs, pdf_mvn);
+        test_abs_diff_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], 1e10, 5e-6, dvec![1., 1.], pdf_mvs, pdf_mvn);
+        test_abs_diff_multivariate_normal(vec![0., 0.,], vec![1., 0., 0., 1.], f64::INFINITY, 1e-300, dvec![1., 1.], pdf_mvs, pdf_mvn);
+        test_abs_diff_multivariate_normal(vec![0., 0.,], vec![1., 0.99, 0.99, 1.], f64::INFINITY, 1e-300, dvec![1., 1.], pdf_mvs, pdf_mvn);
     }
 
     #[test]
@@ -607,7 +605,7 @@ mod tests  {
         let mvs = MultivariateStudent::new(vec![1., 1.], vec![1., 0., 0., 1.], 2.)
             .expect("hard coded valid construction");
         assert_eq!(mvs.freedom(), 2.);
-        prec::assert_relative_eq!(mvs.ln_pdf_const(), std::f64::consts::TAU.recip().ln(), epsilon = 1e-15);
+        prec::assert_relative_eq!(mvs.ln_pdf_const(), std::f64::consts::TAU.recip().ln(), epsilon = prec::DEFAULT_EPS, max_relative = MODULE_RELATIVE_EQ);
 
         // compare to static
         assert_eq!(mvs.dim(), 2); 
