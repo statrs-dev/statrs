@@ -54,7 +54,7 @@ pub const F64_PREC: f64 = 0.00000000000000011102230246251565;
 pub const DEFAULT_F64_ACC: f64 = 0.0000000000000011102230246251565;
 
 /// Default and target relative accuracy for f64 operations
-pub const DEFAULT_RELATIVE_ACC: f64 = 1e-10;
+pub const DEFAULT_RELATIVE_ACC: f64 = 1e-14;
 
 /// Default and target absolute accuracy for f64 operations
 pub const DEFAULT_EPS: f64 = 1e-9;
