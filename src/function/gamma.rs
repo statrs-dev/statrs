@@ -4,6 +4,7 @@
 use crate::consts;
 use crate::prec;
 use std::f64;
+use approx::ulps_eq;
 
 /// Represents the errors that can occur when computing any of the incomplete
 /// gamma functions.

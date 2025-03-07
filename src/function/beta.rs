@@ -3,6 +3,7 @@
 
 use crate::function::gamma;
 use crate::prec;
+use approx::ulps_eq;
 use std::f64;
 
 /// Represents the errors that can occur when computing the natural logarithm

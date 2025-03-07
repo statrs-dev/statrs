@@ -1,6 +1,7 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, factorial};
 use crate::statistics::*;
+use approx::ulps_eq;
 use std::f64;
 
 /// Implements the

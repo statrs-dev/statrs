@@ -1,6 +1,7 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
 use std::f64;
+use approx::ulps_eq;
 
 /// Implements the
 /// [Geometric](https://en.wikipedia.org/wiki/Geometric_distribution)
