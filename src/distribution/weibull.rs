@@ -2,7 +2,8 @@ use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use core::f64;
+use approx::ulps_eq;
+use std::f64;
 
 /// Implements the [Weibull](https://en.wikipedia.org/wiki/Weibull_distribution)
 /// distribution

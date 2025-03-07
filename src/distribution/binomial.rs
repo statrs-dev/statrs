@@ -2,6 +2,7 @@ use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, factorial};
 use crate::statistics::*;
 use core::f64;
+use approx::ulps_eq;
 
 /// Implements the
 /// [Binomial](https://en.wikipedia.org/wiki/Binomial_distribution)

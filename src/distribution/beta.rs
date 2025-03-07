@@ -1,6 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
+use approx::ulps_eq;
 
 /// Implements the [Beta](https://en.wikipedia.org/wiki/Beta_distribution)
 /// distribution

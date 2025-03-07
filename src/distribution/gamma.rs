@@ -2,6 +2,7 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
+use approx::ulps_eq;
 
 /// Implements the [Gamma](https://en.wikipedia.org/wiki/Gamma_distribution)
 /// distribution
