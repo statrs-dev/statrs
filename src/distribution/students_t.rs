@@ -455,11 +455,12 @@ impl Continuous<f64, f64> for StudentsT {
     }
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::distribution::internal::*;
-    use crate::prec::DEFAULT_RELATIVE_ACC;
+    use crate::prec;
     use crate::testing_boiler;
 
     testing_boiler!(location: f64, scale: f64, freedom: f64; StudentsT; StudentsTError);
@@ -670,11 +671,11 @@ mod tests {
     #[test]
     fn test_inv_cdf() {
         let test = |x: f64, freedom: f64, expected: f64| {
-            use approx::*;
+            use crate::prec;
             let d = StudentsT::new(0., 1., freedom).unwrap();
             // Checks that left == right to 4 significant figures, unlike
             // test_almost() which uses decimal places
-            assert_relative_eq!(d.inverse_cdf(x), expected, max_relative = 0.001);
+            prec::assert_relative_eq!(d.inverse_cdf(x), expected, max_relative = 0.001);
         };
 
         // This test checks our implementation against the whole t-table
@@ -1119,12 +1120,10 @@ mod tests {
     #[test]
     fn test_inv_cdf_high_precision() {
         let test = |x: f64, freedom: f64, expected: f64| {
-            use approx::assert_relative_eq;
             let d = StudentsT::new(0., 1., freedom).unwrap();
-            assert_relative_eq!(
+            prec::assert_relative_eq!(
                 d.inverse_cdf(x),
-                expected,
-                max_relative = DEFAULT_RELATIVE_ACC
+                expected
             );
         };
         // The data in this table of expected values was generated in

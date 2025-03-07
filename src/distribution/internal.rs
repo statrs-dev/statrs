@@ -152,7 +152,7 @@ pub mod test {
                 let x = create_and_get($($arg_name),+, get_fn);
                 let max_relative = $crate::prec::DEFAULT_RELATIVE_ACC;
 
-                if !::approx::relative_eq!(expected, x, max_relative = max_relative) {
+                if !$crate::prec::relative_eq!(expected, x, max_relative = max_relative) {
                     panic!(
                         "Expected {:?} to be almost equal to {:?} (max. relative error of {:?}), but wasn't for {}",
                         x,
@@ -181,7 +181,7 @@ pub mod test {
                     return;
                 }
 
-                if !::approx::abs_diff_eq!(expected, x, epsilon = acc) {
+                if !$crate::prec::abs_diff_eq!(expected, x, epsilon = acc) {
                     panic!(
                         "Expected {:?} to be almost equal to {:?} (max. absolute error of {:?}), but wasn't for {}",
                         x,
@@ -372,7 +372,7 @@ pub mod test {
 
             let ln_density = dist.ln_pdf(x);
 
-            assert_almost_eq!(density.ln(), ln_density, 1e-10);
+            prec::assert_abs_diff_eq!(density.ln(), ln_density, epsilon = 1e-10);
 
             // triangle rule
             sum += (prev_density + density) * step / 2.0;
@@ -417,7 +417,7 @@ pub mod test {
                 assert!(sum > 0.99);
             }
 
-            assert_almost_eq!(sum, dist.cdf(i), 1e-10);
+            prec::assert_abs_diff_eq!(sum, dist.cdf(i), epsilon = 1e-10);
             // assert_almost_eq!(sum, dist.cdf(i as f64), 1e-10);
             // assert_almost_eq!(sum, dist.cdf(i as f64 + 0.1), 1e-10);
             // assert_almost_eq!(sum, dist.cdf(i as f64 + 0.5), 1e-10);
@@ -447,7 +447,7 @@ pub mod test {
 
             let d_cdf = dist.cdf(x_ahead) - dist.cdf(x_behind);
 
-            assert_almost_eq!(d_cdf, DX * density, 1e-11);
+            prec::assert_abs_diff_eq!(d_cdf, DX * density, epsilon = 1e-11);
 
             if x >= x_max {
                 break;

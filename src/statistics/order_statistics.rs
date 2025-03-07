@@ -122,8 +122,7 @@ pub trait OrderStatistics<T> {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use statrs::statistics::OrderStatistics;
     /// use statrs::statistics::Data;
@@ -135,7 +134,7 @@ pub trait OrderStatistics<T> {
     ///
     /// let y = [2.0, 1.0, 3.0, 4.0];
     /// let mut y = Data::new(y);
-    /// assert_almost_eq!(y.lower_quartile(), 1.416666666666666, 1e-15);
+    /// assert_abs_diff_eq!(y.lower_quartile(), 1.416666666666666, epsilon = 1e-15);
     /// assert!(y != Data::new([2.0, 1.0, 3.0, 4.0]));
     /// # }
     /// ```
@@ -150,8 +149,7 @@ pub trait OrderStatistics<T> {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use statrs::statistics::OrderStatistics;
     /// use statrs::statistics::Data;
@@ -163,7 +161,7 @@ pub trait OrderStatistics<T> {
     ///
     /// let y = [2.0, 1.0, 3.0, 4.0];
     /// let mut y = Data::new(y);
-    /// assert_almost_eq!(y.upper_quartile(), 3.5833333333333333, 1e-15);
+    /// assert_abs_diff_eq!(y.upper_quartile(), 3.5833333333333333, epsilon = 1e-15);
     /// assert!(y != Data::new([2.0, 1.0, 3.0, 4.0]));
     /// # }
     /// ```
@@ -178,8 +176,7 @@ pub trait OrderStatistics<T> {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use statrs::statistics::Data;
     /// use statrs::statistics::OrderStatistics;
@@ -191,7 +188,7 @@ pub trait OrderStatistics<T> {
     ///
     /// let y = [2.0, 1.0, 3.0, 4.0];
     /// let mut y = Data::new(y);
-    /// assert_almost_eq!(y.interquartile_range(), 2.166666666666667, 1e-15);
+    /// assert_abs_diff_eq!(y.interquartile_range(), 2.166666666666667, epsilon = 1e-15);
     /// assert!(y != Data::new([2.0, 1.0, 3.0, 4.0]));
     /// # }
     /// ```

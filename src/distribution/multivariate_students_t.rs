@@ -394,6 +394,7 @@ where
 #[cfg(test)]
 mod tests  {
     use core::fmt::Debug;
+    use crate::prec;
 
     use approx::RelativeEq;
     use nalgebra::{DMatrix, DVector, Dyn, OMatrix, OVector, U1, U2};
@@ -447,7 +448,7 @@ mod tests  {
     {
         let mvs = try_create(location, scale, freedom);
         let x = eval(mvs);
-        assert_almost_eq!(expected, x, acc);
+        prec::assert_abs_diff_eq!(expected, x, epsilon = acc);
     }
 
     fn test_almost_multivariate_normal<F1, F2>(
@@ -606,7 +607,7 @@ mod tests  {
         let mvs = MultivariateStudent::new(vec![1., 1.], vec![1., 0., 0., 1.], 2.)
             .expect("hard coded valid construction");
         assert_eq!(mvs.freedom(), 2.);
-        assert_relative_eq!(mvs.ln_pdf_const(), core::f64::consts::TAU.recip().ln(), epsilon = 1e-15);
+        prec::assert_relative_eq!(mvs.ln_pdf_const(), std::f64::consts::TAU.recip().ln(), epsilon = 1e-15);
 
         // compare to static
         assert_eq!(mvs.dim(), 2); 

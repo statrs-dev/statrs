@@ -1,6 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
+use crate::prec;
 use crate::statistics::*;
-use approx::ulps_eq;
 use core::f64;
 
 /// Implements the
@@ -96,7 +96,7 @@ impl core::fmt::Display for Geometric {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distributions::Distribution<u64> for Geometric {
     fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> u64 {
-        if ulps_eq!(self.p, 1.0) {
+        if prec::ulps_eq!(self.p, 1.0) {
             1
         } else {
             let x: f64 = r.sample(::rand::distributions::OpenClosed01);
@@ -228,7 +228,7 @@ impl Distribution<f64> for Geometric {
     /// (2 - p) / sqrt(1 - p)
     /// ```
     fn skewness(&self) -> Option<f64> {
-        if ulps_eq!(self.p, 1.0) {
+        if prec::ulps_eq!(self.p, 1.0) {
             return Some(f64::INFINITY);
         };
         Some((2.0 - self.p) / (1.0 - self.p).sqrt())
@@ -291,9 +291,9 @@ impl Discrete<u64, f64> for Geometric {
     fn ln_pmf(&self, x: u64) -> f64 {
         if x == 0 {
             f64::NEG_INFINITY
-        } else if ulps_eq!(self.p, 1.0) && x == 1 {
+        } else if prec::ulps_eq!(self.p, 1.0) && x == 1 {
             0.0
-        } else if ulps_eq!(self.p, 1.0) {
+        } else if prec::ulps_eq!(self.p, 1.0) {
             f64::NEG_INFINITY
         } else {
             ((x - 1) as f64 * (1.0 - self.p).ln()) + self.p.ln()
@@ -305,6 +305,7 @@ impl Discrete<u64, f64> for Geometric {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prec;
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
@@ -445,7 +446,7 @@ mod tests {
 
         let cdf = geom.cdf(5u64);
         let expected = 4.99999999e-09;
-        assert_relative_eq!(cdf, expected, epsilon = 0.0, max_relative = 1e-15);
+        prec::assert_relative_eq!(cdf, expected, epsilon = 0.0, max_relative = 1e-15);
     }
 
     #[test]
@@ -454,7 +455,7 @@ mod tests {
 
         let sf = geom.sf(5u64);
         let expected = 0.999999995;
-        assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
+        prec::assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
     }
 
     #[test]
@@ -474,11 +475,11 @@ mod tests {
 
         let cdf = geom.cdf(10u64);
         let expected = 1e-16f64;
-        assert_relative_eq!(cdf, expected, epsilon = 0.0, max_relative = 1e-15);
+        prec::assert_relative_eq!(cdf, expected, epsilon = 0.0, max_relative = 1e-15);
 
         let cdf = geom.cdf(100000000000000u64);
         let expected = 0.0009995001666250085f64;
-        assert_relative_eq!(cdf, expected, epsilon = 0.0, max_relative = 1e-15);
+        prec::assert_relative_eq!(cdf, expected, epsilon = 0.0, max_relative = 1e-15);
     }
 
     #[test]
@@ -487,11 +488,11 @@ mod tests {
 
         let sf = geom.sf(10u64);
         let expected =  0.9999999999999999;
-        assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
+        prec::assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
 
         let sf = geom.sf(100000000000000u64);
         let expected = 0.999000499833375;
-        assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
+        prec::assert_relative_eq!(sf, expected, epsilon = 0.0, max_relative = 1e-15);
     }
 
     #[test]

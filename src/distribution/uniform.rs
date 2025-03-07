@@ -346,6 +346,7 @@ impl Continuous<f64, f64> for Uniform {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prec;
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
@@ -558,8 +559,8 @@ mod tests {
         let n_std  = n.std_dev().unwrap();
 
         // Check that the mean of the distribution is close to 1 / 2
-        assert_almost_eq!(n_mean, 0.5, 1e-15);
+        prec::assert_abs_diff_eq!(n_mean, 0.5, epsilon = 1e-15);
         // Check that the standard deviation of the distribution is close to 1 / sqrt(12)
-        assert_almost_eq!(n_std, 0.288_675_134_594_812_9, 1e-15);
+        prec::assert_abs_diff_eq!(n_std, 0.288_675_134_594_812_9, epsilon = 1e-15);
     }
 }
