@@ -1,6 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
+use approx::ulps_eq;
 use core::f64;
 
 /// Implements the [Inverse
