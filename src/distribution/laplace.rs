@@ -325,9 +325,11 @@ impl Continuous<f64, f64> for Laplace {
     }
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prec;
 
     use crate::testing_boiler;
 
@@ -343,7 +345,7 @@ mod tests {
         F: Fn(Laplace) -> f64,
     {
         let x = create_and_get(location, scale, get_fn);
-        assert_relative_eq!(expected, x, epsilon = 0.0, max_relative = rtol);
+        prec::assert_relative_eq!(expected, x, epsilon = 0.0, max_relative = rtol);
     }
 
     #[test]

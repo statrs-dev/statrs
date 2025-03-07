@@ -119,6 +119,7 @@ pub fn skewtest(
     Ok((zscore, pvalue))
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -132,8 +133,8 @@ mod tests {
         ]);
         let (statistic, pvalue) =
             skewtest(data.clone(), Alternative::TwoSided, NaNPolicy::Error).unwrap();
-        assert!(prec::almost_eq(statistic, 2.7788579769903414, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.005455036974740185, 1e-9));
+        prec::assert_relative_eq!(statistic, 2.7788579769903414);
+        prec::assert_abs_diff_eq!(pvalue, 0.005455036974740185);
 
         let (statistic, pvalue) = skewtest(
             Vec::from([
@@ -143,8 +144,8 @@ mod tests {
             NaNPolicy::Error,
         )
         .unwrap();
-        assert!(prec::almost_eq(statistic, 1.0108048609177787, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.3121098361421897, 1e-9));
+        prec::assert_relative_eq!(statistic, 1.0108048609177787);
+        prec::assert_abs_diff_eq!(pvalue, 0.3121098361421897);
         let (statistic, pvalue) = skewtest(
             Vec::from([
                 2.0f64, 8.0f64, 0.0f64, 4.0f64, 1.0f64, 9.0f64, 9.0f64, 0.0f64,
@@ -153,8 +154,8 @@ mod tests {
             NaNPolicy::Error,
         )
         .unwrap();
-        assert!(prec::almost_eq(statistic, 0.44626385374196975, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.6554066631275459, 1e-9));
+        prec::assert_relative_eq!(statistic, 0.44626385374196975);
+        prec::assert_abs_diff_eq!(pvalue, 0.6554066631275459);
         let (statistic, pvalue) = skewtest(
             Vec::from([
                 1.0f64, 2.0f64, 3.0f64, 4.0f64, 5.0f64, 6.0f64, 7.0f64, 8000.0f64,
@@ -163,8 +164,8 @@ mod tests {
             NaNPolicy::Error,
         )
         .unwrap();
-        assert!(prec::almost_eq(statistic, 3.571773510360407, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.0003545719905823133, 1e-9));
+        prec::assert_relative_eq!(statistic, 3.571773510360407);
+        prec::assert_abs_diff_eq!(pvalue, 0.0003545719905823133);
         let (statistic, pvalue) = skewtest(
             Vec::from([
                 100.0f64, 100.0f64, 100.0f64, 100.0f64, 100.0f64, 100.0f64, 100.0f64, 101.0f64,
@@ -173,8 +174,8 @@ mod tests {
             NaNPolicy::Error,
         )
         .unwrap();
-        assert!(prec::almost_eq(statistic, 3.5717766638478072, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.000354567720281634, 1e012));
+        prec::assert_relative_eq!(statistic, 3.5717766638478072);
+        prec::assert_abs_diff_eq!(pvalue, 0.000354567720281634012);
         let (statistic, pvalue) = skewtest(
             Vec::from([
                 1.0f64, 2.0f64, 3.0f64, 4.0f64, 5.0f64, 6.0f64, 7.0f64, 8.0f64,
@@ -183,8 +184,8 @@ mod tests {
             NaNPolicy::Error,
         )
         .unwrap();
-        assert!(prec::almost_eq(statistic, 1.0108048609177787, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.8439450819289052, 1e-9));
+        prec::assert_relative_eq!(statistic, 1.0108048609177787);
+        prec::assert_abs_diff_eq!(pvalue, 0.8439450819289052);
         let (statistic, pvalue) = skewtest(
             Vec::from([
                 1.0f64, 2.0f64, 3.0f64, 4.0f64, 5.0f64, 6.0f64, 7.0f64, 8.0f64,
@@ -193,8 +194,8 @@ mod tests {
             NaNPolicy::Error,
         )
         .unwrap();
-        assert!(prec::almost_eq(statistic, 1.0108048609177787, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.15605491807109484, 1e-9));
+        prec::assert_relative_eq!(statistic, 1.0108048609177787);
+        prec::assert_abs_diff_eq!(pvalue, 0.15605491807109484);
     }
     #[test]
     fn test_nan_in_data_w_emit() {
@@ -215,8 +216,8 @@ mod tests {
         ]);
         let (statistic, pvalue) =
             skewtest(data.clone(), Alternative::TwoSided, NaNPolicy::Emit).unwrap();
-        assert!(prec::almost_eq(statistic, 2.7788579769903414, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.005455036974740185, 1e-9));
+        prec::assert_relative_eq!(statistic, 2.7788579769903414);
+        prec::assert_abs_diff_eq!(pvalue, 0.005455036974740185);
     }
     #[test]
     fn test_nan_in_data_w_propogate() {
@@ -247,10 +248,10 @@ mod tests {
         // compare to https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.skew.html
         // since no wikipedia examples
         let sample_input = Vec::from([1.0, 2.0, 3.0, 4.0, 5.0]);
-        assert_eq!(calc_root_b1(&sample_input), 0.0);
+        prec::assert_ulps_eq!(calc_root_b1(&sample_input), 0.0);
 
         let sample_input = Vec::from([2.0, 8.0, 0.0, 4.0, 1.0, 9.0, 9.0, 0.0]);
         let result = calc_root_b1(&sample_input);
-        assert!(prec::almost_eq(result, 0.2650554122698573, 1e-1));
+        prec::assert_abs_diff_eq!(result, 0.2650554122698573);
     }
 }

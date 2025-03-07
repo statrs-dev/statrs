@@ -1,9 +1,9 @@
 use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
+use crate::prec;
 use crate::statistics::*;
-use approx::ulps_eq;
-use std::f64;
+use core::f64;
 
 /// Implements the [Weibull](https://en.wikipedia.org/wiki/Weibull_distribution)
 /// distribution
@@ -316,7 +316,7 @@ impl Mode<Option<f64>> for Weibull {
     ///
     /// where `k` is the shape and `λ` is the scale
     fn mode(&self) -> Option<f64> {
-        let mode = if ulps_eq!(self.shape, 1.0) {
+        let mode = if prec::ulps_eq!(self.shape, 1.0) {
             0.0
         } else {
             self.scale * ((self.shape - 1.0) / self.shape).powf(1.0 / self.shape)
@@ -339,7 +339,7 @@ impl Continuous<f64, f64> for Weibull {
     fn pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if x == 0.0 && ulps_eq!(self.shape, 1.0) {
+        } else if x == 0.0 && prec::ulps_eq!(self.shape, 1.0) {
             1.0 / self.scale
         } else if x.is_infinite() {
             0.0
@@ -364,7 +364,7 @@ impl Continuous<f64, f64> for Weibull {
     fn ln_pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             f64::NEG_INFINITY
-        } else if x == 0.0 && ulps_eq!(self.shape, 1.0) {
+        } else if x == 0.0 && prec::ulps_eq!(self.shape, 1.0) {
             0.0 - self.scale.ln()
         } else if x.is_infinite() {
             f64::NEG_INFINITY

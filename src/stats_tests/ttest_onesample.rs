@@ -96,6 +96,7 @@ pub fn ttest_onesample(
     Ok((tstat, pvalue))
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,18 +115,18 @@ mod tests {
         ]);
         let (statistic, pvalue) =
             ttest_onesample(data.clone(), 20.0, Alternative::TwoSided, NaNPolicy::Error).unwrap();
-        assert!(prec::almost_eq(statistic, 3.066831635284081, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.004552621060635401, 1e-12));
+        prec::assert_relative_eq!(statistic, 3.066831635284081);
+        prec::assert_abs_diff_eq!(pvalue, 0.004552621060635401);
 
         let (statistic, pvalue) =
             ttest_onesample(data.clone(), 20.0, Alternative::Greater, NaNPolicy::Error).unwrap();
-        assert!(prec::almost_eq(statistic, 3.066831635284081, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.0022763105303177005, 1e-12));
+        prec::assert_relative_eq!(statistic, 3.066831635284081);
+        prec::assert_abs_diff_eq!(pvalue, 0.0022763105303177005);
 
         let (statistic, pvalue) =
             ttest_onesample(data.clone(), 20.0, Alternative::Less, NaNPolicy::Error).unwrap();
-        assert!(prec::almost_eq(statistic, 3.066831635284081, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.9977236894696823, 1e-12));
+        prec::assert_relative_eq!(statistic, 3.066831635284081);
+        prec::assert_abs_diff_eq!(pvalue, 0.9977236894696823);
     }
     #[test]
     fn test_nan_in_data_w_emit() {
@@ -170,8 +171,8 @@ mod tests {
         ]);
         let (statistic, pvalue) =
             ttest_onesample(data.clone(), 20.0, Alternative::TwoSided, NaNPolicy::Emit).unwrap();
-        assert!(prec::almost_eq(statistic, 3.066831635284081, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.004552621060635401, 1e-12));
+        prec::assert_relative_eq!(statistic, 3.066831635284081);
+        prec::assert_abs_diff_eq!(pvalue, 0.004552621060635401);
     }
     #[test]
     fn test_nan_in_data_w_propogate() {

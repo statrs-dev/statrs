@@ -266,8 +266,7 @@ impl InfiniteTriangle {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use statrs::generate::InfiniteTriangle;
     ///
@@ -277,7 +276,7 @@ impl InfiniteTriangle {
     /// let expected: [f64; 12] = [-0.714, -1.0, -0.5, 0.0, 0.5, 1.0, 0.714,
     /// 0.429, 0.143, -0.143, -0.429, -0.714];
     /// for (&left, &right) in x.iter().zip(expected.iter()) {
-    ///     assert_almost_eq!(left, right, 1e-3);
+    ///     assert_abs_diff_eq!(left, right, epsilon = 1e-3);
     /// }
     /// # }
     /// ```

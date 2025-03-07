@@ -362,6 +362,7 @@ mod tests {
     use crate::{
         distribution::{Discrete, Multinomial, MultinomialError},
         statistics::{MeanN, VarianceN},
+        prec,
     };
     use nalgebra::{dmatrix, dvector, vector, DimMin, Dyn, OVector};
     use core::fmt::{Debug, Display};
@@ -395,12 +396,12 @@ mod tests {
     {
         let dd = try_create(p, n);
         let x = eval(dd);
-        assert_relative_eq!(expected, x, epsilon = acc);
+        prec::assert_relative_eq!(expected, x, epsilon = acc);
     }
 
     #[test]
     fn test_create() {
-        assert_relative_eq!(
+        prec::assert_relative_eq!(
             *try_create(vector![1.0, 1.0, 1.0], 4).p(),
             vector![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]
         );

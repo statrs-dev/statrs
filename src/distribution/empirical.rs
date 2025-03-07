@@ -1,9 +1,9 @@
 use crate::distribution::ContinuousCDF;
 use crate::statistics::*;
+use core::convert::Infallible;
+use core::ops::Bound;
 use non_nan::NonNan;
 use std::collections::btree_map::{BTreeMap, Entry};
-use std::convert::Infallible;
-use std::ops::Bound;
 
 mod non_nan {
     use core::cmp::Ordering;
@@ -277,9 +277,11 @@ impl ContinuousCDF<f64, f64> for Empirical {
     }
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prec;
 
     #[test]
     fn test_add_nan() {
@@ -326,7 +328,7 @@ mod tests {
     fn test_mean() {
         fn test_mean_for_samples(expected_mean: f64, samples: Vec<f64>) {
             let dist = Empirical::from_iter(samples);
-            assert_relative_eq!(dist.mean().unwrap(), expected_mean);
+            prec::assert_relative_eq!(dist.mean().unwrap(), expected_mean);
         }
 
         let dist = Empirical::from_iter(vec![]);
@@ -341,7 +343,7 @@ mod tests {
     fn test_var() {
         fn test_var_for_samples(expected_var: f64, samples: Vec<f64>) {
             let dist = Empirical::from_iter(samples);
-            assert_relative_eq!(dist.variance().unwrap(), expected_var);
+            prec::assert_relative_eq!(dist.variance().unwrap(), expected_var);
         }
 
         let dist = Empirical::from_iter(vec![]);

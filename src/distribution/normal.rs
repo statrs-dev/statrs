@@ -370,6 +370,7 @@ impl core::default::Default for Normal {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prec;
     use crate::distribution::internal::*;
     use crate::testing_boiler;
 
@@ -563,8 +564,8 @@ mod tests {
         let n_std  = n.std_dev().unwrap();
 
         // Check that the mean of the distribution is close to 0
-        assert_almost_eq!(n_mean, 0.0, 1e-15);
+        prec::assert_abs_diff_eq!(n_mean, 0.0, epsilon = 1e-15);
         // Check that the standard deviation of the distribution is close to 1
-        assert_almost_eq!(n_std, 1.0, 1e-15);
+        prec::assert_abs_diff_eq!(n_std, 1.0, epsilon = 1e-15);
     }
 }

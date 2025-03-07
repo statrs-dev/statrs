@@ -1,7 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
+use crate::prec;
 use crate::statistics::*;
-use approx::ulps_eq;
 
 /// Implements the [Beta](https://en.wikipedia.org/wiki/Beta_distribution)
 /// distribution
@@ -142,7 +142,7 @@ impl ContinuousCDF<f64, f64> for Beta {
             0.0
         } else if x >= 1.0 {
             1.0
-        } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
+        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
             x
         } else {
             beta::beta_reg(self.shape_a, self.shape_b, x)
@@ -164,7 +164,7 @@ impl ContinuousCDF<f64, f64> for Beta {
             1.0
         } else if x >= 1.0 {
             0.0
-        } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
+        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
             1. - x
         } else {
             beta::beta_reg(self.shape_b, self.shape_a, 1.0 - x)
@@ -334,7 +334,7 @@ impl Continuous<f64, f64> for Beta {
     fn pdf(&self, x: f64) -> f64 {
         if !(0.0..=1.0).contains(&x) {
             0.0
-        } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
+        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
             1.0
         } else if self.shape_a > 80.0 || self.shape_b > 80.0 {
             self.ln_pdf(x).exp()
@@ -360,22 +360,22 @@ impl Continuous<f64, f64> for Beta {
     fn ln_pdf(&self, x: f64) -> f64 {
         if !(0.0..=1.0).contains(&x) {
             f64::NEG_INFINITY
-        } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
+        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
             0.0
         } else {
             let aa = gamma::ln_gamma(self.shape_a + self.shape_b)
                 - gamma::ln_gamma(self.shape_a)
                 - gamma::ln_gamma(self.shape_b);
-            let bb = if ulps_eq!(self.shape_a, 1.0) && x == 0.0 {
+            let bb = if prec::ulps_eq!(self.shape_a, 1.0) && x == 0.0 {
                 0.0
             } else if x == 0.0 {
                 f64::NEG_INFINITY
             } else {
                 (self.shape_a - 1.0) * x.ln()
             };
-            let cc = if ulps_eq!(self.shape_b, 1.0) && ulps_eq!(x, 1.0) {
+            let cc = if prec::ulps_eq!(self.shape_b, 1.0) && prec::ulps_eq!(x, 1.0) {
                 0.0
-            } else if ulps_eq!(x, 1.0) {
+            } else if prec::ulps_eq!(x, 1.0) {
                 f64::NEG_INFINITY
             } else {
                 (self.shape_b - 1.0) * (1.0 - x).ln()
