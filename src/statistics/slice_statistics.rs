@@ -309,8 +309,7 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Distribution<f64> for Data<D> {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use statrs::statistics::Distribution;
     /// use statrs::statistics::Data;
@@ -326,7 +325,7 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Distribution<f64> for Data<D> {
     ///
     /// let z = [0.0, 3.0, -2.0];
     /// let z = Data::new(z);
-    /// assert_almost_eq!(z.mean().unwrap(), 1.0 / 3.0, 1e-15);
+    /// assert_abs_diff_eq!(z.mean().unwrap(), 1.0 / 3.0, epsilon = 1e-15);
     /// # }
     /// ```
     fn mean(&self) -> Option<f64> {
@@ -411,10 +410,11 @@ fn handle_rank_ties(
     }
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::statistics::*;
+    use crate::prec;
 
     #[test]
     fn test_order_statistic_short() {
@@ -436,13 +436,13 @@ mod tests {
         let mut data = Data::new(data);
         assert_eq!(data.quantile(0.0), -3.0);
         assert_eq!(data.quantile(1.0), 10.0);
-        assert_almost_eq!(data.quantile(0.5), 3.0 / 5.0, 1e-15);
-        assert_almost_eq!(data.quantile(0.2), -4.0 / 5.0, 1e-15);
+        prec::assert_abs_diff_eq!(data.quantile(0.5), 3.0 / 5.0, epsilon = 1e-15);
+        prec::assert_abs_diff_eq!(data.quantile(0.2), -4.0 / 5.0, epsilon = 1e-15);
         assert_eq!(data.quantile(0.7), 137.0 / 30.0);
         assert_eq!(data.quantile(0.01), -3.0);
         assert_eq!(data.quantile(0.99), 10.0);
-        assert_almost_eq!(data.quantile(0.52), 287.0 / 375.0, 1e-15);
-        assert_almost_eq!(data.quantile(0.325), -37.0 / 240.0, 1e-15);
+        prec::assert_abs_diff_eq!(data.quantile(0.52), 287.0 / 375.0, epsilon = 1e-15);
+        prec::assert_abs_diff_eq!(data.quantile(0.325), -37.0 / 240.0, epsilon = 1e-15);
     }
 
     #[test]

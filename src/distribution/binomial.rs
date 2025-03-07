@@ -1,7 +1,7 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, factorial};
+use crate::prec;
 use crate::statistics::*;
-use approx::ulps_eq;
 use std::f64;
 
 /// Implements the
@@ -234,7 +234,7 @@ impl Distribution<f64> for Binomial {
     /// (1 / 2) * ln (2 * π * e * n * p * (1 - p))
     /// ```
     fn entropy(&self) -> Option<f64> {
-        let entr = if self.p == 0.0 || ulps_eq!(self.p, 1.0) {
+        let entr = if self.p == 0.0 || prec::ulps_eq!(self.p, 1.0) {
             0.0
         } else {
             (0..self.n + 1).fold(0.0, |acc, x| {
@@ -281,7 +281,7 @@ impl Mode<Option<u64>> for Binomial {
     fn mode(&self) -> Option<u64> {
         let mode = if self.p == 0.0 {
             0
-        } else if ulps_eq!(self.p, 1.0) {
+        } else if prec::ulps_eq!(self.p, 1.0) {
             self.n
         } else {
             ((self.n as f64 + 1.0) * self.p).floor() as u64
@@ -308,7 +308,7 @@ impl Discrete<u64, f64> for Binomial {
             } else {
                 0.0
             }
-        } else if ulps_eq!(self.p, 1.0) {
+        } else if prec::ulps_eq!(self.p, 1.0) {
             if x == self.n {
                 1.0
             } else {
@@ -339,7 +339,7 @@ impl Discrete<u64, f64> for Binomial {
             } else {
                 f64::NEG_INFINITY
             }
-        } else if ulps_eq!(self.p, 1.0) {
+        } else if prec::ulps_eq!(self.p, 1.0) {
             if x == self.n {
                 0.0
             } else {

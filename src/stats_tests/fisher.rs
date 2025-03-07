@@ -237,6 +237,7 @@ pub fn fishers_exact(
     Ok(p_value.min(1.0))
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -372,7 +373,7 @@ mod tests {
             .zip(vec![less_expected, greater_expected, two_sided_expected])
             {
                 let p_value = fishers_exact(table, *alternative).unwrap();
-                assert!(prec::almost_eq(p_value, *expected, 1e-12));
+                prec::assert_relative_eq!(p_value, *expected);
             }
         }
     }
@@ -391,7 +392,7 @@ mod tests {
         let table = [3, 5, 4, 50];
         let (odds_ratio, p_value) =
             fishers_exact_with_odds_ratio(&table, Alternative::Less).unwrap();
-        assert!(prec::almost_eq(p_value, 0.9963034765672599, 1e-12));
-        assert!(prec::almost_eq(odds_ratio, 7.5, 1e-1));
+        prec::assert_abs_diff_eq!(p_value, 0.9963034765672599);
+        prec::assert_abs_diff_eq!(odds_ratio, 7.5);
     }
 }
