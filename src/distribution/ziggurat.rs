@@ -1,5 +1,5 @@
 use super::ziggurat_tables;
-use rand::distributions::Open01;
+use rand::distr::Open01;
 use rand::Rng;
 
 pub fn sample_std_normal<R: Rng + ?Sized>(rng: &mut R) -> f64 {
@@ -44,7 +44,7 @@ pub fn sample_exp_1<R: Rng + ?Sized>(rng: &mut R) -> f64 {
 
     #[inline]
     fn zero_case<R: Rng + ?Sized>(rng: &mut R, _u: f64) -> f64 {
-        ziggurat_tables::ZIG_EXP_R - rng.gen::<f64>().ln()
+        ziggurat_tables::ZIG_EXP_R - rng.random::<f64>().ln()
     }
 
     ziggurat(
@@ -76,7 +76,7 @@ where
 {
     const SCALE: f64 = (1u64 << 53) as f64;
     loop {
-        let bits: u64 = rng.gen();
+        let bits: u64 = rng.random();
         let i = (bits & 0xff) as usize;
         let f = (bits >> 11) as f64 / SCALE;
 
@@ -96,7 +96,7 @@ where
             return zero_case(rng, u);
         }
         // algebraically equivalent to f1 + DRanU()*(f0 - f1) < 1
-        if f_tab[i + 1] + (f_tab[i] - f_tab[i + 1]) * rng.gen::<f64>() < pdf(x) {
+        if f_tab[i + 1] + (f_tab[i] - f_tab[i + 1]) * rng.random::<f64>() < pdf(x) {
             return x;
         }
     }
