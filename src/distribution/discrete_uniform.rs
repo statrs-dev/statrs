@@ -76,15 +76,15 @@ impl std::fmt::Display for DiscreteUniform {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<i64> for DiscreteUniform {
+impl ::rand::distr::Distribution<i64> for DiscreteUniform {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> i64 {
-        rng.gen_range(self.min..=self.max)
+        rng.random_range(self.min..=self.max)
     }
 }
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<f64> for DiscreteUniform {
+impl ::rand::distr::Distribution<f64> for DiscreteUniform {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         rng.sample::<i64, _>(self) as f64
     }

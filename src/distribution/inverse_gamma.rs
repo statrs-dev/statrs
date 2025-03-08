@@ -120,7 +120,7 @@ impl std::fmt::Display for InverseGamma {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<f64> for InverseGamma {
+impl ::rand::distr::Distribution<f64> for InverseGamma {
     fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
         1.0 / super::gamma::sample_unchecked(r, self.shape, self.rate)
     }
