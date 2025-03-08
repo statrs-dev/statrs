@@ -162,7 +162,7 @@ where
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl<D> ::rand::distributions::Distribution<OVector<u64, D>> for Multinomial<D>
+impl<D> ::rand::distr::Distribution<OVector<u64, D>> for Multinomial<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
@@ -175,7 +175,7 @@ where
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for Multinomial<D>
+impl<D> ::rand::distr::Distribution<OVector<f64, D>> for Multinomial<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
@@ -463,7 +463,7 @@ mod tests {
         test_almost(
             dvector![0.3, 0.7],
             5,
-            dmatrix![1.05, -1.05; 
+            dmatrix![1.05, -1.05;
                     -1.05,  1.05],
             1e-15,
             variance,

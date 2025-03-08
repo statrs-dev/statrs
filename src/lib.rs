@@ -10,8 +10,8 @@
 #![cfg_attr(feature = "rand", doc = "```")]
 #![cfg_attr(not(feature = "rand"), doc = "```ignore")]
 //! use statrs::distribution::Exp;
-//! use rand::distributions::Distribution;
-//! let mut r = rand::rngs::OsRng;
+//! use rand::distr::Distribution;
+//! let mut r = rand::rng();
 //! let n = Exp::new(0.5).unwrap();
 //! print!("{}", n.sample(&mut r));
 //! ```
