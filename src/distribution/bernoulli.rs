@@ -86,15 +86,15 @@ impl std::fmt::Display for Bernoulli {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<bool> for Bernoulli {
+impl ::rand::distr::Distribution<bool> for Bernoulli {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> bool {
-        rng.gen_bool(self.p())
+        rng.random_bool(self.p())
     }
 }
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<f64> for Bernoulli {
+impl ::rand::distr::Distribution<f64> for Bernoulli {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         rng.sample::<bool, _>(self) as u8 as f64
     }

@@ -107,7 +107,7 @@ impl std::fmt::Display for Normal {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<f64> for Normal {
+impl ::rand::distr::Distribution<f64> for Normal {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         sample_unchecked(rng, self.mean, self.std_dev)
     }

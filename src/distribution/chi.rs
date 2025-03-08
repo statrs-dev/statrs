@@ -94,7 +94,7 @@ impl std::fmt::Display for Chi {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<f64> for Chi {
+impl ::rand::distr::Distribution<f64> for Chi {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         (0..self.freedom())
             .fold(0.0, |acc, _| {

@@ -111,10 +111,10 @@ impl std::fmt::Display for Binomial {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<u64> for Binomial {
+impl ::rand::distr::Distribution<u64> for Binomial {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> u64 {
         (0..self.n).fold(0, |acc, _| {
-            let n: f64 = rng.gen();
+            let n: f64 = rng.random();
             if n < self.p {
                 acc + 1
             } else {
@@ -126,7 +126,7 @@ impl ::rand::distributions::Distribution<u64> for Binomial {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<f64> for Binomial {
+impl ::rand::distr::Distribution<f64> for Binomial {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         rng.sample::<u64, _>(self) as f64
     }
