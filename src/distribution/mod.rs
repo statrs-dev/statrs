@@ -210,6 +210,8 @@ pub trait DiscreteCDF<K: Sized + Num + Ord + Clone + NumAssignOps, T: Float>:
             return self.max();
         } else if !(T::zero()..=T::one()).contains(&p) {
             panic!("p must be on [0, 1]")
+        } else if p < self.cdf(self.min()) {
+            return self.min();
         }
 
         let two = K::one() + K::one();
