@@ -67,20 +67,25 @@ impl Gamma {
     /// let mut result = Gamma::new(3.0, 1.0);
     /// assert!(result.is_ok());
     ///
-    /// result = Gamma::new(0.0, 0.0);
+    /// result = Gamma::new(1.0, 0.0);
+    /// assert!(result.is_err());
+    /// 
+    /// result = Gamma::new(0.0, 1.0);
+    /// assert!(result.is_err());
+    /// 
+    /// result = Gamma::new(f64::INFINITY, 1.0);
+    /// assert!(result.is_err());
+    /// 
+    /// result = Gamma::new(1.0, f64::INFINITY);
     /// assert!(result.is_err());
     /// ```
     pub fn new(shape: f64, rate: f64) -> Result<Gamma, GammaError> {
-        if shape.is_nan() || shape <= 0.0 {
+        if shape.is_nan() || shape <= 0.0 || shape.is_infinite() {
             return Err(GammaError::ShapeInvalid);
         }
 
-        if rate.is_nan() || rate <= 0.0 {
+        if rate.is_nan() || rate <= 0.0 || rate.is_infinite() {
             return Err(GammaError::RateInvalid);
-        }
-
-        if shape.is_infinite() && rate.is_infinite() {
-            return Err(GammaError::ShapeAndRateInfinite);
         }
 
         Ok(Gamma { shape, rate })
