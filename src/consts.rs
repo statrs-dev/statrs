@@ -26,3 +26,6 @@ pub const EULER_MASCHERONI: f64 =
 
 /// Targeted accuracy instantiated over `f64`
 pub const ACC: f64 = 10e-11;
+
+/// Constant representing erf_inv(0.5) = erfc_inv(0.5)
+pub const ERFC_HALF: f64 = 0.4769362762044698733814183536431305598089697490594706447038826959193;

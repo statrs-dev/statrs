@@ -1,7 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf::{erf, erfc, erfc_inv};
 
-use crate::statistics::*;
+use crate::{consts, statistics::*};
 use core::f64;
 
 /// Implements the [Levy](https://en.wikipedia.org/wiki/L%C3%A9vy_distribution) distribution.
@@ -273,7 +273,7 @@ impl Median<f64> for Levy {
     /// where `μ` is the mean, `c` is the dispersion and `erfc_inv` is
     /// the inverse of the complementary error function.
     fn median(&self) -> f64 {
-        self.mu + self.c * 0.5 * erfc_inv(0.5).powf(-2.0)
+        self.mu + self.c * 0.5 * consts::ERFC_HALF.powf(-2.0)
     }
 }
 

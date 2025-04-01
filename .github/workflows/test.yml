@@ -47,19 +47,53 @@ jobs:
       - name: Build (lib only)
         run: cargo hack check --rust-version --locked
 
-  test:
+  build-unit:
     needs: [clippy, fmt, msrv]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
           os: [ubuntu-latest, macos-latest, windows-latest]
-
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+      - name: Build unit tests
+        run: cargo test --lib --bins --no-run
 
-      - name: Test default features
+  build-integration:
+    needs: [clippy, fmt, msrv]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+          os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build integration tests
+        run: cargo test --tests --no-run
+
+  build-benches:
+    needs: [clippy, fmt, msrv]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build benchmarks
+        run: cargo test --benches --no-run
+
+  run-tests:
+    needs: [build-unit, build-integration]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+          os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run all tests
         run: cargo test
 
   features:
