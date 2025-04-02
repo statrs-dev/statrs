@@ -193,7 +193,7 @@ where
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for Dirichlet<D>
+impl<D> ::rand::distr::Distribution<OVector<f64, D>> for Dirichlet<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,

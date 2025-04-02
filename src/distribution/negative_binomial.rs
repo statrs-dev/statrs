@@ -137,7 +137,7 @@ impl std::fmt::Display for NegativeBinomial {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<u64> for NegativeBinomial {
+impl ::rand::distr::Distribution<u64> for NegativeBinomial {
     fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> u64 {
         use crate::distribution::{gamma, poisson};
 
@@ -481,7 +481,7 @@ mod tests {
         test::check_discrete_distribution(&create_ok(5.0, 0.3), 35);
         test::check_discrete_distribution(&create_ok(10.0, 0.7), 21);
     }
-    
+
     #[test]
     fn test_sf_upper_bound() {
         let sf = |arg: u64| move |x: NegativeBinomial| x.sf(arg);
@@ -492,7 +492,7 @@ mod tests {
     #[cfg(feature = "rand")]
     fn test_sample() {
         use crate::prec;
-        use rand::{distributions::Distribution, SeedableRng, rngs::StdRng};
+        use rand::{distr::Distribution, SeedableRng, rngs::StdRng};
 
         let dist = NegativeBinomial::new(4.0, 0.5).unwrap();
         let mut rng = StdRng::seed_from_u64(1600);

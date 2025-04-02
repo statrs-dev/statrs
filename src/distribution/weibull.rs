@@ -122,9 +122,9 @@ impl std::fmt::Display for Weibull {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<f64> for Weibull {
+impl ::rand::distr::Distribution<f64> for Weibull {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        let x: f64 = rng.gen();
+        let x: f64 = rng.random();
         self.scale * (-x.ln()).powf(1.0 / self.shape)
     }
 }

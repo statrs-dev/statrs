@@ -198,7 +198,7 @@ where
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl<D> ::rand::distributions::Distribution<OVector<f64, D>> for MultivariateStudent<D>
+impl<D> ::rand::distr::Distribution<OVector<f64, D>> for MultivariateStudent<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
@@ -217,7 +217,7 @@ where
     /// `L` is the Cholesky decomposition of the scale matrix,
     /// `Z` is a vector of normally distributed random variables, and
     /// `μ` is the location vector
-    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
+    fn sample<R: ::rand::Rng + ::rand::RngCore + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
         use crate::distribution::{ChiSquared, Normal};
 
         let d = Normal::new(0., 1.).unwrap();
@@ -608,7 +608,7 @@ mod tests  {
         assert_relative_eq!(mvs.ln_pdf_const(), std::f64::consts::TAU.recip().ln(), epsilon = 1e-15);
 
         // compare to static
-        assert_eq!(mvs.dim(), 2); 
+        assert_eq!(mvs.dim(), 2);
         assert!(mvs.location().eq(&OVector::<f64, U2>::new(1., 1.)));
         assert!(mvs.scale().eq(&OMatrix::<f64, U2, U2>::identity()));
         assert!(mvs.precision().eq(&OMatrix::<f64, U2, U2>::identity()));
@@ -620,7 +620,7 @@ mod tests  {
         assert_eq!(mvs.precision(), &OMatrix::<f64, Dyn, Dyn>::identity(2, 2));
         assert_eq!(mvs.scale_chol_decomp(), &OMatrix::<f64, Dyn, Dyn>::identity(2, 2));
     }
-        
+
     #[test]
     fn test_error_is_sync_send() {
         fn assert_sync_send<T: Sync + Send>() {}

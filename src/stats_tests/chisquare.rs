@@ -69,7 +69,7 @@ pub fn chisquare(
     if n <= 1 {
         return Err(ChiSquareTestError::FObsInvalid);
     }
-    let total_samples = f_obs.iter().sum();
+    let total_samples: usize = f_obs.iter().sum();
     let f_obs: Vec<f64> = f_obs.iter().map(|x| *x as f64).collect();
 
     let f_exp = match f_exp {
