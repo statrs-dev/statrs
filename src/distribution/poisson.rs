@@ -480,4 +480,10 @@ mod tests {
         test::check_discrete_distribution(&create_ok(0.3), 10);
         test::check_discrete_distribution(&create_ok(4.5), 30);
     }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: Poisson| x.inverse_cdf(arg);
+        test_exact(1.5, 0, invcdf(0.));
+    }
 }

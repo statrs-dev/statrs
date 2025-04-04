@@ -599,4 +599,12 @@ mod tests {
         test::check_discrete_distribution(&create_ok(5, 4, 3), 4);
         test::check_discrete_distribution(&create_ok(3, 2, 1), 2);
     }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: Hypergeometric| x.inverse_cdf(arg);
+        test_exact(10, 2, 5, 1, invcdf(0.5));
+        test_exact(100, 2, 5, 0, invcdf(0.5));
+    }
+
 }

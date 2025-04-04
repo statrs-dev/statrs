@@ -411,4 +411,14 @@ mod tests {
         let cdf = |arg: i64| move |x: DiscreteUniform| x.cdf(arg);
         test_exact(0, 3, 1.0, cdf(5));
     }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: DiscreteUniform| x.inverse_cdf(arg);
+        test_exact(0, 0, 0, invcdf(0.5));
+        test_exact(0, 0, 0, invcdf(1.));
+        test_exact(0, 5, 2, invcdf(0.5));
+        test_exact(3, 10, 3, invcdf(0.005));
+        test_exact(3, 10, 10, invcdf(0.9995));
+    }
 }
