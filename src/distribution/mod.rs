@@ -204,14 +204,12 @@ pub trait DiscreteCDF<K: Sized + Num + Ord + Clone + NumAssignOps, T: Float>:
     /// # Panics
     /// this default impl panics if provided `p` not on interval [0.0, 1.0]
     fn inverse_cdf(&self, p: T) -> K {
-        if p == T::zero() {
+        if p <= self.cdf(self.min()) {
             return self.min();
         } else if p == T::one() {
             return self.max();
         } else if !(T::zero()..=T::one()).contains(&p) {
             panic!("p must be on [0, 1]")
-        } else if p < self.cdf(self.min()) {
-            return self.min();
         }
 
         let two = K::one() + K::one();

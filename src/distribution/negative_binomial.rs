@@ -509,4 +509,10 @@ mod tests {
         assert!(prec::almost_eq(sample_mean, theoretical_mean, tol));
         assert!(prec::almost_eq(sample_variance, theoretical_variance, tol));
     }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: NegativeBinomial| x.inverse_cdf(arg);
+        test_exact(3.0, 0.5, u64::MAX, invcdf(1.));
+    }
 }

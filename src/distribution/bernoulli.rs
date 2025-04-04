@@ -321,4 +321,15 @@ mod testing {
         test_absolute(0.3, 0.3, 1e-15, sf(0));
         test_absolute(0.7, 0.7, 1e-15, sf(0));
     }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: Bernoulli| x.inverse_cdf(arg);
+        test_exact(0., 0, invcdf(0.));
+        test_exact(0., 0, invcdf(0.5));
+        test_exact(1., 0, invcdf(0.));
+        test_exact(1., 1, invcdf(1.));
+        test_exact(1., 1, invcdf(1e-6));
+        test_exact(0.5, 0, invcdf(0.25));
+    }
 }

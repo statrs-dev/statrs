@@ -510,4 +510,13 @@ mod tests {
         test::check_discrete_distribution(&create_ok(0.6), 100);
         test::check_discrete_distribution(&create_ok(1.0), 1);
     }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: Geometric| x.inverse_cdf(arg);
+        test_exact(1., 1, invcdf(0.));
+        test_exact(1., 1, invcdf(1.));
+        test_exact(0.2, 1, invcdf(0.2));
+        test_exact(0.004, 173, invcdf(0.5));
+    }
 }

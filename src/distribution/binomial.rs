@@ -567,6 +567,10 @@ mod tests {
         // cases in issue #185
         test_exact(0.018, 465, 1, invcdf(3.472e-4));
         test_exact(0.5, 6, 4, invcdf(0.75));
+
+        // case in issue #330
+        test_exact(0.05, 2, 0, invcdf(0.5));      
+        test_exact(0.005, 10, 0, invcdf(0.9));      
     }
 
     #[test]
