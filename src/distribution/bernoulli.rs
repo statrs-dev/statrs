@@ -107,12 +107,15 @@ impl DiscreteCDF<u64, f64> for Bernoulli {
     /// # Formula
     ///
     /// ```text
-    /// if x < 0 { 0 }
-    /// else if x >= 1 { 1 }
+    /// if x >= 1 { 1 }
     /// else { 1 - p }
     /// ```
     fn cdf(&self, x: u64) -> f64 {
-        self.b.cdf(x)
+        if x >= 1 {
+            1.
+        } else {
+            1. - self.b.p()
+        }
     }
 
     /// Calculates the survival function for the
@@ -331,5 +334,6 @@ mod testing {
         test_exact(1., 1, invcdf(1.));
         test_exact(1., 1, invcdf(1e-6));
         test_exact(0.5, 0, invcdf(0.25));
+        test_exact(0.5, 0, invcdf(0.5));
     }
 }
