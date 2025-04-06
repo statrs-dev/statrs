@@ -275,9 +275,9 @@ impl Discrete<u64, f64> for Bernoulli {
 
 #[rustfmt::skip]
 #[cfg(test)]
-mod testing {
+mod test {
     use super::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(p: f64; Bernoulli; BinomialError);
 
