@@ -245,26 +245,26 @@ where
     /// # Example
     ///
     /// ```
-    /// use nalgebra::OVector;
+    /// use nalgebra::{OVector, U2};
     /// use statrs::distribution::MultivariateNormal;
     ///
     /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
-    /// assert_eq!(mvn.mu(), &OVector::from_vec(vec![0., 0.]));
+    /// assert_eq!(mvn.mu(), &OVector::<f64, U2>::from_vec(vec![0., 0.]));
     /// ```
     pub fn mu(&self) -> &OVector<f64, D> {
         &self.mu
     }
 
-    /// Returns the mean of the multivariate normal distribution
+    /// Returns the covariance of the multivariate normal distribution
     ///
     /// # Example
     ///
     /// ```
-    /// use nalgebra::OVector;
+    /// use nalgebra::{OMatrix, U2};
     /// use statrs::distribution::MultivariateNormal;
     ///
     /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
-    /// assert_eq!(mvn.mean(), &OVector::from_vec(vec![0., 0.]));
+    /// assert_eq!(mvn.cov(), &OMatrix::<f64, U2, U2>::from_vec(vec![1., 0., 0., 1.]));
     /// ```
     pub fn cov(&self) -> &OMatrix<f64, D, D> {
         &self.cov
