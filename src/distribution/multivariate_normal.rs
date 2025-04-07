@@ -234,10 +234,10 @@ where
     /// use statrs::distribution::MultivariateNormal;
     ///
     /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
-    /// assert_eq!(mvn.cov_chol_decomp().shape(), (2, 2));
+    /// assert_eq!(mvn.clone_cov_chol_decomp().shape(), (2, 2));
     /// ```
-    pub fn cov_chol_decomp(&self) -> &OMatrix<f64, D, D> {
-        &self.cov_chol_decomp
+    pub fn clone_cov_chol_decomp(&self) -> OMatrix<f64, D, D> {
+        self.cov_chol_decomp.clone()
     }
 
     /// Returns the mean of the multivariate normal distribution
