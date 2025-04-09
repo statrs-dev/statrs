@@ -69,25 +69,41 @@ pub fn chisquare(
     if n <= 1 {
         return Err(ChiSquareTestError::FObsInvalid);
     }
-    let total_samples = f_obs.iter().sum();
-    let f_obs: Vec<f64> = f_obs.iter().map(|x| *x as f64).collect();
 
-    let f_exp = match f_exp {
-        Some(f_to_validate) => {
-            // same length check
-            if f_to_validate.len() != n {
-                return Err(ChiSquareTestError::FExpInvalid);
-            }
-            // same sum check
-            if f_to_validate.iter().sum::<f64>() as usize != total_samples {
-                return Err(ChiSquareTestError::FExpInvalid);
-            }
-            f_to_validate.to_vec()
+    let stat = if let Some(f_exp) = f_exp {
+        if f_exp.len() != n {
+            return Err(ChiSquareTestError::FExpInvalid);
         }
-        None => {
-            // make the expected assuming equal frequency
-            vec![total_samples as f64 / n as f64; n]
+
+        let mut total_samples = 0.0;
+        let mut sum_expected = 0.0;
+
+        let mut stat = 0.0;
+
+        for (obs, exp) in f_obs.iter().zip(f_exp) {
+            let obs = *obs as f64;
+
+            stat += (obs - exp).powi(2) / exp;
+
+            total_samples += obs;
+            sum_expected += exp;
         }
+
+        if !approx::relative_eq!(total_samples, sum_expected) {
+            return Err(ChiSquareTestError::FExpInvalid);
+        }
+
+        stat
+    } else {
+        let total_samples: usize = f_obs.iter().sum();
+        // Assume all frequencies are equally likely
+        let exp = total_samples as f64 / n as f64;
+
+        f_obs
+            .iter()
+            .map(|obs| *obs as f64)
+            .map(|obs| (obs - exp).powi(2) / exp)
+            .sum()
     };
 
     let ddof = match ddof {
@@ -100,12 +116,6 @@ pub fn chisquare(
         None => 0,
     };
     let dof = n - 1 - ddof;
-
-    let stat = f_obs
-        .into_iter()
-        .zip(f_exp)
-        .map(|(o, e)| (o - e).powi(2) / e)
-        .sum::<f64>();
 
     let chi_dist = ChiSquared::new(dof as f64).expect("ddof validity should already be checked");
     let pvalue = 1.0 - chi_dist.cdf(stat);
