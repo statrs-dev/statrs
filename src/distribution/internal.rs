@@ -41,6 +41,7 @@ pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
 #[cfg(test)]
 pub mod test {
     use crate::distribution::{Continuous, ContinuousCDF, Discrete, DiscreteCDF};
+    use crate::prec;
 
     #[macro_export]
     macro_rules! testing_boiler {
@@ -377,7 +378,7 @@ pub mod test {
             sum += (prev_density + density) * step / 2.0;
 
             let cdf = dist.cdf(x);
-            if (sum - cdf).abs() > 1e-3 {
+            if !prec::almost_eq(sum, cdf, 1e-3) {
                 panic!(
                     "Integral of pdf doesn't equal cdf!\n\
                         Integration from {x_min} by {step} to {x} = {sum}\n\
@@ -393,8 +394,10 @@ pub mod test {
             }
         }
 
-        assert!(sum > 0.99);
-        assert!(sum <= 1.001);
+        assert!(
+            sum > 0.99 && sum <= 1.001,
+            "sum should be close to 1, but is {sum}"
+        );
     }
 
     /// cdf should be the sum of the pmf
@@ -457,9 +460,7 @@ pub mod test {
     /// Does a series of checks that all continuous distributions must obey.
     /// 99% of the probability mass should be between x_min and x_max or the finite
     /// difference of cdf should be near to the pdf for much of the support.
-    pub fn check_continuous_distribution<
-        D: ContinuousCDF<f64, f64> + Continuous<f64, f64> + std::panic::RefUnwindSafe,
-    >(
+    pub fn check_continuous_distribution<D: ContinuousCDF<f64, f64> + Continuous<f64, f64>>(
         dist: &D,
         x_min: f64,
         x_max: f64,
@@ -471,16 +472,8 @@ pub mod test {
         assert_eq!(dist.cdf(f64::NEG_INFINITY), 0.0);
         assert_eq!(dist.cdf(f64::INFINITY), 1.0);
 
-        if std::panic::catch_unwind(|| {
-            check_integrate_pdf_is_cdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
-        })
-        .or(std::panic::catch_unwind(|| {
-            check_derivative_of_cdf_is_pdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
-        }))
-        .is_err()
-        {
-            panic!("Integration of pdf doesn't equal cdf and derivative of cdf doesn't equal pdf!");
-        }
+        check_integrate_pdf_is_cdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
+        check_derivative_of_cdf_is_pdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
     }
 
     /// Does a series of checks that all positive discrete distributions must

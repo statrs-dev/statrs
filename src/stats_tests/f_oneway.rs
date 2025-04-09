@@ -18,9 +18,9 @@ pub enum FOneWayTestError {
     SampleContainsNaN,
 }
 
-impl std::fmt::Display for FOneWayTestError {
+impl core::fmt::Display for FOneWayTestError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             FOneWayTestError::NotEnoughSamples => write!(f, "must be at least two samples"),
             FOneWayTestError::SampleTooSmall => {

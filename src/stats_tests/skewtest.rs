@@ -14,9 +14,9 @@ pub enum SkewTestError {
     SampleContainsNaN,
 }
 
-impl std::fmt::Display for SkewTestError {
+impl core::fmt::Display for SkewTestError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             SkewTestError::SampleTooSmall => {
                 write!(f, "sample must contain at least 8 observations")
@@ -31,6 +31,7 @@ impl std::fmt::Display for SkewTestError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for SkewTestError {}
 
 fn calc_root_b1(data: &[f64]) -> f64 {
