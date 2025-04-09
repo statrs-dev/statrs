@@ -14,9 +14,9 @@ pub enum TTestOneSampleError {
     SampleContainsNaN,
 }
 
-impl std::fmt::Display for TTestOneSampleError {
+impl core::fmt::Display for TTestOneSampleError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             TTestOneSampleError::SampleTooSmall => write!(f, "sample must be len > 1"),
             TTestOneSampleError::SampleContainsNaN => {

@@ -15,9 +15,9 @@ pub enum ChiSquareTestError {
     DdofInvalid,
 }
 
-impl std::fmt::Display for ChiSquareTestError {
+impl core::fmt::Display for ChiSquareTestError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             ChiSquareTestError::FObsInvalid => {
                 write!(f, "`f_obs` must have a length greater than 1")
