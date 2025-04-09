@@ -31,6 +31,7 @@ impl core::fmt::Display for SkewTestError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for SkewTestError {}
 
 fn calc_root_b1(data: &[f64]) -> f64 {

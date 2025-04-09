@@ -29,6 +29,7 @@ impl core::fmt::Display for TTestOneSampleError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for TTestOneSampleError {}
 
 /// Perform a one sample t-test
