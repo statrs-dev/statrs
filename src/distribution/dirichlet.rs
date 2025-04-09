@@ -369,7 +369,7 @@ where
 mod tests {
     use super::*;
 
-    use std::fmt::{Debug, Display};
+    use core::fmt::{Debug, Display};
 
     use nalgebra::{dmatrix, dvector, vector, DimMin, OVector};
 

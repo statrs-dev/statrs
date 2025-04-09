@@ -28,7 +28,7 @@ struct TestCase {
     values: Vec<f64>,
 }
 
-impl std::fmt::Debug for TestCase {
+impl core::fmt::Debug for TestCase {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "TestCase({:?}, [...]", self.certified)
     }

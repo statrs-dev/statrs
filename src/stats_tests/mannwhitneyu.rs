@@ -19,9 +19,9 @@ pub enum MannWhitneyUError {
     ExactMethodWithTiesInData,
 }
 
-impl std::fmt::Display for MannWhitneyUError {
+impl core::fmt::Display for MannWhitneyUError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             MannWhitneyUError::UncomparableData => {
                 write!(f, "elements in the data are not comparable")
