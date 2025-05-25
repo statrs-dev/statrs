@@ -260,7 +260,7 @@ pub(super) mod density_util {
 
     enum CheckContinuousError {
         LnPdf { x: f64 },
-        PdfStep { x: f64, sum: f64 },
+        PdfStep { x: f64, _sum: f64 },
     }
 
     /// cdf should be the integral of the pdf
@@ -281,10 +281,10 @@ pub(super) mod density_util {
             assert!(density >= 0.0);
 
             let ln_density = dist.ln_pdf(x);
-            if ln_density.is_finite() {
-                if !prec::abs_diff_eq!(density.ln(), ln_density, epsilon = 1e-10) {
-                    return Err(CheckContinuousError::LnPdf { x });
-                }
+            if ln_density.is_finite()
+                && !prec::abs_diff_eq!(density.ln(), ln_density, epsilon = 1e-10)
+            {
+                return Err(CheckContinuousError::LnPdf { x });
             }
 
             // trapezoidal rule
@@ -292,7 +292,7 @@ pub(super) mod density_util {
 
             let cdf = dist.cdf(x);
             if !prec::abs_diff_eq!(sum, cdf, epsilon = 1e-3) {
-                return Err(CheckContinuousError::PdfStep { x, sum });
+                return Err(CheckContinuousError::PdfStep { x, _sum: sum });
             }
 
             if x >= x_max {
