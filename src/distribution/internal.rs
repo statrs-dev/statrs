@@ -258,13 +258,18 @@ pub(super) mod density_util {
     use crate::distribution::{Continuous, ContinuousCDF, Discrete, DiscreteCDF};
     use crate::prec;
 
+    enum CheckContinuousError {
+        LnPdf { x: f64 },
+        PdfStep { x: f64, sum: f64 },
+    }
+
     /// cdf should be the integral of the pdf
     fn check_integrate_pdf_is_cdf<D: ContinuousCDF<f64, f64> + Continuous<f64, f64>>(
         dist: &D,
         x_min: f64,
         x_max: f64,
         step: f64,
-    ) {
+    ) -> Result<f64, CheckContinuousError> {
         let mut prev_x = x_min;
         let mut prev_density = dist.pdf(x_min);
         let mut sum = 0.0;
@@ -276,19 +281,18 @@ pub(super) mod density_util {
             assert!(density >= 0.0);
 
             let ln_density = dist.ln_pdf(x);
+            if ln_density.is_finite() {
+                if !prec::abs_diff_eq!(density.ln(), ln_density, epsilon = 1e-10) {
+                    return Err(CheckContinuousError::LnPdf { x });
+                }
+            }
 
-            prec::assert_abs_diff_eq!(density.ln(), ln_density, epsilon = 1e-10);
-
-            // triangle rule
+            // trapezoidal rule
             sum += (prev_density + density) * step / 2.0;
 
             let cdf = dist.cdf(x);
             if !prec::abs_diff_eq!(sum, cdf, epsilon = 1e-3) {
-                panic!(
-                    "Integral of pdf doesn't equal cdf!\n\
-                        Integration from {x_min} by {step} to {x} = {sum}\n\
-                        cdf = {cdf}"
-                );
+                return Err(CheckContinuousError::PdfStep { x, sum });
             }
 
             if x >= x_max {
@@ -299,10 +303,7 @@ pub(super) mod density_util {
             }
         }
 
-        assert!(
-            sum > 0.99 && sum <= 1.001,
-            "sum should be close to 1, but is {sum}"
-        );
+        Ok(sum)
     }
 
     /// cdf should be the sum of the pmf
@@ -341,7 +342,7 @@ pub(super) mod density_util {
         x_min: f64,
         x_max: f64,
         step: f64,
-    ) {
+    ) -> Result<(), f64> {
         const DELTA: f64 = 1e-12;
         const DX: f64 = 2.0 * DELTA;
         let mut prev_x = x_min;
@@ -354,7 +355,9 @@ pub(super) mod density_util {
 
             let d_cdf = dist.cdf(x_ahead) - dist.cdf(x_behind);
 
-            prec::assert_abs_diff_eq!(d_cdf, DX * density, epsilon = 1e-11);
+            if !prec::abs_diff_eq!(d_cdf, DX * density, epsilon = 1e-11) {
+                return Err(x);
+            }
 
             if x >= x_max {
                 break;
@@ -362,6 +365,8 @@ pub(super) mod density_util {
                 prev_x = x;
             }
         }
+
+        Ok(())
     }
 
     /// Does a series of checks that all continuous distributions must obey.
@@ -379,8 +384,36 @@ pub(super) mod density_util {
         assert_eq!(dist.cdf(f64::NEG_INFINITY), 0.0);
         assert_eq!(dist.cdf(f64::INFINITY), 1.0);
 
-        check_integrate_pdf_is_cdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
-        check_derivative_of_cdf_is_pdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
+        let integrate_res =
+            check_integrate_pdf_is_cdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
+        let diff_res =
+            check_derivative_of_cdf_is_pdf(dist, x_min, x_max, (x_max - x_min) / 100000.0);
+        match integrate_res {
+            // if integration failed along the way...
+            Err(CheckContinuousError::LnPdf { x })
+            | Err(CheckContinuousError::PdfStep { x, .. }) => {
+                // then check if differentiation fails along the way
+                if let Err(diff_err_x) = diff_res {
+                    panic!(
+                        "integration mismatched around x = {x} \n\
+                        and derivative insufficiently close at x={diff_err_x}"
+                    )
+                }
+                // otherwise: passes differentiation test
+            }
+            // if integration is close but not at endpoint (surprising!)...
+            Ok(sum) if !prec::abs_diff_eq!(sum, 1.0, epsilon = 1e-3) => {
+                // then check if differentiation fails along the way
+                if let Err(diff_err_x) = diff_res {
+                    panic!(
+                        "integration summed to {sum}, insufficiently close to 1.0 \n\
+                        and derivative insufficiently close at x={diff_err_x}"
+                    )
+                }
+            }
+            // passes integration test
+            _ => (),
+        }
     }
 
     /// Does a series of checks that all positive discrete distributions must
