@@ -2,6 +2,7 @@ use crate::distribution::{Discrete, DiscreteCDF};
 use crate::prec;
 use crate::statistics::*;
 use core::f64;
+use num_traits::{One, Zero};
 
 /// Implements the
 /// [Geometric](https://en.wikipedia.org/wiki/Geometric_distribution)
@@ -152,6 +153,33 @@ impl DiscreteCDF<u64, f64> for Geometric {
         } else {
             ((-self.p).ln_1p() * (x as f64)).exp()
         }
+    }
+
+    /// Calculates the inverse cumulative distribution function for the
+    /// geometric distribution at `x`.
+    /// In other languages, such as R, this is known as the the quantile function.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// p = ceil(log(1-x)/log(1-p))
+    /// ```
+    ///
+    /// # Panics
+    /// panics if provided `x` not on interval [0.0, 1.0]
+    fn inverse_cdf(&self, x: f64) -> u64 {
+        // ceil(log(1-x)/log(1-self.p)) = ceil(log1p(-x)/log1p(-self.p))
+        //                              = ceil((-x).ln_1p()/(-self.p).ln_1p())
+        //                              = ((-x).ln_1p()/(-self.p).ln_1p()).ceil()
+        if x <= self.cdf(self.min()) {
+            return self.min();
+        } else if x == <f64>::one() {
+            return self.max();
+        } else if !(<f64>::zero()..=<f64>::one()).contains(&x) {
+            std::panic!("p must be on [0, 1]")
+        }
+
+        ((-x).ln_1p() / (-self.p).ln_1p()).ceil() as u64
     }
 }
 
