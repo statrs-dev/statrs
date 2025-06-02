@@ -55,6 +55,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod consts;
+pub mod density;
 pub mod distribution;
 pub mod euclid;
 pub mod function;
