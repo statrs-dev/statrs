@@ -1,5 +1,27 @@
 pub mod knn;
 
+use kdtree::ErrorKind;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum DensityError {
+    /// Error when the k-d tree cannot be built or queried.
+    #[error(transparent)]
+    KdTree(#[from] ErrorKind),
+    EmptySample,
+    EmptyNeighborhood,
+}
+
+impl core::fmt::Display for DensityError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        match self {
+            DensityError::KdTree(err) => write!(f, "K-d tree error: {}", err),
+            DensityError::EmptySample => write!(f, "No samples provided"),
+            DensityError::EmptyNeighborhood => write!(f, "No neighbors found"),
+        }
+    }
+}
+
 /// Handles variable/point types for which nearest neighbors can be computed.
 pub trait Container: Clone {
     type Elem;

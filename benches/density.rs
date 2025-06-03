@@ -16,13 +16,13 @@ fn bench_density(c: &mut Criterion) {
     let mut group = c.benchmark_group("density");
     group.bench_function("knn_density_1d", |b| {
         b.iter(|| {
-            let _f = statrs::density::knn::knn_pdf([0.], &samples);
+            let _f = statrs::density::knn::knn_pdf([0.], &samples, None);
         });
     });
     let samples = generate_3d(100_000);
     group.bench_function("knn_density_3d", |b| {
         b.iter(|| {
-            let _f = statrs::density::knn::knn_pdf([0., 0., 0.], &samples);
+            let _f = statrs::density::knn::knn_pdf([0., 0., 0.], &samples, None);
         });
     });
 }
