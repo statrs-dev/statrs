@@ -24,6 +24,11 @@ name = "order_statistics"
 harness = false
 required-features = ["rand", "std"]
 
+[[bench]]
+name = "density"
+harness = false
+required-features = ["rand", "std"]
+
 [features]
 default = ["std", "nalgebra", "rand"]
 std = ["nalgebra?/std", "rand?/std"]
