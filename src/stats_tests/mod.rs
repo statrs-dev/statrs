@@ -1,6 +1,8 @@
 #[cfg(feature = "std")]
 pub mod chisquare;
 #[cfg(feature = "std")]
+pub mod anderson_darling;
+#[cfg(feature = "std")]
 pub mod f_oneway;
 pub mod fisher;
 #[cfg(feature = "std")]
