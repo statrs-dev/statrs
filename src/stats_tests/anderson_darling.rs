@@ -4,7 +4,6 @@ use crate::distribution::ContinuousCDF;
 #[non_exhaustive]
 pub enum AndersonDarlingError {
     SampleSizeInvalid,
-    StatisticInvalid,
 }
 
 impl core::fmt::Display for AndersonDarlingError {
@@ -13,9 +12,6 @@ impl core::fmt::Display for AndersonDarlingError {
         match self {
             AndersonDarlingError::SampleSizeInvalid => {
                 write!(f, "Sample size `n` must be greater than 0.")
-            }
-            AndersonDarlingError::StatisticInvalid => {
-                write!(f, "Test statistic `a_squared` must be non-negative.")
             }
         }
     }
