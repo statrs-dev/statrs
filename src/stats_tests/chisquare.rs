@@ -1,6 +1,7 @@
 //! Provides the functions related to [Chi-Squared tests](https://en.wikipedia.org/wiki/Chi-squared_test)
 
 use crate::distribution::{ChiSquared, ContinuousCDF};
+use crate::prec;
 
 /// Represents the errors that can occur when computing the chisquare function
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
@@ -15,9 +16,9 @@ pub enum ChiSquareTestError {
     DdofInvalid,
 }
 
-impl std::fmt::Display for ChiSquareTestError {
+impl core::fmt::Display for ChiSquareTestError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             ChiSquareTestError::FObsInvalid => {
                 write!(f, "`f_obs` must have a length greater than 1")
@@ -32,6 +33,7 @@ impl std::fmt::Display for ChiSquareTestError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for ChiSquareTestError {}
 
 /// Perform a Pearson's chi-square test
@@ -69,7 +71,6 @@ pub fn chisquare(
     if n <= 1 {
         return Err(ChiSquareTestError::FObsInvalid);
     }
-
     let stat = if let Some(f_exp) = f_exp {
         if f_exp.len() != n {
             return Err(ChiSquareTestError::FExpInvalid);
@@ -87,9 +88,8 @@ pub fn chisquare(
 
             total_samples += obs;
             sum_expected += exp;
-        }
 
-        if !approx::relative_eq!(total_samples, sum_expected) {
+        if !prec::relative_eq!(total_samples, sum_expected) {
             return Err(ChiSquareTestError::FExpInvalid);
         }
 
@@ -123,6 +123,7 @@ pub fn chisquare(
     Ok((stat, pvalue))
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -131,8 +132,8 @@ mod tests {
     #[test]
     fn test_scipy_example() {
         let (statistic, pvalue) = chisquare(&[16, 18, 16, 14, 12, 12], None, None).unwrap();
-        assert!(prec::almost_eq(statistic, 2.0, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.84914503608460956, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 2.0, epsilon = 1e-1);
+        prec::assert_abs_diff_eq!(pvalue, 0.84914503608460956, epsilon = 1e-9);
 
         let (statistic, pvalue) = chisquare(
             &[16, 18, 16, 14, 12, 12],
@@ -140,26 +141,26 @@ mod tests {
             None,
         )
         .unwrap();
-        assert!(prec::almost_eq(statistic, 3.5, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.62338762774958223, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 3.5, epsilon = 1e-1);
+        prec::assert_abs_diff_eq!(pvalue, 0.62338762774958223, epsilon = 1e-9);
 
         let (statistic, pvalue) = chisquare(&[16, 18, 16, 14, 12, 12], None, Some(1)).unwrap();
-        assert!(prec::almost_eq(statistic, 2.0, 1e-1));
-        assert!(prec::almost_eq(pvalue, 0.7357588823428847, 1e-9));
+        prec::assert_abs_diff_eq!(statistic, 2.0, epsilon = 1e-1);
+        prec::assert_abs_diff_eq!(pvalue, 0.7357588823428847, epsilon = 1e-9);
     }
     #[test]
     fn test_wiki_example() {
         // fairness of dice - p-value not provided
         let (statistic, _) = chisquare(&[5, 8, 9, 8, 10, 20], None, None).unwrap();
-        assert!(prec::almost_eq(statistic, 13.4, 1e-1));
+        prec::assert_abs_diff_eq!(statistic, 13.4, epsilon = 1e-1);
 
         let (statistic, _) = chisquare(&[5, 8, 9, 8, 10, 20], Some(&[10.0; 6]), None).unwrap();
-        assert!(prec::almost_eq(statistic, 13.4, 1e-1));
+        prec::assert_abs_diff_eq!(statistic, 13.4, epsilon = 1e-1);
 
         // chi-squared goodness of fit test
         let (statistic, pvalue) = chisquare(&[44, 56], Some(&[50.0, 50.0]), None).unwrap();
-        assert!(prec::almost_eq(statistic, 1.44, 1e-2));
-        assert!(prec::almost_eq(pvalue, 0.24, 1e-2));
+        prec::assert_abs_diff_eq!(statistic, 1.44, epsilon = 1e-2);
+        prec::assert_abs_diff_eq!(pvalue, 0.24, epsilon = 1e-2);
     }
 
     #[test]

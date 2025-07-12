@@ -10,11 +10,11 @@ use core::f64;
 /// ```
 /// use statrs::distribution::{Pareto, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let p = Pareto::new(1.0, 2.0).unwrap();
 /// assert_eq!(p.mean().unwrap(), 2.0);
-/// assert!(prec::almost_eq(p.pdf(2.0), 0.25, 1e-15));
+/// assert_abs_diff_eq!(p.pdf(2.0), 0.25, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Pareto {
@@ -383,10 +383,9 @@ impl Continuous<f64, f64> for Pareto {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
 
-    testing_boiler!(scale: f64, shape: f64; Pareto; ParetoError);
+    crate::distribution::internal::testing_boiler!(scale: f64, shape: f64; Pareto; ParetoError);
 
     #[test]
     fn test_create() {
@@ -548,7 +547,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.0, 10.0), 1.0, 10.0);
-        test::check_continuous_distribution(&create_ok(0.1, 2.0), 0.1, 100.0);
+        density_util::check_continuous_distribution(&create_ok(1.0, 10.0), 1.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(0.1, 2.0), 0.1, 100.0);
     }
 }

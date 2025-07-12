@@ -282,10 +282,10 @@ pub trait Discrete<K, T> {
     ///
     /// ```
     /// use statrs::distribution::{Discrete, Binomial};
-    /// use statrs::prec;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// let n = Binomial::new(0.5, 10).unwrap();
-    /// assert!(prec::almost_eq(n.pmf(5), 0.24609375, 1e-15));
+    /// assert_abs_diff_eq!(n.pmf(5), 0.24609375, epsilon = 1e-15);
     /// ```
     fn pmf(&self, x: K) -> T;
 
@@ -297,10 +297,10 @@ pub trait Discrete<K, T> {
     ///
     /// ```
     /// use statrs::distribution::{Discrete, Binomial};
-    /// use statrs::prec;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// let n = Binomial::new(0.5, 10).unwrap();
-    /// assert!(prec::almost_eq(n.ln_pmf(5), (0.24609375f64).ln(), 1e-15));
+    /// assert_abs_diff_eq!(n.ln_pmf(5), (0.24609375f64).ln(), epsilon = 1e-15);
     /// ```
     fn ln_pmf(&self, x: K) -> T;
 }

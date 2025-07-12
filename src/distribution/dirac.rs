@@ -228,7 +228,7 @@ impl Mode<Option<f64>> for Dirac {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(v: f64; Dirac; DiracError);
 

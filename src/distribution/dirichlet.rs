@@ -316,11 +316,10 @@ where
     ///
     /// # Panics
     ///
-    /// If any element in `x` is not in `(0, 1)`, the elements in `x` do not
-    /// sum to
-    /// `1` with a tolerance of `1e-4`,  or if `x` is not the same length as
-    /// the vector of
-    /// concentration parameters for this distribution
+    /// If `x` is not the same length as concentration parameter, `alpha`
+    /// If any element in `x` is not in `(0, 1)`[^*]
+    /// [^*]: inspected by checking each element of `x` with `(f64::MIN_POSITIVE..1.0).contains(&x_i)`
+    /// If elements in `x` do not add to `1f64` within `1e-4`
     ///
     /// # Formula
     ///
@@ -349,7 +348,10 @@ where
         let mut sum_alpha = 0.0;
 
         for (&x_i, &alpha_i) in x.iter().zip(self.alpha.iter()) {
-            assert!(0.0 < x_i && x_i < 1.0, "Arguments must be in (0, 1)");
+            assert!(
+                (f64::MIN_POSITIVE..1.0).contains(&x_i),
+                "Arguments must be in (0, 1)"
+            );
 
             term += (alpha_i - 1.0) * x_i.ln() - gamma::ln_gamma(alpha_i);
             sum_x += x_i;
@@ -357,7 +359,7 @@ where
         }
 
         assert!(
-            prec::almost_eq(sum_x, 1.0, 1e-4),
+            prec::abs_diff_eq!(sum_x, 1.0, epsilon = 1e-4),
             "Arguments must sum up to 1"
         );
         term + gamma::ln_gamma(sum_alpha)
@@ -368,8 +370,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prec;
 
-    use std::fmt::{Debug, Display};
+    use core::fmt::{Debug, Display};
 
     use nalgebra::{dmatrix, dvector, vector, DimMin, OVector};
 
@@ -401,7 +404,7 @@ mod tests {
     {
         let dd = try_create(alpha);
         let x = eval(dd);
-        assert_relative_eq!(expected, x, epsilon = acc);
+        prec::assert_relative_eq!(expected, x, epsilon = acc);
     }
 
     #[test]
@@ -479,7 +482,7 @@ mod tests {
     //     let res = n.std_dev();
     //     for i in 1..11 {
     //         let f = i as f64;
-    //         assert_almost_eq!(res[i-1], (f * (sum - f) / (sum * sum * (sum + 1.0))).sqrt(), 1e-15);
+    //         prec::assert_abs_diff_eq!(res[i-1], (f * (sum - f) / (sum * sum * (sum + 1.0))).sqrt(), epsilon = 1e-15);
     //     }
     // }
 

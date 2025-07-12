@@ -243,8 +243,9 @@ where
 #[cfg(test)]
 mod tests {
     use core::f64::consts;
-    use crate::statistics::Statistics;
     use crate::generate::{InfinitePeriodic, InfiniteSinusoidal};
+    use crate::prec;
+    use crate::statistics::Statistics;
 
     #[test]
     fn test_empty_data_returns_nan() {
@@ -268,10 +269,10 @@ mod tests {
         let l_mean = longer().mean();
         let l_qmean = longer().quadratic_mean();
 
-        assert_almost_eq!(s_mean, 0.375, 1e-14);
-        assert_almost_eq!(l_mean, 0.375, 1e-14);
-        assert_almost_eq!(s_qmean, (0.21875f64).sqrt(), 1e-14);
-        assert_almost_eq!(l_qmean, (0.21875f64).sqrt(), 1e-14);
+        prec::assert_abs_diff_eq!(s_mean, 0.375, epsilon = 1e-14);
+        prec::assert_abs_diff_eq!(l_mean, 0.375, epsilon = 1e-14);
+        prec::assert_abs_diff_eq!(s_qmean, (0.21875f64).sqrt(), epsilon = 1e-14);
+        prec::assert_abs_diff_eq!(l_qmean, (0.21875f64).sqrt(), epsilon = 1e-14);
     }
 
     #[test]
@@ -279,6 +280,6 @@ mod tests {
         let data = InfiniteSinusoidal::default(64.0, 16.0, 2.0).take(128);
         let qmean = data.quadratic_mean();
 
-        assert_almost_eq!(qmean, 2.0 / consts::SQRT_2, 1e-15);
+        prec::assert_abs_diff_eq!(qmean, 2.0 / consts::SQRT_2, epsilon = 1e-15);
     }
 }

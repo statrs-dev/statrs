@@ -12,10 +12,11 @@ use crate::statistics::*;
 /// use statrs::distribution::{Gamma, Continuous};
 /// use statrs::statistics::Distribution;
 /// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Gamma::new(3.0, 1.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), 3.0);
-/// assert!(prec::almost_eq(n.pdf(2.0), 0.270670566473225383788, 1e-15));
+/// assert_abs_diff_eq!(n.pdf(2.0), 0.270670566473225383788, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Gamma {
@@ -146,7 +147,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
     fn cdf(&self, x: f64) -> f64 {
         if x <= 0.0 {
             0.0
-        } else if ulps_eq!(x, self.shape) && self.rate.is_infinite() {
+        } else if prec::ulps_eq!(x, self.shape) && self.rate.is_infinite() {
             1.0
         } else if self.rate.is_infinite() {
             0.0
@@ -171,7 +172,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
     fn sf(&self, x: f64) -> f64 {
         if x <= 0.0 {
             1.0
-        } else if ulps_eq!(x, self.shape) && self.rate.is_infinite() {
+        } else if prec::ulps_eq!(x, self.shape) && self.rate.is_infinite() {
             0.0
         } else if self.rate.is_infinite() {
             1.0
@@ -353,7 +354,7 @@ impl Continuous<f64, f64> for Gamma {
     fn pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if ulps_eq!(self.shape, 1.0) {
+        } else if prec::ulps_eq!(self.shape, 1.0) {
             self.rate * (-self.rate * x).exp()
         } else if self.shape > 160.0 {
             self.ln_pdf(x).exp()
@@ -384,7 +385,7 @@ impl Continuous<f64, f64> for Gamma {
     fn ln_pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             f64::NEG_INFINITY
-        } else if ulps_eq!(self.shape, 1.0) {
+        } else if prec::ulps_eq!(self.shape, 1.0) {
             self.rate.ln() - self.rate * x
         } else if x.is_infinite() {
             f64::NEG_INFINITY
@@ -434,11 +435,12 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, shape: f64, rate: 
     }
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(shape: f64, rate: f64; Gamma; GammaError);
 
@@ -707,7 +709,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.0, 0.5), 0.0, 20.0);
-        test::check_continuous_distribution(&create_ok(9.0, 2.0), 0.0, 20.0);
+        density_util::check_continuous_distribution(&create_ok(1.0, 0.5), 0.0, 20.0);
+        density_util::check_continuous_distribution(&create_ok(9.0, 2.0), 0.0, 20.0);
     }
 }

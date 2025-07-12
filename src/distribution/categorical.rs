@@ -13,9 +13,10 @@ use core::f64;
 /// use statrs::distribution::{Categorical, Discrete};
 /// use statrs::statistics::Distribution;
 /// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Categorical::new(&[0.0, 1.0, 2.0]).unwrap();
-/// assert!(prec::almost_eq(n.mean().unwrap(), 5.0 / 3.0, 1e-15));
+/// assert_abs_diff_eq!(n.mean().unwrap(), 5.0 / 3.0, epsilon = 1e-15);
 /// assert_eq!(n.pmf(1), 1.0 / 3.0);
 /// ```
 #[derive(Clone, PartialEq, Debug)]
@@ -410,8 +411,8 @@ fn test_binary_index() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(prob_mass: &[f64]; Categorical; CategoricalError);
 
@@ -575,7 +576,7 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(&[1.0, 2.0, 3.0, 4.0]), 4);
-        test::check_discrete_distribution(&create_ok(&[0.0, 1.0, 2.0, 3.0, 4.0]), 5);
+        density_util::check_discrete_distribution(&create_ok(&[1.0, 2.0, 3.0, 4.0]), 4);
+        density_util::check_discrete_distribution(&create_ok(&[0.0, 1.0, 2.0, 3.0, 4.0]), 5);
     }
 }

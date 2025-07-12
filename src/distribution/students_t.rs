@@ -11,11 +11,11 @@ use core::f64;
 /// ```
 /// use statrs::distribution::{StudentsT, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = StudentsT::new(0.0, 1.0, 2.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), 0.0);
-/// assert!(prec::almost_eq(n.pdf(0.0), 0.353553390593274, 1e-15));
+/// assert_abs_diff_eq!(n.pdf(0.0), 0.353553390593274, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct StudentsT {
@@ -455,14 +455,14 @@ impl Continuous<f64, f64> for StudentsT {
     }
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consts::ACC;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::prec;
 
-    testing_boiler!(location: f64, scale: f64, freedom: f64; StudentsT; StudentsTError);
+    crate::distribution::internal::testing_boiler!(location: f64, scale: f64, freedom: f64; StudentsT; StudentsTError);
 
     #[test]
     fn test_create() {
@@ -662,19 +662,18 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(0.0, 1.0, 3.0), -30.0, 30.0);
-        test::check_continuous_distribution(&create_ok(0.0, 1.0, 10.0), -10.0, 10.0);
-        test::check_continuous_distribution(&create_ok(20.0, 0.5, 10.0), 10.0, 30.0);
+        density_util::check_continuous_distribution(&create_ok(0.0, 1.0, 3.0), -30.0, 30.0);
+        density_util::check_continuous_distribution(&create_ok(0.0, 1.0, 10.0), -10.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(20.0, 0.5, 10.0), 10.0, 30.0);
     }
 
     #[test]
     fn test_inv_cdf() {
         let test = |x: f64, freedom: f64, expected: f64| {
-            use approx::*;
             let d = StudentsT::new(0., 1., freedom).unwrap();
             // Checks that left == right to 4 significant figures, unlike
             // test_almost() which uses decimal places
-            assert_relative_eq!(d.inverse_cdf(x), expected, max_relative = 0.001);
+            prec::assert_relative_eq!(d.inverse_cdf(x), expected, max_relative = 0.001);
         };
 
         // This test checks our implementation against the whole t-table
@@ -1119,9 +1118,11 @@ mod tests {
     #[test]
     fn test_inv_cdf_high_precision() {
         let test = |x: f64, freedom: f64, expected: f64| {
-            use approx::assert_relative_eq;
             let d = StudentsT::new(0., 1., freedom).unwrap();
-            assert_relative_eq!(d.inverse_cdf(x), expected, max_relative = ACC);
+            prec::assert_relative_eq!(
+                d.inverse_cdf(x),
+                expected
+            );
         };
         // The data in this table of expected values was generated in
         // Python, using the mpsci package (based on mpmath):

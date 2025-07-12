@@ -281,10 +281,8 @@ impl Continuous<f64, f64> for Cauchy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
-    testing_boiler!(location: f64, scale: f64; Cauchy; CauchyError);
+    use crate::distribution::internal::density_util;
+    crate::distribution::internal::testing_boiler!(location: f64, scale: f64; Cauchy; CauchyError);
 
     #[test]
     fn test_create() {
@@ -514,7 +512,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(-1.2, 3.4), -1500.0, 1500.0);
-        test::check_continuous_distribution(&create_ok(-4.5, 6.7), -5000.0, 5000.0);
+        density_util::check_continuous_distribution(&create_ok(-1.2, 3.4), -1500.0, 1500.0);
+        density_util::check_continuous_distribution(&create_ok(-4.5, 6.7), -5000.0, 5000.0);
     }
 }

@@ -118,8 +118,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use core::f64;
     /// use statrs::statistics::Statistics;
@@ -132,7 +131,7 @@ pub trait Statistics<T> {
     /// assert!(y.mean().is_nan());
     ///
     /// let z = &[0.0, 3.0, -2.0];
-    /// assert_almost_eq!(z.mean(), 1.0 / 3.0, 1e-15);
+    /// assert_abs_diff_eq!(z.mean(), 1.0 / 3.0, epsilon = 1e-15);
     /// # }
     /// ```
     fn mean(self) -> T;
@@ -148,8 +147,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use core::f64;
     /// use statrs::statistics::Statistics;
@@ -169,7 +167,7 @@ pub trait Statistics<T> {
     ///
     /// z = &[1.0, 2.0, 3.0];
     /// // test value from online calculator, could be more accurate
-    /// assert_almost_eq!(z.geometric_mean(), 1.81712, 1e-5);
+    /// assert_abs_diff_eq!(z.geometric_mean(), 1.81712, epsilon = 1e-5);
     /// # }
     /// ```
     fn geometric_mean(self) -> T;
@@ -187,8 +185,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use core::f64;
     /// use statrs::statistics::Statistics;
@@ -208,7 +205,7 @@ pub trait Statistics<T> {
     ///
     /// z = &[1.0, 2.0, 3.0];
     /// // test value from online calculator, could be more accurate
-    /// assert_almost_eq!(z.harmonic_mean(), 1.63636, 1e-5);
+    /// assert_abs_diff_eq!(z.harmonic_mean(), 1.63636, epsilon = 1e-5);
     /// # }
     /// ```
     fn harmonic_mean(self) -> T;
@@ -338,8 +335,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use core::f64;
     /// use statrs::statistics::Statistics;
@@ -354,7 +350,7 @@ pub trait Statistics<T> {
     ///
     /// let z1 = &[0.0, 3.0, -2.0];
     /// let z2 = &[-5.0, 4.0, 10.0];
-    /// assert_almost_eq!(z1.covariance(z2), -5.5, 1e-14);
+    /// assert_abs_diff_eq!(z1.covariance(z2), -5.5, epsilon = 1e-14);
     /// # }
     /// ```
     fn covariance(self, other: Self) -> T;
@@ -375,8 +371,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use core::f64;
     /// use statrs::statistics::Statistics;
@@ -391,7 +386,7 @@ pub trait Statistics<T> {
     ///
     /// let z1 = &[0.0, 3.0, -2.0];
     /// let z2 = &[-5.0, 4.0, 10.0];
-    /// assert_almost_eq!(z1.population_covariance(z2), -11.0 / 3.0, 1e-14);
+    /// assert_abs_diff_eq!(z1.population_covariance(z2), -11.0 / 3.0, epsilon = 1e-14);
     /// # }
     /// ```
     fn population_covariance(self, other: Self) -> T;
@@ -405,8 +400,7 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use core::f64;
     /// use statrs::statistics::Statistics;
@@ -420,7 +414,7 @@ pub trait Statistics<T> {
     ///
     /// let z = &[0.0, 3.0, -2.0];
     /// // test value from online calculator, could be more accurate
-    /// assert_almost_eq!(z.quadratic_mean(), 2.08167, 1e-5);
+    /// assert_abs_diff_eq!(z.quadratic_mean(), 2.08167, epsilon = 1e-5);
     /// # }
     /// ```
     fn quadratic_mean(self) -> T;

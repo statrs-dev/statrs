@@ -1,6 +1,7 @@
 use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
+use crate::prec;
 use crate::statistics::*;
 use core::f64;
 
@@ -12,12 +13,12 @@ use core::f64;
 /// ```
 /// use statrs::distribution::{Weibull, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Weibull::new(10.0, 1.0).unwrap();
-/// assert!(prec::almost_eq(n.mean().unwrap(),
-/// 0.95135076986687318362924871772654021925505786260884, 1e-15));
-/// assert_eq!(n.pdf(1.0), 3.6787944117144232159552377016146086744581113103177);
+/// assert_abs_diff_eq!(n.mean().unwrap(),
+/// 0.95135076986687318362924871772654021925505786260884, epsilon = 1e-15);
+/// assert_abs_diff_eq!(n.pdf(1.0), 3.6787944117144232159552377016146086744581113103177);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Weibull {
@@ -315,7 +316,7 @@ impl Mode<Option<f64>> for Weibull {
     ///
     /// where `k` is the shape and `λ` is the scale
     fn mode(&self) -> Option<f64> {
-        let mode = if ulps_eq!(self.shape, 1.0) {
+        let mode = if prec::ulps_eq!(self.shape, 1.0) {
             0.0
         } else {
             self.scale * ((self.shape - 1.0) / self.shape).powf(1.0 / self.shape)
@@ -338,7 +339,7 @@ impl Continuous<f64, f64> for Weibull {
     fn pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if x == 0.0 && ulps_eq!(self.shape, 1.0) {
+        } else if x == 0.0 && prec::ulps_eq!(self.shape, 1.0) {
             1.0 / self.scale
         } else if x.is_infinite() {
             0.0
@@ -363,7 +364,7 @@ impl Continuous<f64, f64> for Weibull {
     fn ln_pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             f64::NEG_INFINITY
-        } else if x == 0.0 && ulps_eq!(self.shape, 1.0) {
+        } else if x == 0.0 && prec::ulps_eq!(self.shape, 1.0) {
             0.0 - self.scale.ln()
         } else if x.is_infinite() {
             f64::NEG_INFINITY
@@ -379,8 +380,8 @@ impl Continuous<f64, f64> for Weibull {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(shape: f64, scale: f64; Weibull; WeibullError);
 
@@ -552,6 +553,6 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.0, 0.2), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(1.0, 0.2), 0.0, 10.0);
     }
 }

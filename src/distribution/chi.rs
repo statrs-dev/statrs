@@ -12,11 +12,11 @@ use core::num::NonZeroU64;
 /// ```
 /// use statrs::distribution::{Chi, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Chi::new(2).unwrap();
-/// assert!(prec::almost_eq(n.mean().unwrap(), 1.25331413731550025121, 1e-14));
-/// assert!(prec::almost_eq(n.pdf(1.0), 0.60653065971263342360, 1e-15));
+/// assert_abs_diff_eq!(n.mean().unwrap(), 1.25331413731550025121, epsilon = 1e-14);
+/// assert_abs_diff_eq!(n.pdf(1.0), 0.60653065971263342360, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Chi {
@@ -339,10 +339,8 @@ impl Continuous<f64, f64> for Chi {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
-    testing_boiler!(freedom: u64; Chi; ChiError);
+    use crate::distribution::internal::density_util;
+    crate::distribution::internal::testing_boiler!(freedom: u64; Chi; ChiError);
 
     #[test]
     fn test_create() {
@@ -511,8 +509,8 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(2), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(5), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(1), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(2), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(5), 0.0, 10.0);
     }
 }

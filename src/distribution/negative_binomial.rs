@@ -26,12 +26,12 @@ use core::f64;
 /// ```
 /// use statrs::distribution::{NegativeBinomial, Discrete};
 /// use statrs::statistics::DiscreteDistribution;
-/// use statrs::prec::almost_eq;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let r = NegativeBinomial::new(4.0, 0.5).unwrap();
 /// assert_eq!(r.mean().unwrap(), 4.0);
-/// assert!(almost_eq(r.pmf(0), 0.0625, 1e-8));
-/// assert!(almost_eq(r.pmf(3), 0.15625, 1e-8));
+/// assert_abs_diff_eq!(r.pmf(0), 0.0625, epsilon = 1e-8);
+/// assert_abs_diff_eq!(r.pmf(3), 0.15625, epsilon = 1e-8);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct NegativeBinomial {
@@ -322,8 +322,8 @@ impl Discrete<u64, f64> for NegativeBinomial {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::test;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(r: f64, p: f64; NegativeBinomial; NegativeBinomialError);
 
@@ -479,8 +479,8 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(5.0, 0.3), 35);
-        test::check_discrete_distribution(&create_ok(10.0, 0.7), 21);
+        density_util::check_discrete_distribution(&create_ok(5.0, 0.3), 35);
+        density_util::check_discrete_distribution(&create_ok(10.0, 0.7), 21);
     }
     
     #[test]
@@ -490,7 +490,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "rand")]
+    #[cfg(all(feature = "rand", feature = "std"))]
     fn test_sample() {
         use crate::prec;
         use rand::{distributions::Distribution, SeedableRng, rngs::StdRng};
@@ -507,8 +507,8 @@ mod tests {
         let theoretical_mean = dist.mean().unwrap();
         let theoretical_variance = dist.variance().unwrap();
 
-        assert!(prec::almost_eq(sample_mean, theoretical_mean, tol));
-        assert!(prec::almost_eq(sample_variance, theoretical_variance, tol));
+        prec::assert_abs_diff_eq!(sample_mean, theoretical_mean, epsilon = tol);
+        prec::assert_abs_diff_eq!(sample_variance, theoretical_variance, epsilon = tol);
     }
 
     #[test]

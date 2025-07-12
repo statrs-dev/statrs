@@ -12,11 +12,11 @@ use core::f64;
 /// ```
 /// use statrs::distribution::{FisherSnedecor, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = FisherSnedecor::new(3.0, 3.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), 3.0);
-/// assert!(prec::almost_eq(n.pdf(1.0), 0.318309886183790671538, 1e-15));
+/// assert_abs_diff_eq!(n.pdf(1.0), 0.318309886183790671538, epsilon = 1e-15);
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FisherSnedecor {
@@ -417,8 +417,8 @@ impl Continuous<f64, f64> for FisherSnedecor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(freedom_1: f64, freedom_2: f64; FisherSnedecor; FisherSnedecorError);
 
@@ -621,6 +621,6 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(10.0, 10.0), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(10.0, 10.0), 0.0, 10.0);
     }
 }
