@@ -20,12 +20,12 @@ impl core::fmt::Display for AndersonDarlingError {
 #[cfg(feature = "std")]
 impl std::error::Error for AndersonDarlingError {}
 
-pub fn anderson_darling<T: ContinuousCDF<f64, f64>>(f_obs: &Vec<f64>, dist: &T) -> Result<(f64, f64), AndersonDarlingError> {
+pub fn anderson_darling<T: ContinuousCDF<f64, f64>>(f_obs: &[f64], dist: &T) -> Result<(f64, f64), AndersonDarlingError> {
     let n = f_obs.len();
     if n == 0 {
         return Err(AndersonDarlingError::SampleSizeInvalid);
     }
-    let mut f_obs = f_obs.clone();
+    let mut f_obs = f_obs.to_vec();
     f_obs.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
     let n_float = n as f64;
