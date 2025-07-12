@@ -20,7 +20,10 @@ impl core::fmt::Display for AndersonDarlingError {
 #[cfg(feature = "std")]
 impl std::error::Error for AndersonDarlingError {}
 
-pub fn anderson_darling<T: ContinuousCDF<f64, f64>>(f_obs: &[f64], dist: &T) -> Result<(f64, f64), AndersonDarlingError> {
+pub fn anderson_darling<T: ContinuousCDF<f64, f64>>(
+    f_obs: &[f64],
+    dist: &T,
+) -> Result<(f64, f64), AndersonDarlingError> {
     let n = f_obs.len();
     if n == 0 {
         return Err(AndersonDarlingError::SampleSizeInvalid);
@@ -29,8 +32,14 @@ pub fn anderson_darling<T: ContinuousCDF<f64, f64>>(f_obs: &[f64], dist: &T) -> 
     f_obs.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
     let n_float = n as f64;
-    let beta: f64 = (1.0/n_float) * (0..n).map(|i| (2.0 * (i + 1) as f64 - 1.0) * (f64::ln(dist.cdf(f_obs[i])) + f64::ln(1.0 - dist.cdf(f_obs[n - 1 - i])))).sum::<f64>();
-    let a_squared = -n_float - beta;  
+    let beta: f64 = (1.0 / n_float)
+        * (0..n)
+            .map(|i| {
+                (2.0 * (i + 1) as f64 - 1.0)
+                    * (f64::ln(dist.cdf(f_obs[i])) + f64::ln(1.0 - dist.cdf(f_obs[n - 1 - i])))
+            })
+            .sum::<f64>();
+    let a_squared = -n_float - beta;
     let a_squared_adjusted = a_squared * (1.0 + (0.75 / n_float) + (2.25 / n_float.powi(2)));
     let p_value = if a_squared_adjusted >= 0.6 {
         (1.2937 - 5.709 * a_squared_adjusted + 0.0186 * a_squared_adjusted.powi(2)).exp()
@@ -56,11 +65,12 @@ mod tests {
         let n = data.len();
         let n_float = n as f64;
         let mean = data.iter().sum::<f64>() / n_float;
-        let std_dev = (data.iter().map(|&val| (val - mean).powi(2)).sum::<f64>() / (n_float - 1.0)).sqrt();
+        let std_dev =
+            (data.iter().map(|&val| (val - mean).powi(2)).sum::<f64>() / (n_float - 1.0)).sqrt();
         let normal_dist = Normal::new(mean, std_dev).unwrap();
-        
+
         let (stat, p_value) = anderson_darling(&data, &normal_dist).unwrap();
-        
+
         assert!(stat < 0.5, "Statistic should be low for a good fit");
         assert!(p_value > 0.05, "P-value should be high for a good fit");
     }
@@ -71,7 +81,8 @@ mod tests {
         let n = data.len();
         let n_float = n as f64;
         let mean = data.iter().sum::<f64>() / n_float;
-        let std_dev = (data.iter().map(|&val| (val - mean).powi(2)).sum::<f64>() / (n_float - 1.0)).sqrt();
+        let std_dev =
+            (data.iter().map(|&val| (val - mean).powi(2)).sum::<f64>() / (n_float - 1.0)).sqrt();
         let normal_dist = Normal::new(mean, std_dev).unwrap();
 
         let (stat, p_value) = anderson_darling(&data, &normal_dist).unwrap();
@@ -97,5 +108,12 @@ mod tests {
         assert!(stat > 1.0, "Statistic should be high for a bad gamma fit");
         assert!(p_value < 0.05, "P-value should be low for a bad fit");
     }
-    
+
+    #[test]
+    fn test_sample_size_invalid() {
+        let data: Vec<f64> = vec![];
+        let normal_dist = Normal::new(0.0, 1.0).unwrap();
+        let result = anderson_darling(&data, &normal_dist);
+        assert!(result.is_err());
+    }
 }
