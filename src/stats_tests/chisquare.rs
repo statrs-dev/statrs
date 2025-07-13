@@ -88,6 +88,7 @@ pub fn chisquare(
 
             total_samples += obs;
             sum_expected += exp;
+        }
 
         if !prec::relative_eq!(total_samples, sum_expected) {
             return Err(ChiSquareTestError::FExpInvalid);
