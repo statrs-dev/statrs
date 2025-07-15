@@ -4,19 +4,12 @@ use kdtree::{distance::squared_euclidean, KdTree};
 
 use crate::{density::DensityError, function::gamma::gamma};
 
-use super::Container;
+use super::{orava_optimal_k, Container};
 
-fn orava_optimal_k(n_samples: f64) -> f64 {
-    // Adapted from K-nearest neighbour kernel density estimation, the choice of optimal k; Jan Orava 2012
-    (0.587 * n_samples.powf(4.0 / 5.0)).round().max(1.)
-}
-
-/// Computes the k-nearest neighbor density estimate for a given point `x`
+/// Computes the `k`-nearest neighbor density estimate for a given point `x`
 /// using the samples provided.
 ///
-/// The optimal `k` is computed using Orava's formula.
-///
-/// Returns `None` when `samples` is empty.
+/// The optimal `k` is computed using Orava's formula when `bandwidth` is `None`.
 pub fn knn_pdf<X, S>(x: X, samples: &S, bandwidth: Option<f64>) -> Result<f64, DensityError>
 where
     S: AsRef<[X]> + Container<Elem = X>,
@@ -52,18 +45,20 @@ where
 mod tests {
     use super::*;
     use crate::distribution::Normal;
-    use nalgebra::Vector2;
+    use nalgebra::{Vector1, Vector2};
     use rand::distributions::Distribution;
 
     #[test]
     fn test_knn_pdf() {
         let law = Normal::new(0., 1.).unwrap();
         let mut rng = rand::thread_rng();
-        let samples = (0..10000)
+        let samples = (0..100000)
             .map(|_| Vector2::new(law.sample(&mut rng), law.sample(&mut rng)))
+            // .map(|_| Vector1::new(law.sample(&mut rng)))
             .collect::<Vec<_>>();
         let x = Vector2::new(0.0, 0.0);
-        let knn_density_with_bandwidth = knn_pdf(x, &samples, Some(0.75));
+        // let x = Vector1::new(0.0);
+        let knn_density_with_bandwidth = knn_pdf(x, &samples, Some(0.2));
         let knn_density = knn_pdf(x, &samples, None);
         println!("Knn: {:?}", knn_density);
         println!("Knn with bandwidth: {:?}", knn_density_with_bandwidth);

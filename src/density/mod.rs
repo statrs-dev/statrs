@@ -1,5 +1,5 @@
+pub mod kde;
 pub mod knn;
-
 use kdtree::ErrorKind;
 use thiserror::Error;
 
@@ -20,6 +20,11 @@ impl core::fmt::Display for DensityError {
             DensityError::EmptyNeighborhood => write!(f, "No neighbors found"),
         }
     }
+}
+
+fn orava_optimal_k(n_samples: f64) -> f64 {
+    // Adapted from K-nearest neighbour kernel density estimation, the choice of optimal k; Jan Orava 2012
+    (0.587 * n_samples.powf(4.0 / 5.0)).round().max(1.)
 }
 
 /// Handles variable/point types for which nearest neighbors can be computed.
