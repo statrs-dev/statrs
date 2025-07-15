@@ -15,7 +15,6 @@ pub enum Kernel {
     #[default]
     Epanechnikov,
     Gaussian {
-        sigma: f64,
         dim: i32,
     },
     Uniform,
@@ -39,9 +38,7 @@ impl Kernel {
                     0.75 * (1. - u.powi(2))
                 }
             }
-            Self::Gaussian { sigma, dim } => {
-                (-0.5 * (u / sigma).powi(2)).exp() / (crate::consts::SQRT_2PI.powi(*dim) * sigma)
-            }
+            Self::Gaussian { dim } => (-0.5 * u.powi(2)).exp() / crate::consts::SQRT_2PI.powi(*dim),
             Self::Uniform => {
                 if u.abs() > 1. {
                     0.0
@@ -100,12 +97,7 @@ impl Kernel {
 /// using the samples provided and a specified kernel.
 ///
 /// The optimal `k` is computed using Orava's formula when `bandwidth` is `None`.
-pub fn kde_pdf<S, X>(
-    x: X,
-    samples: &S,
-    bandwidth: Option<f64>,
-    kernel: Kernel,
-) -> Result<f64, DensityError>
+pub fn kde_pdf<S, X>(x: X, samples: &S, bandwidth: Option<f64>) -> Result<f64, DensityError>
 where
     S: AsRef<[X]> + Container,
     X: AsRef<[f64]> + Container + PartialEq, //+ Div<f64, Output = X>
@@ -131,15 +123,15 @@ where
         Err(DensityError::EmptyNeighborhood)
     } else {
         let radius = neighbors.last().unwrap().0.sqrt();
-        Ok((1. / (n_samples * radius))
+        let gaussian_kernel = Kernel::Gaussian { dim: d as i32 };
+        Ok((1. / (n_samples * radius.powi(d as i32)))
             * samples
                 .as_ref()
                 .iter()
                 .map(|xi| {
-                    kernel.evaluate(squared_euclidean(
-                        (&x / radius).as_ref(),
-                        (xi / radius).as_ref(),
-                    ))
+                    gaussian_kernel.evaluate(
+                        squared_euclidean((&x / radius).as_ref(), (xi / radius).as_ref()).sqrt(),
+                    )
                 })
                 .sum::<f64>())
     }
@@ -149,7 +141,7 @@ where
 mod tests {
     use super::*;
     use crate::distribution::Normal;
-    use nalgebra::{Vector1, Vector2};
+    use nalgebra::Vector2;
     use rand::distributions::Distribution;
 
     #[test]
@@ -158,7 +150,7 @@ mod tests {
         assert_eq!(kernel.evaluate(0.5), 0.75 * 0.75);
         assert_eq!(kernel.evaluate(1.5), 0.0);
 
-        let kernel = Kernel::Gaussian { sigma: 1.0, dim: 1 };
+        let kernel = Kernel::Gaussian { dim: 1 };
         assert!((kernel.evaluate(0.0) - (1. / (SQRT_2 * PI.sqrt()))).abs() < 1e-10);
     }
 
@@ -167,15 +159,16 @@ mod tests {
         let law = Normal::new(0., 1.).unwrap();
         let mut rng = rand::thread_rng();
         let samples = (0..100000)
-            // .map(|_| Vector2::new(law.sample(&mut rng), law.sample(&mut rng)))
-            .map(|_| Vector1::new(law.sample(&mut rng)))
+            .map(|_| Vector2::new(law.sample(&mut rng), law.sample(&mut rng)))
+            // .map(|_| Vector1::new(law.sample(&mut rng)))
             .collect::<Vec<_>>();
-        // let x = Vector2::new(0.0, 0.0);
-        let x = Vector1::new(0.0);
-        let kde_density_with_bandwidth = kde_pdf(x, &samples, Some(0.5), Default::default());
-        let kde_density = kde_pdf(x, &samples, None, Default::default());
+        let x = Vector2::new(0.0, 0.0);
+        // let x = Vector1::new(0.0);
+        let kde_density_with_bandwidth = kde_pdf(x, &samples, Some(0.1));
+        let kde_density = kde_pdf(x, &samples, None);
         println!("Kde: {:?}", kde_density);
         println!("Kde with bandwidth: {:?}", kde_density_with_bandwidth);
+        // println!("Pdf: {:?}", law.pdf(x[0]));
         assert!(kde_density.is_ok());
     }
 }
