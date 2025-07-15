@@ -45,7 +45,7 @@ where
 mod tests {
     use super::*;
     use crate::distribution::Normal;
-    use nalgebra::{Vector1, Vector2};
+    use nalgebra::Vector2;
     use rand::distributions::Distribution;
 
     #[test]
