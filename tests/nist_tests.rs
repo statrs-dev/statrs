@@ -28,8 +28,8 @@ struct TestCase {
     values: Vec<f64>,
 }
 
-impl std::fmt::Debug for TestCase {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for TestCase {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "TestCase({:?}, [...]", self.certified)
     }
 }
@@ -41,8 +41,8 @@ struct CertifiedValues {
     corr: f64,
 }
 
-impl std::fmt::Display for CertifiedValues {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for CertifiedValues {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "μ={:.3e}, σ={:.3e}, r={:.3e}",

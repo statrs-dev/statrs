@@ -1,6 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::{Distribution, Max, Median, Min, Mode};
-use std::f64;
+use core::f64;
 
 /// Implements the [Laplace](https://en.wikipedia.org/wiki/Laplace_distribution)
 /// distribution.
@@ -32,9 +32,9 @@ pub enum LaplaceError {
     ScaleInvalid,
 }
 
-impl std::fmt::Display for LaplaceError {
+impl core::fmt::Display for LaplaceError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             LaplaceError::LocationInvalid => write!(f, "Location is NaN"),
             LaplaceError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero"),
@@ -42,6 +42,7 @@ impl std::fmt::Display for LaplaceError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for LaplaceError {}
 
 impl Laplace {
@@ -104,8 +105,8 @@ impl Laplace {
     }
 }
 
-impl std::fmt::Display for Laplace {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Laplace {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Laplace({}, {})", self.location, self.scale)
     }
 }
@@ -324,11 +325,13 @@ impl Continuous<f64, f64> for Laplace {
     }
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prec;
 
-    use crate::testing_boiler;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(location: f64, scale: f64; Laplace; LaplaceError);
 
@@ -342,7 +345,7 @@ mod tests {
         F: Fn(Laplace) -> f64,
     {
         let x = create_and_get(location, scale, get_fn);
-        assert_relative_eq!(expected, x, epsilon = 0.0, max_relative = rtol);
+        prec::assert_relative_eq!(expected, x, epsilon = 0.0, max_relative = rtol);
     }
 
     #[test]

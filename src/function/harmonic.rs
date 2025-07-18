@@ -33,33 +33,35 @@ pub fn gen_harmonic(n: u64, m: f64) -> f64 {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use std::f64;
+    use core::f64;
+    use crate::prec;
+    use super::*;
 
     #[test]
     fn test_harmonic() {
-        assert_eq!(super::harmonic(0), 1.0);
-        assert_almost_eq!(super::harmonic(1), 1.0, 1e-14);
-        assert_almost_eq!(super::harmonic(2), 1.5, 1e-14);
-        assert_almost_eq!(super::harmonic(4), 2.083333333333333333333, 1e-14);
-        assert_almost_eq!(super::harmonic(8), 2.717857142857142857143, 1e-14);
-        assert_almost_eq!(super::harmonic(16), 3.380728993228993228993, 1e-14);
+        prec::assert_ulps_eq!(harmonic(0), 1.0, max_ulps = 0);
+        prec::assert_abs_diff_eq!(harmonic(1), 1.0, epsilon = 1e-14);
+        prec::assert_abs_diff_eq!(harmonic(2), 1.5, epsilon = 1e-14);
+        prec::assert_abs_diff_eq!(harmonic(4), 2.083333333333333333333, epsilon = 1e-14);
+        prec::assert_abs_diff_eq!(harmonic(8), 2.717857142857142857143, epsilon = 1e-14);
+        prec::assert_abs_diff_eq!(harmonic(16), 3.380728993228993228993, epsilon = 1e-14);
     }
 
     #[test]
     fn test_gen_harmonic() {
-        assert_eq!(super::gen_harmonic(0, 0.0), 1.0);
-        assert_eq!(super::gen_harmonic(0, f64::INFINITY), 1.0);
-        assert_eq!(super::gen_harmonic(0, f64::NEG_INFINITY), 1.0);
-        assert_eq!(super::gen_harmonic(1, 0.0), 1.0);
-        assert_eq!(super::gen_harmonic(1, f64::INFINITY), 1.0);
-        assert_eq!(super::gen_harmonic(1, f64::NEG_INFINITY), 1.0);
-        assert_eq!(super::gen_harmonic(2, 1.0), 1.5);
-        assert_eq!(super::gen_harmonic(2, 3.0), 1.125);
-        assert_eq!(super::gen_harmonic(2, f64::INFINITY), 1.0);
-        assert_eq!(super::gen_harmonic(2, f64::NEG_INFINITY), f64::INFINITY);
-        assert_almost_eq!(super::gen_harmonic(4, 1.0), 2.083333333333333333333, 1e-14);
-        assert_eq!(super::gen_harmonic(4, 3.0), 1.177662037037037037037);
-        assert_eq!(super::gen_harmonic(4, f64::INFINITY), 1.0);
-        assert_eq!(super::gen_harmonic(4, f64::NEG_INFINITY), f64::INFINITY);
+        assert_eq!(gen_harmonic(0, 0.0), 1.0);
+        assert_eq!(gen_harmonic(0, f64::INFINITY), 1.0);
+        assert_eq!(gen_harmonic(0, f64::NEG_INFINITY), 1.0);
+        assert_eq!(gen_harmonic(1, 0.0), 1.0);
+        assert_eq!(gen_harmonic(1, f64::INFINITY), 1.0);
+        assert_eq!(gen_harmonic(1, f64::NEG_INFINITY), 1.0);
+        assert_eq!(gen_harmonic(2, 1.0), 1.5);
+        assert_eq!(gen_harmonic(2, 3.0), 1.125);
+        assert_eq!(gen_harmonic(2, f64::INFINITY), 1.0);
+        assert_eq!(gen_harmonic(2, f64::NEG_INFINITY), f64::INFINITY);
+        prec::assert_abs_diff_eq!(gen_harmonic(4, 1.0), 2.083333333333333333333, epsilon = 1e-14);
+        assert_eq!(gen_harmonic(4, 3.0), 1.177662037037037037037);
+        assert_eq!(gen_harmonic(4, f64::INFINITY), 1.0);
+        assert_eq!(gen_harmonic(4, f64::NEG_INFINITY), f64::INFINITY);
     }
 }

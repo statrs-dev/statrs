@@ -1,7 +1,7 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{factorial, gamma};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution)
 /// distribution
@@ -11,11 +11,11 @@ use std::f64;
 /// ```
 /// use statrs::distribution::{Poisson, Discrete};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Poisson::new(1.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), 1.0);
-/// assert!(prec::almost_eq(n.pmf(1), 0.367879441171442, 1e-15));
+/// assert_abs_diff_eq!(n.pmf(1), 0.367879441171442, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Poisson {
@@ -30,15 +30,16 @@ pub enum PoissonError {
     LambdaInvalid,
 }
 
-impl std::fmt::Display for PoissonError {
+impl core::fmt::Display for PoissonError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             PoissonError::LambdaInvalid => write!(f, "Lambda is NaN, zero or less than zero"),
         }
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for PoissonError {}
 
 impl Poisson {
@@ -83,8 +84,8 @@ impl Poisson {
     }
 }
 
-impl std::fmt::Display for Poisson {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Poisson {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Pois({})", self.lambda)
     }
 }
@@ -340,9 +341,8 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, lambda: f64) -> f6
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
     testing_boiler!(lambda: f64; Poisson; PoissonError);
 
     #[test]
@@ -477,7 +477,13 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(0.3), 10);
-        test::check_discrete_distribution(&create_ok(4.5), 30);
+        density_util::check_discrete_distribution(&create_ok(0.3), 10);
+        density_util::check_discrete_distribution(&create_ok(4.5), 30);
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: Poisson| x.inverse_cdf(arg);
+        test_exact(1.5, 0, invcdf(0.));
     }
 }

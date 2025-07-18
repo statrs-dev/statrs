@@ -1,7 +1,8 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, factorial};
+use crate::prec;
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Binomial](https://en.wikipedia.org/wiki/Binomial_distribution)
@@ -32,15 +33,16 @@ pub enum BinomialError {
     ProbabilityInvalid,
 }
 
-impl std::fmt::Display for BinomialError {
+impl core::fmt::Display for BinomialError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             BinomialError::ProbabilityInvalid => write!(f, "Probability is NaN or not in [0, 1]"),
         }
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for BinomialError {}
 
 impl Binomial {
@@ -103,8 +105,8 @@ impl Binomial {
     }
 }
 
-impl std::fmt::Display for Binomial {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Binomial {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Bin({},{})", self.p, self.n)
     }
 }
@@ -233,7 +235,7 @@ impl Distribution<f64> for Binomial {
     /// (1 / 2) * ln (2 * π * e * n * p * (1 - p))
     /// ```
     fn entropy(&self) -> Option<f64> {
-        let entr = if self.p == 0.0 || ulps_eq!(self.p, 1.0) {
+        let entr = if self.p == 0.0 || prec::ulps_eq!(self.p, 1.0) {
             0.0
         } else {
             (0..self.n + 1).fold(0.0, |acc, x| {
@@ -280,7 +282,7 @@ impl Mode<Option<u64>> for Binomial {
     fn mode(&self) -> Option<u64> {
         let mode = if self.p == 0.0 {
             0
-        } else if ulps_eq!(self.p, 1.0) {
+        } else if prec::ulps_eq!(self.p, 1.0) {
             self.n
         } else {
             ((self.n as f64 + 1.0) * self.p).floor() as u64
@@ -307,7 +309,7 @@ impl Discrete<u64, f64> for Binomial {
             } else {
                 0.0
             }
-        } else if ulps_eq!(self.p, 1.0) {
+        } else if prec::ulps_eq!(self.p, 1.0) {
             if x == self.n {
                 1.0
             } else {
@@ -338,7 +340,7 @@ impl Discrete<u64, f64> for Binomial {
             } else {
                 f64::NEG_INFINITY
             }
-        } else if ulps_eq!(self.p, 1.0) {
+        } else if prec::ulps_eq!(self.p, 1.0) {
             if x == self.n {
                 0.0
             } else {
@@ -356,10 +358,8 @@ impl Discrete<u64, f64> for Binomial {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
-    testing_boiler!(p: f64, n: u64; Binomial; BinomialError);
+    use crate::distribution::internal::density_util;
+    crate::distribution::internal::testing_boiler!(p: f64, n: u64; Binomial; BinomialError);
 
     #[test]
     fn test_create() {
@@ -567,6 +567,10 @@ mod tests {
         // cases in issue #185
         test_exact(0.018, 465, 1, invcdf(3.472e-4));
         test_exact(0.5, 6, 4, invcdf(0.75));
+
+        // case in issue #330
+        test_exact(0.05, 2, 0, invcdf(0.5));      
+        test_exact(0.005, 10, 0, invcdf(0.9));      
     }
 
     #[test]
@@ -579,7 +583,7 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(0.3, 5), 5);
-        test::check_discrete_distribution(&create_ok(0.7, 10), 10);
+        density_util::check_discrete_distribution(&create_ok(0.3, 5), 5);
+        density_util::check_discrete_distribution(&create_ok(0.7, 10), 10);
     }
 }

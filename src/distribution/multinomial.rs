@@ -45,9 +45,9 @@ pub enum MultinomialError {
     ProbabilityInvalid,
 }
 
-impl std::fmt::Display for MultinomialError {
+impl core::fmt::Display for MultinomialError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             MultinomialError::NotEnoughProbabilities => write!(f, "Fewer than two probabilities"),
             MultinomialError::ProbabilitySumZero => write!(f, "The probabilities sum up to zero"),
@@ -59,6 +59,7 @@ impl std::fmt::Display for MultinomialError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for MultinomialError {}
 
 impl Multinomial<Dyn> {
@@ -149,12 +150,12 @@ where
     }
 }
 
-impl<D> std::fmt::Display for Multinomial<D>
+impl<D> core::fmt::Display for Multinomial<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Multinom({:#?},{})", self.p, self.n)
     }
 }
@@ -361,9 +362,10 @@ mod tests {
     use crate::{
         distribution::{Discrete, Multinomial, MultinomialError},
         statistics::{MeanN, VarianceN},
+        prec,
     };
     use nalgebra::{dmatrix, dvector, vector, DimMin, Dyn, OVector};
-    use std::fmt::{Debug, Display};
+    use core::fmt::{Debug, Display};
 
     fn try_create<D>(p: OVector<f64, D>, n: u64) -> Multinomial<D>
     where
@@ -394,12 +396,12 @@ mod tests {
     {
         let dd = try_create(p, n);
         let x = eval(dd);
-        assert_relative_eq!(expected, x, epsilon = acc);
+        prec::assert_relative_eq!(expected, x, epsilon = acc);
     }
 
     #[test]
     fn test_create() {
-        assert_relative_eq!(
+        prec::assert_relative_eq!(
             *try_create(vector![1.0, 1.0, 1.0], 4).p(),
             vector![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]
         );
@@ -550,13 +552,13 @@ mod tests {
     //         let large_p = &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
     //         let n = Multinomial::new(large_p, 45).unwrap();
     //         let x = &[1, 2, 3, 4, 5, 6, 7, 8, 9];
-    //         assert_almost_eq!(n.pmf(x).ln(), n.ln_pmf(x), 1e-13);
+    //         prec::assert_abs_diff_eq!(n.pmf(x).ln(), n.ln_pmf(x), epsilon = 1e-13);
     //         let n2 = Multinomial::new(large_p, 18).unwrap();
     //         let x2 = &[1, 1, 1, 2, 2, 2, 3, 3, 3];
-    //         assert_almost_eq!(n2.pmf(x2).ln(), n2.ln_pmf(x2), 1e-13);
+    //         prec::assert_abs_diff_eq!(n2.pmf(x2).ln(), n2.ln_pmf(x2), epsilon = 1e-13);
     //         let n3 = Multinomial::new(large_p, 51).unwrap();
     //         let x3 = &[5, 6, 7, 8, 7, 6, 5, 4, 3];
-    //         assert_almost_eq!(n3.pmf(x3).ln(), n3.ln_pmf(x3), 1e-13);
+    //         prec::assert_abs_diff_eq!(n3.pmf(x3).ln(), n3.ln_pmf(x3), epsilon = 1e-13);
     //     }
 
     //     #[test]

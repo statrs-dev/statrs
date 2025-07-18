@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use std::f64;
-use std::fmt::Debug;
+use core::f64;
 
 /// Implements the [Continuous
 /// Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous))
@@ -37,9 +36,9 @@ pub enum UniformError {
     MaxNotGreaterThanMin,
 }
 
-impl std::fmt::Display for UniformError {
+impl core::fmt::Display for UniformError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             UniformError::MinInvalid => write!(f, "Minimum is NaN or infinite"),
             UniformError::MaxInvalid => write!(f, "Maximum is NaN or infinite"),
@@ -50,6 +49,7 @@ impl std::fmt::Display for UniformError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for UniformError {}
 
 impl Uniform {
@@ -65,7 +65,7 @@ impl Uniform {
     ///
     /// ```
     /// use statrs::distribution::Uniform;
-    /// use std::f64;
+    /// use core::f64;
     ///
     /// let mut result = Uniform::new(0.0, 1.0);
     /// assert!(result.is_ok());
@@ -105,6 +105,36 @@ impl Uniform {
     pub fn standard() -> Self {
         Self { min: 0.0, max: 1.0 }
     }
+
+    /// Returns the lower bound of the uniform distribution
+    /// as a `f64`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Uniform;
+    ///
+    /// let uniform = Uniform::new(0.0, 1.0).unwrap();
+    /// assert_eq!(uniform.min(), 0.0);
+    /// ```
+    pub fn min(&self) -> f64 {
+        self.min
+    }
+
+    /// Returns the upper bound of the uniform distribution
+    /// as a `f64`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Uniform;
+    ///
+    /// let uniform = Uniform::new(0.0, 1.0).unwrap();
+    /// assert_eq!(uniform.max(), 1.0);
+    /// ```
+    pub fn max(&self) -> f64 {
+        self.max
+    }
 }
 
 impl Default for Uniform {
@@ -113,8 +143,8 @@ impl Default for Uniform {
     }
 }
 
-impl std::fmt::Display for Uniform {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Uniform {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Uni([{},{}])", self.min, self.max)
     }
 }
@@ -316,8 +346,9 @@ impl Continuous<f64, f64> for Uniform {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::prec;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(min: f64, max: f64; Uniform; UniformError);
 
@@ -491,8 +522,8 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(0.0, 10.0), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(-2.0, 15.0), -2.0, 15.0);
+        density_util::check_continuous_distribution(&create_ok(0.0, 10.0), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(-2.0, 15.0), -2.0, 15.0);
     }
 
     #[cfg(feature = "rand")]
@@ -528,8 +559,8 @@ mod tests {
         let n_std  = n.std_dev().unwrap();
 
         // Check that the mean of the distribution is close to 1 / 2
-        assert_almost_eq!(n_mean, 0.5, 1e-15);
+        prec::assert_abs_diff_eq!(n_mean, 0.5, epsilon = 1e-15);
         // Check that the standard deviation of the distribution is close to 1 / sqrt(12)
-        assert_almost_eq!(n_std, 0.288_675_134_594_812_9, 1e-15);
+        prec::assert_abs_diff_eq!(n_std, 0.288_675_134_594_812_9, epsilon = 1e-15);
     }
 }

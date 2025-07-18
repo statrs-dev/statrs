@@ -1,6 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the [Cauchy](https://en.wikipedia.org/wiki/Cauchy_distribution)
 /// distribution, also known as the Lorentz distribution.
@@ -32,9 +32,9 @@ pub enum CauchyError {
     ScaleInvalid,
 }
 
-impl std::fmt::Display for CauchyError {
+impl core::fmt::Display for CauchyError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             CauchyError::LocationInvalid => write!(f, "Location is NaN"),
             CauchyError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero"),
@@ -42,6 +42,7 @@ impl std::fmt::Display for CauchyError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for CauchyError {}
 
 impl Cauchy {
@@ -104,8 +105,8 @@ impl Cauchy {
     }
 }
 
-impl std::fmt::Display for Cauchy {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Cauchy {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Cauchy({}, {})", self.location, self.scale)
     }
 }
@@ -280,10 +281,8 @@ impl Continuous<f64, f64> for Cauchy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
-    testing_boiler!(location: f64, scale: f64; Cauchy; CauchyError);
+    use crate::distribution::internal::density_util;
+    crate::distribution::internal::testing_boiler!(location: f64, scale: f64; Cauchy; CauchyError);
 
     #[test]
     fn test_create() {
@@ -513,7 +512,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(-1.2, 3.4), -1500.0, 1500.0);
-        test::check_continuous_distribution(&create_ok(-4.5, 6.7), -5000.0, 5000.0);
+        density_util::check_continuous_distribution(&create_ok(-1.2, 3.4), -1500.0, 1500.0);
+        density_util::check_continuous_distribution(&create_ok(-4.5, 6.7), -5000.0, 5000.0);
     }
 }

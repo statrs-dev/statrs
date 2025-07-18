@@ -12,10 +12,11 @@ use crate::statistics::*;
 /// use statrs::distribution::{Gamma, Continuous};
 /// use statrs::statistics::Distribution;
 /// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Gamma::new(3.0, 1.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), 3.0);
-/// assert!(prec::almost_eq(n.pdf(2.0), 0.270670566473225383788, 1e-15));
+/// assert_abs_diff_eq!(n.pdf(2.0), 0.270670566473225383788, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Gamma {
@@ -34,9 +35,9 @@ pub enum GammaError {
     RateInvalid,
 }
 
-impl std::fmt::Display for GammaError {
+impl core::fmt::Display for GammaError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             GammaError::ShapeInvalid => write!(
                 f,
@@ -50,6 +51,7 @@ impl std::fmt::Display for GammaError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for GammaError {}
 
 impl Gamma {
@@ -122,8 +124,8 @@ impl Gamma {
     }
 }
 
-impl std::fmt::Display for Gamma {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Gamma {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Γ({}, {})", self.shape, self.rate)
     }
 }
@@ -347,7 +349,7 @@ impl Continuous<f64, f64> for Gamma {
     fn pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if ulps_eq!(self.shape, 1.0) {
+        } else if prec::ulps_eq!(self.shape, 1.0) {
             self.rate * (-self.rate * x).exp()
         } else if self.shape > 160.0 {
             self.ln_pdf(x).exp()
@@ -378,7 +380,7 @@ impl Continuous<f64, f64> for Gamma {
     fn ln_pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             f64::NEG_INFINITY
-        } else if ulps_eq!(self.shape, 1.0) {
+        } else if prec::ulps_eq!(self.shape, 1.0) {
             self.rate.ln() - self.rate * x
         } else if x.is_infinite() {
             f64::NEG_INFINITY
@@ -428,11 +430,12 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, shape: f64, rate: 
     }
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(shape: f64, rate: f64; Gamma; GammaError);
 
@@ -697,7 +700,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.0, 0.5), 0.0, 20.0);
-        test::check_continuous_distribution(&create_ok(9.0, 2.0), 0.0, 20.0);
+        density_util::check_continuous_distribution(&create_ok(1.0, 0.5), 0.0, 20.0);
+        density_util::check_continuous_distribution(&create_ok(9.0, 2.0), 0.0, 20.0);
     }
 }

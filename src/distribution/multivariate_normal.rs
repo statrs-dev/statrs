@@ -1,8 +1,8 @@
 use crate::distribution::Continuous;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
+use core::f64;
+use core::f64::consts::{E, PI};
 use nalgebra::{Cholesky, Const, DMatrix, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
-use std::f64;
-use std::f64::consts::{E, PI};
 
 /// Computes both the normalization and exponential argument in the normal
 /// distribution, returning `None` on dimension mismatch.
@@ -116,9 +116,9 @@ pub enum MultivariateNormalError {
     CholeskyFailed,
 }
 
-impl std::fmt::Display for MultivariateNormalError {
+impl core::fmt::Display for MultivariateNormalError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             MultivariateNormalError::CovInvalid => {
                 write!(f, "Covariance matrix is asymmetric or contains a NaN")
@@ -135,6 +135,7 @@ impl std::fmt::Display for MultivariateNormalError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for MultivariateNormalError {}
 
 impl MultivariateNormal<Dyn> {
@@ -224,15 +225,75 @@ where
                 .ln(),
         )
     }
+
+    /// Returns the Cholesky decomposition of the covariance matrix
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nalgebra::OMatrix;
+    /// use statrs::distribution::MultivariateNormal;
+    ///
+    /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(mvn.clone_cov_chol_decomp().shape(), (2, 2));
+    /// ```
+    pub fn clone_cov_chol_decomp(&self) -> OMatrix<f64, D, D> {
+        self.cov_chol_decomp.clone()
+    }
+
+    /// Returns the mean of the multivariate normal distribution
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nalgebra::{OVector, U2};
+    /// use statrs::distribution::MultivariateNormal;
+    ///
+    /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(mvn.mu(), &OVector::<f64, U2>::from_vec(vec![0., 0.]));
+    /// ```
+    pub fn mu(&self) -> &OVector<f64, D> {
+        &self.mu
+    }
+
+    /// Returns the covariance of the multivariate normal distribution
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nalgebra::{OMatrix, U2};
+    /// use statrs::distribution::MultivariateNormal;
+    ///
+    /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(mvn.cov(), &OMatrix::<f64, U2, U2>::from_vec(vec![1., 0., 0., 1.]));
+    /// ```
+    pub fn cov(&self) -> &OMatrix<f64, D, D> {
+        &self.cov
+    }
+
+    /// Returns the precision matrix of the multivariate normal distribution
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nalgebra::OMatrix;
+    /// use statrs::distribution::MultivariateNormal;
+    ///
+    /// let mvn = MultivariateNormal::new(vec![0., 0.], vec![1., 0., 0., 1.]).unwrap();
+    /// assert_eq!(mvn.precision().shape(), (2, 2));
+    /// ```
+    pub fn precision(&self) -> &OMatrix<f64, D, D> {
+        &self.precision
+    }
 }
 
-impl<D> std::fmt::Display for MultivariateNormal<D>
+impl<D> core::fmt::Display for MultivariateNormal<D>
 where
     D: Dim,
     nalgebra::DefaultAllocator:
         nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "N({}, {})", &self.mu, &self.cov)
     }
 }
@@ -372,7 +433,7 @@ where
 #[cfg(test)]
 mod tests  {
     use core::fmt::Debug;
-
+    use crate::prec;
     use nalgebra::{dmatrix, dvector, matrix, vector, DimMin, OMatrix, OVector};
 
     use crate::{
@@ -443,7 +504,7 @@ mod tests  {
     {
         let mvn = try_create(mean, covariance);
         let x = eval(mvn);
-        assert_almost_eq!(expected, x, acc);
+        prec::assert_abs_diff_eq!(expected, x, epsilon = acc);
     }
 
     #[test]

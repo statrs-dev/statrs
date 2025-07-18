@@ -1,7 +1,8 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
+use crate::prec;
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the [Inverse
 /// Gamma](https://en.wikipedia.org/wiki/Inverse-gamma_distribution)
@@ -12,11 +13,11 @@ use std::f64;
 /// ```
 /// use statrs::distribution::{InverseGamma, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = InverseGamma::new(1.1, 0.1).unwrap();
-/// assert!(prec::almost_eq(n.mean().unwrap(), 1.0, 1e-14));
-/// assert_eq!(n.pdf(1.0), 0.07554920138253064);
+/// assert_abs_diff_eq!(n.mean().unwrap(), 1.0, epsilon = 1e-14);
+/// assert_abs_diff_eq!(n.pdf(1.0), 0.07554920138253064, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct InverseGamma {
@@ -35,9 +36,9 @@ pub enum InverseGammaError {
     RateInvalid,
 }
 
-impl std::fmt::Display for InverseGammaError {
+impl core::fmt::Display for InverseGammaError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             InverseGammaError::ShapeInvalid => {
                 write!(f, "Shape is NaN, infinite, zero or less than zero")
@@ -49,6 +50,7 @@ impl std::fmt::Display for InverseGammaError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for InverseGammaError {}
 
 impl InverseGamma {
@@ -112,8 +114,8 @@ impl InverseGamma {
     }
 }
 
-impl std::fmt::Display for InverseGamma {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InverseGamma {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Inv-Gamma({}, {})", self.shape, self.rate)
     }
 }
@@ -314,7 +316,7 @@ impl Continuous<f64, f64> for InverseGamma {
     fn pdf(&self, x: f64) -> f64 {
         if x <= 0.0 || x.is_infinite() {
             0.0
-        } else if ulps_eq!(self.shape, 1.0) {
+        } else if prec::ulps_eq!(self.shape, 1.0) {
             self.rate / (x * x) * (-self.rate / x).exp()
         } else {
             self.rate.powf(self.shape) * x.powf(-self.shape - 1.0) * (-self.rate / x).exp()
@@ -341,8 +343,8 @@ impl Continuous<f64, f64> for InverseGamma {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(shape: f64, rate: f64; InverseGamma; InverseGammaError);
 
@@ -467,7 +469,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.0, 0.5), 0.0, 100.0);
-        test::check_continuous_distribution(&create_ok(9.0, 2.0), 0.0, 100.0);
+        density_util::check_continuous_distribution(&create_ok(1.0, 0.5), 0.0, 100.0);
+        density_util::check_continuous_distribution(&create_ok(9.0, 2.0), 0.0, 100.0);
     }
 }

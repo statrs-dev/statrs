@@ -2,7 +2,7 @@ use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Log-normal](https://en.wikipedia.org/wiki/Log-normal_distribution)
@@ -13,11 +13,11 @@ use std::f64;
 /// ```
 /// use statrs::distribution::{LogNormal, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = LogNormal::new(0.0, 1.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), (0.5f64).exp());
-/// assert!(prec::almost_eq(n.pdf(1.0), 0.3989422804014326779399, 1e-16));
+/// assert_abs_diff_eq!(n.pdf(1.0), 0.3989422804014326779399, epsilon = 1e-16);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct LogNormal {
@@ -36,9 +36,9 @@ pub enum LogNormalError {
     ScaleInvalid,
 }
 
-impl std::fmt::Display for LogNormalError {
+impl core::fmt::Display for LogNormalError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             LogNormalError::LocationInvalid => write!(f, "Location is NaN"),
             LogNormalError::ScaleInvalid => write!(f, "Scale is NaN, zero or less than zero"),
@@ -46,6 +46,7 @@ impl std::fmt::Display for LogNormalError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for LogNormalError {}
 
 impl LogNormal {
@@ -79,10 +80,38 @@ impl LogNormal {
 
         Ok(LogNormal { location, scale })
     }
+
+    /// Returns the location of the log-normal distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::LogNormal;
+    ///
+    /// let n = LogNormal::new(0.0, 1.0).unwrap();
+    /// assert_eq!(n.location(), 0.0);
+    /// ```
+    pub fn location(&self) -> f64 {
+        self.location
+    }
+
+    /// Returns the scale of the log-normal distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::LogNormal;
+    ///
+    /// let n = LogNormal::new(0.0, 1.0).unwrap();
+    /// assert_eq!(n.scale(), 1.0);
+    /// ```
+    pub fn scale(&self) -> f64 {
+        self.scale
+    }
 }
 
-impl std::fmt::Display for LogNormal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for LogNormal {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "LogNormal({}, {}^2)", self.location, self.scale)
     }
 }
@@ -334,8 +363,8 @@ impl Continuous<f64, f64> for LogNormal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(location: f64, scale: f64; LogNormal; LogNormalError);
 
@@ -745,7 +774,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(0.0, 0.25), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(0.0, 0.5), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(0.0, 0.25), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(0.0, 0.5), 0.0, 10.0);
     }
 }

@@ -1,6 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the [Pareto](https://en.wikipedia.org/wiki/Pareto_distribution)
 /// distribution
@@ -10,11 +10,11 @@ use std::f64;
 /// ```
 /// use statrs::distribution::{Pareto, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let p = Pareto::new(1.0, 2.0).unwrap();
 /// assert_eq!(p.mean().unwrap(), 2.0);
-/// assert!(prec::almost_eq(p.pdf(2.0), 0.25, 1e-15));
+/// assert_abs_diff_eq!(p.pdf(2.0), 0.25, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Pareto {
@@ -33,9 +33,9 @@ pub enum ParetoError {
     ShapeInvalid,
 }
 
-impl std::fmt::Display for ParetoError {
+impl core::fmt::Display for ParetoError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             ParetoError::ScaleInvalid => write!(f, "Scale is NaN, zero, or less than zero"),
             ParetoError::ShapeInvalid => write!(f, "Shape is NaN, zero, or less than zero"),
@@ -43,6 +43,7 @@ impl std::fmt::Display for ParetoError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for ParetoError {}
 
 impl Pareto {
@@ -106,8 +107,8 @@ impl Pareto {
     }
 }
 
-impl std::fmt::Display for Pareto {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Pareto {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Pareto({},{})", self.scale, self.shape)
     }
 }
@@ -382,10 +383,9 @@ impl Continuous<f64, f64> for Pareto {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
 
-    testing_boiler!(scale: f64, shape: f64; Pareto; ParetoError);
+    crate::distribution::internal::testing_boiler!(scale: f64, shape: f64; Pareto; ParetoError);
 
     #[test]
     fn test_create() {
@@ -547,7 +547,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.0, 10.0), 1.0, 10.0);
-        test::check_continuous_distribution(&create_ok(0.1, 2.0), 0.1, 100.0);
+        density_util::check_continuous_distribution(&create_ok(1.0, 10.0), 1.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(0.1, 2.0), 0.1, 100.0);
     }
 }

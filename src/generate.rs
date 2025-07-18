@@ -1,7 +1,7 @@
 //! Provides utility functions for generating data sequences
 
 use crate::euclid::Modulus;
-use std::f64::consts;
+use core::f64::consts;
 /// Generates a base 10 log spaced vector of the given length between the
 /// specified decade exponents (inclusive). Equivalent to MATLAB logspace
 ///
@@ -13,6 +13,7 @@ use std::f64::consts;
 /// let x = generate::log_spaced(5, 0.0, 4.0);
 /// assert_eq!(x, [1.0, 10.0, 100.0, 1000.0, 10000.0]);
 /// ```
+#[cfg(feature = "std")]
 pub fn log_spaced(length: usize, start_exp: f64, stop_exp: f64) -> Vec<f64> {
     match length {
         0 => Vec::new(),
@@ -81,8 +82,8 @@ impl InfinitePeriodic {
     }
 }
 
-impl std::fmt::Display for InfinitePeriodic {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InfinitePeriodic {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{self:#?}")
     }
 }
@@ -167,8 +168,8 @@ impl InfiniteSinusoidal {
     }
 }
 
-impl std::fmt::Display for InfiniteSinusoidal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InfiniteSinusoidal {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", &self)
     }
 }
@@ -227,8 +228,8 @@ impl InfiniteSquare {
     }
 }
 
-impl std::fmt::Display for InfiniteSquare {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InfiniteSquare {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", &self)
     }
 }
@@ -265,8 +266,7 @@ impl InfiniteTriangle {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
-    /// extern crate statrs;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// use statrs::generate::InfiniteTriangle;
     ///
@@ -276,7 +276,7 @@ impl InfiniteTriangle {
     /// let expected: [f64; 12] = [-0.714, -1.0, -0.5, 0.0, 0.5, 1.0, 0.714,
     /// 0.429, 0.143, -0.143, -0.429, -0.714];
     /// for (&left, &right) in x.iter().zip(expected.iter()) {
-    ///     assert_almost_eq!(left, right, 1e-3);
+    ///     assert_abs_diff_eq!(left, right, epsilon = 1e-3);
     /// }
     /// # }
     /// ```
@@ -300,8 +300,8 @@ impl InfiniteTriangle {
     }
 }
 
-impl std::fmt::Display for InfiniteTriangle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InfiniteTriangle {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", &self)
     }
 }
@@ -357,8 +357,8 @@ impl InfiniteSawtooth {
     }
 }
 
-impl std::fmt::Display for InfiniteSawtooth {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InfiniteSawtooth {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", &self)
     }
 }

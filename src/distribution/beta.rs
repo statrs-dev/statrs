@@ -1,5 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
+use crate::prec;
 use crate::statistics::*;
 
 /// Implements the [Beta](https://en.wikipedia.org/wiki/Beta_distribution)
@@ -10,11 +11,11 @@ use crate::statistics::*;
 /// ```
 /// use statrs::distribution::{Beta, Continuous};
 /// use statrs::statistics::*;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Beta::new(2.0, 2.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), 0.5);
-/// assert!(prec::almost_eq(n.pdf(0.5), 1.5, 1e-14));
+/// assert_abs_diff_eq!(n.pdf(0.5), 1.5, epsilon = 1e-14);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Beta {
@@ -33,9 +34,9 @@ pub enum BetaError {
     ShapeBInvalid,
 }
 
-impl std::fmt::Display for BetaError {
+impl core::fmt::Display for BetaError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             BetaError::ShapeAInvalid => write!(f, "Shape A is NaN, infinite, zero or negative"),
             BetaError::ShapeBInvalid => write!(f, "Shape B is NaN, infinite, zero or negative"),
@@ -43,6 +44,7 @@ impl std::fmt::Display for BetaError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for BetaError {}
 
 impl Beta {
@@ -106,8 +108,8 @@ impl Beta {
     }
 }
 
-impl std::fmt::Display for Beta {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Beta {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Beta(a={}, b={})", self.shape_a, self.shape_b)
     }
 }
@@ -140,7 +142,7 @@ impl ContinuousCDF<f64, f64> for Beta {
             0.0
         } else if x >= 1.0 {
             1.0
-        } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
+        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
             x
         } else {
             beta::beta_reg(self.shape_a, self.shape_b, x)
@@ -162,7 +164,7 @@ impl ContinuousCDF<f64, f64> for Beta {
             1.0
         } else if x >= 1.0 {
             0.0
-        } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
+        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
             1. - x
         } else {
             beta::beta_reg(self.shape_b, self.shape_a, 1.0 - x)
@@ -332,7 +334,7 @@ impl Continuous<f64, f64> for Beta {
     fn pdf(&self, x: f64) -> f64 {
         if !(0.0..=1.0).contains(&x) {
             0.0
-        } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
+        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
             1.0
         } else if self.shape_a > 80.0 || self.shape_b > 80.0 {
             self.ln_pdf(x).exp()
@@ -358,22 +360,22 @@ impl Continuous<f64, f64> for Beta {
     fn ln_pdf(&self, x: f64) -> f64 {
         if !(0.0..=1.0).contains(&x) {
             f64::NEG_INFINITY
-        } else if ulps_eq!(self.shape_a, 1.0) && ulps_eq!(self.shape_b, 1.0) {
+        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
             0.0
         } else {
             let aa = gamma::ln_gamma(self.shape_a + self.shape_b)
                 - gamma::ln_gamma(self.shape_a)
                 - gamma::ln_gamma(self.shape_b);
-            let bb = if ulps_eq!(self.shape_a, 1.0) && x == 0.0 {
+            let bb = if prec::ulps_eq!(self.shape_a, 1.0) && x == 0.0 {
                 0.0
             } else if x == 0.0 {
                 f64::NEG_INFINITY
             } else {
                 (self.shape_a - 1.0) * x.ln()
             };
-            let cc = if ulps_eq!(self.shape_b, 1.0) && ulps_eq!(x, 1.0) {
+            let cc = if prec::ulps_eq!(self.shape_b, 1.0) && prec::ulps_eq!(x, 1.0) {
                 0.0
-            } else if ulps_eq!(x, 1.0) {
+            } else if prec::ulps_eq!(x, 1.0) {
                 f64::NEG_INFINITY
             } else {
                 (self.shape_b - 1.0) * (1.0 - x).ln()
@@ -383,14 +385,12 @@ impl Continuous<f64, f64> for Beta {
     }
 }
 
-#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
 
-    testing_boiler!(a: f64, b: f64; Beta; BetaError);
+    crate::distribution::internal::testing_boiler!(a: f64, b: f64; Beta; BetaError);
 
     #[test]
     fn test_create() {
@@ -505,7 +505,7 @@ mod tests {
             ((5.0, 100.0), 0.0, 0.0),
             ((5.0, 100.0), 0.5, 4.534102298350337661e-23),
             ((5.0, 100.0), 1.0, 0.0),
-            ((5.0, 100.0), 1.0, 0.0)
+            ((5.0, 100.0), 1.0, 0.0),
         ];
         for ((a, b), x, expect) in test {
             test_relative(a, b, expect, f(x));
@@ -610,8 +610,8 @@ mod tests {
             ((5.0, 100.0), 1.0, 1.0),
         ];
         for ((a, b), x, expect) in test {
-           test_relative(a, b, expect, func(x));
-        };
+            test_relative(a, b, expect, func(x));
+        }
     }
 
     #[test]
@@ -640,7 +640,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1.2, 3.4), 0.0, 1.0);
-        test::check_continuous_distribution(&create_ok(4.5, 6.7), 0.0, 1.0);
+        density_util::check_continuous_distribution(&create_ok(1.2, 3.4), 0.0, 1.0);
+        density_util::check_continuous_distribution(&create_ok(4.5, 6.7), 0.0, 1.0);
     }
 }

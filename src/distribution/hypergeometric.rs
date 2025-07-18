@@ -1,8 +1,8 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::factorial;
 use crate::statistics::*;
-use std::cmp;
-use std::f64;
+use core::cmp;
+use core::f64;
 
 /// Implements the
 /// [Hypergeometric](http://en.wikipedia.org/wiki/Hypergeometric_distribution)
@@ -13,12 +13,12 @@ use std::f64;
 /// ```
 /// use statrs::distribution::{Hypergeometric, Discrete};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Hypergeometric::new(500, 50, 100).unwrap();
 /// assert_eq!(n.mean().unwrap(), 10.);
-/// assert!(prec::almost_eq(n.pmf(10), 0.14736784, 1e-8));
-/// assert!(prec::almost_eq(n.pmf(25), 3.537e-7, 1e-10));
+/// assert_abs_diff_eq!(n.pmf(10), 0.14736784, epsilon = 1e-8);
+/// assert_abs_diff_eq!(n.pmf(25), 3.537e-7, epsilon = 1e-10);
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Hypergeometric {
@@ -38,9 +38,9 @@ pub enum HypergeometricError {
     TooManyDraws,
 }
 
-impl std::fmt::Display for HypergeometricError {
+impl core::fmt::Display for HypergeometricError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             HypergeometricError::TooManySuccesses => write!(f, "successes > population"),
             HypergeometricError::TooManyDraws => write!(f, "draws > population"),
@@ -48,6 +48,7 @@ impl std::fmt::Display for HypergeometricError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for HypergeometricError {}
 
 impl Hypergeometric {
@@ -147,8 +148,8 @@ impl Hypergeometric {
     }
 }
 
-impl std::fmt::Display for Hypergeometric {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Hypergeometric {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "Hypergeometric({},{},{})",
@@ -424,8 +425,8 @@ impl Discrete<u64, f64> for Hypergeometric {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(population: u64, successes: u64, draws: u64; Hypergeometric; HypergeometricError);
 
@@ -596,7 +597,15 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(5, 4, 3), 4);
-        test::check_discrete_distribution(&create_ok(3, 2, 1), 2);
+        density_util::check_discrete_distribution(&create_ok(5, 4, 3), 4);
+        density_util::check_discrete_distribution(&create_ok(3, 2, 1), 2);
     }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: Hypergeometric| x.inverse_cdf(arg);
+        test_exact(10, 2, 5, 1, invcdf(0.5));
+        test_exact(100, 2, 5, 0, invcdf(0.5));
+    }
+
 }

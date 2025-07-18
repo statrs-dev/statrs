@@ -24,15 +24,16 @@ pub enum DiracError {
     ValueInvalid,
 }
 
-impl std::fmt::Display for DiracError {
+impl core::fmt::Display for DiracError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             DiracError::ValueInvalid => write!(f, "Value v is NaN"),
         }
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for DiracError {}
 
 impl Dirac {
@@ -60,10 +61,24 @@ impl Dirac {
             Ok(Dirac(v))
         }
     }
+
+    /// Returns the value `v` of the dirac distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Dirac;
+    ///
+    /// let n = Dirac::new(3.0).unwrap();
+    /// assert_eq!(n.v(), 3.0);
+    /// ```
+    pub fn v(&self) -> f64 {
+        self.0
+    }
 }
 
-impl std::fmt::Display for Dirac {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Dirac {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "δ_{}", self.0)
     }
 }
@@ -213,7 +228,7 @@ impl Mode<Option<f64>> for Dirac {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(v: f64; Dirac; DiracError);
 

@@ -29,15 +29,16 @@ pub enum DiscreteUniformError {
     MinMaxInvalid,
 }
 
-impl std::fmt::Display for DiscreteUniformError {
+impl core::fmt::Display for DiscreteUniformError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             DiscreteUniformError::MinMaxInvalid => write!(f, "Maximum is less than minimum"),
         }
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for DiscreteUniformError {}
 
 impl DiscreteUniform {
@@ -66,10 +67,48 @@ impl DiscreteUniform {
             Ok(DiscreteUniform { min, max })
         }
     }
+
+    /// Returns the minimum value in the domain of the discrete uniform
+    /// distribution
+    ///
+    /// # Remarks
+    ///
+    /// This is the same value as the minimum passed into the constructor
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::DiscreteUniform;
+    ///
+    /// let n = DiscreteUniform::new(0, 5).unwrap();
+    /// assert_eq!(n.min(), 0);
+    /// ```
+    pub fn min(&self) -> i64 {
+        self.min
+    }
+
+    /// Returns the maximum value in the domain of the discrete uniform
+    /// distribution
+    ///
+    /// # Remarks
+    ///
+    /// This is the same value as the maximum passed into the constructor
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::DiscreteUniform;
+    ///
+    /// let n = DiscreteUniform::new(0, 5).unwrap();
+    /// assert_eq!(n.max(), 5);
+    /// ```
+    pub fn max(&self) -> i64 {
+        self.max
+    }
 }
 
-impl std::fmt::Display for DiscreteUniform {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for DiscreteUniform {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Uni([{}, {}])", self.min, self.max)
     }
 }
@@ -284,7 +323,7 @@ impl Discrete<i64, f64> for DiscreteUniform {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(min: i64, max: i64; DiscreteUniform; DiscreteUniformError);
 
@@ -410,5 +449,15 @@ mod tests {
     fn test_cdf_upper_bound() {
         let cdf = |arg: i64| move |x: DiscreteUniform| x.cdf(arg);
         test_exact(0, 3, 1.0, cdf(5));
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: DiscreteUniform| x.inverse_cdf(arg);
+        test_exact(0, 0, 0, invcdf(0.5));
+        test_exact(0, 0, 0, invcdf(1.));
+        test_exact(0, 5, 2, invcdf(0.5));
+        test_exact(3, 10, 3, invcdf(0.005));
+        test_exact(3, 10, 10, invcdf(0.9995));
     }
 }

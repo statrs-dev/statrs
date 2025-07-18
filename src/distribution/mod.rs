@@ -8,6 +8,7 @@ use num_traits::NumAssignOps;
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::{Beta, BetaError};
 pub use self::binomial::{Binomial, BinomialError};
+#[cfg(feature = "std")]
 pub use self::categorical::{Categorical, CategoricalError};
 pub use self::cauchy::{Cauchy, CauchyError};
 pub use self::chi::{Chi, ChiError};
@@ -16,6 +17,7 @@ pub use self::dirac::{Dirac, DiracError};
 #[cfg(feature = "nalgebra")]
 pub use self::dirichlet::{Dirichlet, DirichletError};
 pub use self::discrete_uniform::{DiscreteUniform, DiscreteUniformError};
+#[cfg(feature = "std")]
 pub use self::empirical::Empirical;
 pub use self::erlang::Erlang;
 pub use self::exponential::{Exp, ExpError};
@@ -46,6 +48,7 @@ pub use self::weibull::{Weibull, WeibullError};
 mod bernoulli;
 mod beta;
 mod binomial;
+#[cfg(feature = "std")]
 mod categorical;
 mod cauchy;
 mod chi;
@@ -55,6 +58,7 @@ mod dirac;
 #[cfg_attr(docsrs, doc(cfg(feature = "nalgebra")))]
 mod dirichlet;
 mod discrete_uniform;
+#[cfg(feature = "std")]
 mod empirical;
 mod erlang;
 mod exponential;
@@ -204,7 +208,7 @@ pub trait DiscreteCDF<K: Sized + Num + Ord + Clone + NumAssignOps, T: Float>:
     /// # Panics
     /// this default impl panics if provided `p` not on interval [0.0, 1.0]
     fn inverse_cdf(&self, p: T) -> K {
-        if p == T::zero() {
+        if p <= self.cdf(self.min()) {
             return self.min();
         } else if p == T::one() {
             return self.max();
@@ -278,10 +282,10 @@ pub trait Discrete<K, T> {
     ///
     /// ```
     /// use statrs::distribution::{Discrete, Binomial};
-    /// use statrs::prec;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// let n = Binomial::new(0.5, 10).unwrap();
-    /// assert!(prec::almost_eq(n.pmf(5), 0.24609375, 1e-15));
+    /// assert_abs_diff_eq!(n.pmf(5), 0.24609375, epsilon = 1e-15);
     /// ```
     fn pmf(&self, x: K) -> T;
 
@@ -293,10 +297,10 @@ pub trait Discrete<K, T> {
     ///
     /// ```
     /// use statrs::distribution::{Discrete, Binomial};
-    /// use statrs::prec;
+    /// use approx::assert_abs_diff_eq;
     ///
     /// let n = Binomial::new(0.5, 10).unwrap();
-    /// assert!(prec::almost_eq(n.ln_pmf(5), (0.24609375f64).ln(), 1e-15));
+    /// assert_abs_diff_eq!(n.ln_pmf(5), (0.24609375f64).ln(), epsilon = 1e-15);
     /// ```
     fn ln_pmf(&self, x: K) -> T;
 }

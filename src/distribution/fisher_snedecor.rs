@@ -1,7 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::beta;
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Fisher-Snedecor](https://en.wikipedia.org/wiki/F-distribution) distribution
@@ -12,11 +12,11 @@ use std::f64;
 /// ```
 /// use statrs::distribution::{FisherSnedecor, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = FisherSnedecor::new(3.0, 3.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), 3.0);
-/// assert!(prec::almost_eq(n.pdf(1.0), 0.318309886183790671538, 1e-15));
+/// assert_abs_diff_eq!(n.pdf(1.0), 0.318309886183790671538, epsilon = 1e-15);
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FisherSnedecor {
@@ -35,9 +35,9 @@ pub enum FisherSnedecorError {
     Freedom2Invalid,
 }
 
-impl std::fmt::Display for FisherSnedecorError {
+impl core::fmt::Display for FisherSnedecorError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             FisherSnedecorError::Freedom1Invalid => {
                 write!(f, "freedom_1 is NaN, infinite, zero or less than zero.")
@@ -49,6 +49,7 @@ impl std::fmt::Display for FisherSnedecorError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for FisherSnedecorError {}
 
 impl FisherSnedecor {
@@ -117,8 +118,8 @@ impl FisherSnedecor {
     }
 }
 
-impl std::fmt::Display for FisherSnedecor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for FisherSnedecor {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "F({},{})", self.freedom_1, self.freedom_2)
     }
 }
@@ -416,8 +417,8 @@ impl Continuous<f64, f64> for FisherSnedecor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(freedom_1: f64, freedom_2: f64; FisherSnedecor; FisherSnedecorError);
 
@@ -620,6 +621,6 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(10.0, 10.0), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(10.0, 10.0), 0.0, 10.0);
     }
 }

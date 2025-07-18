@@ -1,6 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Triangular](https://en.wikipedia.org/wiki/Triangular_distribution)
@@ -43,9 +43,9 @@ pub enum TriangularError {
     MinEqualsMax,
 }
 
-impl std::fmt::Display for TriangularError {
+impl core::fmt::Display for TriangularError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             TriangularError::MinInvalid => write!(f, "Minimum is NaN or infinite."),
             TriangularError::MaxInvalid => write!(f, "Maximum is NaN or infinite."),
@@ -58,6 +58,7 @@ impl std::fmt::Display for TriangularError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for TriangularError {}
 
 impl Triangular {
@@ -103,10 +104,48 @@ impl Triangular {
 
         Ok(Triangular { min, max, mode })
     }
+
+    /// Returns the minimum value in the domain of the
+    /// triangular distribution
+    ///
+    /// # Remarks
+    ///
+    /// The return value is the same min used to construct the distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Triangular;
+    ///
+    /// let n = Triangular::new(0.0, 5.0, 2.5).unwrap();
+    /// assert_eq!(n.min(), 0.0);
+    /// ```
+    pub fn min(&self) -> f64 {
+        self.min
+    }
+
+    /// Returns the maximum value in the domain of the
+    /// triangular distribution
+    ///
+    /// # Remarks
+    ///
+    /// The return value is the same max used to construct the distribution
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use statrs::distribution::Triangular;
+    ///
+    /// let n = Triangular::new(0.0, 5.0, 2.5).unwrap();
+    /// assert_eq!(n.max(), 5.0);
+    /// ```
+    pub fn max(&self) -> f64 {
+        self.max
+    }
 }
 
-impl std::fmt::Display for Triangular {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Triangular {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Triangular([{},{}], {})", self.min, self.max, self.mode)
     }
 }
@@ -398,8 +437,8 @@ fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, min: f64, max: f64, mo
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(min: f64, max: f64, mode: f64; Triangular; TriangularError);
 
@@ -599,7 +638,7 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(-5.0, 5.0, 0.0), -5.0, 5.0);
-        test::check_continuous_distribution(&create_ok(-15.0, -2.0, -3.0), -15.0, -2.0);
+        density_util::check_continuous_distribution(&create_ok(-5.0, 5.0, 0.0), -5.0, 5.0);
+        density_util::check_continuous_distribution(&create_ok(-15.0, -2.0, -3.0), -15.0, -2.0);
     }
 }

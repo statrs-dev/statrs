@@ -19,9 +19,9 @@ pub enum MannWhitneyUError {
     ExactMethodWithTiesInData,
 }
 
-impl std::fmt::Display for MannWhitneyUError {
+impl core::fmt::Display for MannWhitneyUError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             MannWhitneyUError::UncomparableData => {
                 write!(f, "elements in the data are not comparable")
@@ -302,6 +302,7 @@ pub fn mannwhitneyu<T: PartialOrd + Clone>(
     Ok((u1, pvalue))
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -356,7 +357,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(statistic, 17.0);
-        assert!(prec::almost_eq(pvalue, 0.1111111111111111, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.1111111111111111);
 
         let (statistic, _) = mannwhitneyu(
             &female,
@@ -375,7 +376,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(statistic, 17.0);
-        assert!(prec::almost_eq(pvalue, 0.11134688653314041, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.11134688653314041);
 
         // not in scipy's official example but testing other variations against python output
         let (_, pvalue) = mannwhitneyu(
@@ -385,11 +386,11 @@ mod tests {
             Alternative::Less,
         )
         .unwrap();
-        assert!(prec::almost_eq(pvalue, 0.95679463351315, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.95679463351315);
 
         let (_, pvalue) =
             mannwhitneyu(&male, &female, MannWhitneyUMethod::Exact, Alternative::Less).unwrap();
-        assert!(prec::almost_eq(pvalue, 0.9682539682539683, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.9682539682539683);
 
         let (_, pvalue) = mannwhitneyu(
             &male,
@@ -398,7 +399,7 @@ mod tests {
             Alternative::Greater,
         )
         .unwrap();
-        assert!(prec::almost_eq(pvalue, 0.055673443266570206, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.055673443266570206);
 
         let (statistic, pvalue) = mannwhitneyu(
             &[1],
@@ -408,7 +409,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(statistic, 0.0);
-        assert!(prec::almost_eq(pvalue, 0.5, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.5);
 
         // larger deviation from scipy logic for exact so double check here
         // also check usage with floats
@@ -418,17 +419,17 @@ mod tests {
         let (statistic, pvalue) =
             mannwhitneyu(x, y, MannWhitneyUMethod::Exact, Alternative::Greater).unwrap();
         assert_eq!(statistic, 21.0);
-        assert!(prec::almost_eq(pvalue, 0.23030303030303031, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.23030303030303031);
 
         let (statistic, pvalue) =
             mannwhitneyu(x, y, MannWhitneyUMethod::Exact, Alternative::Less).unwrap();
         assert_eq!(statistic, 21.0);
-        assert!(prec::almost_eq(pvalue, 0.8161616161616161, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.8161616161616161);
 
         let (statistic, pvalue) =
             mannwhitneyu(x, y, MannWhitneyUMethod::Exact, Alternative::TwoSided).unwrap();
         assert_eq!(statistic, 21.0);
-        assert!(prec::almost_eq(pvalue, 0.46060606060606063, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.46060606060606063);
 
         let (statistic, pvalue) = mannwhitneyu(
             &[1, 1],
@@ -438,7 +439,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(statistic, 3.0);
-        assert!(prec::almost_eq(pvalue, 1.0, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 1.0);
     }
 
     #[test]
@@ -494,7 +495,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(statistic, 49.0);
-        assert!(prec::almost_eq(pvalue, 0.47992869214595724, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.47992869214595724);
 
         // ties in data
         let (statistic, pvalue) = mannwhitneyu(
@@ -505,7 +506,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(statistic, 0.5);
-        assert!(prec::almost_eq(pvalue, 0.010411098147110422, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.010411098147110422);
     }
     #[test]
     fn test_rankdata_mwu() {
@@ -527,8 +528,8 @@ mod tests {
     #[test]
     fn test_calc_mwu_exact_pvalue() {
         let pvalue = calc_mwu_exact_pvalue(4.0, 3, 2);
-        assert!(prec::almost_eq(pvalue, 0.4, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.4);
         let pvalue = calc_mwu_exact_pvalue(4.0, 2, 3);
-        assert!(prec::almost_eq(pvalue, 0.6, 1e-9));
+        prec::assert_abs_diff_eq!(pvalue, 0.6);
     }
 }

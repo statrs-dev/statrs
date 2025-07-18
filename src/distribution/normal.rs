@@ -2,7 +2,7 @@ use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the [Normal](https://en.wikipedia.org/wiki/Normal_distribution)
 /// distribution
@@ -34,9 +34,9 @@ pub enum NormalError {
     StandardDeviationInvalid,
 }
 
-impl std::fmt::Display for NormalError {
+impl core::fmt::Display for NormalError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             NormalError::MeanInvalid => write!(f, "Mean is NaN"),
             NormalError::StandardDeviationInvalid => {
@@ -46,6 +46,7 @@ impl std::fmt::Display for NormalError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for NormalError {}
 
 impl Normal {
@@ -99,8 +100,8 @@ impl Normal {
     }
 }
 
-impl std::fmt::Display for Normal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Normal {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "N({},{})", self.mean, self.std_dev)
     }
 }
@@ -357,7 +358,7 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, mean: f64, std_dev
     mean + std_dev * ziggurat::sample_std_normal(rng)
 }
 
-impl std::default::Default for Normal {
+impl core::default::Default for Normal {
     /// Returns the standard normal distribution with a mean of 0
     /// and a standard deviation of 1.
     fn default() -> Self {
@@ -369,10 +370,9 @@ impl std::default::Default for Normal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
-    testing_boiler!(mean: f64, std_dev: f64; Normal; NormalError);
+    use crate::prec;
+    use crate::distribution::internal::density_util;
+    crate::distribution::internal::testing_boiler!(mean: f64, std_dev: f64; Normal; NormalError);
 
     #[test]
     fn test_create() {
@@ -535,8 +535,8 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(0.0, 1.0), -10.0, 10.0);
-        test::check_continuous_distribution(&create_ok(20.0, 0.5), 10.0, 30.0);
+        density_util::check_continuous_distribution(&create_ok(0.0, 1.0), -10.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(20.0, 0.5), 10.0, 30.0);
     }
 
     #[test]
@@ -562,8 +562,8 @@ mod tests {
         let n_std  = n.std_dev().unwrap();
 
         // Check that the mean of the distribution is close to 0
-        assert_almost_eq!(n_mean, 0.0, 1e-15);
+        prec::assert_abs_diff_eq!(n_mean, 0.0, epsilon = 1e-15);
         // Check that the standard deviation of the distribution is close to 1
-        assert_almost_eq!(n_std, 1.0, 1e-15);
+        prec::assert_abs_diff_eq!(n_std, 1.0, epsilon = 1e-15);
     }
 }

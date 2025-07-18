@@ -78,8 +78,8 @@ impl Bernoulli {
     }
 }
 
-impl std::fmt::Display for Bernoulli {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Bernoulli {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Bernoulli({})", self.p())
     }
 }
@@ -107,12 +107,15 @@ impl DiscreteCDF<u64, f64> for Bernoulli {
     /// # Formula
     ///
     /// ```text
-    /// if x < 0 { 0 }
-    /// else if x >= 1 { 1 }
+    /// if x >= 1 { 1 }
     /// else { 1 - p }
     /// ```
     fn cdf(&self, x: u64) -> f64 {
-        self.b.cdf(x)
+        if x >= 1 {
+            1.
+        } else {
+            1. - self.b.p()
+        }
     }
 
     /// Calculates the survival function for the
@@ -272,9 +275,9 @@ impl Discrete<u64, f64> for Bernoulli {
 
 #[rustfmt::skip]
 #[cfg(test)]
-mod testing {
+mod test {
     use super::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(p: f64; Bernoulli; BinomialError);
 
@@ -320,5 +323,17 @@ mod testing {
         test_relative(0.0, 0.0, sf(1));
         test_absolute(0.3, 0.3, 1e-15, sf(0));
         test_absolute(0.7, 0.7, 1e-15, sf(0));
+    }
+
+    #[test]
+    fn test_inverse_cdf() {
+        let invcdf = |arg: f64| move |x: Bernoulli| x.inverse_cdf(arg);
+        test_exact(0., 0, invcdf(0.));
+        test_exact(0., 0, invcdf(0.5));
+        test_exact(1., 0, invcdf(0.));
+        test_exact(1., 1, invcdf(1.));
+        test_exact(1., 1, invcdf(1e-6));
+        test_exact(0.5, 0, invcdf(0.25));
+        test_exact(0.5, 0, invcdf(0.5));
     }
 }

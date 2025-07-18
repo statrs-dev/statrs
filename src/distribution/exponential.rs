@@ -1,6 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Exp](https://en.wikipedia.org/wiki/Exp_distribution)
@@ -31,15 +31,16 @@ pub enum ExpError {
     RateInvalid,
 }
 
-impl std::fmt::Display for ExpError {
+impl core::fmt::Display for ExpError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             ExpError::RateInvalid => write!(f, "Rate is NaN, zero or less than zero"),
         }
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for ExpError {}
 
 impl Exp {
@@ -84,8 +85,8 @@ impl Exp {
     }
 }
 
-impl std::fmt::Display for Exp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Exp {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Exp({})", self.rate)
     }
 }
@@ -301,8 +302,8 @@ impl Continuous<f64, f64> for Exp {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(rate: f64; Exp; ExpError);
 
@@ -504,8 +505,8 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(0.5), 0.0, 10.0);
-        test::check_continuous_distribution(&create_ok(1.5), 0.0, 20.0);
-        test::check_continuous_distribution(&create_ok(2.5), 0.0, 50.0);
+        density_util::check_continuous_distribution(&create_ok(0.5), 0.0, 10.0);
+        density_util::check_continuous_distribution(&create_ok(1.5), 0.0, 20.0);
+        density_util::check_continuous_distribution(&create_ok(2.5), 0.0, 50.0);
     }
 }

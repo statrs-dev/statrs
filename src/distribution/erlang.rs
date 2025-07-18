@@ -12,11 +12,11 @@ use crate::statistics::*;
 /// ```
 /// use statrs::distribution::{Erlang, Continuous};
 /// use statrs::statistics::Distribution;
-/// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Erlang::new(3, 1.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), 3.0);
-/// assert!(prec::almost_eq(n.pdf(2.0), 0.270670566473225383788, 1e-15));
+/// assert_abs_diff_eq!(n.pdf(2.0), 0.270670566473225383788, epsilon = 1e-15);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Erlang {
@@ -76,8 +76,8 @@ impl Erlang {
     }
 }
 
-impl std::fmt::Display for Erlang {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Erlang {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "E({}, {})", self.rate(), self.shape())
     }
 }
@@ -294,9 +294,8 @@ impl Continuous<f64, f64> for Erlang {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
-
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
     testing_boiler!(shape: u64, rate: f64; Erlang; GammaError);
 
     #[test]
@@ -324,8 +323,8 @@ mod tests {
 
     #[test]
     fn test_continuous() {
-        test::check_continuous_distribution(&create_ok(1, 2.5), 0.0, 20.0);
-        test::check_continuous_distribution(&create_ok(2, 1.5), 0.0, 20.0);
-        test::check_continuous_distribution(&create_ok(3, 0.5), 0.0, 20.0);
+        density_util::check_continuous_distribution(&create_ok(1, 2.5), 0.0, 20.0);
+        density_util::check_continuous_distribution(&create_ok(2, 1.5), 0.0, 20.0);
+        density_util::check_continuous_distribution(&create_ok(3, 0.5), 0.0, 20.0);
     }
 }

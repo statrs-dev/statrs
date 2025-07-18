@@ -1,6 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use std::f64;
+use core::f64;
 
 /// Implements the
 /// [Categorical](https://en.wikipedia.org/wiki/Categorical_distribution)
@@ -13,9 +13,10 @@ use std::f64;
 /// use statrs::distribution::{Categorical, Discrete};
 /// use statrs::statistics::Distribution;
 /// use statrs::prec;
+/// use approx::assert_abs_diff_eq;
 ///
 /// let n = Categorical::new(&[0.0, 1.0, 2.0]).unwrap();
-/// assert!(prec::almost_eq(n.mean().unwrap(), 5.0 / 3.0, 1e-15));
+/// assert_abs_diff_eq!(n.mean().unwrap(), 5.0 / 3.0, epsilon = 1e-15);
 /// assert_eq!(n.pmf(1), 1.0 / 3.0);
 /// ```
 #[derive(Clone, PartialEq, Debug)]
@@ -39,9 +40,9 @@ pub enum CategoricalError {
     ProbMassHasInvalidElements,
 }
 
-impl std::fmt::Display for CategoricalError {
+impl core::fmt::Display for CategoricalError {
     #[cfg_attr(coverage_nightly, coverage(off))]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             CategoricalError::ProbMassEmpty => write!(f, "Probability mass is empty"),
             CategoricalError::ProbMassSumZero => write!(f, "Probabilities sum up to zero"),
@@ -53,6 +54,7 @@ impl std::fmt::Display for CategoricalError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for CategoricalError {}
 
 impl Categorical {
@@ -117,8 +119,8 @@ impl Categorical {
     }
 }
 
-impl std::fmt::Display for Categorical {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Categorical {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Cat({:#?})", self.norm_pmf)
     }
 }
@@ -371,7 +373,7 @@ pub fn cdf_to_sf(cdf: &[f64]) -> Vec<f64> {
 // return 0. Otherwise val returns the index of the first element larger than
 // it within the search array.
 fn binary_index(search: &[f64], val: f64) -> usize {
-    use std::cmp;
+    use core::cmp;
 
     let mut low = 0_isize;
     let mut high = search.len() as isize - 1;
@@ -409,8 +411,8 @@ fn test_binary_index() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::distribution::internal::*;
-    use crate::testing_boiler;
+    use crate::distribution::internal::density_util;
+    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(prob_mass: &[f64]; Categorical; CategoricalError);
 
@@ -574,7 +576,7 @@ mod tests {
 
     #[test]
     fn test_discrete() {
-        test::check_discrete_distribution(&create_ok(&[1.0, 2.0, 3.0, 4.0]), 4);
-        test::check_discrete_distribution(&create_ok(&[0.0, 1.0, 2.0, 3.0, 4.0]), 5);
+        density_util::check_discrete_distribution(&create_ok(&[1.0, 2.0, 3.0, 4.0]), 4);
+        density_util::check_discrete_distribution(&create_ok(&[0.0, 1.0, 2.0, 3.0, 4.0]), 5);
     }
 }
