@@ -96,20 +96,20 @@ impl Kernel {
 /// The optimal `k` is computed using [Orava's][orava] formula when `bandwidth` is `None`.
 ///
 /// orava: K-nearest neighbour kernel density estimation, the choice of optimal k; Jan Orava 2012.
-pub fn kde_pdf<S, X>(x: X, samples: &S, bandwidth: Option<f64>) -> Result<f64, DensityError>
+pub fn kde_pdf<S, X>(x: &X, samples: &S, bandwidth: Option<f64>) -> Result<f64, DensityError>
 where
     S: AsRef<[X]> + Container,
     X: AsRef<[f64]> + Container + PartialEq,
 {
     let n_samples = samples.length() as f64;
-    let d = x.length();
-    let neighbors = nearest_neighbors(&x, samples, bandwidth)?.0;
+    let neighbors = nearest_neighbors(x, samples, bandwidth)?.0;
     if neighbors.is_empty() {
         Err(DensityError::EmptyNeighborhood)
     } else {
         let radius = neighbors.last().unwrap().sqrt();
-        let gaussian_kernel = Kernel::Gaussian { dim: d as i32 };
-        Ok((1. / (n_samples * radius.powi(d as i32)))
+        let d = x.length() as i32;
+        let gaussian_kernel = Kernel::Gaussian { dim: d };
+        Ok((1. / (n_samples * radius.powi(d)))
             * samples
                 .as_ref()
                 .iter()
@@ -146,10 +146,10 @@ mod tests {
             .map(|_| Vector2::new(law.sample(&mut rng), law.sample(&mut rng)))
             // .map(|_| Vector1::new(law.sample(&mut rng)))
             .collect::<Vec<_>>();
-        let x = Vector2::new(0.0, 0.0);
+        let x = Vector2::new(1.0, 0.0);
         // let x = Vector1::new(0.0);
-        let kde_density_with_bandwidth = kde_pdf(x, &samples, Some(0.05));
-        let kde_density = kde_pdf(x, &samples, None);
+        let kde_density_with_bandwidth = kde_pdf(&x, &samples, Some(0.05));
+        let kde_density = kde_pdf(&x, &samples, None);
         println!("Kde: {:?}", kde_density);
         println!("Kde with bandwidth: {:?}", kde_density_with_bandwidth);
         // println!("Pdf: {:?}", law.pdf(x[0]));
