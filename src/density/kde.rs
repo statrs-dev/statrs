@@ -1,11 +1,8 @@
-use core::{
-    f64::consts::{PI, SQRT_2},
-    ops::{Div, Sub},
-};
+use core::f64::consts::{PI, SQRT_2};
 
-use kdtree::{distance::squared_euclidean, KdTree};
+use kdtree::distance::squared_euclidean;
 
-use crate::density::{Container, DensityError};
+use crate::density::{nearest_neighbors, Container, DensityError};
 
 /// The implemented [kernel functions][source]
 ///
@@ -93,45 +90,32 @@ impl Kernel {
     }
 }
 
-/// Computes the kernel density estimate for a given one dimensional point `x`
+/// Computes the kernel density estimate for a given point `x`
 /// using the samples provided and a specified kernel.
 ///
-/// The optimal `k` is computed using Orava's formula when `bandwidth` is `None`.
+/// The optimal `k` is computed using [Orava's][orava] formula when `bandwidth` is `None`.
+///
+/// orava: K-nearest neighbour kernel density estimation, the choice of optimal k; Jan Orava 2012.
 pub fn kde_pdf<S, X>(x: X, samples: &S, bandwidth: Option<f64>) -> Result<f64, DensityError>
 where
     S: AsRef<[X]> + Container,
-    X: AsRef<[f64]> + Container + PartialEq, //+ Div<f64, Output = X>
-    for<'a> &'a X: Sub<&'a X, Output = X> + Div<f64, Output = X>,
+    X: AsRef<[f64]> + Container + PartialEq,
 {
-    if samples.length() == 0 {
-        return Err(DensityError::EmptySample);
-    }
     let n_samples = samples.length() as f64;
     let d = x.length();
-    let mut tree = KdTree::with_capacity(d, 2usize.pow(n_samples.log2() as u32));
-    for (position, sample) in samples.as_ref().iter().enumerate() {
-        tree.add(sample.clone(), position)?;
-    }
-    let neighbors = if let Some(bandwidth) = bandwidth {
-        let neighbors = tree.within(x.as_ref(), bandwidth, &squared_euclidean)?;
-        neighbors
-    } else {
-        let k = super::orava_optimal_k(n_samples);
-        tree.nearest(x.as_ref(), k as usize, &squared_euclidean)?
-    };
+    let neighbors = nearest_neighbors(&x, samples, bandwidth)?.0;
     if neighbors.is_empty() {
         Err(DensityError::EmptyNeighborhood)
     } else {
-        let radius = neighbors.last().unwrap().0.sqrt();
+        let radius = neighbors.last().unwrap().sqrt();
         let gaussian_kernel = Kernel::Gaussian { dim: d as i32 };
         Ok((1. / (n_samples * radius.powi(d as i32)))
             * samples
                 .as_ref()
                 .iter()
                 .map(|xi| {
-                    gaussian_kernel.evaluate(
-                        squared_euclidean((&x / radius).as_ref(), (xi / radius).as_ref()).sqrt(),
-                    )
+                    gaussian_kernel
+                        .evaluate(squared_euclidean(x.as_ref(), xi.as_ref()).sqrt() / radius)
                 })
                 .sum::<f64>())
     }
@@ -164,7 +148,7 @@ mod tests {
             .collect::<Vec<_>>();
         let x = Vector2::new(0.0, 0.0);
         // let x = Vector1::new(0.0);
-        let kde_density_with_bandwidth = kde_pdf(x, &samples, Some(0.1));
+        let kde_density_with_bandwidth = kde_pdf(x, &samples, Some(0.05));
         let kde_density = kde_pdf(x, &samples, None);
         println!("Kde: {:?}", kde_density);
         println!("Kde with bandwidth: {:?}", kde_density_with_bandwidth);

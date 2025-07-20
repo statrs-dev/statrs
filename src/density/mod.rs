@@ -1,6 +1,6 @@
 pub mod kde;
 pub mod knn;
-use kdtree::ErrorKind;
+use kdtree::{distance::squared_euclidean, ErrorKind, KdTree};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -33,20 +33,6 @@ pub trait Container: Clone {
     fn length(&self) -> usize;
 }
 
-macro_rules! impl_container_for_num {
-    ($($t:ty),*) => {
-        $(
-            impl Container for $t {
-                type Elem = $t;
-                fn length(&self) -> usize {
-                    1
-                }
-            }
-        )*
-    };
-}
-impl_container_for_num!(f32, f64);
-
 macro_rules! impl_container {
     ($($t:ty),*) => {
         $(
@@ -72,7 +58,41 @@ impl_container!(
     nalgebra::Vector5<T>,
     nalgebra::Vector6<T>
 );
+pub type NearestNeighbors = (Vec<f64>, f64);
 
+pub(crate) fn nearest_neighbors<S, X>(
+    x: &X,
+    samples: &S,
+    bandwidth: Option<f64>,
+) -> Result<NearestNeighbors, DensityError>
+where
+    S: AsRef<[X]> + Container,
+    X: AsRef<[f64]> + Container + PartialEq,
+{
+    if samples.length() == 0 {
+        return Err(DensityError::EmptySample);
+    }
+    let n_samples = samples.length() as f64;
+    let d = x.length();
+    let mut tree = KdTree::with_capacity(d, 2usize.pow(n_samples.log2() as u32));
+    for (position, sample) in samples.as_ref().iter().enumerate() {
+        tree.add(sample.clone(), position)?;
+    }
+    if let Some(bandwidth) = bandwidth {
+        let neighbors = tree.within(x.as_ref(), bandwidth, &squared_euclidean)?;
+        let k = neighbors.len() as f64;
+        Ok((neighbors.into_iter().map(|r| r.0).collect(), k))
+    } else {
+        let k = orava_optimal_k(n_samples);
+        Ok((
+            tree.nearest(x.as_ref(), k as usize, &squared_euclidean)?
+                .into_iter()
+                .map(|r| r.0)
+                .collect(),
+            k,
+        ))
+    }
+}
 #[cfg(test)]
 mod tests {
     use nalgebra::Vector3;
@@ -85,13 +105,5 @@ mod tests {
         assert_eq!(v1.length(), 3);
         let v2 = Vector3::new(1.0, 2.0, 3.0);
         assert_eq!(v2.length(), 3);
-    }
-
-    #[test]
-    fn test_num_container() {
-        let a: f64 = 3.0;
-        let b: f64 = 5.0;
-        assert_eq!(a.length(), 1);
-        assert_eq!(b.length(), 1);
     }
 }

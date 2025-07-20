@@ -1,41 +1,28 @@
+use super::Container;
+use crate::{
+    density::{nearest_neighbors, DensityError},
+    function::gamma::gamma,
+};
 use core::f64::consts::PI;
-
-use kdtree::{distance::squared_euclidean, KdTree};
-
-use crate::{density::DensityError, function::gamma::gamma};
-
-use super::{orava_optimal_k, Container};
 
 /// Computes the `k`-nearest neighbor density estimate for a given point `x`
 /// using the samples provided.
 ///
-/// The optimal `k` is computed using Orava's formula when `bandwidth` is `None`.
+/// The optimal `k` is computed using [Orava's][orava] formula when `bandwidth` is `None`.
+///
+/// orava: K-nearest neighbour kernel density estimation, the choice of optimal k; Jan Orava 2012.
 pub fn knn_pdf<X, S>(x: X, samples: &S, bandwidth: Option<f64>) -> Result<f64, DensityError>
 where
-    S: AsRef<[X]> + Container<Elem = X>,
+    S: AsRef<[X]> + Container,
     X: AsRef<[f64]> + Container + PartialEq,
 {
-    if samples.length() == 0 {
-        return Err(DensityError::EmptySample);
-    }
     let n_samples = samples.length() as f64;
     let d = x.length();
-    let mut tree = KdTree::with_capacity(d, 2usize.pow(n_samples.log2() as u32));
-    for (position, sample) in samples.as_ref().iter().enumerate() {
-        tree.add(sample.clone(), position)?;
-    }
-    let (neighbors, k) = if let Some(bandwidth) = bandwidth {
-        let neighbors = tree.within(x.as_ref(), bandwidth, &squared_euclidean)?;
-        let k = neighbors.len() as f64;
-        (neighbors, k)
-    } else {
-        let k = orava_optimal_k(n_samples);
-        (tree.nearest(x.as_ref(), k as usize, &squared_euclidean)?, k)
-    };
+    let (neighbors, k) = nearest_neighbors(&x, samples, bandwidth)?;
     if neighbors.is_empty() {
         Err(DensityError::EmptyNeighborhood)
     } else {
-        let radius = neighbors.last().unwrap().0.sqrt();
+        let radius = neighbors.last().unwrap().sqrt();
         let d = d as f64;
         Ok((k / n_samples) * (gamma(d / 2. + 1.) / (PI.powf(d / 2.) * radius.powf(d))))
     }
