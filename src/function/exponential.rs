@@ -32,7 +32,7 @@ pub fn integral(x: f64, n: u64) -> Option<f64> {
 
     // special cases
     if n == 0 {
-        return Some((-1.0 * x).exp() / x);
+        return Some((-x).exp() / x);
     }
     if x == 0.0 {
         return Some(1.0 / (nf64 - 1.0));
@@ -44,7 +44,7 @@ pub fn integral(x: f64, n: u64) -> Option<f64> {
         let mut d = 1.0 / b;
         let mut h = d;
         for i in 1..max_iter + 1 {
-            let a = -1.0 * i as f64 * (nf64 - 1.0 + i as f64);
+            let a = -(i as f64) * (nf64 - 1.0 + i as f64);
             b += 2.0;
             d = 1.0 / (a * d + b);
             c = b + a / c;
@@ -60,18 +60,18 @@ pub fn integral(x: f64, n: u64) -> Option<f64> {
         let mut result = if n - 1 != 0 {
             1.0 / (nf64 - 1.0)
         } else {
-            -1.0 * x.ln() - consts::EULER_MASCHERONI
+            -x.ln() - consts::EULER_MASCHERONI
         };
         for i in 1..max_iter + 1 {
-            factorial *= -1.0 * x / i as f64;
+            factorial *= -x / i as f64;
             let del = if i != n - 1 {
                 -factorial / (i as f64 - nf64 + 1.0)
             } else {
-                let mut psi = -1.0 * consts::EULER_MASCHERONI;
+                let mut psi = -consts::EULER_MASCHERONI;
                 for ii in 1..n {
                     psi += 1.0 / ii as f64;
                 }
-                factorial * (-1.0 * x.ln() + psi)
+                factorial * (-x.ln() + psi)
             };
             result += del;
             if del.abs() < result.abs() * eps {
