@@ -151,9 +151,9 @@ impl core::fmt::Display for Uniform {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<f64> for Uniform {
+impl ::rand::distr::Distribution<f64> for Uniform {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        let d = rand::distributions::Uniform::new_inclusive(self.min, self.max);
+        let d = rand::distr::Uniform::new_inclusive(self.min, self.max).unwrap();
         rng.sample(d)
     }
 }
@@ -370,7 +370,7 @@ mod tests {
             (0.0, f64::INFINITY, UniformError::MaxInvalid),
             (1.0, 0.0, UniformError::MaxNotGreaterThanMin),
         ];
-        
+
         for (min, max, err) in invalid {
             test_create_err(min, max, err);
         }
@@ -532,7 +532,7 @@ mod tests {
     fn test_samples_in_range() {
         use rand::rngs::StdRng;
         use rand::SeedableRng;
-        use rand::distributions::Distribution;
+        use rand::distr::Distribution;
 
         let seed = [
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,

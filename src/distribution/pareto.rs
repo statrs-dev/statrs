@@ -115,9 +115,9 @@ impl core::fmt::Display for Pareto {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<f64> for Pareto {
+impl ::rand::distr::Distribution<f64> for Pareto {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        use rand::distributions::OpenClosed01;
+        use rand::distr::OpenClosed01;
 
         // Inverse transform sampling
         let u: f64 = rng.sample(OpenClosed01);
