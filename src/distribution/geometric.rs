@@ -172,8 +172,11 @@ impl DiscreteCDF<u64, f64> for Geometric {
         //                              = ceil((-x).ln_1p()/(-self.p).ln_1p())
         //                              = ((-x).ln_1p()/(-self.p).ln_1p()).ceil()
         if x <= self.cdf(self.min()) {
+            // if p = 1 this branch will always be taken
+            // no matter the value of x
             return self.min();
         } else if x == <f64>::one() {
+            // note that if p = 1 & x = 1 the above branch is taken
             return self.max();
         } else if !(<f64>::zero()..=<f64>::one()).contains(&x) {
             std::panic!("p must be on [0, 1]")
