@@ -9,6 +9,7 @@ on:
 env:
   CARGO_INCREMENTAL: 0
   RUSTFLAGS: "-Dwarnings"
+  RUST_BACKTRACE: 1
 
 jobs:
   clippy:
