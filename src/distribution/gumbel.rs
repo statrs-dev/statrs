@@ -115,9 +115,9 @@ impl core::fmt::Display for Gumbel {
 }
 
 #[cfg(feature = "rand")]
-impl ::rand::distributions::Distribution<f64> for Gumbel {
+impl ::rand::distr::Distribution<f64> for Gumbel {
     fn sample<R: rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
-        self.location - self.scale * ((-(r.gen::<f64>())).ln()).ln()
+        self.location - self.scale * ((-(r.random::<f64>())).ln()).ln()
     }
 }
 
@@ -385,7 +385,7 @@ mod tests {
         test_exact(0.0, 2.0, 2.270362845461478, entropy);
         test_exact(0.1, 4.0, 2.9635100260214235, entropy);
         test_exact(1.0, 10.0, 3.8798007578955787, entropy);
-        test_exact(10.0, 11.0, 3.9751109376999034, entropy); 
+        test_exact(10.0, 11.0, 3.9751109376999034, entropy);
     }
 
     #[test]

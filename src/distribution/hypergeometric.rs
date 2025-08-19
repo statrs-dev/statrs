@@ -160,7 +160,7 @@ impl core::fmt::Display for Hypergeometric {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<u64> for Hypergeometric {
+impl ::rand::distr::Distribution<u64> for Hypergeometric {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> u64 {
         let mut population = self.population as f64;
         let mut successes = self.successes as f64;
@@ -168,7 +168,7 @@ impl ::rand::distributions::Distribution<u64> for Hypergeometric {
         let mut x = 0;
         loop {
             let p = successes / population;
-            let next: f64 = rng.gen();
+            let next: f64 = rng.random();
             if next < p {
                 x += 1;
                 successes -= 1.0;
@@ -185,7 +185,7 @@ impl ::rand::distributions::Distribution<u64> for Hypergeometric {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<f64> for Hypergeometric {
+impl ::rand::distr::Distribution<f64> for Hypergeometric {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         rng.sample::<u64, _>(self) as f64
     }
