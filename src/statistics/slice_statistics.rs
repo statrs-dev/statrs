@@ -1,7 +1,5 @@
 use crate::statistics::*;
 use core::ops::{Index, IndexMut};
-#[cfg(feature = "rand")]
-use rand::prelude::IndexedRandom;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Data<D>(D);
@@ -137,6 +135,8 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Data<D> {
 #[cfg(feature = "rand")]
 impl<D: AsRef<[f64]>> ::rand::distr::Distribution<f64> for Data<D> {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+        use rand::prelude::IndexedRandom;
+
         *self.0.as_ref().choose(rng).unwrap()
     }
 }
