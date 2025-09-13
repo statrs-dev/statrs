@@ -26,7 +26,7 @@
 //! The module defines default precision levels that are carefully chosen to balance
 //! correctness and performance:
 //!
-//! - `DEFAULT_RELATIVE_ACC`: 1e-10 for relative comparisons
+//! - `DEFAULT_RELATIVE_ACC`: 1e-14 for relative comparisons
 //! - `DEFAULT_EPS`: 1e-9 for absolute comparisons
 //! - `DEFAULT_ULPS`: 5 for ULPs comparisons
 //!
