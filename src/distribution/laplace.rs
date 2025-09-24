@@ -550,7 +550,7 @@ mod tests {
         test_rel_close(loc, scale, expected, reltol, inverse_cdf(0.001));
 
         // Wolfram Alpha: Inverse CDF[LaplaceDistribution[0, 1], 95/100]
-        let expected = 2.3025850929940456840179914546843642f64;
+        let expected = f64::consts::LN_10;
         test_rel_close(loc, scale, expected, reltol, inverse_cdf(0.95));
     }
 

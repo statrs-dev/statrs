@@ -388,8 +388,8 @@ mod tests {
     #[test]
     fn test_entropy() {
         let entropy = |x: Uniform| x.entropy().unwrap();
-        test_exact(-0.0, 2.0, 0.6931471805599453094172, entropy);
-        test_exact(0.0, 2.0, 0.6931471805599453094172, entropy);
+        test_exact(-0.0, 2.0, f64::consts::LN_2, entropy);
+        test_exact(0.0, 2.0, f64::consts::LN_2, entropy);
         test_absolute(0.1, 4.0, 1.360976553135600743431, 1e-15, entropy);
         test_exact(1.0, 10.0, 2.19722457733621938279, entropy);
         test_exact(10.0, 11.0, 0.0, entropy);
@@ -448,14 +448,14 @@ mod tests {
     fn test_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: Uniform| x.ln_pdf(arg);
         test_exact(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(-5.0));
-        test_absolute(0.0, 0.1, 2.302585092994045684018, 1e-15, ln_pdf(0.05));
+        test_absolute(0.0, 0.1, f64::consts::LN_10, 1e-15, ln_pdf(0.05));
         test_exact(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(5.0));
         test_exact(0.0, 1.0, f64::NEG_INFINITY, ln_pdf(-5.0));
         test_exact(0.0, 1.0, 0.0, ln_pdf(0.5));
         test_exact(0.0, 0.1, f64::NEG_INFINITY, ln_pdf(5.0));
         test_exact(0.0, 10.0, f64::NEG_INFINITY, ln_pdf(-5.0));
-        test_exact(0.0, 10.0, -2.302585092994045684018, ln_pdf(1.0));
-        test_exact(0.0, 10.0, -2.302585092994045684018, ln_pdf(5.0));
+        test_exact(0.0, 10.0, -f64::consts::LN_10, ln_pdf(1.0));
+        test_exact(0.0, 10.0, -f64::consts::LN_10, ln_pdf(5.0));
         test_exact(0.0, 10.0, f64::NEG_INFINITY, ln_pdf(11.0));
         test_exact(-5.0, 100.0, f64::NEG_INFINITY, ln_pdf(-10.0));
         test_exact(-5.0, 100.0, -4.653960350157523371101, ln_pdf(-5.0));

@@ -624,7 +624,7 @@ mod tests {
         );
         prec::assert_abs_diff_eq!(
             super::ln_gamma(3.0),
-            0.693147180559945309417232121458176568075500134360255254120680,
+            f64::consts::LN_2,
             epsilon = 1e-14
         );
         prec::assert_abs_diff_eq!(
