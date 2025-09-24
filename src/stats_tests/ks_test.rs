@@ -38,8 +38,14 @@ impl core::fmt::Display for KSTestError {
                     "samples can not contain NaN when nan_policy is set to NaNPolicy::Error"
                 )
             }
-            KSTestError::ExactAndTies => write!(f, "`KSOneSampleAlternativeMethod::TwoSidedExact`selected with ties in data"),
-            KSTestError::ExactAndTooLarge => write!(f, "`KSOneSampleAlternativeMethod::TwoSidedExact`selected with the size of the data (`n`) being too large"),
+            KSTestError::ExactAndTies => write!(
+                f,
+                "`KSOneSampleAlternativeMethod::TwoSidedExact`selected with ties in data"
+            ),
+            KSTestError::ExactAndTooLarge => write!(
+                f,
+                "`KSOneSampleAlternativeMethod::TwoSidedExact`selected with the size of the data (`n`) being too large"
+            ),
         }
     }
 }

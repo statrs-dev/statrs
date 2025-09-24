@@ -27,7 +27,10 @@ impl core::fmt::Display for ChiSquareTestError {
                 write!(f, "`f_exp` must have same length and sum as `f_obs`")
             }
             ChiSquareTestError::DdofInvalid => {
-                write!(f, "for the p-value to be meaningful, `ddof` must be at least two less than the number of categories, k, which is the length of `f_obs`")
+                write!(
+                    f,
+                    "for the p-value to be meaningful, `ddof` must be at least two less than the number of categories, k, which is the length of `f_obs`"
+                )
             }
         }
     }

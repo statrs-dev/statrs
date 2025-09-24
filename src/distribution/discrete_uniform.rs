@@ -147,11 +147,7 @@ impl DiscreteCDF<i64, f64> for DiscreteUniform {
             let lower = self.min as f64;
             let upper = self.max as f64;
             let ans = (x as f64 - lower + 1.0) / (upper - lower + 1.0);
-            if ans > 1.0 {
-                1.0
-            } else {
-                ans
-            }
+            if ans > 1.0 { 1.0 } else { ans }
         }
     }
 
@@ -165,11 +161,7 @@ impl DiscreteCDF<i64, f64> for DiscreteUniform {
             let lower = self.min as f64;
             let upper = self.max as f64;
             let ans = (upper - x as f64) / (upper - lower + 1.0);
-            if ans > 1.0 {
-                1.0
-            } else {
-                ans
-            }
+            if ans > 1.0 { 1.0 } else { ans }
         }
     }
 }
