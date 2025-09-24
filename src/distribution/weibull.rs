@@ -446,7 +446,7 @@ mod tests {
     fn test_median() {
         let median = |x: Weibull| x.median();
         test_exact(1.0, 0.1, 0.069314718055994530941723212145817656807550013436026, median);
-        test_exact(1.0, 1.0, 0.69314718055994530941723212145817656807550013436026, median);
+        test_exact(1.0, 1.0, f64::consts::LN_2, median);
         test_exact(10.0, 10.0, 9.6401223546778973665856033763604752124634905617583, median);
         test_exact(10.0, 1.0, 0.96401223546778973665856033763604752124634905617583, median);
     }
@@ -488,7 +488,7 @@ mod tests {
     #[test]
     fn test_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: Weibull| x.ln_pdf(arg);
-        test_absolute(1.0, 0.1, 2.3025850929940456840179914546843642076011014886288, 1e-15, ln_pdf(0.0));
+        test_absolute(1.0, 0.1, f64::consts::LN_10, 1e-15, ln_pdf(0.0));
         test_absolute(1.0, 0.1, -7.6974149070059543159820085453156357923988985113712, 1e-15, ln_pdf(1.0));
         test_exact(1.0, 0.1, -97.697414907005954315982008545315635792398898511371, ln_pdf(10.0));
         test_exact(1.0, 1.0, 0.0, ln_pdf(0.0));
