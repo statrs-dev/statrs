@@ -159,7 +159,7 @@ fn onesample_marsaglia_et_al_twosided_pvalue(d: f64, n: f64) -> Result<f64, KSTe
     let mut a = mm.clone();
 
     while nn > 0 {
-        if nn % 2 != 0 {
+        if !nn.is_multiple_of(2) {
             v = &a * v;
         }
         a = &a * &a;
