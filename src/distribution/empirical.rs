@@ -20,11 +20,7 @@ mod non_nan {
     impl NonNan<f64> {
         #[inline]
         pub fn new(x: f64) -> Option<Self> {
-            if x.is_nan() {
-                None
-            } else {
-                Some(Self(x))
-            }
+            if x.is_nan() { None } else { Some(Self(x)) }
         }
     }
 

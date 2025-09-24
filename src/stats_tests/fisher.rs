@@ -13,13 +13,7 @@ fn binary_search(
     epsilon: f64,
     upper: bool,
 ) -> u64 {
-    let (mut min_val, mut max_val) = {
-        if upper {
-            (mode, n)
-        } else {
-            (0, mode)
-        }
-    };
+    let (mut min_val, mut max_val) = { if upper { (mode, n) } else { (0, mode) } };
 
     let population = n1 + n2;
     let successes = n1;
@@ -39,13 +33,7 @@ fn binary_search(
             }
         };
 
-        let ng = {
-            if upper {
-                guess - 1
-            } else {
-                guess + 1
-            }
-        };
+        let ng = { if upper { guess - 1 } else { guess + 1 } };
 
         let pmf_comp = dist.pmf(ng);
         let p_guess = dist.pmf(guess);
@@ -109,7 +97,10 @@ impl core::fmt::Display for FishersExactTestError {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             FishersExactTestError::TableInvalidForHypergeometric(hg_err) => {
-                writeln!(f, "Cannot create a Hypergeometric distribution from the data in the contingency table.")?;
+                writeln!(
+                    f,
+                    "Cannot create a Hypergeometric distribution from the data in the contingency table."
+                )?;
                 writeln!(f, "Is it in row-major order?")?;
                 write!(f, "Inner error: '{hg_err}'")
             }

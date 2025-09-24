@@ -97,11 +97,7 @@ impl ContinuousCDF<f64, f64> for Dirac {
     ///
     /// Where the value is 1 if x > `v`, 0 otherwise.
     fn cdf(&self, x: f64) -> f64 {
-        if x < self.0 {
-            0.0
-        } else {
-            1.0
-        }
+        if x < self.0 { 0.0 } else { 1.0 }
     }
 
     /// Calculates the survival function for the
@@ -109,11 +105,7 @@ impl ContinuousCDF<f64, f64> for Dirac {
     ///
     /// Where the value is 0 if x > `v`, 1 otherwise.
     fn sf(&self, x: f64) -> f64 {
-        if x < self.0 {
-            1.0
-        } else {
-            0.0
-        }
+        if x < self.0 { 1.0 } else { 0.0 }
     }
 }
 

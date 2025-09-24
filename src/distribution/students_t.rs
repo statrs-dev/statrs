@@ -183,11 +183,7 @@ impl ContinuousCDF<f64, f64> for StudentsT {
             let k = (x - self.location) / self.scale;
             let h = self.freedom / (self.freedom + k * k);
             let ib = 0.5 * beta::beta_reg(self.freedom / 2.0, 0.5, h);
-            if x <= self.location {
-                ib
-            } else {
-                1.0 - ib
-            }
+            if x <= self.location { ib } else { 1.0 - ib }
         }
     }
 
@@ -215,11 +211,7 @@ impl ContinuousCDF<f64, f64> for StudentsT {
             let k = (x - self.location) / self.scale;
             let h = self.freedom / (self.freedom + k * k);
             let ib = 0.5 * beta::beta_reg(self.freedom / 2.0, 0.5, h);
-            if x <= self.location {
-                1.0 - ib
-            } else {
-                ib
-            }
+            if x <= self.location { 1.0 - ib } else { ib }
         }
     }
 
@@ -357,11 +349,7 @@ impl Distribution<f64> for StudentsT {
     /// 0
     /// ```
     fn skewness(&self) -> Option<f64> {
-        if self.freedom <= 3.0 {
-            None
-        } else {
-            Some(0.0)
-        }
+        if self.freedom <= 3.0 { None } else { Some(0.0) }
     }
 }
 

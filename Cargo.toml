@@ -8,7 +8,7 @@ keywords = ["probability", "statistics", "stats", "distribution", "math"]
 categories = ["science"]
 homepage = "https://github.com/statrs-dev/statrs"
 repository = "https://github.com/statrs-dev/statrs"
-edition = "2021"
+edition = "2024"
 
 include = ["CHANGELOG.md", "LICENSE.md", "src/", "tests/"]
 

@@ -421,11 +421,7 @@ pub fn inv_beta_reg(mut a: f64, mut b: f64, mut x: f64) -> f64 {
         qprev = q;
     }
 
-    if flip {
-        1.0 - p
-    } else {
-        p
-    }
+    if flip { 1.0 - p } else { p }
 }
 
 #[cfg(test)]

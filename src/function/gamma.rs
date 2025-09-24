@@ -435,11 +435,7 @@ pub fn inv_digamma(x: f64) -> f64 {
 // by inv_digamma, may consider extracting into a public
 // method
 fn signum(x: f64) -> f64 {
-    if x == 0.0 {
-        0.0
-    } else {
-        x.signum()
-    }
+    if x == 0.0 { 0.0 } else { x.signum() }
 }
 
 #[rustfmt::skip]

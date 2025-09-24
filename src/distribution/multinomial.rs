@@ -310,13 +310,12 @@ where
             return 0.0;
         }
         let coeff = factorial::multinomial(self.n, x.as_slice());
-        let val = coeff
+        coeff
             * self
                 .p
                 .iter()
                 .zip(x.iter())
-                .fold(1.0, |acc, (pi, xi)| acc * pi.powf(*xi as f64));
-        val
+                .fold(1.0, |acc, (pi, xi)| acc * pi.powf(*xi as f64))
     }
 
     /// Calculates the log probability mass function for the multinomial
@@ -345,14 +344,14 @@ where
             return f64::NEG_INFINITY;
         }
         let coeff = factorial::multinomial(self.n, x.as_slice()).ln();
-        let val = coeff
+
+        coeff
             + self
                 .p
                 .iter()
                 .zip(x.iter())
                 .map(|(pi, xi)| *xi as f64 * pi.ln())
-                .fold(0.0, |acc, x| acc + x);
-        val
+                .fold(0.0, |acc, x| acc + x)
     }
 }
 
