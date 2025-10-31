@@ -8,4 +8,5 @@ pub mod exponential;
 pub mod factorial;
 pub mod gamma;
 pub mod harmonic;
+pub mod kernel;
 pub mod logistic;
