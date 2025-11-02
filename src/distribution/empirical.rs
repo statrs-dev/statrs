@@ -180,7 +180,7 @@ impl core::fmt::Display for Empirical {
         let mut enumerated_values = self
             .data
             .iter()
-            .flat_map(|(x, &count)| core::iter::repeat(x.get()).take(count as usize));
+            .flat_map(|(x, &count)| core::iter::repeat_n(x.get(), count as usize));
 
         if let Some(x) = enumerated_values.next() {
             write!(f, "Empirical([{x:.3e}")?;
