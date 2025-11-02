@@ -4,15 +4,15 @@ use rand::prelude::*;
 use statrs::statistics::*;
 
 fn bench_order_statistic(c: &mut Criterion) {
-    let mut rng = thread_rng();
+    let mut rng = rand::rng();
     let to_random_owned = |data: &[f64]| -> Data<Vec<f64>> {
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         let mut owned = data.to_vec();
         owned.shuffle(&mut rng);
         Data::new(owned)
     };
-    let k = black_box(rng.gen());
-    let tau = black_box(rng.gen_range(0.0..1.0));
+    let k = black_box(rng.random_range(..=usize::MAX));
+    let tau = black_box(rng.random_range(0.0..1.0));
     let mut group = c.benchmark_group("order statistic");
     let data: Vec<_> = (0..100).map(|x| x as f64).collect();
     group.bench_function("order_statistic", |b| {
