@@ -113,9 +113,9 @@ impl core::fmt::Display for Laplace {
 
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distributions::Distribution<f64> for Laplace {
+impl ::rand::distr::Distribution<f64> for Laplace {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        let x: f64 = rng.gen_range(-0.5..0.5);
+        let x: f64 = rng.random_range(-0.5..0.5);
         self.location - self.scale * x.signum() * (1. - 2. * x.abs()).ln()
     }
 }
@@ -557,17 +557,16 @@ mod tests {
     #[cfg(feature = "rand")]
     #[test]
     fn test_sample() {
-        use ::rand::distributions::Distribution;
-        use ::rand::thread_rng;
+        use ::rand::distr::Distribution;
 
         let l = create_ok(0.1, 0.5);
-        l.sample(&mut thread_rng());
+        l.sample(&mut ::rand::rng());
     }
 
     #[cfg(feature = "rand")]
     #[test]
     fn test_sample_distribution() {
-        use ::rand::distributions::Distribution;
+        use ::rand::distr::Distribution;
         use ::rand::rngs::StdRng;
         use ::rand::SeedableRng;
 
