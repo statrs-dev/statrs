@@ -133,11 +133,7 @@ impl ContinuousCDF<f64, f64> for Laplace {
     /// where `μ` is the location, `b` is the scale
     fn cdf(&self, x: f64) -> f64 {
         let y = (-(x - self.location).abs() / self.scale).exp() / 2.;
-        if x >= self.location {
-            1. - y
-        } else {
-            y
-        }
+        if x >= self.location { 1. - y } else { y }
     }
 
     /// Calculates the survival function for the
@@ -152,11 +148,7 @@ impl ContinuousCDF<f64, f64> for Laplace {
     /// where `μ` is the location, `b` is the scale
     fn sf(&self, x: f64) -> f64 {
         let y = (-(x - self.location).abs() / self.scale).exp() / 2.;
-        if x >= self.location {
-            y
-        } else {
-            1. - y
-        }
+        if x >= self.location { y } else { 1. - y }
     }
 
     /// Calculates the inverse cumulative distribution function for the
@@ -550,7 +542,7 @@ mod tests {
         test_rel_close(loc, scale, expected, reltol, inverse_cdf(0.001));
 
         // Wolfram Alpha: Inverse CDF[LaplaceDistribution[0, 1], 95/100]
-        let expected = 2.3025850929940456840179914546843642f64;
+        let expected = f64::consts::LN_10;
         test_rel_close(loc, scale, expected, reltol, inverse_cdf(0.95));
     }
 

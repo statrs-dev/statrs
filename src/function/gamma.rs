@@ -435,11 +435,7 @@ pub fn inv_digamma(x: f64) -> f64 {
 // by inv_digamma, may consider extracting into a public
 // method
 fn signum(x: f64) -> f64 {
-    if x == 0.0 {
-        0.0
-    } else {
-        x.signum()
-    }
+    if x == 0.0 { 0.0 } else { x.signum() }
 }
 
 #[rustfmt::skip]
@@ -624,7 +620,7 @@ mod tests {
         );
         prec::assert_abs_diff_eq!(
             super::ln_gamma(3.0),
-            0.693147180559945309417232121458176568075500134360255254120680,
+            f64::consts::LN_2,
             epsilon = 1e-14
         );
         prec::assert_abs_diff_eq!(

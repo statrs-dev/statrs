@@ -154,7 +154,7 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> OrderStatistics<f64> for Data<D> {
 
     fn median(&mut self) -> f64 {
         let k = self.len() / 2;
-        if self.len() % 2 != 0 {
+        if !self.len().is_multiple_of(2) {
             self.select_inplace(k)
         } else {
             (self.select_inplace(k.saturating_sub(1)) + self.select_inplace(k)) / 2.0

@@ -131,11 +131,7 @@ impl ContinuousCDF<f64, f64> for Exp {
     ///
     /// where `λ` is the rate
     fn sf(&self, x: f64) -> f64 {
-        if x < 0.0 {
-            1.0
-        } else {
-            (-self.rate * x).exp()
-        }
+        if x < 0.0 { 1.0 } else { (-self.rate * x).exp() }
     }
 
     /// Calculates the inverse cumulative distribution function.
@@ -412,9 +408,9 @@ mod tests {
     #[test]
     fn test_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: Exp| x.ln_pdf(arg);
-        test_absolute(0.1, -2.302585092994045684018, 1e-15, ln_pdf(0.0));
+        test_absolute(0.1, -f64::consts::LN_10, 1e-15, ln_pdf(0.0));
         test_exact(1.0, 0.0, ln_pdf(0.0));
-        test_exact(10.0, 2.302585092994045684018, ln_pdf(0.0));
+        test_exact(10.0, f64::consts::LN_10, ln_pdf(0.0));
         test_is_nan(f64::INFINITY, ln_pdf(0.0));
         test_absolute(0.1, -2.312585092994045684018, 1e-15, ln_pdf(0.1));
         test_exact(1.0, -0.1, ln_pdf(0.1));

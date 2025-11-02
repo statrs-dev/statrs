@@ -38,8 +38,14 @@ impl core::fmt::Display for KSTestError {
                     "samples can not contain NaN when nan_policy is set to NaNPolicy::Error"
                 )
             }
-            KSTestError::ExactAndTies => write!(f, "`KSOneSampleAlternativeMethod::TwoSidedExact`selected with ties in data"),
-            KSTestError::ExactAndTooLarge => write!(f, "`KSOneSampleAlternativeMethod::TwoSidedExact`selected with the size of the data (`n`) being too large"),
+            KSTestError::ExactAndTies => write!(
+                f,
+                "`KSOneSampleAlternativeMethod::TwoSidedExact`selected with ties in data"
+            ),
+            KSTestError::ExactAndTooLarge => write!(
+                f,
+                "`KSOneSampleAlternativeMethod::TwoSidedExact`selected with the size of the data (`n`) being too large"
+            ),
         }
     }
 }
@@ -159,7 +165,7 @@ fn onesample_marsaglia_et_al_twosided_pvalue(d: f64, n: f64) -> Result<f64, KSTe
     let mut a = mm.clone();
 
     while nn > 0 {
-        if nn % 2 != 0 {
+        if !nn.is_multiple_of(2) {
             v = &a * v;
         }
         a = &a * &a;
