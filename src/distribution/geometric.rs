@@ -2,6 +2,7 @@ use crate::distribution::{Discrete, DiscreteCDF};
 use crate::prec;
 use crate::statistics::*;
 use core::f64;
+use num_traits::{One, Zero};
 
 /// Implements the
 /// [Geometric](https://en.wikipedia.org/wiki/Geometric_distribution)
@@ -152,6 +153,37 @@ impl DiscreteCDF<u64, f64> for Geometric {
         } else {
             ((-self.p).ln_1p() * (x as f64)).exp()
         }
+    }
+
+    /// Calculates the inverse cumulative distribution function for the
+    /// geometric distribution at `x`.
+    /// In other languages, such as R, this is known as the the quantile function.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// p = ceil(log(1-x)/log(1-p))
+    /// ```
+    ///
+    /// # Panics
+    /// panics if provided `x` not on interval [0.0, 1.0]
+    fn inverse_cdf(&self, x: f64) -> u64 {
+        // ceil(log(1-x)/log(1-self.p)) = ceil(log1p(-x)/log1p(-self.p))
+        //                              = ceil((-x).ln_1p()/(-self.p).ln_1p())
+        //                              = ((-x).ln_1p()/(-self.p).ln_1p()).ceil()
+        if x <= self.cdf(self.min()) {
+            // if p = 1 this branch will always be taken
+            // no matter the value of x
+            return self.min();
+        }
+        if x == <f64>::one() {
+            return self.max();
+        }
+        if !(<f64>::zero()..=<f64>::one()).contains(&x) {
+            core::panic!("p must be on [0, 1]")
+        }
+
+        ((-x).ln_1p() / (-self.p).ln_1p()).ceil() as u64
     }
 }
 
@@ -520,5 +552,14 @@ mod tests {
         test_exact(1., 1, invcdf(1.));
         test_exact(0.2, 1, invcdf(0.2));
         test_exact(0.004, 173, invcdf(0.5));
+        test_exact(0.5, u64::MAX, invcdf(1.));
+        test_exact(0.5, 2, invcdf(0.75));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_inverse_cdf_panic() {
+        let invcdf = |arg: f64| move |x: Geometric| x.inverse_cdf(arg);
+        test_exact(1., 1, invcdf(2.));
     }
 }
