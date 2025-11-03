@@ -175,11 +175,12 @@ impl DiscreteCDF<u64, f64> for Geometric {
             // if p = 1 this branch will always be taken
             // no matter the value of x
             return self.min();
-        } else if x == <f64>::one() {
-            // note that if p = 1 & x = 1 the above branch is taken
+        }
+        if x == <f64>::one() {
             return self.max();
-        } else if !(<f64>::zero()..=<f64>::one()).contains(&x) {
-            std::panic!("p must be on [0, 1]")
+        }
+        if !(<f64>::zero()..=<f64>::one()).contains(&x) {
+            core::panic!("p must be on [0, 1]")
         }
 
         ((-x).ln_1p() / (-self.p).ln_1p()).ceil() as u64
