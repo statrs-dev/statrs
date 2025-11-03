@@ -28,7 +28,7 @@
 //! assert!((e.evaluate(0.0) - 0.75).abs() < 1e-12);
 //! ```
 
-use std::f64::consts::{FRAC_PI_2, PI};
+use core::f64::consts::{FRAC_PI_2, PI};
 
 /// Common interface for kernel functions used in KDE and smoothing.
 pub trait Kernel {
