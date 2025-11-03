@@ -28,7 +28,7 @@
 //! assert!((e.evaluate(0.0) - 0.75).abs() < 1e-12);
 //! ```
 
-use std::f64::consts::{FRAC_PI_2, PI};
+use core::f64::consts::{FRAC_PI_2, PI};
 
 /// Common interface for kernel functions used in KDE and smoothing.
 pub trait Kernel {
@@ -66,11 +66,7 @@ pub struct Epanechnikov;
 impl Kernel for Epanechnikov {
     fn evaluate(&self, x: f64) -> f64 {
         let a = x.abs();
-        if a <= 1.0 {
-            0.75 * (1.0 - a * a)
-        } else {
-            0.0
-        }
+        if a <= 1.0 { 0.75 * (1.0 - a * a) } else { 0.0 }
     }
 
     fn support(&self) -> Option<(f64, f64)> {
@@ -85,11 +81,7 @@ pub struct Triangular;
 impl Kernel for Triangular {
     fn evaluate(&self, x: f64) -> f64 {
         let a = x.abs();
-        if a <= 1.0 {
-            1.0 - a
-        } else {
-            0.0
-        }
+        if a <= 1.0 { 1.0 - a } else { 0.0 }
     }
 
     fn support(&self) -> Option<(f64, f64)> {
@@ -143,11 +135,7 @@ pub struct Uniform;
 
 impl Kernel for Uniform {
     fn evaluate(&self, x: f64) -> f64 {
-        if x.abs() <= 1.0 {
-            0.5
-        } else {
-            0.0
-        }
+        if x.abs() <= 1.0 { 0.5 } else { 0.0 }
     }
 
     fn support(&self) -> Option<(f64, f64)> {
