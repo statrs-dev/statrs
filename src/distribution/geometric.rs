@@ -415,6 +415,7 @@ mod tests {
         let cdf = |arg: u64| move |x: Geometric| x.cdf(arg);
         test_exact(1.0, 1.0, cdf(1));
         test_exact(1.0, 1.0, cdf(2));
+        test_exact(0.2, 0.2, cdf(1));
         test_absolute(0.5, 0.5, 1e-15, cdf(1));
         test_absolute(0.5, 0.75, 1e-15, cdf(2));
     }
