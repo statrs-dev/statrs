@@ -532,8 +532,9 @@ impl<F: Fn(f64) -> f64> core::fmt::Debug for CustomKernel<F> {
 /// Enumeration of available kernel types.
 ///
 /// Provides a convenient way to select kernels at runtime for methods like LOESS.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum KernelType {
+    #[default]
     Gaussian,
     Epanechnikov,
     Triangular,
@@ -793,12 +794,6 @@ impl KernelType {
     /// Epanechnikov is theoretically optimal (efficiency = 1.0).
     pub fn most_efficient() -> Self {
         Self::Epanechnikov
-    }
-}
-
-impl Default for KernelType {
-    fn default() -> Self {
-        Self::Gaussian
     }
 }
 
@@ -1080,14 +1075,25 @@ mod compile_time_tests {
     #[test]
     fn test_all_efficiencies_less_than_or_equal_to_epanechnikov() {
         // All kernels should have efficiency ≤ 1.0 (Epanechnikov is optimal)
-        assert!(Gaussian::EFFICIENCY <= 1.0);
-        assert!(Triangular::EFFICIENCY <= 1.0);
-        assert!(Tricube::EFFICIENCY <= 1.0);
-        assert!(Bisquare::EFFICIENCY <= 1.0);
-        assert!(Uniform::EFFICIENCY <= 1.0);
-        assert!(Cosine::EFFICIENCY <= 1.0);
-        assert!(Logistic::EFFICIENCY <= 1.0);
-        assert!(Sigmoid::EFFICIENCY <= 1.0);
+        let kernels = [
+            ("Gaussian", Gaussian::EFFICIENCY),
+            ("Triangular", Triangular::EFFICIENCY),
+            ("Tricube", Tricube::EFFICIENCY),
+            ("Bisquare", Bisquare::EFFICIENCY),
+            ("Uniform", Uniform::EFFICIENCY),
+            ("Cosine", Cosine::EFFICIENCY),
+            ("Logistic", Logistic::EFFICIENCY),
+            ("Sigmoid", Sigmoid::EFFICIENCY),
+        ];
+
+        for (name, efficiency) in kernels {
+            assert!(
+                efficiency <= 1.0,
+                "{} efficiency ({}) must be ≤ 1.0 (Epanechnikov is optimal)",
+                name,
+                efficiency
+            );
+        }
     }
 }
 
