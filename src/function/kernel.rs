@@ -80,6 +80,16 @@
 use crate::consts::*;
 use core::f64::consts::{FRAC_PI_2, PI};
 
+// Add alloc support for no_std environments
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+use alloc::{boxed::Box, vec::Vec};
+
+#[cfg(feature = "std")]
+use std::{boxed::Box, vec::Vec};
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -173,7 +183,7 @@ macro_rules! impl_kernel_properties {
 // ============================================================================
 
 /// Common interface for kernel functions used in KDE and smoothing.
-pub trait Kernel: Send + Sync + std::fmt::Debug {
+pub trait Kernel: Send + Sync + core::fmt::Debug {
     /// Evaluate the kernel at point `x`.
     ///
     /// Returns the statistically normalized kernel value (integrates to 1).
@@ -1101,6 +1111,10 @@ mod compile_time_tests {
 mod tests {
     use super::*;
     use crate::prec::assert_abs_diff_eq;
+
+    // Add this import for vec! macro in no_std mode
+    #[cfg(not(feature = "std"))]
+    use alloc::vec;
 
     // ========================================================================
     // Module-specific precision constants
