@@ -1112,9 +1112,13 @@ mod tests {
     use super::*;
     use crate::prec::assert_abs_diff_eq;
 
-    // Add this import for vec! macro in no_std mode
+    // Add this import for vec! macro and format! in no_std mode
     #[cfg(not(feature = "std"))]
-    use alloc::vec;
+    use alloc::{format, vec};
+
+    // For std mode, we still need vec! but format! is in prelude
+    #[cfg(feature = "std")]
+    use std::vec;
 
     // ========================================================================
     // Module-specific precision constants
@@ -2043,6 +2047,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn validate_bandwidth_all_edge_cases() {
         use std::panic::catch_unwind;
 
@@ -2068,6 +2073,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn validate_distance_nan_handling() {
         use std::panic::catch_unwind;
 
