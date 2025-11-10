@@ -153,6 +153,29 @@ impl DiscreteCDF<u64, f64> for Geometric {
             ((-self.p).ln_1p() * (x as f64)).exp()
         }
     }
+
+    /// Calculates the inverse cumulative distribution function for the geometric
+    /// distribution at `p`
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// ceil(log(1-p) / log(1-self.p))
+    /// ```
+    fn inverse_cdf(&self, p: f64) -> u64 {
+        if p <= 0.0 {
+            return self.min();
+        }
+        if prec::ulps_eq!(self.p, 1.0) {
+            return 1;
+        }
+        if p >= 1.0 {
+            return self.max();
+        }
+        // ceil(log(1-p) / log(1-self.p))
+        let result = ((1.0 - p).ln() / (1.0 - self.p).ln()).ceil();
+        result.max(1.0) as u64
+    }
 }
 
 impl Min<u64> for Geometric {

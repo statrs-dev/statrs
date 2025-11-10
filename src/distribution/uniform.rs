@@ -348,7 +348,6 @@ mod tests {
     use super::*;
     use crate::prec;
     use crate::distribution::internal::density_util;
-    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(min: f64, max: f64; Uniform; UniformError);
 

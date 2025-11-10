@@ -342,7 +342,6 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, lambda: f64) -> f6
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
-    use crate::distribution::internal::testing_boiler;
     testing_boiler!(lambda: f64; Poisson; PoissonError);
 
     #[test]

@@ -323,7 +323,6 @@ impl Discrete<u64, f64> for NegativeBinomial {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
-    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(r: f64, p: f64; NegativeBinomial; NegativeBinomialError);
 
