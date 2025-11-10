@@ -381,7 +381,6 @@ impl Continuous<f64, f64> for Weibull {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
-    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(shape: f64, scale: f64; Weibull; WeibullError);
 
