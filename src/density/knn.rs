@@ -1,6 +1,6 @@
 use super::Container;
 use crate::{
-    density::{nearest_neighbors, DensityError},
+    density::{DensityError, nearest_neighbors},
     function::gamma::gamma,
 };
 use core::f64::consts::PI;
@@ -29,27 +29,43 @@ where
 
 #[cfg(test)]
 mod tests {
+    use core::f32::consts::PI;
+
     use super::*;
     use crate::distribution::Normal;
-    use nalgebra::Vector2;
-    use rand::distributions::Distribution;
+    use crate::function::kernel::Kernel;
+    use nalgebra::{Vector1, Vector2};
+    use rand::distr::Distribution;
 
     #[test]
     fn test_knn_pdf() {
         let law = Normal::new(0., 1.).unwrap();
-        let mut rng = rand::thread_rng();
-        let samples = (0..100000)
-            .map(|_| Vector2::new(law.sample(&mut rng), law.sample(&mut rng)))
-            // .map(|_| Vector1::new(law.sample(&mut rng)))
+        let mut rng = rand::rng();
+        let gaussian = crate::function::kernel::Gaussian;
+        let samples_1d = (0..100000)
+            .map(|_| Vector1::new(law.sample(&mut rng)))
             .collect::<Vec<_>>();
-        let x = Vector2::new(1.0, 0.0);
-        // let x = Vector1::new(0.0);
-        let knn_density_with_bandwidth = knn_pdf(&x, &samples, Some(0.2));
-        let knn_density = knn_pdf(&x, &samples, None);
-        println!("Knn: {:?}", knn_density);
-        println!("Knn with bandwidth: {:?}", knn_density_with_bandwidth);
-        // println!("Pdf: {:?}", law.pdf(x));
+        let x = Vector1::new(0.);
+        let knn_density_with_bandwidth = knn_pdf(&x, &samples_1d, Some(0.05));
+        let knn_density = knn_pdf(&x, &samples_1d, None);
+        let reference_value = gaussian.evaluate(0.);
         assert!(knn_density.is_ok());
+        assert!(knn_density_with_bandwidth.is_ok());
+        assert!((knn_density.unwrap() - reference_value).abs() < 2e-2);
+        assert!((knn_density_with_bandwidth.unwrap() - reference_value).abs() < 3e-2);
+
+        let samples_2d = (0..100000)
+            .map(|_| Vector2::new(law.sample(&mut rng), law.sample(&mut rng)))
+            .collect::<Vec<_>>();
+
+        let x = Vector2::new(0., 0.);
+        let knn_density_with_bandwidth = knn_pdf(&x, &samples_2d, Some(0.05));
+        let knn_density = knn_pdf(&x, &samples_2d, None);
+        let reference_value = 1. / (2. * PI) as f64;
+        assert!(knn_density.is_ok());
+        assert!(knn_density_with_bandwidth.is_ok());
+        assert!((knn_density.unwrap() - reference_value).abs() < 2e-2);
+        assert!((knn_density_with_bandwidth.unwrap() - reference_value).abs() < 3e-2);
     }
 
     #[test]
