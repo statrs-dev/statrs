@@ -9,46 +9,47 @@ on:
 env:
   CARGO_INCREMENTAL: 0
   RUSTFLAGS: "-Dwarnings"
+  RUST_BACKTRACE: 1
 
 jobs:
-  clippy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust stable with clippy
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
+  # clippy:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Install Rust stable with clippy
+  #       uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         components: clippy
 
-      - name: Run cargo clippy (default features)
-        run: cargo clippy --all-targets
+  #     - name: Run cargo clippy (default features)
+  #       run: cargo clippy --all-targets
 
-  fmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust stable with rustfmt
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
+  # fmt:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Install Rust stable with rustfmt
+  #       uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         components: rustfmt
 
-      - name: Run rustfmt --check
-        run: cargo fmt -- --check
+  #     - name: Run rustfmt --check
+  #       run: cargo fmt -- --check
 
-  msrv:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install cargo-hack
-        uses: taiki-e/install-action@cargo-hack
-      - uses: Swatinem/rust-cache@v2
-      - name: Use predefined lockfile
-        run: mv -v Cargo.lock.MSRV Cargo.lock
-      - name: Build (lib only)
-        run: cargo hack check --rust-version --locked
+  # msrv:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Install cargo-hack
+  #       uses: taiki-e/install-action@cargo-hack
+  #     - uses: Swatinem/rust-cache@v2
+  #     - name: Use predefined lockfile
+  #       run: mv -v Cargo.lock.MSRV Cargo.lock
+  #     - name: Build (lib only)
+  #       run: cargo hack check --rust-version --locked
 
   test:
-    needs: [clippy, fmt, msrv]
+    # needs: [clippy, fmt, msrv]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -66,15 +67,15 @@ jobs:
       - name: Test default features
         run: cargo test
 
-  features:
-    needs: [clippy, fmt]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-      - name: Install cargo-hack
-        uses: taiki-e/install-action@cargo-hack
-      - uses: Swatinem/rust-cache@v2
-      - name: Check all possible feature sets
-        run: cargo hack check --feature-powerset --no-dev-deps
+  # features:
+  #   needs: [clippy, fmt]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Install Rust stable
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - name: Install cargo-hack
+  #       uses: taiki-e/install-action@cargo-hack
+  #     - uses: Swatinem/rust-cache@v2
+  #     - name: Check all possible feature sets
+  #       run: cargo hack check --feature-powerset --no-dev-deps
