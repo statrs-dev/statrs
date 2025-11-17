@@ -1,6 +1,6 @@
 pub mod kde;
 pub mod knn;
-use kdtree::{distance::squared_euclidean, ErrorKind, KdTree};
+use kdtree::{ErrorKind, KdTree, distance::squared_euclidean};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
