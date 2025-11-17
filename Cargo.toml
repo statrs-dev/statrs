@@ -24,6 +24,11 @@ name = "order_statistics"
 harness = false
 required-features = ["rand", "std"]
 
+[[bench]]
+name = "density"
+harness = false
+required-features = ["rand", "std"]
+
 [features]
 default = ["std", "nalgebra", "rand"]
 std = ["nalgebra?/std", "rand?/std"]
@@ -34,6 +39,8 @@ rand = ["dep:rand", "nalgebra?/rand"]
 [dependencies]
 approx = "0.5.0"
 num-traits = "0.2.14"
+kdtree = "0.7.0"
+thiserror = "2.0"
 
 [dependencies.rand]
 version = "0.9.0"
