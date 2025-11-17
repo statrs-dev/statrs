@@ -1,6 +1,9 @@
 use kdtree::distance::squared_euclidean;
 
-use crate::density::{Container, DensityError, nearest_neighbors};
+use crate::{
+    density::{Container, DensityError, nearest_neighbors},
+    function::kernel::{Gaussian, Kernel},
+};
 
 /// Computes the kernel density estimate for a given point `x`
 /// using the samples provided and a specified kernel.
@@ -25,9 +28,8 @@ where
                 .as_ref()
                 .iter()
                 .map(|xi| {
-                    (-0.5 * (squared_euclidean(x.as_ref(), xi.as_ref()).sqrt() / radius).powi(2))
-                        .exp()
-                        / crate::consts::SQRT_2PI.powi(d)
+                    Gaussian.evaluate(squared_euclidean(x.as_ref(), xi.as_ref()).sqrt() / radius)
+                        / crate::consts::SQRT_2PI.powi(d - 1)
                 })
                 .sum::<f64>())
     }
