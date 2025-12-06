@@ -344,7 +344,6 @@ impl Continuous<f64, f64> for InverseGamma {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
-    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(shape: f64, rate: f64; InverseGamma; InverseGammaError);
 
