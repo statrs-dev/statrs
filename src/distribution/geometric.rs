@@ -153,6 +153,23 @@ impl DiscreteCDF<u64, f64> for Geometric {
             ((-self.p).ln_1p() * (x as f64)).exp()
         }
     }
+
+    /// Calculates the inverse cumulative distribution function (quantile) for the
+    /// geometric distribution using its closed-form expression. Keeps behavior
+    /// consistent across platforms without relying on bisection.
+    fn inverse_cdf(&self, p: f64) -> u64 {
+        assert!((0.0..=1.0).contains(&p), "p must be on [0,1]");
+        if p <= 0.0 || prec::ulps_eq!(self.p, 1.0) {
+            return 1;
+        }
+        if p >= 1.0 {
+            return u64::MAX;
+        }
+
+        // k = ceil(log(1 - p) / log(1 - self.p)), clamped to domain ≥ 1.
+        let k = ((-p).ln_1p() / (-self.p).ln_1p()).ceil().max(1.0);
+        if k.is_finite() { k as u64 } else { u64::MAX }
+    }
 }
 
 impl Min<u64> for Geometric {
