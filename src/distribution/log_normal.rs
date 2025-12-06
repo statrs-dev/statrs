@@ -364,7 +364,6 @@ impl Continuous<f64, f64> for LogNormal {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
-    use crate::distribution::internal::testing_boiler;
 
     testing_boiler!(location: f64, scale: f64; LogNormal; LogNormalError);
 
