@@ -14,7 +14,7 @@ jobs:
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Rust stable with clippy
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -26,7 +26,7 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Rust stable with rustfmt
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -38,7 +38,7 @@ jobs:
   msrv:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
@@ -56,7 +56,7 @@ jobs:
           os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
@@ -70,7 +70,7 @@ jobs:
     needs: [clippy, fmt]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
       - name: Install cargo-hack
