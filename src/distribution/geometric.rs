@@ -551,6 +551,7 @@ mod tests {
         test_exact(1., 1, invcdf(0.));
         test_exact(1., 1, invcdf(1.));
         test_exact(0.2, 1, invcdf(0.2));
+        test_exact(0.2, u64::MAX, invcdf(1.));
         test_exact(0.004, 173, invcdf(0.5));
         test_exact(0.5, u64::MAX, invcdf(1.));
         test_exact(0.5, 2, invcdf(0.75));
