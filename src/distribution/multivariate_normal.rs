@@ -138,6 +138,8 @@ impl core::fmt::Display for MultivariateNormalError {
 #[cfg(feature = "std")]
 impl std::error::Error for MultivariateNormalError {}
 
+type NormalizedConstructorArguments<D> = (OVector<f64, D>, OMatrix<f64, D, D>, Cholesky<f64, D>);
+
 impl MultivariateNormal<Dyn> {
     /// Constructs a new multivariate normal distribution with a mean of `mean`
     /// and covariance matrix `cov`
@@ -181,7 +183,7 @@ fn normalize_constructor_arguments<D>(
     mean: OVector<f64, D>,
     covariance: Option<OMatrix<f64, D, D>>,
     cholesky: Option<Cholesky<f64, D>>,
-) -> Result<(OVector<f64, D>, OMatrix<f64, D, D>, Cholesky<f64, D>), MultivariateNormalError>
+) -> Result<NormalizedConstructorArguments<D>, MultivariateNormalError>
 where
     D: DimMin<D, Output = D>,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>
