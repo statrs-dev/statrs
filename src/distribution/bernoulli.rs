@@ -88,7 +88,7 @@ impl core::fmt::Display for Bernoulli {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distr::Distribution<bool> for Bernoulli {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> bool {
-        rng.random_bool(self.p())
+        ::rand::RngExt::random_bool(rng, self.p())
     }
 }
 
@@ -96,7 +96,7 @@ impl ::rand::distr::Distribution<bool> for Bernoulli {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distr::Distribution<f64> for Bernoulli {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        rng.sample::<bool, _>(self) as u8 as f64
+        ::rand::RngExt::sample::<bool, _>(rng, self) as u8 as f64
     }
 }
 

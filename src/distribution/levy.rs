@@ -114,7 +114,7 @@ impl ::rand::distr::Distribution<f64> for Levy {
         use rand::distr::OpenClosed01;
 
         // Inverse transform sampling
-        let u: f64 = rng.sample(OpenClosed01);
+        let u: f64 = ::rand::RngExt::sample(rng, OpenClosed01);
         self.mu + (0.5 * self.c) / erfc_inv(u).powf(2.0)
     }
 }

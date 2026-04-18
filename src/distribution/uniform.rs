@@ -154,7 +154,7 @@ impl core::fmt::Display for Uniform {
 impl ::rand::distr::Distribution<f64> for Uniform {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         let d = rand::distr::Uniform::new_inclusive(self.min, self.max).unwrap();
-        rng.sample(d)
+        ::rand::RngExt::sample(rng, d)
     }
 }
 

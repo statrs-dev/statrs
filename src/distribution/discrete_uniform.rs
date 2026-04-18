@@ -117,7 +117,7 @@ impl core::fmt::Display for DiscreteUniform {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distr::Distribution<i64> for DiscreteUniform {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> i64 {
-        rng.random_range(self.min..=self.max)
+        ::rand::RngExt::random_range(rng, self.min..=self.max)
     }
 }
 
@@ -125,7 +125,7 @@ impl ::rand::distr::Distribution<i64> for DiscreteUniform {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distr::Distribution<f64> for DiscreteUniform {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        rng.sample::<i64, _>(self) as f64
+        ::rand::RngExt::sample::<i64, _>(rng, self) as f64
     }
 }
 

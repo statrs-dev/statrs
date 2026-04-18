@@ -225,7 +225,7 @@ where
         let s = ChiSquared::new(self.freedom).unwrap();
         let w = (self.freedom / s.sample(rng)).sqrt();
         let (r, c) = self.location.shape_generic();
-        let z = OVector::<f64, D>::from_distribution_generic(r, c, &d, rng);
+        let z = OVector::<f64, D>::from_fn_generic(r, c, |_, _| d.sample(rng));
         (w * &self.scale_chol_decomp * z) + &self.location
     }
 }

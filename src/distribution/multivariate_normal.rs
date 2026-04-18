@@ -414,7 +414,8 @@ where
     /// `μ` is the mean vector
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
         let d = crate::distribution::Normal::new(0., 1.).unwrap();
-        let z = OVector::from_distribution_generic(self.mu.shape_generic().0, Const::<1>, &d, rng);
+        let z =
+            OVector::from_fn_generic(self.mu.shape_generic().0, Const::<1>, |_, _| d.sample(rng));
         (&self.cov_chol_decomp * z) + &self.mu
     }
 }

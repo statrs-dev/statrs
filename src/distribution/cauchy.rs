@@ -115,7 +115,8 @@ impl core::fmt::Display for Cauchy {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distr::Distribution<f64> for Cauchy {
     fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
-        self.location + self.scale * (f64::consts::PI * (r.random::<f64>() - 0.5)).tan()
+        let x = ::rand::RngExt::random::<f64>(r);
+        self.location + self.scale * (f64::consts::PI * (x - 0.5)).tan()
     }
 }
 

@@ -3,6 +3,9 @@ use crate::prec;
 use crate::statistics::*;
 use core::f64;
 
+#[cfg(feature = "rand")]
+use rand::RngExt;
+
 /// Implements the
 /// [Geometric](https://en.wikipedia.org/wiki/Geometric_distribution)
 /// distribution

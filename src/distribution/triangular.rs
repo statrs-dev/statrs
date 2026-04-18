@@ -425,7 +425,7 @@ impl Continuous<f64, f64> for Triangular {
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, min: f64, max: f64, mode: f64) -> f64 {
-    let f: f64 = rng.random();
+    let f: f64 = ::rand::RngExt::random(rng);
     if f < (mode - min) / (max - min) {
         min + (f * (max - min) * (mode - min)).sqrt()
     } else {
