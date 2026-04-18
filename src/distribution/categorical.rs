@@ -344,7 +344,7 @@ impl Discrete<u64, f64> for Categorical {
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, cdf: &[f64]) -> usize {
-    let draw = rng.random::<f64>() * cdf.last().unwrap();
+    let draw = ::rand::RngExt::random::<f64>(rng) * cdf.last().unwrap();
     cdf.iter().position(|val| *val >= draw).unwrap()
 }
 

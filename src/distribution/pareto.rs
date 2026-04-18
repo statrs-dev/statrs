@@ -120,7 +120,7 @@ impl ::rand::distr::Distribution<f64> for Pareto {
         use rand::distr::OpenClosed01;
 
         // Inverse transform sampling
-        let u: f64 = rng.sample(OpenClosed01);
+        let u: f64 = ::rand::RngExt::sample(rng, OpenClosed01);
         self.scale * u.powf(-1.0 / self.shape)
     }
 }

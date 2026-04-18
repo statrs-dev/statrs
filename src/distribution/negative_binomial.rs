@@ -492,7 +492,7 @@ mod tests {
     #[cfg(all(feature = "rand", feature = "std"))]
     fn test_sample() {
         use crate::prec;
-        use rand::{distr::Distribution, SeedableRng, rngs::StdRng};
+        use rand::{distr::Distribution, rngs::StdRng, SeedableRng};
 
         let dist = NegativeBinomial::new(4.0, 0.5).unwrap();
         let mut rng = StdRng::seed_from_u64(1600);

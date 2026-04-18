@@ -4,6 +4,9 @@ use crate::statistics::*;
 use core::f64;
 use num_traits::{One, Zero};
 
+#[cfg(feature = "rand")]
+use rand::RngExt;
+
 /// Implements the
 /// [Geometric](https://en.wikipedia.org/wiki/Geometric_distribution)
 /// distribution

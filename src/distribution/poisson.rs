@@ -302,6 +302,8 @@ impl Discrete<u64, f64> for Poisson {
 #[cfg(feature = "rand")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, lambda: f64) -> f64 {
+    use rand::RngExt;
+
     if lambda < 30.0 {
         let limit = (-lambda).exp();
         let mut count = 0.0;
