@@ -135,7 +135,7 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
     /// Specialized inverse cdfs should be used whenever possible.
     /// Performs a binary search on the domain of `cdf` to obtain an approximation
     /// of `F^-1(p) := inf { x | F(x) >= p }`. Needless to say, performance may
-    /// may be lacking.
+    /// be lacking.
     #[doc(alias = "quantile function")]
     #[doc(alias = "quantile")]
     fn inverse_cdf(&self, p: T) -> K {
