@@ -193,6 +193,29 @@ impl ContinuousCDF<f64, f64> for Beta {
             beta::inv_beta_reg(self.shape_a, self.shape_b, x)
         }
     }
+
+    /// Calculates the inverse cumulative distribution function for the beta
+    /// distribution at `x`.
+    ///
+    /// # Returns an error instead of a panic
+    ///
+    /// If x is not in `[0, 1]`.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// I^{-1}_x(α, β)
+    /// ```
+    ///
+    /// where `α` is shapeA, `β` is shapeB, and `I_x` is the inverse of the
+    /// regularized lower incomplete beta function.
+    fn try_inverse_cdf(&self, x: f64) -> Result<f64, Box<dyn std::error::Error>> {
+        if !(0.0..=1.0).contains(&x) {
+            Err("x must be in [0, 1]".into())
+        } else {
+            Ok(beta::inv_beta_reg(self.shape_a, self.shape_b, x))
+        }
+    }
 }
 
 impl Min<f64> for Beta {
