@@ -177,11 +177,12 @@ where
 ///
 /// # Panics
 /// If both the `cov` and `cholesky` arguments are `None`; at least one must be `Some(_)`.
+type MeanCovarainceCholeskyReturn<D> = (OVector<f64, D>, OMatrix<f64, D, D>, Cholesky<f64, D>);
 fn normalize_constructor_arguments<D>(
     mean: OVector<f64, D>,
     covariance: Option<OMatrix<f64, D, D>>,
     cholesky: Option<Cholesky<f64, D>>,
-) -> Result<(OVector<f64, D>, OMatrix<f64, D, D>, Cholesky<f64, D>), MultivariateNormalError>
+) -> Result<MeanCovarainceCholeskyReturn<D>, MultivariateNormalError>
 where
     D: DimMin<D, Output = D>,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>
