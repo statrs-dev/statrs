@@ -345,6 +345,7 @@ mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
 
+
     testing_boiler!(shape: f64, rate: f64; InverseGamma; InverseGammaError);
 
     #[test]

@@ -323,7 +323,6 @@ mod tests {
     use super::*;
     use crate::prec;
 
-
     testing_boiler!(location: f64, scale: f64; Laplace; LaplaceError);
 
     // A wrapper for the `assert_relative_eq!` macro from the approx crate.
