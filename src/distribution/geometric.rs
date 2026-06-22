@@ -157,33 +157,43 @@ impl DiscreteCDF<u64, f64> for Geometric {
 
     /// Calculates the inverse cumulative distribution function for the
     /// geometric distribution at `x`.
-    /// In other languages, such as R, this is known as the the quantile function.
+    /// In other languages, such as R, this is known as the quantile function.
     ///
     /// # Formula
     ///
     /// ```text
-    /// p = ceil(log(1-x)/log(1-p))
+    /// k = ceil(log(1 - x) / log(1 - p))
     /// ```
     ///
     /// # Panics
-    /// panics if provided `x` not on interval [0.0, 1.0]
+    ///
+    /// Panics if `x` is not in `[0, 1]`.
+    /// Panics if the result would exceed `u64::MAX` (p is too small for the given x).
+    /// Panics if intermediate f64 computation overflows (p is pathologically small).
     fn inverse_cdf(&self, x: f64) -> u64 {
-        // ceil(log(1-x)/log(1-self.p)) = ceil(log1p(-x)/log1p(-self.p))
-        //                              = ceil((-x).ln_1p()/(-self.p).ln_1p())
-        //                              = ((-x).ln_1p()/(-self.p).ln_1p()).ceil()
-        if x <= self.cdf(self.min()) {
-            // if p = 1 this branch will always be taken
-            // no matter the value of x
+        if x == <f64>::zero() {
             return self.min();
         }
         if x == <f64>::one() {
+            // iCDF(1) = +∞; saturate to supremum of u64 domain
             return self.max();
         }
         if !(<f64>::zero()..=<f64>::one()).contains(&x) {
-            core::panic!("p must be on [0, 1]")
+            panic!("x must be in [0, 1]");
         }
-
-        ((-x).ln_1p() / (-self.p).ln_1p()).ceil() as u64
+        if prec::ulps_eq!(self.p, 1.0) {
+            // degenerate distribution: all mass at k=1
+            return self.min();
+        }
+        let k = (-x).ln_1p() / (-self.p).ln_1p();
+        if !k.is_finite() {
+            panic!("inverse_cdf: intermediate value overflowed f64; p ({}) is too small", self.p);
+        }
+        let k = k.ceil();
+        if k >= u64::MAX as f64 {
+            panic!("inverse_cdf: result exceeds u64::MAX; p ({}) is too small for x ({})", self.p, x);
+        }
+        k as u64
     }
 }
 
@@ -213,7 +223,11 @@ impl Max<u64> for Geometric {
     /// 2^63 - 1
     /// ```
     fn max(&self) -> u64 {
-        u64::MAX
+        if prec::ulps_eq!(self.p, 1.0) {
+            1
+        } else {
+            u64::MAX
+        }
     }
 }
 
