@@ -604,4 +604,47 @@ mod tests {
         let distribution = Geometric::new(1e-20).unwrap();
         distribution.inverse_cdf(0.5);
     }
+
+    #[test]
+    #[ignore = "Gaps in pathological corner cases and testing"]
+    fn test_inverse_cdf_small_p() {
+        let ident_prob = |arg: f64| move |x: Geometric| x.cdf(x.inverse_cdf(arg));
+        let ident_count = |count: u64| move |x: Geometric| x.inverse_cdf(x.cdf(count));
+        let p = crate::prec::DEFAULT_RELATIVE_ACC;
+        let q = 1.0-p;
+
+        test_exact(q, u64::MAX, ident_count(u64::MAX));
+        test_exact(p, u64::MAX, ident_count(u64::MAX));
+        test_relative(p, q, ident_prob(q));
+        test_relative(0.5, q, ident_prob(q));
+    }
+
+    #[test]
+    #[ignore = "Gaps in pathological corner cases and testing"]
+    /// large k, small p regime
+    fn test_inverse_cdf_extreme_tail() {
+        // k_below(k): probability midpoint of the k-th bucket — strictly between cdf(k-1) and
+        // cdf(k) — so inverse_cdf must return k.
+        // k_above(k): probability midpoint of the (k+1)-th bucket — strictly between cdf(k) and
+        // cdf(k+1) — so inverse_cdf must return k+1, verifying the implementation distinguishes
+        // adjacent buckets.
+        let k_minus = |count: u64| move |x: Geometric| x.inverse_cdf(x.cdf(count) - x.pmf(count)/2.0);
+        let k_plus = |count: u64| move |x: Geometric| x.inverse_cdf(x.cdf(count) + x.pmf(count)/2.0);
+        let p = 1e-4;
+
+        let g = Geometric::new(p).unwrap();
+        let two_eps = 2.0 * crate::prec::DEFAULT_RELATIVE_ACC;
+        for k in 1..=1_000 {
+            assert!(
+                g.pmf(k) > two_eps,
+                "{:#?}.pmf(k={}) = {:2E} <= 2 eps = {:2E}",
+                g,
+                k,
+                g.pmf(k),
+                two_eps,
+            );
+            test_exact(p, k, k_minus(k));
+            test_exact(p, k + 1, k_plus(k));
+        }
+    }
 }
