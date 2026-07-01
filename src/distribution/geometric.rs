@@ -190,11 +190,17 @@ impl DiscreteCDF<u64, f64> for Geometric {
         }
         let k = (-x).ln_1p() / (-self.p).ln_1p();
         if !k.is_finite() {
-            panic!("inverse_cdf: intermediate value overflowed f64; p ({}) is too small", self.p);
+            panic!(
+                "inverse_cdf: intermediate value overflowed f64; p ({}) is too small",
+                self.p
+            );
         }
         let k = k.ceil();
         if k >= u64::MAX as f64 {
-            panic!("inverse_cdf: result exceeds u64::MAX; p ({}) is too small for x ({})", self.p, x);
+            panic!(
+                "inverse_cdf: result exceeds u64::MAX; p ({}) is too small for x ({})",
+                self.p, x
+            );
         }
         k as u64
     }
