@@ -209,7 +209,7 @@ where
                 sum += sample;
                 sample
             }),
-        )
+        ) / sum
     }
 }
 
