@@ -303,19 +303,7 @@ where
     /// `x_i` is the `i`th `x` value, and `k` is the total number of
     /// probabilities
     fn pmf(&self, x: &OVector<u64, D>) -> f64 {
-        if self.p.len() != x.len() {
-            panic!("Expected x and p to have equal lengths.");
-        }
-        if x.iter().sum::<u64>() != self.n {
-            return 0.0;
-        }
-        let coeff = factorial::multinomial(self.n, x.as_slice());
-        coeff
-            * self
-                .p
-                .iter()
-                .zip(x.iter())
-                .fold(1.0, |acc, (pi, xi)| acc * pi.powf(*xi as f64))
+        self.ln_pmf(x).exp()
     }
 
     /// Calculates the log probability mass function for the multinomial
@@ -343,14 +331,15 @@ where
         if x.iter().sum::<u64>() != self.n {
             return f64::NEG_INFINITY;
         }
-        let coeff = factorial::multinomial(self.n, x.as_slice()).ln();
+        let coeff = factorial::ln_factorial(self.n)
+            - x.iter().map(|&xi| factorial::ln_factorial(xi)).sum::<f64>();
 
         coeff
             + self
                 .p
                 .iter()
                 .zip(x.iter())
-                .map(|(pi, xi)| *xi as f64 * pi.ln())
+                .map(|(pi, xi)| if *xi > 0 { *xi as f64 * pi.ln() } else { 0.0 })
                 .fold(0.0, |acc, x| acc + x)
     }
 }
@@ -522,6 +511,19 @@ mod tests {
             1e-15,
             pmf(dvector![1, 1, 1, 7]),
         );
+    }
+
+    #[test]
+    fn test_pmf_large_n_no_overflow() {
+        // Regression for #370: for large n the multinomial coefficient overflows
+        // f64 (-> inf) while prod(p_i^x_i) underflows to 0, so the old
+        // coeff * prod implementation returned NaN and ln_pmf returned +inf.
+        let m = Multinomial::new(vec![0.5, 0.5], 2000).unwrap();
+        let x: OVector<u64, Dyn> = dvector![1000, 1000];
+        let p = m.pmf(&x);
+        assert!(p.is_finite());
+        prec::assert_abs_diff_eq!(p, 0.017839011145854373, epsilon = 1e-12);
+        prec::assert_abs_diff_eq!(m.ln_pmf(&x), -4.026367582410558, epsilon = 1e-9);
     }
 
     #[test]
