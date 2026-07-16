@@ -268,12 +268,12 @@ impl Distribution<f64> for Pareto {
     /// # Formula
     ///
     /// ```text
-    /// ln(α/x_m) - 1/α - 1
+    /// ln(x_m/α) + 1/α + 1
     /// ```
     ///
     /// where `x_m` is the scale and `α` is the shape
     fn entropy(&self) -> Option<f64> {
-        Some(self.shape.ln() - self.scale.ln() - (1.0 / self.shape) - 1.0)
+        Some(self.scale.ln() - self.shape.ln() + (1.0 / self.shape) + 1.0)
     }
 
     /// Returns the skewness of the Pareto distribution
@@ -423,11 +423,14 @@ mod tests {
     #[test]
     fn test_entropy() {
         let entropy = |x: Pareto| x.entropy().unwrap();
-        test_exact(0.1, 0.1, -11.0, entropy);
-        test_exact(1.0, 1.0, -2.0, entropy);
-        test_exact(10.0, 10.0, -1.1, entropy);
-        test_exact(3.0, 1.0, -2.0 - 3f64.ln(), entropy);
-        test_exact(1.0, 3.0, -4.0/3.0 + 3f64.ln(), entropy);
+        test_exact(0.1, 0.1, 11.0, entropy);
+        test_exact(1.0, 1.0, 2.0, entropy);
+        test_exact(10.0, 10.0, 1.1, entropy);
+        test_exact(3.0, 1.0, 2.0 + 3f64.ln(), entropy);
+        test_exact(1.0, 3.0, 4.0 / 3.0 - 3f64.ln(), entropy);
+        // cross-checked against scipy.stats.pareto(b=shape, scale=scale).entropy()
+        test_absolute(2.0, 4.5, 0.4112920060058935, 1e-14, entropy);
+        test_absolute(1.0, 0.5, 3.6931471805599453, 1e-14, entropy);
     }
 
     #[test]

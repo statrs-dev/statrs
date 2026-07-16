@@ -173,11 +173,14 @@ where
     /// is the `i`th concentration parameter, and `Σ` is the sum from `1` to `K`
     pub fn entropy(&self) -> Option<f64> {
         let sum = self.alpha_sum();
-        let num = self.alpha.iter().fold(0.0, |acc, &x| {
-            acc + gamma::ln_gamma(x) + (x - 1.0) * gamma::digamma(x)
-        });
-        let entr =
-            -gamma::ln_gamma(sum) + (sum - self.alpha.len() as f64) * gamma::digamma(sum) - num;
+        let ln_b =
+            self.alpha.iter().map(|&x| gamma::ln_gamma(x)).sum::<f64>() - gamma::ln_gamma(sum);
+        let entr = ln_b + (sum - self.alpha.len() as f64) * gamma::digamma(sum)
+            - self
+                .alpha
+                .iter()
+                .map(|&x| (x - 1.0) * gamma::digamma(x))
+                .sum::<f64>();
         Some(entr)
     }
 }
@@ -500,16 +503,23 @@ mod tests {
     #[test]
     fn test_entropy() {
         let entropy = |x: Dirichlet<_>| x.entropy().unwrap();
+        // cross-checked against scipy.stats.dirichlet(alpha).entropy()
         test_almost(
             vector![0.1, 0.3, 0.5, 0.8],
-            -17.46469081094079,
-            1e-30,
+            -9.318820275187153,
+            1e-12,
             entropy,
         );
         test_almost(
             vector![0.1, 0.2, 0.3, 0.4],
-            -21.53881433791513,
-            1e-30,
+            -10.200309764545434,
+            1e-12,
+            entropy,
+        );
+        test_almost(
+            vector![1.5, 2.0, 3.5, 4.0],
+            -2.7374675446648483,
+            1e-12,
             entropy,
         );
     }

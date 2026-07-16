@@ -268,11 +268,11 @@ impl Distribution<f64> for Geometric {
     /// # Formula
     ///
     /// ```text
-    /// (-(1 - p) * log_2(1 - p) - p * log_2(p)) / p
+    /// (-(1 - p) * ln(1 - p) - p * ln(p)) / p
     /// ```
     fn entropy(&self) -> Option<f64> {
         let inv = 1.0 / self.p;
-        Some(-inv * (1. - self.p).log(2.0) + (inv - 1.).log(2.0))
+        Some(-inv * (1. - self.p).ln() + (inv - 1.).ln())
     }
 
     /// Returns the skewness of the geometric distribution
@@ -396,7 +396,10 @@ mod tests {
     #[test]
     fn test_entropy() {
         let entropy = |x: Geometric| x.entropy().unwrap();
-        test_absolute(0.3, 2.937636330768973333333, 1e-14, entropy);
+        // cross-checked against scipy.stats.geom(p).entropy() (nats)
+        test_absolute(0.3, 2.0362143401829782, 1e-14, entropy);
+        test_absolute(0.5, 2.0 * 2f64.ln(), 1e-14, entropy);
+        test_absolute(0.9, 0.3612033037682758, 1e-14, entropy);
         test_is_nan(1.0, entropy);
     }
 
