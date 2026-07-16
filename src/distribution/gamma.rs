@@ -194,7 +194,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
             return self.max();
         };
 
-        // Bisection search for MAX_ITERS.0 iterations
+        // Bracket the quantile so that `cdf(low) <= p <= cdf(high)`.
         let mut high = 2.0;
         let mut low = 1.0;
         while self.cdf(low) > p {
@@ -203,28 +203,32 @@ impl ContinuousCDF<f64, f64> for Gamma {
         while self.cdf(high) < p {
             high *= 2.0;
         }
-        let mut x_0 = (high + low) / 2.0;
 
-        for _ in 0..8 {
-            if self.cdf(x_0) >= p {
-                high = x_0;
+        // Safeguarded Newton–Raphson (cf. Numerical Recipes' `rtsafe`): keep the
+        // bracket `[low, high]` as an invariant, taking a bisection step whenever a
+        // Newton step is non-finite or would leave the bracket. Without this guard the
+        // quantile of a shape < 1 distribution, which lies extremely close to 0, makes
+        // the first Newton step overshoot below the support (where `pdf == 0`); the
+        // iteration then diverges to NaN (#361, #373).
+        const MAX_ITERATIONS: usize = 100;
+        let mut x = (high + low) / 2.0;
+        for _ in 0..MAX_ITERATIONS {
+            let value = self.cdf(x);
+            if value >= p {
+                high = x;
             } else {
-                low = x_0;
+                low = x;
             }
-            if prec::convergence(&mut x_0, (high + low) / 2.0) {
+            let mut next = x - (value - p) / self.pdf(x);
+            if !next.is_finite() || next <= low || next >= high {
+                next = (high + low) / 2.0;
+            }
+            if prec::convergence(&mut x, next) {
                 break;
             }
         }
 
-        // Newton Raphson, for at least one step
-        for _ in 0..4 {
-            let x_next = x_0 - (self.cdf(x_0) - p) / self.pdf(x_0);
-            if prec::convergence(&mut x_0, x_next) {
-                break;
-            }
-        }
-
-        x_0
+        x
     }
 }
 
@@ -441,6 +445,7 @@ mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
     use crate::distribution::internal::testing_boiler;
+    use crate::distribution::{ChiSquared, Erlang};
 
     testing_boiler!(shape: f64, rate: f64; Gamma; GammaError);
 
@@ -680,6 +685,82 @@ mod tests {
             let f = |x: f64| move |g: Gamma| g.inverse_cdf(g.cdf(x));
             test_relative(3.0, 0.5, x, f(x))
         }
+    }
+
+    #[test]
+    fn test_inverse_cdf_shape_below_one_is_finite() {
+        // Regression for #361 / #373: for shape < 1 the quantile lies extremely close to
+        // 0, and the post-bisection Newton step used to overshoot below the support (where
+        // pdf == 0), diverging to NaN. Every quantile must now be finite and non-negative.
+        let shapes = [0.01, 0.05, 0.1, 0.18, 0.3, 0.5, 0.8];
+        let ps = [1e-8, 1e-6, 1e-4, 1e-3, 1e-2, 0.05, 0.1, 0.25, 0.5, 0.9, 0.999];
+        for shape in shapes {
+            let g = create_ok(shape, 1.0);
+            for p in ps {
+                let q = g.inverse_cdf(p);
+                assert!(q.is_finite() && q >= 0.0, "Gamma({shape}, 1).inverse_cdf({p}) = {q}");
+            }
+        }
+    }
+
+    #[test]
+    fn test_inverse_cdf_small_shape_reference() {
+        // Quantiles for shape < 1 checked against scipy.stats / mpmath (dps=60);
+        // statrs Gamma(shape, rate) == scipy.gamma(a=shape, scale=1/rate).
+        let cases = [
+            (0.5,  1.0,  0.01,  7.8543928954850992e-5),
+            (0.5,  2.0,  0.01,  3.9271964477425496e-5),
+            (0.3,  1.0,  0.05,  3.2110346997229618e-5),
+            (0.8,  1.0,  0.001, 1.6272343118918608e-4),
+            (0.1,  1.0,  0.5,   5.9339110446022617e-4),
+            (0.5,  0.5,  0.1,   1.5790774093431227e-2),
+            (0.18, 0.18, 0.25,  1.6167198019416187e-3),
+        ];
+        for (shape, rate, p, expected) in cases {
+            test_absolute(shape, rate, expected, expected * 1e-10, move |g: Gamma| g.inverse_cdf(p));
+        }
+    }
+
+    #[test]
+    fn test_inverse_cdf_round_trip_and_monotone() {
+        // cdf(inverse_cdf(p)) == p and inverse_cdf strictly increasing in p, across shapes
+        // spanning the previously-broken region. (Sub-1e-9 quantiles are limited by the
+        // shared convergence tolerance and are only checked for finiteness above.)
+        for shape in [0.3, 0.5, 0.8, 1.0, 2.5, 10.0] {
+            for rate in [0.5, 1.0, 2.0] {
+                let g = create_ok(shape, rate);
+                let mut prev = f64::NEG_INFINITY;
+                for p in [0.05, 0.1, 0.25, 0.5, 0.75, 0.9] {
+                    let q = g.inverse_cdf(p);
+                    assert!(q > prev, "not increasing: Gamma({shape}, {rate}) p={p} q={q} prev={prev}");
+                    prev = q;
+                    prec::assert_abs_diff_eq!(g.cdf(q), p, epsilon = 1e-8);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_chi_squared_and_erlang_inverse_cdf() {
+        // ChiSquared(k) = Gamma(k/2, 1/2) and Erlang(k, r) = Gamma(k, r) delegate to this
+        // solver; df < 2 gives shape < 1 (the #361 report) and huge df stresses the upper
+        // tail. All must be finite; spot-check the values against scipy.stats.
+        for df in [0.5, 1.0, 1.5, 2.0, 3.0] {
+            let c = ChiSquared::new(df).unwrap();
+            for p in [1e-6, 1e-3, 0.01, 0.5, 0.99] {
+                assert!(c.inverse_cdf(p).is_finite(), "ChiSquared({df}).inverse_cdf({p})");
+            }
+        }
+        // exact #361 report: large df, upper tail, previously NaN
+        assert!(ChiSquared::new(129757.0).unwrap().inverse_cdf(0.995).is_finite());
+
+        let c1 = ChiSquared::new(1.0).unwrap();
+        prec::assert_abs_diff_eq!(c1.inverse_cdf(0.01), 1.5708785790970198e-4, epsilon = 1e-13);
+        prec::assert_abs_diff_eq!(c1.inverse_cdf(0.5), 0.45493642311957275, epsilon = 1e-11);
+
+        let e = Erlang::new(2, 1.0).unwrap();
+        prec::assert_abs_diff_eq!(e.inverse_cdf(0.1), 0.53181160838961204, epsilon = 1e-11);
+        prec::assert_abs_diff_eq!(e.inverse_cdf(0.5), 1.6783469900166607, epsilon = 1e-11);
     }
 
     #[test]
