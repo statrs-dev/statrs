@@ -320,7 +320,7 @@ impl Distribution<f64> for StudentsT {
     /// # Formula
     ///
     /// ```text
-    /// - ln(σ) + (v + 1) / 2 * (ψ((v + 1) / 2) - ψ(v / 2)) + ln(sqrt(v) * B(v / 2, 1 /
+    /// ln(σ) + (v + 1) / 2 * (ψ((v + 1) / 2) - ψ(v / 2)) + ln(sqrt(v) * B(v / 2, 1 /
     /// 2))
     /// ```
     ///
@@ -329,8 +329,8 @@ impl Distribution<f64> for StudentsT {
     fn entropy(&self) -> Option<f64> {
         // generalised Student's T is related to normal Student's T by `Y = μ + σ X`
         // where `X` is distributed as Student's T, plugging into the definition
-        // of entropy shows scaling affects the entropy by an additive constant `- ln σ`
-        let shift = -self.scale.ln();
+        // of entropy shows scaling affects the entropy by an additive constant `+ ln σ`
+        let shift = self.scale.ln();
         let result = (self.freedom + 1.0) / 2.0
             * (gamma::digamma((self.freedom + 1.0) / 2.0) - gamma::digamma(self.freedom / 2.0))
             + (self.freedom.sqrt() * beta::beta(self.freedom / 2.0, 0.5)).ln();
@@ -520,6 +520,19 @@ mod tests {
     #[test]
     fn test_variance_freedom_lte1() {
         test_none(1.0, 1.0, 0.5, |dist| dist.variance());
+    }
+
+    #[test]
+    fn test_entropy() {
+        let entropy = |x: StudentsT| x.entropy().unwrap();
+        // cross-checked against scipy.stats.t(df, loc, scale).entropy()
+        test_relative(0.0, 1.0, 3.0, 1.7734775718632907, entropy);
+        // location does not affect the entropy
+        test_relative(2.0, 1.0, 3.0, 1.7734775718632907, entropy);
+        // scale shifts the entropy by +ln(scale)
+        test_relative(1.0, 2.0, 2.5, 2.5409072511358666, entropy);
+        test_relative(0.0, 3.0, 5.0, 2.726114961082506, entropy);
+        test_relative(0.0, 0.5, 10.0, 0.828115312415736, entropy);
     }
 
     // TODO: valid skewness tests
