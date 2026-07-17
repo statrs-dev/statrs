@@ -6,7 +6,9 @@ use statrs::statistics::*;
 
 fn bench_order_statistic(c: &mut Criterion) {
     let mut rng = StdRng::seed_from_u64(42);
-    let k = black_box(rng.random_range(..=usize::MAX));
+    let data: Vec<_> = (0..100).map(|x| x as f64).collect();
+    let order = black_box(rng.random_range(1..=data.len()));
+    let percentile = black_box(rng.random_range(0..=100));
     let tau = black_box(rng.random_range(0.0..1.0));
     let mut to_random_owned = |data: &[f64]| -> Data<Vec<f64>> {
         let mut owned = data.to_vec();
@@ -14,11 +16,10 @@ fn bench_order_statistic(c: &mut Criterion) {
         Data::new(owned)
     };
     let mut group = c.benchmark_group("order statistic");
-    let data: Vec<_> = (0..100).map(|x| x as f64).collect();
     group.bench_function("order_statistic", |b| {
         b.iter_batched(
             || to_random_owned(&data),
-            |mut data| data.order_statistic(k),
+            |mut data| data.order_statistic(order),
             BatchSize::SmallInput,
         )
     });
@@ -39,7 +40,7 @@ fn bench_order_statistic(c: &mut Criterion) {
     group.bench_function("percentile", |b| {
         b.iter_batched(
             || to_random_owned(&data),
-            |mut data| data.percentile(k),
+            |mut data| data.percentile(percentile),
             BatchSize::SmallInput,
         )
     });
