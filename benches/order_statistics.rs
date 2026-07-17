@@ -1,18 +1,18 @@
 extern crate statrs;
 use criterion::{BatchSize, Criterion, black_box, criterion_group, criterion_main};
 use rand::prelude::*;
+use rand::rngs::StdRng;
 use statrs::statistics::*;
 
 fn bench_order_statistic(c: &mut Criterion) {
-    let mut rng = rand::rngs::StdRng::seed_from_u64(0);
-    let to_random_owned = |data: &[f64]| -> Data<Vec<f64>> {
-        let mut rng = rand::rngs::StdRng::seed_from_u64(0);
+    let mut rng = StdRng::seed_from_u64(42);
+    let k = black_box(rng.random_range(..=usize::MAX));
+    let tau = black_box(rng.random_range(0.0..1.0));
+    let mut to_random_owned = |data: &[f64]| -> Data<Vec<f64>> {
         let mut owned = data.to_vec();
         owned.shuffle(&mut rng);
         Data::new(owned)
     };
-    let k = black_box(rng.random_range(..=usize::MAX));
-    let tau = black_box(rng.random_range(0.0..1.0));
     let mut group = c.benchmark_group("order statistic");
     let data: Vec<_> = (0..100).map(|x| x as f64).collect();
     group.bench_function("order_statistic", |b| {

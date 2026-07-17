@@ -38,6 +38,21 @@ statrs = "*" # replace * by the latest version of the crate.
 
 For examples, view [the docs](https://docs.rs/statrs/*/statrs/).
 
+### WebAssembly randomness
+
+On `wasm32-unknown-unknown`, sampling works with an explicitly seeded random
+number generator without a host entropy source. Applications that need
+JavaScript entropy, for example for `rand::rng()`, can enable the `wasm_js`
+feature:
+
+```toml
+[dependencies]
+statrs = { version = "*", features = ["wasm_js"] }
+rand = "0.10"
+```
+
+Do not enable `wasm_js` for non-JavaScript WebAssembly targets.
+
 ### Running tests
 
 If you'd like to run all suggested tests, you'll need to download some data from
@@ -53,7 +68,7 @@ If you'd like to modify where the data is downloaded, you can use the environmen
 
 ## Minimum supported Rust version (MSRV)
 
-This crate requires a Rust version of 1.87.0 or higher. Increases in MSRV will be considered a semver non-breaking API change and require a version increase (PATCH until 1.0.0, MINOR after 1.0.0).
+This crate requires a Rust version of 1.89.0 or higher. Increases in MSRV will be considered a semver non-breaking API change and require a version increase (PATCH until 1.0.0, MINOR after 1.0.0).
 
 ## Precision
 Floating-point numbers cannot always represent decimal values exactly, which can introduce small (and in some cases catastrophically large) errors in computations.

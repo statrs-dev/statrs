@@ -76,3 +76,25 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Check all possible feature sets
         run: cargo hack check --feature-powerset --no-dev-deps
+
+  wasm:
+    needs: [clippy, fmt]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust stable with WebAssembly targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown, wasm32-wasip1
+
+      - name: Check WebAssembly without a host RNG
+        run: cargo check --target wasm32-unknown-unknown --no-default-features --features std,nalgebra,rand --lib
+
+      - name: Check WebAssembly with the JavaScript RNG backend
+        run: cargo check --target wasm32-unknown-unknown --all-features --lib
+
+      - name: Check WASI without a host RNG
+        run: cargo check --target wasm32-wasip1 --no-default-features --features std,nalgebra,rand --lib
+
+      - name: Check WASI with all features
+        run: cargo check --target wasm32-wasip1 --all-features --lib
