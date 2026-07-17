@@ -414,7 +414,7 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, shape: f64, rate: 
     let mut afix = 1.0;
     if shape < 1.0 {
         a = shape + 1.0;
-        afix = rng.random::<f64>().powf(1.0 / shape);
+        afix = ::rand::RngExt::random::<f64>(rng).powf(1.0 / shape);
     }
 
     let d = a - 1.0 / 3.0;
@@ -432,7 +432,7 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, shape: f64, rate: 
 
         v = v * v * v;
         x = x * x;
-        let u: f64 = rng.random();
+        let u: f64 = ::rand::RngExt::random(rng);
         if u < 1.0 - 0.0331 * x * x || u.ln() < 0.5 * x + d * (1.0 - v + v.ln()) {
             return afix * d * v / rate;
         }

@@ -126,7 +126,7 @@ impl core::fmt::Display for Weibull {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distr::Distribution<f64> for Weibull {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        let x: f64 = rng.random();
+        let x: f64 = ::rand::RngExt::random(rng);
         self.scale * (-x.ln()).powf(1.0 / self.shape)
     }
 }
