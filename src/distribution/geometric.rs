@@ -589,4 +589,18 @@ mod tests {
         let invcdf = |arg: f64| move |x: Geometric| x.inverse_cdf(arg);
         test_exact(1., 1, invcdf(2.));
     }
+
+    #[test]
+    #[should_panic(expected = "intermediate value overflowed f64")]
+    fn test_inverse_cdf_intermediate_overflow_panic() {
+        let distribution = Geometric::new(f64::from_bits(1)).unwrap();
+        distribution.inverse_cdf(0.5);
+    }
+
+    #[test]
+    #[should_panic(expected = "result exceeds u64::MAX")]
+    fn test_inverse_cdf_result_overflow_panic() {
+        let distribution = Geometric::new(1e-20).unwrap();
+        distribution.inverse_cdf(0.5);
+    }
 }
