@@ -133,7 +133,7 @@ git clone https://github.com/statrs-dev/statrs
 Create a feature branch:
 
 ```sh
-git checkout -b <feature_branch> master
+git checkout -b <feature_branch> main
 ```
 
 Write your code and docs, then ensure it is formatted:
