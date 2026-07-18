@@ -188,7 +188,7 @@ where
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Dir({}, {})", self.alpha.len(), &self.alpha)
+        write!(f, "Dir({}, {})", self.alpha.len(), self.alpha)
     }
 }
 

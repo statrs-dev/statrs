@@ -392,7 +392,7 @@ where
         nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "N({}, {})", &self.mu, &self.cov)
+        write!(f, "N({}, {})", self.mu, self.cov)
     }
 }
 

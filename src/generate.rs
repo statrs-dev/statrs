@@ -170,7 +170,7 @@ impl InfiniteSinusoidal {
 
 impl core::fmt::Display for InfiniteSinusoidal {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{:#?}", &self)
+        write!(f, "{:#?}", self)
     }
 }
 
@@ -230,7 +230,7 @@ impl InfiniteSquare {
 
 impl core::fmt::Display for InfiniteSquare {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{:#?}", &self)
+        write!(f, "{:#?}", self)
     }
 }
 
@@ -302,7 +302,7 @@ impl InfiniteTriangle {
 
 impl core::fmt::Display for InfiniteTriangle {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{:#?}", &self)
+        write!(f, "{:#?}", self)
     }
 }
 
@@ -359,7 +359,7 @@ impl InfiniteSawtooth {
 
 impl core::fmt::Display for InfiniteSawtooth {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{:#?}", &self)
+        write!(f, "{:#?}", self)
     }
 }
 
