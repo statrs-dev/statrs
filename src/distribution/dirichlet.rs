@@ -432,9 +432,10 @@ mod tests {
     #[test]
     fn test_sample() {
         use rand::distr::Distribution;
+        use rand::SeedableRng;
 
         test_almost(vector![1., 2.], 1., 1e-15, |dd| {
-            dd.sample(&mut ::rand::rng()).sum()
+            dd.sample(&mut rand::rngs::StdRng::seed_from_u64(0)).sum()
         });
     }
 
