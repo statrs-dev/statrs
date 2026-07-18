@@ -4,9 +4,9 @@ use rand::prelude::*;
 use statrs::statistics::*;
 
 fn bench_order_statistic(c: &mut Criterion) {
-    let mut rng = rand::rng();
+    let mut rng = rand::rngs::StdRng::seed_from_u64(0);
     let to_random_owned = |data: &[f64]| -> Data<Vec<f64>> {
-        let mut rng = rand::rng();
+        let mut rng = rand::rngs::StdRng::seed_from_u64(0);
         let mut owned = data.to_vec();
         owned.shuffle(&mut rng);
         Data::new(owned)

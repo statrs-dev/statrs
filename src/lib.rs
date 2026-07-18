@@ -11,7 +11,8 @@
 #![cfg_attr(not(feature = "rand"), doc = "```ignore")]
 //! use statrs::distribution::Exp;
 //! use rand::distr::Distribution;
-//! let mut r = rand::rng();
+//! use rand::SeedableRng;
+//! let mut r = rand::rngs::StdRng::seed_from_u64(0);
 //! let n = Exp::new(0.5).unwrap();
 //! print!("{}", n.sample(&mut r));
 //! ```
