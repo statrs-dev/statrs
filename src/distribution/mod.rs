@@ -165,25 +165,55 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
             return self.max();
         };
         let two = K::one() + K::one();
-        let mut high = two;
-        let mut low = -high;
-        while self.cdf(low) > p {
-            low = low + low;
+
+        // Bracket the root, preferring the distribution's own domain bounds and
+        // only doubling outward from ±2 when a bound is not finite.
+        let mut low = self.min();
+        if !low.is_finite() {
+            low = -two;
+            while self.cdf(low) > p {
+                low = low + low;
+            }
         }
-        while self.cdf(high) < p {
-            high = high + high;
+        let mut high = self.max();
+        if !high.is_finite() {
+            high = two;
+            while self.cdf(high) < p {
+                high = high + high;
+            }
         }
-        let mut i = 16;
-        while i != 0 {
-            let mid = (high + low) / two;
-            if self.cdf(mid) >= p {
+
+        // In the upper half invert the survival function instead of the cdf:
+        // as `cdf` saturates to one it loses the resolution needed to place the
+        // quantile, whereas `sf` keeps that tail well conditioned.
+        let upper = p > T::one() / (T::one() + T::one());
+        let target = if upper { T::one() - p } else { p };
+
+        // Bisect until the bracket agrees to the crate's relative accuracy. A
+        // fixed iteration count cannot approach this when the bracket is wide or
+        // the quantile lies deep in a tail, where the search would otherwise
+        // return the bracket midpoint rather than the true value.
+        let accuracy = K::from(crate::prec::DEFAULT_RELATIVE_ACC).unwrap();
+        for _ in 0..100 {
+            let mid = low + (high - low) / two;
+            if mid <= low || mid >= high {
+                break;
+            }
+            let above = if upper {
+                self.sf(mid) <= target
+            } else {
+                self.cdf(mid) >= target
+            };
+            if above {
                 high = mid;
             } else {
                 low = mid;
             }
-            i -= 1;
+            if (high - low).abs() <= accuracy * low.abs().max(high.abs()) {
+                break;
+            }
         }
-        (high + low) / two
+        low + (high - low) / two
     }
 
     /// Due to issues with rounding and floating-point accuracy the default
@@ -334,4 +364,49 @@ pub trait Discrete<K, T> {
     /// assert_abs_diff_eq!(n.ln_pmf(5), (0.24609375f64).ln(), epsilon = 1e-15);
     /// ```
     fn ln_pmf(&self, x: K) -> T;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ContinuousCDF, Max, Min};
+
+    // Standard logistic distribution, used to exercise the ContinuousCDF default
+    // inverse_cdf on an infinite (two-sided) support with a closed-form quantile.
+    struct Logistic;
+
+    impl Min<f64> for Logistic {
+        fn min(&self) -> f64 {
+            f64::NEG_INFINITY
+        }
+    }
+
+    impl Max<f64> for Logistic {
+        fn max(&self) -> f64 {
+            f64::INFINITY
+        }
+    }
+
+    impl ContinuousCDF<f64, f64> for Logistic {
+        fn cdf(&self, x: f64) -> f64 {
+            1.0 / (1.0 + (-x).exp())
+        }
+        fn sf(&self, x: f64) -> f64 {
+            1.0 / (1.0 + x.exp())
+        }
+    }
+
+    #[test]
+    fn test_default_inverse_cdf_infinite_support() {
+        let d = Logistic;
+        // Doubling out from ±2 on both sides, then cdf (lower) and sf (upper) search.
+        for &p in &[1e-10f64, 1e-4, 0.1, 0.3, 0.7, 0.9, 1.0 - 1e-4, 1.0 - 1e-10] {
+            let expected = (p / (1.0 - p)).ln();
+            let q = d.inverse_cdf(p);
+            let relerr = ((q - expected) / expected).abs();
+            assert!(
+                relerr <= 1e-11,
+                "logistic inverse_cdf({p}) = {q}, want {expected}"
+            );
+        }
+    }
 }
