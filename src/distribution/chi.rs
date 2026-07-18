@@ -513,4 +513,43 @@ mod tests {
         density_util::check_continuous_distribution(&create_ok(2), 0.0, 10.0);
         density_util::check_continuous_distribution(&create_ok(5), 0.0, 10.0);
     }
+
+    #[test]
+    fn test_inverse_cdf_reference() {
+        // Chi has no closed-form inverse_cdf, so it exercises the ContinuousCDF
+        // default. References are scipy.stats.chi.ppf, verified against mpmath
+        // (dps=60) to rel err < 4e-15; both tails are covered because the old
+        // fixed-iteration search collapsed there (e.g. k=1, p=1e-12 was off by ~2e7).
+        let cases: &[(u64, f64, f64)] = &[
+            (1, 1e-12, 1.253314137315499e-12),  (1, 1e-8, 1.2533141373155e-8),
+            (1, 1e-4, 0.000125331414059667),     (1, 1e-2, 0.012533469508069257),
+            (1, 0.5, 0.6744897501960812),        (1, 0.9999, 3.890591886413121),
+            (1, 0.99999999, 5.730728867384047),  (1, 0.999999999999, 7.130509892879273),
+            (2, 1e-12, 1.4142135623734486e-6),   (2, 1e-8, 0.00014142135659086288),
+            (2, 1e-4, 0.014142489196273646),     (2, 1e-2, 0.14177683769573532),
+            (2, 0.5, 1.1774100225154749),        (2, 0.9999, 4.29193205257872),
+            (2, 0.99999999, 6.069708516712743),  (2, 0.999999999999, 7.433847353543569),
+            (5, 1e-12, 0.007158661534693857),    (5, 1e-8, 0.04517451964256548),
+            (5, 1e-4, 0.28666596559134017),      (5, 1e-2, 0.7445119721859933),
+            (5, 0.5, 2.0860153861118875),        (5, 0.9999, 5.073936534787967),
+            (5, 0.99999999, 6.767169800763287),  (5, 0.999999999999, 8.077046646057179),
+        ];
+        for &(k, p, expected) in cases {
+            let q = Chi::new(k).unwrap().inverse_cdf(p);
+            let relerr = ((q - expected) / expected).abs();
+            assert!(relerr <= 1e-12, "Chi({k}).inverse_cdf({p}) = {q}, want {expected} (relerr {relerr:e})");
+        }
+    }
+
+    #[test]
+    fn test_inverse_cdf_round_trip() {
+        let ps = [1e-12, 1e-8, 1e-4, 1e-2, 0.25, 0.5, 0.75, 0.99, 1.0 - 1e-4, 1.0 - 1e-8, 1.0 - 1e-12];
+        for k in [1u64, 2, 3, 5, 10] {
+            let d = Chi::new(k).unwrap();
+            for &p in ps.iter() {
+                let back = d.cdf(d.inverse_cdf(p));
+                assert!((back - p).abs() <= 1e-9 * p, "Chi({k}) round-trip p={p}: cdf(inverse_cdf(p))={back}");
+            }
+        }
+    }
 }
