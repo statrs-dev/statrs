@@ -42,16 +42,17 @@ For examples, view [the docs](https://docs.rs/statrs/*/statrs/).
 
 On `wasm32-unknown-unknown`, sampling works with an explicitly seeded random
 number generator without a host entropy source. Applications that need
-JavaScript entropy, for example for `rand::rng()`, can enable the `wasm_js`
-feature:
+JavaScript entropy, for example for `rand::rng()`, must select the `getrandom`
+backend themselves:
 
 ```toml
 [dependencies]
-statrs = { version = "*", features = ["wasm_js"] }
+statrs = "*"
 rand = "0.10"
+getrandom = { version = "0.4", features = ["wasm_js"] }
 ```
 
-Do not enable `wasm_js` for non-JavaScript WebAssembly targets.
+`statrs` does not select a randomness backend for downstream applications.
 
 ### Running tests
 

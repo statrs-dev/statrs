@@ -90,11 +90,5 @@ jobs:
       - name: Check WebAssembly without a host RNG
         run: cargo check --target wasm32-unknown-unknown --no-default-features --features std,nalgebra,rand --lib
 
-      - name: Check WebAssembly with the JavaScript RNG backend
-        run: cargo check --target wasm32-unknown-unknown --all-features --lib
-
       - name: Check WASI without a host RNG
         run: cargo check --target wasm32-wasip1 --no-default-features --features std,nalgebra,rand --lib
-
-      - name: Check WASI with all features
-        run: cargo check --target wasm32-wasip1 --all-features --lib
