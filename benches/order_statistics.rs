@@ -1,8 +1,9 @@
 extern crate statrs;
-use criterion::{BatchSize, Criterion, black_box, criterion_group, criterion_main};
+use criterion::{BatchSize, Criterion, Throughput, criterion_group, criterion_main};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use statrs::statistics::*;
+use std::hint::black_box;
 
 fn bench_order_statistic(c: &mut Criterion) {
     let mut rng = StdRng::seed_from_u64(42);
@@ -16,6 +17,10 @@ fn bench_order_statistic(c: &mut Criterion) {
         Data::new(owned)
     };
     let mut group = c.benchmark_group("order statistic");
+    group.throughput(Throughput::ElementsAndBytes {
+        elements: data.len() as u64,
+        bytes: std::mem::size_of_val(data.as_slice()) as u64,
+    });
     group.bench_function("order_statistic", |b| {
         b.iter_batched(
             || to_random_owned(&data),
