@@ -1,4 +1,4 @@
-use crate::distribution::{Continuous, ContinuousCDF};
+use crate::distribution::{Continuous, ContinuousCDF, InverseCdfError};
 use crate::function::{beta, gamma};
 use crate::prec;
 use crate::statistics::*;
@@ -209,9 +209,9 @@ impl ContinuousCDF<f64, f64> for Beta {
     ///
     /// where `α` is shapeA, `β` is shapeB, and `I_x` is the inverse of the
     /// regularized lower incomplete beta function.
-    fn try_inverse_cdf(&self, x: f64) -> Result<f64, Box<dyn std::error::Error>> {
+    fn try_inverse_cdf(&self, x: f64) -> Result<f64, InverseCdfError> {
         if !(0.0..=1.0).contains(&x) {
-            Err("x must be in [0, 1]".into())
+            Err(InverseCdfError::ArgumentOutOfRange)
         } else {
             Ok(beta::inv_beta_reg(self.shape_a, self.shape_b, x))
         }

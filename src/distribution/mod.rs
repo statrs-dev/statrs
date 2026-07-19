@@ -97,6 +97,25 @@ mod ziggurat;
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 mod ziggurat_tables;
 
+/// Represents the errors that can occur when computing [`ContinuousCDF::try_inverse_cdf`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[non_exhaustive]
+pub enum InverseCdfError {
+    /// The argument `p` is outside the closed interval `[0, 1]`.
+    ArgumentOutOfRange,
+}
+
+impl core::fmt::Display for InverseCdfError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        match self {
+            InverseCdfError::ArgumentOutOfRange => write!(f, "argument is outside [0, 1]"),
+        }
+    }
+}
+
+impl core::error::Error for InverseCdfError {}
+
 /// The `ContinuousCDF` trait is used to specify an interface for univariate
 /// distributions for which cdf float arguments are sensible.
 pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
@@ -175,7 +194,7 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
     /// may be lacking.
     #[doc(alias = "quantile function")]
     #[doc(alias = "quantile")]
-    fn try_inverse_cdf(&self, p: T) -> Result<K, Box<dyn std::error::Error>> {
+    fn try_inverse_cdf(&self, p: T) -> Result<K, InverseCdfError> {
         Ok(self.inverse_cdf(p))
     }
 }
