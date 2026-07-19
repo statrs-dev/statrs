@@ -472,4 +472,44 @@ mod tests {
         density_util::check_continuous_distribution(&create_ok(1.0, 0.5), 0.0, 100.0);
         density_util::check_continuous_distribution(&create_ok(9.0, 2.0), 0.0, 100.0);
     }
+
+    #[test]
+    fn test_inverse_cdf_reference() {
+        // InverseGamma has no closed-form inverse_cdf, so it exercises the
+        // ContinuousCDF default. References are scipy.stats.invgamma.ppf, verified
+        // against mpmath (dps=60) to rel err < 4e-15, spanning both tails up to
+        // p = 1 - 1e-12 (quantile ~6.4e23) where the old search lost all precision.
+        let cases: &[(f64, f64, f64, f64)] = &[
+            (1.0, 1.0, 1e-12, 0.03619120682527099),  (1.0, 1.0, 1e-6, 0.07238241365054197),
+            (1.0, 1.0, 1e-2, 0.21714724095162594),   (1.0, 1.0, 0.5, f64::consts::LOG2_E), // median = 1/ln 2
+
+            (1.0, 1.0, 0.9999, 9999.499991667344),   (1.0, 1.0, 0.99999999, 99999998.99752413),
+            (1.0, 1.0, 0.999999999999, 1000022122209.0044),
+            (0.5, 0.5, 1e-12, 0.019667954610891478), (0.5, 0.5, 1e-6, 0.04179182102150894),
+            (0.5, 0.5, 1e-2, 0.1507182493011397),    (0.5, 0.5, 0.5, 2.1981093383177344),
+            (0.5, 0.5, 0.9999, 63661976.90343876),   (0.5, 0.5, 0.99999999, 6366197659698592.0),
+            (0.5, 0.5, 0.999999999999, 6.366479395510921e23),
+            (3.0, 2.0, 1e-12, 0.05873305599299108),  (3.0, 2.0, 1e-6, 0.10455237678297954),
+            (3.0, 2.0, 1e-2, 0.23792679400084588),   (3.0, 2.0, 0.5, 0.7479262863802241),
+            (3.0, 2.0, 0.9999, 23.208303044174563),  (3.0, 2.0, 0.99999999, 510.37275811682616),
+            (3.0, 2.0, 0.999999999999, 11006.005315438017),
+        ];
+        for &(a, b, p, expected) in cases {
+            let q = InverseGamma::new(a, b).unwrap().inverse_cdf(p);
+            let relerr = ((q - expected) / expected).abs();
+            assert!(relerr <= 1e-12, "InverseGamma({a}, {b}).inverse_cdf({p}) = {q}, want {expected} (relerr {relerr:e})");
+        }
+    }
+
+    #[test]
+    fn test_inverse_cdf_round_trip() {
+        let ps = [1e-12, 1e-8, 1e-4, 1e-2, 0.25, 0.5, 0.75, 0.99, 1.0 - 1e-4, 1.0 - 1e-8, 1.0 - 1e-12];
+        for &(a, b) in &[(1.0, 1.0), (0.5, 0.5), (2.0, 1.0), (3.0, 2.0), (5.0, 3.0)] {
+            let d = InverseGamma::new(a, b).unwrap();
+            for &p in ps.iter() {
+                let back = d.cdf(d.inverse_cdf(p));
+                assert!((back - p).abs() <= 1e-9 * p, "InverseGamma({a}, {b}) round-trip p={p}: cdf(inverse_cdf(p))={back}");
+            }
+        }
+    }
 }
