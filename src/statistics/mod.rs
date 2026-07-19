@@ -1,11 +1,15 @@
 //! Provides traits for statistical computation
 
+pub use self::accumulate::*;
+pub use self::online::*;
 pub use self::order_statistics::*;
 pub use self::slice_statistics::*;
 pub use self::statistics::*;
 pub use self::traits::*;
 
+mod accumulate;
 mod iter_statistics;
+mod online;
 mod order_statistics;
 // TODO: fix later
 mod slice_statistics;
