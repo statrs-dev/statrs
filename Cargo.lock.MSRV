@@ -665,7 +665,6 @@ dependencies = [
  "anyhow",
  "approx",
  "criterion",
- "getrandom",
  "nalgebra",
  "num-traits",
  "rand",
