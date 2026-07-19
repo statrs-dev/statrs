@@ -52,13 +52,12 @@ where
     }
 
     fn mean(self) -> f64 {
-        let mut i = 0.0;
-        let mut mean = 0.0;
-        for x in self {
-            i += 1.0;
-            mean += (x.borrow() - mean) / i;
-        }
-        if i > 0.0 { mean } else { f64::NAN }
+        self.into_iter()
+            .fold(OnlineMoments::<2>::default(), |acc, x| {
+                acc.push(*x.borrow())
+            })
+            .mean()
+            .unwrap_or(f64::NAN)
     }
 
     fn geometric_mean(self) -> f64 {
@@ -87,26 +86,12 @@ where
     }
 
     fn variance(self) -> f64 {
-        let mut iter = self.into_iter();
-        let mut sum = match iter.next() {
-            None => f64::NAN,
-            Some(x) => *x.borrow(),
-        };
-        let mut i = 1.0;
-        let mut variance = 0.0;
-
-        for x in iter {
-            i += 1.0;
-            let borrow = *x.borrow();
-            sum += borrow;
-            let diff = i * borrow - sum;
-            variance += diff * diff / (i * (i - 1.0))
-        }
-        if i > 1.0 {
-            variance / (i - 1.0)
-        } else {
-            f64::NAN
-        }
+        self.into_iter()
+            .fold(OnlineMoments::<2>::default(), |acc, x| {
+                acc.push(*x.borrow())
+            })
+            .variance()
+            .unwrap_or(f64::NAN)
     }
 
     fn std_dev(self) -> f64 {
@@ -114,22 +99,12 @@ where
     }
 
     fn population_variance(self) -> f64 {
-        let mut iter = self.into_iter();
-        let mut sum = match iter.next() {
-            None => return f64::NAN,
-            Some(x) => *x.borrow(),
-        };
-        let mut i = 1.0;
-        let mut variance = 0.0;
-
-        for x in iter {
-            i += 1.0;
-            let borrow = *x.borrow();
-            sum += borrow;
-            let diff = i * borrow - sum;
-            variance += diff * diff / (i * (i - 1.0));
-        }
-        variance / i
+        self.into_iter()
+            .fold(OnlineMoments::<2>::default(), |acc, x| {
+                acc.push(*x.borrow())
+            })
+            .population_variance()
+            .unwrap_or(f64::NAN)
     }
 
     fn population_std_dev(self) -> f64 {
