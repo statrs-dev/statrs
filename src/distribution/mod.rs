@@ -166,6 +166,18 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
         }
         (high + low) / two
     }
+
+    /// Due to issues with rounding and floating-point accuracy the default
+    /// implementation may be ill-behaved.
+    /// Specialized inverse cdfs should be used whenever possible.
+    /// Performs a binary search on the domain of `cdf` to obtain an approximation
+    /// of `F^-1(p) := inf { x | F(x) >= p }`. Needless to say, performance may
+    /// may be lacking.
+    #[doc(alias = "quantile function")]
+    #[doc(alias = "quantile")]
+    fn try_inverse_cdf(&self, p: T) -> Result<K, Box<dyn std::error::Error>> {
+        Ok(self.inverse_cdf(p))
+    }
 }
 
 /// The `DiscreteCDF` trait is used to specify an interface for univariate
