@@ -198,15 +198,11 @@ mod tests {
             .iter()
             .copied()
             .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-        prec::assert_abs_diff_eq!(s.mean().unwrap(), 5.0, epsilon = 1e-12);
-        prec::assert_abs_diff_eq!(s.variance().unwrap(), 32.0 / 7.0, epsilon = 1e-12);
-        prec::assert_abs_diff_eq!(
-            s.std_dev().unwrap(),
-            (32.0_f64 / 7.0).sqrt(),
-            epsilon = 1e-12
-        );
-        prec::assert_abs_diff_eq!(s.population_variance().unwrap(), 4.0, epsilon = 1e-12);
-        prec::assert_abs_diff_eq!(s.population_std_dev().unwrap(), 2.0, epsilon = 1e-12);
+        prec::assert_abs_diff_eq!(s.mean().unwrap(), 5.0);
+        prec::assert_abs_diff_eq!(s.variance().unwrap(), 32.0 / 7.0);
+        prec::assert_abs_diff_eq!(s.std_dev().unwrap(), (32.0_f64 / 7.0).sqrt());
+        prec::assert_abs_diff_eq!(s.population_variance().unwrap(), 4.0);
+        prec::assert_abs_diff_eq!(s.population_std_dev().unwrap(), 2.0);
     }
 
     #[test]
@@ -228,7 +224,7 @@ mod tests {
             .iter()
             .copied()
             .fold(OnlineMoments::<3>::default(), OnlineMoments::push);
-        prec::assert_abs_diff_eq!(s.skewness().unwrap(), 0.65625, epsilon = 1e-10);
+        prec::assert_abs_diff_eq!(s.skewness().unwrap(), 0.65625);
     }
 
     #[test]
@@ -242,12 +238,8 @@ mod tests {
             .iter()
             .copied()
             .fold(OnlineMoments::<3>::default(), OnlineMoments::push);
-        prec::assert_abs_diff_eq!(s2.mean().unwrap(), s3.mean().unwrap(), epsilon = 1e-12);
-        prec::assert_abs_diff_eq!(
-            s2.variance().unwrap(),
-            s3.variance().unwrap(),
-            epsilon = 1e-12
-        );
+        prec::assert_abs_diff_eq!(s2.mean().unwrap(), s3.mean().unwrap());
+        prec::assert_abs_diff_eq!(s2.variance().unwrap(), s3.variance().unwrap());
     }
 }
 
