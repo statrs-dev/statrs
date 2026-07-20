@@ -35,12 +35,14 @@ mod tests {
     use crate::distribution::Normal;
     use crate::function::kernel::Kernel;
     use nalgebra::{Vector1, Vector2};
+    use rand::SeedableRng;
     use rand::distr::Distribution;
+    use rand::rngs::StdRng;
 
     #[test]
     fn test_knn_pdf() {
         let law = Normal::new(0., 1.).unwrap();
-        let mut rng = rand::rng();
+        let mut rng = StdRng::seed_from_u64(42);
         let gaussian = crate::function::kernel::Gaussian;
         let samples_1d = (0..100000)
             .map(|_| Vector1::new(law.sample(&mut rng)))
