@@ -168,6 +168,18 @@ where
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
+    /// # Numerical stability
+    ///
+    /// Each category's count is drawn from a [`Binomial`](crate::distribution::Binomial)
+    /// conditioned on the categories already sampled, using a probability
+    /// renormalized against the probability mass not yet assigned
+    /// (`p_i / remaining_mass`). As sampling proceeds and fewer categories
+    /// remain unprocessed, `remaining_mass` shrinks towards zero, which
+    /// can amplify floating-point error in that renormalized ratio. The
+    /// ratio is clamped to `[0.0, 1.0]` so this can never panic, but for
+    /// distributions with many categories, or a long tail of very small
+    /// probabilities, this may introduce a small bias in the
+    /// last-processed categories' counts.
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<u64, D> {
         sample_generic(self, rng)
     }
@@ -180,6 +192,18 @@ where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
 {
+    /// # Numerical stability
+    ///
+    /// Each category's count is drawn from a [`Binomial`](crate::distribution::Binomial)
+    /// conditioned on the categories already sampled, using a probability
+    /// renormalized against the probability mass not yet assigned
+    /// (`p_i / remaining_mass`). As sampling proceeds and fewer categories
+    /// remain unprocessed, `remaining_mass` shrinks towards zero, which
+    /// can amplify floating-point error in that renormalized ratio. The
+    /// ratio is clamped to `[0.0, 1.0]` so this can never panic, but for
+    /// distributions with many categories, or a long tail of very small
+    /// probabilities, this may introduce a small bias in the
+    /// last-processed categories' counts.
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> OVector<f64, D> {
         sample_generic(self, rng)
     }
@@ -191,27 +215,53 @@ where
     D: Dim,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
     R: ::rand::Rng + ?Sized,
-    T: ::num_traits::Num + ::nalgebra::Scalar + ::std::ops::AddAssign<T>,
+    T: ::nalgebra::Scalar
+        + num_traits::Zero
+        + num_traits::AsPrimitive<u64>
+        + num_traits::FromPrimitive,
+    super::Binomial: ::rand::distr::Distribution<T>,
 {
     use nalgebra::Const;
+    use ::rand::distr::Distribution;
 
-    let mut cdf_sum = 0.0;
-    let p_cdf: Vec<f64> = dist
-        .p()
-        .as_slice()
-        .iter()
-        .map(|p| {
-            cdf_sum += p;
-            cdf_sum
-        })
-        .collect();
+    let p = dist.p().as_slice();
+    let mut res: OVector<T, D> = OVector::zeros_generic(dist.p.shape_generic().0, Const::<1>);
 
-    let mut res = OVector::zeros_generic(dist.p.shape_generic().0, Const::<1>);
-    for _ in 0..dist.n {
-        let draw = ::rand::RngExt::random::<f64>(rng) * cdf_sum;
-        let i = p_cdf.iter().position(|val| *val >= draw).unwrap();
-        res[i] += T::one();
+    // Process categories from largest probability to smallest: this keeps
+    // `remaining_mass` shrinking predictably, and defers the
+    // hardest-to-renormalize (smallest-probability) category to the end,
+    // where it absorbs the leftover trial count directly instead of going
+    // through a division that would amplify floating-point error the most.
+    let mut sorted_inds: Vec<usize> = (0..p.len()).collect();
+    // `unwrap` is safe: `Multinomial::new` rejects NaN probabilities.
+    sorted_inds.sort_unstable_by(|&i, &j| p[j].partial_cmp(&p[i]).unwrap());
+    let (&skipped_ind, processed_inds) = sorted_inds
+        .split_last()
+        .expect("Multinomial::new requires at least 2 probabilities");
+
+    let mut remaining_mass = 1.0;
+    let mut samples_left = dist.n;
+    for &ind in processed_inds {
+        if samples_left == 0 {
+            break;
+        }
+        if p[ind] == 0.0 {
+            continue;
+        }
+
+        let p_binom = (p[ind] / remaining_mass).clamp(0.0, 1.0);
+        let drawn: T = super::Binomial::new(p_binom, samples_left)
+            .expect("p_binom is clamped to [0, 1]")
+            .sample(rng);
+        samples_left -= drawn.as_();
+        remaining_mass -= p[ind];
+        res[ind] = drawn;
     }
+    // Whatever trials remain belong to the one category left unprocessed
+    // above -- assigned by its actual index, not by output position.
+    res[skipped_ind] =
+        T::from_u64(samples_left).expect("samples_left is a valid u64 by construction");
+
     res
 }
 
