@@ -22,14 +22,37 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
       - uses: dtolnay/rust-toolchain@stable
       - name: Run release-plz
+        id: release-plz
         uses: release-plz/action@v0.5
         with:
           command: release-pr
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - name: Install cargo-hack
+        if: steps.release-plz.outputs.prs_created == 'true'
+        uses: taiki-e/install-action@cargo-hack
+      - name: Update MSRV lockfile
+        if: steps.release-plz.outputs.prs_created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          PR_NUMBER: ${{ fromJSON(steps.release-plz.outputs.pr).number }}
+        run: |
+          gh pr checkout "$PR_NUMBER"
+          mv Cargo.lock.MSRV Cargo.lock
+          cargo hack check --rust-version
+          mv Cargo.lock Cargo.lock.MSRV
+          if git diff --quiet -- Cargo.lock.MSRV; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Cargo.lock.MSRV
+          git commit -m "chore: update MSRV lockfile"
+          git push
 
   # When the Release PR above is merged, this tags the commit, publishes
   # to crates.io, and cuts a GitHub release.
