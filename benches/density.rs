@@ -3,13 +3,17 @@ extern crate rand;
 extern crate statrs;
 use criterion::{Criterion, criterion_group, criterion_main};
 use nalgebra::{Vector1, Vector3};
+use rand::RngExt;
+use rand::SeedableRng;
 use rand::distr::StandardUniform;
+use rand::rngs::StdRng;
 
 fn generate<T>(n_samples: usize) -> Vec<T>
 where
     StandardUniform: rand::distr::Distribution<T>,
 {
-    (0..n_samples).map(|_| rand::random()).collect()
+    let mut rng = StdRng::seed_from_u64(42);
+    (0..n_samples).map(|_| rng.random()).collect()
 }
 
 fn bench_density(c: &mut Criterion) {
