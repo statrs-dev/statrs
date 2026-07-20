@@ -261,12 +261,13 @@ impl Median<f64> for ChiSquared {
 }
 
 impl Mode<Option<f64>> for ChiSquared {
-    /// Returns the mode of the chi-squared distribution
+    /// Returns the mode of the chi-squared distribution, or `None` if
+    /// `freedom` is less than `2`.
     ///
     /// # Formula
     ///
     /// ```text
-    /// k - 2
+    /// k - 2, where k >= 2
     /// ```
     ///
     /// where `k` is the degrees of freedom
@@ -278,6 +279,9 @@ impl Mode<Option<f64>> for ChiSquared {
 impl Continuous<f64, f64> for ChiSquared {
     /// Calculates the probability density function for the chi-squared
     /// distribution at `x`
+    ///
+    /// At `x = 0`, returns positive infinity for `freedom < 2`, `0.5` for
+    /// `freedom = 2`, and `0` for `freedom > 2`.
     ///
     /// # Formula
     ///
@@ -292,6 +296,9 @@ impl Continuous<f64, f64> for ChiSquared {
 
     /// Calculates the log probability density function for the chi-squared
     /// distribution at `x`
+    ///
+    /// At `x = 0`, returns positive infinity for `freedom < 2`, `ln(0.5)` for
+    /// `freedom = 2`, and negative infinity for `freedom > 2`.
     ///
     /// # Formula
     ///
@@ -321,9 +328,37 @@ mod tests {
     }
 
     #[test]
+    fn test_mode() {
+        for freedom in [0.5, 1.0, 1.5] {
+            assert_eq!(create_ok(freedom).mode(), None);
+        }
+
+        assert_eq!(create_ok(2.0).mode(), Some(0.0));
+        assert_eq!(create_ok(3.0).mode(), Some(1.0));
+        assert_eq!(create_ok(4.5).mode(), Some(2.5));
+    }
+
+    #[test]
+    fn test_density_at_zero() {
+        for freedom in [0.5, 1.0, 1.5] {
+            let distribution = create_ok(freedom);
+            assert_eq!(distribution.pdf(0.0), f64::INFINITY);
+            assert_eq!(distribution.ln_pdf(0.0), f64::INFINITY);
+        }
+
+        let distribution = create_ok(2.0);
+        assert_eq!(distribution.pdf(0.0), 0.5);
+        assert_eq!(distribution.ln_pdf(0.0), 0.5f64.ln());
+
+        for freedom in [2.5, 3.0, 10.0] {
+            let distribution = create_ok(freedom);
+            assert_eq!(distribution.pdf(0.0), 0.0);
+            assert_eq!(distribution.ln_pdf(0.0), f64::NEG_INFINITY);
+        }
+    }
+
+    #[test]
     fn test_continuous() {
-        // TODO: figure out why this test fails:
-        //check_continuous_distribution(&create_ok(1.0), 0.0, 10.0);
         density_util::check_continuous_distribution(&create_ok(2.0), 0.0, 10.0);
         density_util::check_continuous_distribution(&create_ok(5.0), 0.0, 50.0);
     }
