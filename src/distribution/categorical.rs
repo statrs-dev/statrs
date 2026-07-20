@@ -23,7 +23,6 @@ use core::f64;
 pub struct Categorical {
     norm_pmf: Vec<f64>,
     norm_cdf: Vec<f64>,
-    norm_sf: Vec<f64>,
 }
 
 /// Represents the errors that can occur when creating a [`Categorical`].
@@ -103,22 +102,16 @@ impl Categorical {
         let mut cdf_sum = 0.0;
 
         let mut norm_cdf = Vec::with_capacity(prob_mass.len());
-        let mut norm_sf = Vec::with_capacity(prob_mass.len());
         let mut norm_pmf = Vec::with_capacity(prob_mass.len());
 
         for &prob in prob_mass {
             cdf_sum += prob;
 
             norm_cdf.push(cdf_sum / prob_sum);
-            norm_sf.push((prob_sum - cdf_sum) / prob_sum);
             norm_pmf.push(prob / prob_sum);
         }
 
-        Ok(Categorical {
-            norm_pmf,
-            norm_cdf,
-            norm_sf,
-        })
+        Ok(Categorical { norm_pmf, norm_cdf })
     }
 }
 
@@ -166,18 +159,6 @@ impl DiscreteCDF<u64, f64> for Categorical {
     /// where `p_j` is the probability mass for the `j`th category
     fn cdf(&self, x: u64) -> f64 {
         *self.norm_cdf.get(x as usize).unwrap_or(&1.0)
-    }
-
-    /// Calculates the survival function for the categorical distribution
-    /// at `x`
-    ///
-    /// # Formula
-    ///
-    /// ```text
-    /// [ sum(p_j) from x..end ]
-    /// ```
-    fn sf(&self, x: u64) -> f64 {
-        *self.norm_sf.get(x as usize).unwrap_or(&0.0)
     }
 
     /// Calculates the inverse cumulative distribution function for the
@@ -397,7 +378,7 @@ mod tests {
         test_exact(&[0.0, 1.0], 0.0, entropy);
         test_absolute(&[0.0, 1.0, 1.0], 2f64.ln(), 1e-15, entropy);
         test_absolute(&[1.0, 1.0, 1.0], 3f64.ln(), 1e-15, entropy);
-        test_absolute(&vec![1.0; 100], 100f64.ln(), 1e-14, entropy);
+        test_absolute(&[1.0; 100], 100f64.ln(), 1e-14, entropy);
         test_absolute(&[0.0, 0.25, 0.5, 0.25], 1.0397207708399179, 1e-15, entropy);
     }
 
@@ -484,6 +465,23 @@ mod tests {
         assert_eq!(cat.cdf(1), 1. - cat.sf(1));
         assert_eq!(cat.cdf(2), 1. - cat.sf(2));
         assert_eq!(cat.cdf(3), 1. - cat.sf(3));
+    }
+
+    #[test]
+    fn test_cdf_sf_sum_to_one() {
+        let masses: &[&[f64]] = &[
+            &[4.0, 2.5, 2.5, 1.0],
+            &[0.0, 3.0, 1.0, 1.0],
+            &[1.0, 1.0, 1.0, 1.0],
+            &[1.0; 20],
+        ];
+
+        for &mass in masses {
+            let cat = Categorical::new(mass).unwrap();
+            for x in 0..mass.len() as u64 + 1 {
+                crate::prec::assert_abs_diff_eq!(cat.cdf(x) + cat.sf(x), 1.0, epsilon = 1e-12);
+            }
+        }
     }
 
     #[test]
