@@ -1,3 +1,17 @@
+//! Nearest-neighbor [density estimation](https://en.wikipedia.org/wiki/Multivariate_kernel_density_estimation)
+//! for samples in R^d, backed by a k-d tree for neighbor search.
+//!
+//! Two estimators are provided, differing in how they turn a neighborhood
+//! into a density:
+//! - [`knn::knn_pdf`] uses the distance to the `k`-th nearest neighbor directly.
+//! - [`kde::kde_pdf`] additionally weights every sample in that neighborhood
+//!   by a Gaussian kernel, using the `k`-th neighbor's distance as a local
+//!   bandwidth.
+//!
+//! Both accept an explicit `bandwidth` (a fixed search radius), or fall back
+//! to a `k` chosen by [Orava's formula](https://www.sav.sk/journals/uploads/0127102604orava.pdf)
+//! when `bandwidth` is `None`.
+
 pub mod kde;
 pub mod knn;
 use kdtree::{ErrorKind, KdTree, distance::squared_euclidean};
