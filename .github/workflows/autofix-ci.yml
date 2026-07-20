@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 env:
-  rust_clippy: 1.89
+  rust_clippy: stable
 
 jobs:
   autofix:
