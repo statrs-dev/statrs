@@ -113,6 +113,21 @@ impl Categorical {
 
         Ok(Categorical { norm_pmf, norm_cdf })
     }
+
+    /// Returns the first index `i` such that `norm_cdf[i] >= x`.
+    ///
+    /// Used by both `inverse_cdf` and the `rand` sampler, which query
+    /// the same sorted `norm_cdf` data but have different domain
+    /// requirements on `x` (see call sites).
+    fn locate(&self, x: f64) -> u64 {
+        match self
+            .norm_cdf
+            .binary_search_by(|v| v.partial_cmp(&x).unwrap())
+        {
+            Ok(idx) => idx as u64,
+            Err(idx) => idx as u64,
+        }
+    }
 }
 
 impl core::fmt::Display for Categorical {
@@ -126,7 +141,7 @@ impl core::fmt::Display for Categorical {
 impl ::rand::distr::Distribution<usize> for Categorical {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> usize {
         let draw = ::rand::RngExt::random::<f64>(rng);
-        self.norm_cdf.iter().position(|val| *val >= draw).unwrap()
+        self.locate(draw) as usize
     }
 }
 
@@ -183,16 +198,7 @@ impl DiscreteCDF<u64, f64> for Categorical {
             panic!("x must be in [0, 1]")
         }
 
-        // `Vec::binary_search` will either return the index of a value equal to x
-        // or an index where x could be inserted into the sorted Vec.
-        // Both fit the description, so return either one.
-        match self
-            .norm_cdf
-            .binary_search_by(|v| v.partial_cmp(&x).unwrap())
-        {
-            Ok(idx) => idx as u64,
-            Err(idx) => idx as u64,
-        }
+        self.locate(x)
     }
 }
 
@@ -481,6 +487,20 @@ mod tests {
             for x in 0..mass.len() as u64 + 1 {
                 crate::prec::assert_abs_diff_eq!(cat.cdf(x) + cat.sf(x), 1.0, epsilon = 1e-12);
             }
+        }
+    }
+
+    #[test]
+    fn test_locate_treats_zero_as_first_index() {
+        let cat = create_ok(&[4.0, 2.5, 2.5, 1.0]);
+        assert_eq!(cat.locate(0.0), 0);
+    }
+
+    #[test]
+    fn test_locate_matches_inverse_cdf() {
+        let cat = create_ok(&[4.0, 2.5, 2.5, 1.0]);
+        for &x in &[0.1, 0.2, 0.4, 0.5, 0.8, 0.95, 0.999] {
+            assert_eq!(cat.locate(x), cat.inverse_cdf(x));
         }
     }
 
