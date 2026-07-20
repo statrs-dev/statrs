@@ -2,6 +2,8 @@ use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the
 /// [negative binomial](http://en.wikipedia.org/wiki/Negative_binomial_distribution)
@@ -60,8 +62,7 @@ impl core::fmt::Display for NegativeBinomialError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for NegativeBinomialError {}
+impl core::error::Error for NegativeBinomialError {}
 
 impl NegativeBinomial {
     /// Constructs a new negative binomial distribution with parameters `r`

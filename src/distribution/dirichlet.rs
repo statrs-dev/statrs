@@ -54,8 +54,7 @@ impl core::fmt::Display for DirichletError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for DirichletError {}
+impl core::error::Error for DirichletError {}
 
 impl Dirichlet<Dyn> {
     /// Constructs a new dirichlet distribution with the given

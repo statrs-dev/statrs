@@ -2,6 +2,8 @@
 //! coefficient, factorial, multinomial)
 
 use crate::function::gamma;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// The maximum factorial representable
 /// by a 64-bit floating point without

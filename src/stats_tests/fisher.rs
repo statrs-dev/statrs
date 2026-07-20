@@ -108,8 +108,7 @@ impl core::fmt::Display for FishersExactTestError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for FishersExactTestError {}
+impl core::error::Error for FishersExactTestError {}
 
 impl From<HypergeometricError> for FishersExactTestError {
     fn from(value: HypergeometricError) -> Self {

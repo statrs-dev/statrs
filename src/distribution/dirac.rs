@@ -33,8 +33,7 @@ impl core::fmt::Display for DiracError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for DiracError {}
+impl core::error::Error for DiracError {}
 
 impl Dirac {
     /// Constructs a new dirac distribution function at value `v`.

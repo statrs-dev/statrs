@@ -17,8 +17,7 @@ impl core::fmt::Display for AndersonDarlingError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for AndersonDarlingError {}
+impl core::error::Error for AndersonDarlingError {}
 
 pub fn anderson_darling<T: ContinuousCDF<f64, f64>>(
     f_obs: &[f64],

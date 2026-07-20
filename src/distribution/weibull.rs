@@ -4,6 +4,8 @@ use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Weibull](https://en.wikipedia.org/wiki/Weibull_distribution)
 /// distribution
@@ -48,8 +50,7 @@ impl core::fmt::Display for WeibullError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for WeibullError {}
+impl core::error::Error for WeibullError {}
 
 impl Weibull {
     /// Constructs a new weibull distribution with a shape (k) of `shape`

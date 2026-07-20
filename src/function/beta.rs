@@ -6,6 +6,8 @@
 use crate::function::gamma;
 use crate::prec;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// sample case of module level precision
 const MODULE_EPS: f64 = 1e-15;
@@ -35,8 +37,7 @@ impl core::fmt::Display for BetaFuncError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for BetaFuncError {}
+impl core::error::Error for BetaFuncError {}
 
 /// Computes the natural logarithm
 /// of the beta function

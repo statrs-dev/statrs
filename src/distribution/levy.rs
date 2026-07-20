@@ -3,6 +3,8 @@ use crate::function::erf::{erf, erfc, erfc_inv};
 
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Levy](https://en.wikipedia.org/wiki/L%C3%A9vy_distribution) distribution.
 ///
@@ -41,8 +43,7 @@ impl core::fmt::Display for LevyError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for LevyError {}
+impl core::error::Error for LevyError {}
 
 impl Levy {
     /// Constructs a new Levy distribution with a location (μ) and dispersion (c)

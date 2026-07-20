@@ -2,6 +2,8 @@ use crate::distribution::{Continuous, ContinuousCDF, InverseCdfError};
 use crate::function::{beta, gamma};
 use crate::prec;
 use crate::statistics::*;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Beta](https://en.wikipedia.org/wiki/Beta_distribution)
 /// distribution
@@ -44,8 +46,7 @@ impl core::fmt::Display for BetaError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for BetaError {}
+impl core::error::Error for BetaError {}
 
 impl Beta {
     /// Constructs a new beta distribution with shapeA (α) of `shape_a`

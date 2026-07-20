@@ -3,6 +3,8 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the
 /// [Log-normal](https://en.wikipedia.org/wiki/Log-normal_distribution)
@@ -46,8 +48,7 @@ impl core::fmt::Display for LogNormalError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for LogNormalError {}
+impl core::error::Error for LogNormalError {}
 
 impl LogNormal {
     /// Constructs a new log-normal distribution with a location of `location`

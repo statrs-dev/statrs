@@ -59,11 +59,24 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Test no_std
-        run: cargo test --no-default-features -F rand
-
       - name: Test default features
         run: cargo test
+
+  no-std:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Rust stable with bare-metal target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: riscv32imac-unknown-none-elf
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check no_std core
+        run: cargo check --target riscv32imac-unknown-none-elf --no-default-features --lib
+
+      - name: Check no_std with rand
+        run: cargo check --target riscv32imac-unknown-none-elf --no-default-features --features rand --lib
 
   features:
     runs-on: ubuntu-latest

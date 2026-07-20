@@ -36,8 +36,7 @@ impl core::fmt::Display for ChiSquareTestError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for ChiSquareTestError {}
+impl core::error::Error for ChiSquareTestError {}
 
 /// Perform a Pearson's chi-square test
 ///

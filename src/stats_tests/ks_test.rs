@@ -50,7 +50,7 @@ impl core::fmt::Display for KSTestError {
     }
 }
 
-impl std::error::Error for KSTestError {}
+impl core::error::Error for KSTestError {}
 
 /// Represents the different methods that can be used when calculating the p-value for the
 /// one sample KS test.

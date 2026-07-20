@@ -1,6 +1,8 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Cauchy](https://en.wikipedia.org/wiki/Cauchy_distribution)
 /// distribution, also known as the Lorentz distribution.
@@ -42,8 +44,7 @@ impl core::fmt::Display for CauchyError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for CauchyError {}
+impl core::error::Error for CauchyError {}
 
 impl Cauchy {
     /// Constructs a new cauchy distribution with the given

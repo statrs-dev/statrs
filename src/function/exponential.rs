@@ -1,6 +1,8 @@
 //! Provides functions related to exponential calculations
 
 use crate::consts;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Computes the generalized Exponential Integral function
 /// where `x` is the argument and `n` is the integer power of the

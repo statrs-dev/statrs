@@ -2,6 +2,8 @@ use crate::distribution::{Discrete, DiscreteCDF};
 use crate::prec;
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 use num_traits::{One, Zero};
 
 #[cfg(feature = "rand")]
@@ -44,8 +46,7 @@ impl core::fmt::Display for GeometricError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for GeometricError {}
+impl core::error::Error for GeometricError {}
 
 impl Geometric {
     /// Constructs a new shifted geometric distribution with a probability

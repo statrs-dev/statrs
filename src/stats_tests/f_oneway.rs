@@ -39,7 +39,7 @@ impl core::fmt::Display for FOneWayTestError {
     }
 }
 
-impl std::error::Error for FOneWayTestError {}
+impl core::error::Error for FOneWayTestError {}
 
 /// Perform a one-way Analysis of Variance (ANOVA) F-test
 ///

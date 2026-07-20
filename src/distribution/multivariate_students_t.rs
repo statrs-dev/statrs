@@ -82,8 +82,7 @@ impl core::fmt::Display for MultivariateStudentError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for MultivariateStudentError {}
+impl core::error::Error for MultivariateStudentError {}
 
 impl MultivariateStudent<Dyn> {
     /// Constructs a new multivariate students t distribution with a location of `location`,

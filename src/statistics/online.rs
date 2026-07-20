@@ -5,6 +5,9 @@
 //! [`OnlineMoments::push`] and can be read from repeatedly, or composed with
 //! [`Accumulate`] to share a single fold pass across several statistics.
 
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
+
 /// Single-pass accumulator for central moments via Welford's online algorithm.
 ///
 /// `ORDER` controls which moments are tracked:

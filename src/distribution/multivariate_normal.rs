@@ -135,8 +135,7 @@ impl core::fmt::Display for MultivariateNormalError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for MultivariateNormalError {}
+impl core::error::Error for MultivariateNormalError {}
 
 type NormalizedConstructorArguments<D> = (OVector<f64, D>, OMatrix<f64, D, D>, Cholesky<f64, D>);
 

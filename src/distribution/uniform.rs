@@ -1,6 +1,8 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Continuous
 /// Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous))
@@ -49,8 +51,7 @@ impl core::fmt::Display for UniformError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for UniformError {}
+impl core::error::Error for UniformError {}
 
 impl Uniform {
     /// Constructs a new uniform distribution with a min of `min` and a max

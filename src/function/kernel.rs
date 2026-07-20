@@ -29,6 +29,8 @@
 //! ```
 
 use core::f64::consts::{FRAC_PI_2, PI};
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Common interface for kernel functions used in KDE and smoothing.
 pub trait Kernel {

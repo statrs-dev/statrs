@@ -2,6 +2,8 @@ use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{factorial, gamma};
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution)
 /// distribution
@@ -39,8 +41,7 @@ impl core::fmt::Display for PoissonError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for PoissonError {}
+impl core::error::Error for PoissonError {}
 
 impl Poisson {
     /// Constructs a new poisson distribution with a rate (λ)
