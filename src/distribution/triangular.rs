@@ -1,6 +1,8 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the
 /// [Triangular](https://en.wikipedia.org/wiki/Triangular_distribution)
@@ -58,8 +60,7 @@ impl core::fmt::Display for TriangularError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for TriangularError {}
+impl core::error::Error for TriangularError {}
 
 impl Triangular {
     /// Constructs a new triangular distribution with a minimum of `min`,

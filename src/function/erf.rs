@@ -3,6 +3,8 @@
 
 use crate::function::evaluate;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// `erf` calculates the error function at `x`.
 pub fn erf(x: f64) -> f64 {

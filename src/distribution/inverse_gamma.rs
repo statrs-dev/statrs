@@ -3,6 +3,8 @@ use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Inverse
 /// Gamma](https://en.wikipedia.org/wiki/Inverse-gamma_distribution)
@@ -50,8 +52,7 @@ impl core::fmt::Display for InverseGammaError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for InverseGammaError {}
+impl core::error::Error for InverseGammaError {}
 
 impl InverseGamma {
     /// Constructs a new inverse gamma distribution with a shape (α)

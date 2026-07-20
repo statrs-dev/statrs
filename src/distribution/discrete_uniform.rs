@@ -1,5 +1,7 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Discrete
 /// Uniform](https://en.wikipedia.org/wiki/Discrete_uniform_distribution)
@@ -38,8 +40,7 @@ impl core::fmt::Display for DiscreteUniformError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for DiscreteUniformError {}
+impl core::error::Error for DiscreteUniformError {}
 
 impl DiscreteUniform {
     /// Constructs a new discrete uniform distribution with a minimum value

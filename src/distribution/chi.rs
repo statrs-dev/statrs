@@ -3,6 +3,8 @@ use crate::function::gamma;
 use crate::statistics::*;
 use core::f64;
 use core::num::NonZeroU64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Chi](https://en.wikipedia.org/wiki/Chi_distribution)
 /// distribution
@@ -42,8 +44,7 @@ impl core::fmt::Display for ChiError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for ChiError {}
+impl core::error::Error for ChiError {}
 
 impl Chi {
     /// Constructs a new chi distribution

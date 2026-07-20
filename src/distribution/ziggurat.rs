@@ -1,4 +1,6 @@
 use super::ziggurat_tables;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 use rand::distr::Open01;
 use rand::{Rng, RngExt};
 

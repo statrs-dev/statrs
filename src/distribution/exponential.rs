@@ -1,6 +1,8 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the
 /// [Exp](https://en.wikipedia.org/wiki/Exp_distribution)
@@ -40,8 +42,7 @@ impl core::fmt::Display for ExpError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for ExpError {}
+impl core::error::Error for ExpError {}
 
 impl Exp {
     /// Constructs a new exponential distribution with a

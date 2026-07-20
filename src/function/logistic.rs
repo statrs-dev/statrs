@@ -1,6 +1,9 @@
 //! Provides the [logistic](http://en.wikipedia.org/wiki/Logistic_function) and
 //! related functions
 
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
+
 /// Computes the logistic function
 pub fn logistic(p: f64) -> f64 {
     1.0 / ((-p).exp() + 1.0)

@@ -3,6 +3,8 @@ use crate::function::factorial;
 use crate::statistics::*;
 use core::cmp;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the
 /// [Hypergeometric](http://en.wikipedia.org/wiki/Hypergeometric_distribution)
@@ -48,8 +50,7 @@ impl core::fmt::Display for HypergeometricError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for HypergeometricError {}
+impl core::error::Error for HypergeometricError {}
 
 impl Hypergeometric {
     /// Constructs a new hypergeometric distribution

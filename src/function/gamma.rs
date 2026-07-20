@@ -4,6 +4,8 @@
 use crate::consts;
 use crate::prec;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Represents the errors that can occur when computing any of the incomplete
 /// gamma functions.
@@ -26,8 +28,7 @@ impl core::fmt::Display for GammaFuncError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for GammaFuncError {}
+impl core::error::Error for GammaFuncError {}
 
 /// Auxiliary variable when evaluating the `gamma_ln` function
 const GAMMA_R: f64 = 10.900511;

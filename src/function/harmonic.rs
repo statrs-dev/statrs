@@ -4,6 +4,8 @@
 
 use crate::consts;
 use crate::function::gamma;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Computes the `t`-th harmonic number
 ///

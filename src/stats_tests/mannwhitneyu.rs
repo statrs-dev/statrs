@@ -38,7 +38,7 @@ impl core::fmt::Display for MannWhitneyUError {
     }
 }
 
-impl std::error::Error for MannWhitneyUError {}
+impl core::error::Error for MannWhitneyUError {}
 
 /// Represents the different methods that can be used when calculating the p-value for the
 /// mannwhitneyu function

@@ -31,7 +31,7 @@ required-features = ["rand", "std", "kde"]
 
 [features]
 default = ["std", "nalgebra", "rand"]
-std = ["nalgebra?/std", "rand?/std"]
+std = ["approx/std", "num-traits/std", "nalgebra?/std", "rand?/std"]
 # at the moment, all nalgebra features needs std
 nalgebra = ["dep:nalgebra", "std"]
 rand = ["dep:rand", "nalgebra?/rand-no-std", "rand?/std_rng"]
@@ -39,8 +39,8 @@ rand = ["dep:rand", "nalgebra?/rand-no-std", "rand?/std_rng"]
 kde = ["dep:kdtree", "nalgebra"]
 
 [dependencies]
-approx = "0.5.0"
-num-traits = "0.2.14"
+approx = { version = "0.5.0", default-features = false }
+num-traits = { version = "0.2.14", default-features = false, features = ["libm"] }
 thiserror = { version = "2.0", default-features = false }
 
 [dependencies.rand]

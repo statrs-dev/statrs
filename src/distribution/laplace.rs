@@ -1,6 +1,8 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::{Distribution, Max, Median, Min, Mode};
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Laplace](https://en.wikipedia.org/wiki/Laplace_distribution)
 /// distribution.
@@ -42,8 +44,7 @@ impl core::fmt::Display for LaplaceError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for LaplaceError {}
+impl core::error::Error for LaplaceError {}
 
 impl Laplace {
     /// Constructs a new laplace distribution with the given

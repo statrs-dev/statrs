@@ -2,6 +2,8 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Student's
 /// T](https://en.wikipedia.org/wiki/Student%27s_t-distribution) distribution
@@ -51,8 +53,7 @@ impl core::fmt::Display for StudentsTError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for StudentsTError {}
+impl core::error::Error for StudentsTError {}
 
 impl StudentsT {
     /// Constructs a new student's t-distribution with location `location`,

@@ -2,6 +2,8 @@
 
 use crate::euclid::Modulus;
 use core::f64::consts;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 /// Generates a base 10 log spaced vector of the given length between the
 /// specified decade exponents (inclusive). Equivalent to MATLAB logspace
 ///

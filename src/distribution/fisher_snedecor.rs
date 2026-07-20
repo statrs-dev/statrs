@@ -2,6 +2,8 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::beta;
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the
 /// [Fisher-Snedecor](https://en.wikipedia.org/wiki/F-distribution) distribution
@@ -49,8 +51,7 @@ impl core::fmt::Display for FisherSnedecorError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for FisherSnedecorError {}
+impl core::error::Error for FisherSnedecorError {}
 
 impl FisherSnedecor {
     /// Constructs a new fisher-snedecor distribution with

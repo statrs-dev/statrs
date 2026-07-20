@@ -1,6 +1,8 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Pareto](https://en.wikipedia.org/wiki/Pareto_distribution)
 /// distribution
@@ -43,8 +45,7 @@ impl core::fmt::Display for ParetoError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for ParetoError {}
+impl core::error::Error for ParetoError {}
 
 impl Pareto {
     /// Constructs a new Pareto distribution with scale `scale`, and `shape`

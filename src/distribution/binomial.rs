@@ -3,6 +3,8 @@ use crate::function::{beta, factorial};
 use crate::prec;
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the
 /// [Binomial](https://en.wikipedia.org/wiki/Binomial_distribution)
@@ -42,8 +44,7 @@ impl core::fmt::Display for BinomialError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for BinomialError {}
+impl core::error::Error for BinomialError {}
 
 impl Binomial {
     /// Constructs a new binomial distribution

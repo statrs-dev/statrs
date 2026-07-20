@@ -3,6 +3,8 @@ use crate::consts::EULER_MASCHERONI;
 use crate::statistics::*;
 use core::f64;
 use core::f64::consts::PI;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Gumbel](https://en.wikipedia.org/wiki/Gumbel_distribution)
 /// distribution, also known as the type-I generalized extreme value distribution.
@@ -45,8 +47,7 @@ impl core::fmt::Display for GumbelError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for GumbelError {}
+impl core::error::Error for GumbelError {}
 
 impl Gumbel {
     /// Constructs a new Gumbel distribution with the given

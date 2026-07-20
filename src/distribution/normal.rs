@@ -3,6 +3,8 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Normal](https://en.wikipedia.org/wiki/Normal_distribution)
 /// distribution
@@ -46,8 +48,7 @@ impl core::fmt::Display for NormalError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for NormalError {}
+impl core::error::Error for NormalError {}
 
 impl Normal {
     ///  Constructs a new normal distribution with a mean of `mean`

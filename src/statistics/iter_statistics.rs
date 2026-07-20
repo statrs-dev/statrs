@@ -1,6 +1,8 @@
 use crate::statistics::*;
 use core::borrow::Borrow;
 use core::f64;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 impl<T> Statistics<f64> for T
 where

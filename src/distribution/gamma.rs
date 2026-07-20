@@ -2,6 +2,8 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Gamma](https://en.wikipedia.org/wiki/Gamma_distribution)
 /// distribution
@@ -49,8 +51,7 @@ impl core::fmt::Display for GammaError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for GammaError {}
+impl core::error::Error for GammaError {}
 
 impl Gamma {
     /// Constructs a new gamma distribution with a shape (α)
