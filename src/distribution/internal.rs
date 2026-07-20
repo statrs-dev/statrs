@@ -37,6 +37,81 @@ pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
     }
 }
 
+/// Quantile `F^{-1}(p)` for a continuous distribution supported on `(0, ∞)`
+/// whose cdf has no closed-form inverse, found with a safeguarded Newton–Raphson
+/// step (Numerical Recipes' `rtsafe`); `cdf`, `sf` and `pdf` are the
+/// distribution's own functions and `p` must lie strictly inside `(0, 1)`.
+///
+/// The bracket `[low, high]` is kept as an invariant and only ever tightened, so
+/// a Newton step that is non-finite or would leave the bracket falls back to
+/// bisection and the iterate can never escape the support — the guard that keeps
+/// a quantile sitting against a boundary from diverging to NaN (cf. Gamma in
+/// #382). In the upper half the survival function is inverted rather than the
+/// cdf: as `cdf` saturates to one it can no longer resolve a deep upper-tail
+/// quantile, whereas `sf` stays well conditioned there.
+pub fn newton_raphson_quantile(
+    p: f64,
+    cdf: impl Fn(f64) -> f64,
+    sf: impl Fn(f64) -> f64,
+    pdf: impl Fn(f64) -> f64,
+) -> f64 {
+    // Bracket the quantile within a factor of two, `cdf(low) <= p <= cdf(high)`,
+    // by walking a unit interval out toward it. Moving *both* ends keeps the
+    // bracket tight when the quantile is far from 1 (deep in either tail), so the
+    // Newton phase starts close and converges in a handful of steps rather than
+    // bisecting the whole span.
+    let mut low = 1.0;
+    let mut high = 2.0;
+    while cdf(low) > p {
+        high = low;
+        low /= 2.0;
+    }
+    while cdf(high) < p {
+        low = high;
+        high *= 2.0;
+    }
+
+    // Solve `sf(x) = 1 - p` in the upper half and `cdf(x) = p` otherwise; either
+    // way the residual is increasing in `x` with derivative `pdf(x)`.
+    let upper = p > 0.5;
+    let target = if upper { 1.0 - p } else { p };
+
+    // A *relative* accuracy target: quantiles span many orders of magnitude, so
+    // an absolute tolerance (as in `prec::convergence`) is meaningless deep in a
+    // tail where the quantile itself is far smaller than that tolerance.
+    let accuracy = crate::prec::DEFAULT_RELATIVE_ACC;
+    const MAX_ITERATIONS: usize = 100;
+    let mut x = (low + high) / 2.0;
+    for _ in 0..MAX_ITERATIONS {
+        let residual = if upper {
+            target - sf(x)
+        } else {
+            cdf(x) - target
+        };
+        let newton = x - residual / pdf(x);
+        // A full Newton step below the relative tolerance means we have
+        // converged; accept it before the bracket bookkeeping below, which would
+        // otherwise reject a converged step that has rounded onto the very
+        // endpoint we are about to move to `x`.
+        if (newton - x).abs() <= accuracy * x.abs() {
+            return newton;
+        }
+        // Tighten the bracket by the sign of the (increasing) residual, then take
+        // the Newton step only while it stays strictly inside, else bisect.
+        if residual >= 0.0 {
+            high = x;
+        } else {
+            low = x;
+        }
+        x = if newton.is_finite() && newton > low && newton < high {
+            newton
+        } else {
+            (low + high) / 2.0
+        };
+    }
+    x
+}
+
 #[cfg(test)]
 macro_rules! testing_boiler {
     ($($arg_name:ident: $arg_ty:ty),+; $dist:ty; $dist_err:ty) => {
@@ -457,6 +532,38 @@ mod test {
             let found_element = search(needle + 1, &data); // 4 > needle && member of range
             assert_eq!(found_element, Some(needle));
             assert_eq!(infimum, found_element)
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_newton_raphson_quantile() {
+        use super::newton_raphson_quantile;
+        // Exponential(λ) has the closed-form quantile -ln(1 - p)/λ, so it is an
+        // exact oracle for the shared solver across both tails.
+        for lambda in [0.5f64, 1.0, 4.0] {
+            let cdf = |x: f64| -(-lambda * x).exp_m1();
+            let sf = |x: f64| (-lambda * x).exp();
+            let pdf = |x: f64| lambda * (-lambda * x).exp();
+            for p in [
+                1e-12,
+                1e-8,
+                1e-4,
+                1e-2,
+                0.25,
+                0.5,
+                0.75,
+                0.99,
+                1.0 - 1e-6,
+                1.0 - 1e-12,
+            ] {
+                let got = newton_raphson_quantile(p, cdf, sf, pdf);
+                let want = -(-p).ln_1p() / lambda; // -ln(1 - p)/λ, accurate in both tails
+                assert!(
+                    (got - want).abs() <= 1e-12 * want,
+                    "Exp({lambda}).inverse_cdf({p}) = {got}, want {want}"
+                );
+            }
         }
     }
 
