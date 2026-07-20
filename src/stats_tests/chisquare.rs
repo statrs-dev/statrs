@@ -2,6 +2,8 @@
 
 use crate::distribution::{ChiSquared, ContinuousCDF};
 use crate::prec;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Represents the errors that can occur when computing the chisquare function
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]

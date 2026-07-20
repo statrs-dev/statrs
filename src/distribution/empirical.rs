@@ -1,9 +1,9 @@
 use crate::distribution::ContinuousCDF;
 use crate::statistics::*;
+use alloc::collections::btree_map::{BTreeMap, Entry};
 use core::convert::Infallible;
 use core::ops::Bound;
 use non_nan::NonNan;
-use std::collections::btree_map::{BTreeMap, Entry};
 
 mod non_nan {
     use core::cmp::Ordering;

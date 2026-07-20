@@ -1,6 +1,9 @@
 //! Provides the [Mann-Whitney U test](https://en.wikipedia.org/wiki/Mann–Whitney_U_test#) and related
 //! functions
 
+use alloc::{vec, vec::Vec};
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 use num_traits::clamp;
 
 use crate::distribution::{ContinuousCDF, Normal};
