@@ -54,6 +54,8 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
 pub mod consts;
 #[cfg(feature = "kde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "kde")))]

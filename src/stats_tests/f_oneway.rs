@@ -3,6 +3,9 @@
 
 use crate::distribution::{ContinuousCDF, FisherSnedecor};
 use crate::stats_tests::NaNPolicy;
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Represents the errors that occur when computing the f_oneway function
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]

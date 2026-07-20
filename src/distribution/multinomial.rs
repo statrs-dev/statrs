@@ -1,7 +1,10 @@
 use crate::distribution::Discrete;
 use crate::function::factorial;
 use crate::statistics::*;
+use alloc::vec::Vec;
 use nalgebra::{Dim, Dyn, OMatrix, OVector};
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the
 /// [Multinomial](https://en.wikipedia.org/wiki/Multinomial_distribution)

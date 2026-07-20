@@ -1,9 +1,12 @@
 //! Provides the [Kolmogorov-Smirnov (KS) test](https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test) and related
 //! functions
 
+use alloc::{vec, vec::Vec};
 use core::f64;
 use core::iter::zip;
 
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 use num_traits::clamp;
 
 use crate::distribution::ContinuousCDF;
