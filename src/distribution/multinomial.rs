@@ -221,8 +221,8 @@ where
         + num_traits::FromPrimitive,
     super::Binomial: ::rand::distr::Distribution<T>,
 {
-    use nalgebra::Const;
     use ::rand::distr::Distribution;
+    use nalgebra::Const;
 
     let p = dist.p().as_slice();
     let mut res: OVector<T, D> = OVector::zeros_generic(dist.p.shape_generic().0, Const::<1>);
