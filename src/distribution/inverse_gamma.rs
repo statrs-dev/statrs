@@ -173,6 +173,33 @@ impl ContinuousCDF<f64, f64> for InverseGamma {
             gamma::gamma_lr(self.shape, self.rate / x)
         }
     }
+
+    /// Calculates the inverse cumulative distribution function for the inverse
+    /// gamma distribution at `p`, i.e. the `p`-quantile.
+    ///
+    /// # Panics
+    ///
+    /// If `p` is not in `[0, 1]`.
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        if !(0.0..=1.0).contains(&p) {
+            panic!("p must be in [0, 1]")
+        }
+        if p == 0.0 {
+            return self.min();
+        }
+        if p == 1.0 {
+            return self.max();
+        }
+        // The inverse gamma cdf has no closed-form inverse; solve it with the
+        // shared safeguarded Newton search instead of the generic bisection
+        // default, which loses precision far into the (very heavy) upper tail.
+        super::internal::newton_raphson_quantile(
+            p,
+            |x| self.cdf(x),
+            |x| self.sf(x),
+            |x| self.pdf(x),
+        )
+    }
 }
 
 impl Min<f64> for InverseGamma {
