@@ -358,6 +358,24 @@ mod tests {
     }
 
     #[test]
+    fn test_df_one_density_integrates_to_one() {
+        let distribution = create_ok(1.0);
+        let upper = 50.0f64;
+        let steps = 10_000;
+        let step = upper.sqrt() / steps as f64;
+        let integral = (0..steps)
+            .map(|i| {
+                let t = (i as f64 + 0.5) * step;
+                distribution.pdf(t * t) * 2.0 * t
+            })
+            .sum::<f64>()
+            * step;
+
+        assert!((integral - distribution.cdf(upper)).abs() < 1e-10);
+        assert!((integral - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
     fn test_continuous() {
         density_util::check_continuous_distribution(&create_ok(2.0), 0.0, 10.0);
         density_util::check_continuous_distribution(&create_ok(5.0), 0.0, 50.0);
