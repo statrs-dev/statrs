@@ -8,9 +8,18 @@ use crate::{
 /// Computes the kernel density estimate for a given point `x`
 /// using the samples provided and a specified kernel.
 ///
-/// The optimal `k` is computed using [Orava's][orava] formula when `bandwidth` is `None`.
+/// The optimal `k` is computed using [Orava's](https://www.sav.sk/journals/uploads/0127102604orava.pdf)
+/// formula when `bandwidth` is `None`.
 ///
-/// orava: K-nearest neighbour kernel density estimation, the choice of optimal k; Jan Orava 2012.
+/// # Examples
+///
+/// ```
+/// use statrs::density::kde::kde_pdf;
+///
+/// let samples: Vec<[f64; 1]> = vec![[-1.0], [0.0], [1.0]];
+/// let density = kde_pdf(&[0.0], &samples, Some(1.0)).unwrap();
+/// assert!(density > 0.0);
+/// ```
 pub fn kde_pdf<S, X>(x: &X, samples: &S, bandwidth: Option<f64>) -> Result<f64, DensityError>
 where
     S: AsRef<[X]> + Container,

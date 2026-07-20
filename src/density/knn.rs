@@ -8,9 +8,18 @@ use core::f64::consts::PI;
 /// Computes the `k`-nearest neighbor density estimate for a given point `x`
 /// using the samples provided.
 ///
-/// The optimal `k` is computed using [Orava's][orava] formula when `bandwidth` is `None`.
+/// The optimal `k` is computed using [Orava's](https://www.sav.sk/journals/uploads/0127102604orava.pdf)
+/// formula when `bandwidth` is `None`.
 ///
-/// orava: K-nearest neighbour kernel density estimation, the choice of optimal k; Jan Orava 2012.
+/// # Examples
+///
+/// ```
+/// use statrs::density::knn::knn_pdf;
+///
+/// let samples: Vec<[f64; 1]> = vec![[-1.0], [0.0], [1.0]];
+/// let density = knn_pdf(&[0.0], &samples, Some(1.0)).unwrap();
+/// assert!(density > 0.0);
+/// ```
 pub fn knn_pdf<X, S>(x: &X, samples: &S, bandwidth: Option<f64>) -> Result<f64, DensityError>
 where
     S: AsRef<[X]> + Container,
