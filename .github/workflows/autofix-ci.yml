@@ -32,4 +32,7 @@ jobs:
       - run: cargo clippy --fix --workspace --all-targets
       - run: cargo fmt --all
 
+      - name: Verify nothing is left for clippy to complain about
+        run: cargo clippy --workspace --all-targets
+
       - uses: autofix-ci/action@c5b2d67aa2274e7b5a18224e8171550871fc7e4a
