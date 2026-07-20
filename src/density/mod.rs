@@ -3,22 +3,26 @@ pub mod knn;
 use kdtree::{ErrorKind, KdTree, distance::squared_euclidean};
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+/// Errors that can occur when estimating a density from a sample.
+#[derive(Error, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DensityError {
-    /// Error when the k-d tree cannot be built or queried.
-    #[error(transparent)]
-    KdTree(#[from] ErrorKind),
+    /// The k-d tree backing the nearest-neighbor search could not be built or queried.
+    #[error("K-d tree error: {0}")]
+    KdTree(ErrorKind),
+
+    /// The sample provided was empty, so no density can be estimated.
+    #[error("No samples provided")]
     EmptySample,
+
+    /// No sample points fell within the queried neighborhood.
+    #[error("No neighbors found")]
     EmptyNeighborhood,
 }
 
-impl core::fmt::Display for DensityError {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        match self {
-            DensityError::KdTree(err) => write!(f, "K-d tree error: {}", err),
-            DensityError::EmptySample => write!(f, "No samples provided"),
-            DensityError::EmptyNeighborhood => write!(f, "No neighbors found"),
-        }
+impl From<ErrorKind> for DensityError {
+    fn from(err: ErrorKind) -> Self {
+        DensityError::KdTree(err)
     }
 }
 
