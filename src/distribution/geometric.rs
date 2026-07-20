@@ -637,7 +637,7 @@ mod tests {
         for k in 1..=1_000 {
             assert!(
                 g.pmf(k) > two_eps,
-                "{:#?}.pmf(k={}) = {:2E} <= 2 eps = {:2E}",
+                "{:#?}.pmf(k={}) = {:.2E} <= 2 eps = {:.2E}",
                 g,
                 k,
                 g.pmf(k),
