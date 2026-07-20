@@ -56,6 +56,7 @@
 
 pub mod consts;
 #[cfg(feature = "kde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "kde")))]
 pub mod density;
 pub mod distribution;
 pub mod euclid;
