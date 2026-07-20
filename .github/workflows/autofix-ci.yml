@@ -9,12 +9,15 @@ permissions:
 
 env:
   rust_clippy: stable
+  RUSTFLAGS: "-Dwarnings"
 
 jobs:
   autofix:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.AUTOFIX_CI_TOKEN }}
       - uses: actions/cache@v6
         with:
           path: |
@@ -28,7 +31,7 @@ jobs:
       - run: rustup toolchain install ${{ env.rust_clippy }} --profile minimal --component rustfmt --component clippy
       - run: rustup default ${{ env.rust_clippy }}
 
-      - run: cargo clippy --fix --workspace
+      - run: cargo clippy --fix --workspace --all-targets
       - run: cargo fmt --all
 
       - uses: autofix-ci/action@c5b2d67aa2274e7b5a18224e8171550871fc7e4a

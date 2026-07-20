@@ -36,6 +36,7 @@ jobs:
         run: cargo fmt -- --check
 
   msrv:
+    needs: [clippy, fmt]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -48,6 +49,7 @@ jobs:
         run: cargo hack check --rust-version --locked
 
   test:
+    needs: [clippy, fmt]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -63,6 +65,7 @@ jobs:
         run: cargo test
 
   no-std:
+    needs: [clippy, fmt]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -79,6 +82,7 @@ jobs:
         run: cargo check --target riscv32imac-unknown-none-elf --no-default-features --features rand --lib
 
   features:
+    needs: [clippy, fmt]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
