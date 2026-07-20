@@ -5,6 +5,155 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0](https://github.com/statrs-dev/statrs/compare/v0.18.0...v0.19.0) - 2026-07-20
+
+### Added
+
+- Add initial no_std support
+- gate density estimation behind a "kde" feature
+- add first implementation of kernel density estimation.
+- add bandwith support for knn density estimation.
+- add a more generic implementation of knn density estimation.
+- add knn density estimation with kdtree rs tree.
+- add OnlineMoments accumulator using Welford
+- Add WebAssembly RNG support and update nalgebra
+- *(distribution)* narrow error type to avoid trait object
+- *(distribution)* add non-panicking try_inverse_cdf
+- autofix.ci for lint and fmt
+- *(geometric)* finer panic bounds
+- *(function)* add comprehensive kernel suite for KDE and smoothing ([#193](https://github.com/statrs-dev/statrs/pull/193))
+- update to 2024 edition, apply formatting and fix new clippy lints
+- [**breaking**] rely on prec module for precision needs and consts for math constants
+- use crate::prec macro assertions in tests instead of `approx` directly
+- *(prec)* write macros that delegate to approx using our defaults
+- add `std` feature
+- rename `cov_chol_decomp` to `clone_cov_chol_decomp` and return a cloned matrix
+- add methods for covariance decomposition, mean, covariance, and precision in MultivariateNormal
+- add accessor methods to various distribution
+- *(stats_tests)* implement KS test
+- enhance Levy distribution with comprehensive documentation and methods
+- add Levy distribution
+- *(stats_tests)* implement chisquare
+- *(stats_tests)* implement skewtest
+- *(stats_tests)* implement mannwhitneyu
+- *(stats_tests)* implement ttest_onesample
+- *(stats_tests)* implement f_oneway
+
+### Fixed
+
+- format assertion message with precision
+- fail autofix when clippy --fix can't clear every lint
+- drop PAT from autofix-ci.yml
+- make autofix clippy match other parts of ci
+- Automate MSRV lockfile updates
+- update to rand 0.10 and use seeded rng for tests
+- fix imports and add some tests.
+- kernel density computation.
+- drop excess precision requirements
+- wrap online stats with iter_statistics for #376
+- Refresh MSRV lockfile
+- Leave getrandom backend selection to applications
+- Use valid order statistics benchmark inputs
+- correct entropy formulas for Pareto, Geometric, StudentsT, and Dirichlet
+- safeguard Gamma::inverse_cdf Newton step for shape < 1
+- compute Multinomial pmf/ln_pmf in log space to avoid NaN for large n
+- post updates to rand
+- update usage after rand dep update
+- restore missing normalization of Dirichlet samples
+- unblock PR 364 CI
+- remove unused testing imports
+- use core instead of std in KDE
+- *(fmt)* apply 2024 formatting to KDE
+- *(clippy)* use constants provided by core
+- *(clippy)* fix clippy failures in CI
+- *(distribution_tests)* pass if only one numerical relationship between pdf and cdf numerically close
+- change tests to rely on relative precision for math lib independence
+- Gate some stats_tests behind `std` feature
+- Use core over std where possible
+- update examples in `mu` and `cov` methods to use correct types from nalgebra
+- exact implementation of Bernoulli cdf
+- one more condition in inverse_cdf to account for small enough probabilities.
+- feature gate exact KS test one-sample method
+
+### Other
+
+- add some geometric pathological tests
+- enable autofix to use same clippy as other ci
+- Verify df one density integral
+- Cover chi-squared boundary behavior
+- update lock MSRV for kde deps change
+- module docs and feature doc
+- add paper reference and simple usage docs
+- document DensityError variants and mark non_exhaustive
+- add use of one dimensional gaussian kernel function.
+- density functions borrowing evaluation pointS instead of owning them.
+- some refactoring.
+- add performance bench.
+- add performance bench.
+- [autofix.ci] apply automated fixes
+- sample Multinomial via sequential conditional Binomial instead of categorical-style draw-and-scan
+- add characterization tests for Multinomial::sample before algorithm change
+- share binary-search lookup between Categorical::sample and inverse_cdf
+- derive Categorical::sf from cdf instead of storing it
+- Categorical now stores normalized values
+- Update dependencies and GitHub Actions
+- Converge the default continuous inverse_cdf
+- Align autofix toolchain with MSRV
+- Cover geometric inverse CDF overflow guards
+- how to release
+- wire up release-plz for crates.io publishing
+- remove fast-fail semantics of test ci
+- update branch refs from master to main
+- Add test for Dirichlet sample normalization
+- Add clippy fixes
+- more clippy lints
+- update lockfile after updating rand
+- Format with cargo fmt
+- update rand `0.9` -> `0.10`
+- Fixed redundant word "may"
+- use core panic instead of std
+- add comments
+- add tests for coverage
+- add specialised inverse cdf implementation for geometric distribution
+- Simplify polynomial evaluation function
+- Add a MultivariateNormal constructor from the Cholesky decomposition
+- Make documented value of DEFAULT_RELATIVE_ACC match actual value.
+- don't fail fast when testing on different OSs
+- Bumped MSRV to 1.87.0.
+- Bumped `rand` to 0.9.0 and mechanically modified the code to accommodate the changes in that dependency.
+- Use -x instead of -1.0 * x
+- Merge pull request #336 from FreezyLemon/optimize-chisquare-test
+- Fix merge from master
+- Merge branch 'master' into optimize-chisquare-test
+- lint
+- use functionality from prec module outside tests
+- doctests should use approx instead of statrs::prec
+- update precision docs
+- update to not use macro_use directives
+- update readme to regard precision, open to updates
+- [**breaking**] define precision consts within mod prec
+- add "std" feature-gate where needed
+- Remove `catch_unwind` from test code
+- add no_std testing
+- only implement Error with feature "std"
+- use panic! with msg instead of println!
+- some tests do not need Vec
+- prefer `core` imports over `std`
+- more tests for inverse cdf of discrete distributions.
+- more efficient calculation for KS one-sample exact
+- remove ks_twosample usage of nalgebra
+- cfg wrap for rand
+- Fix gamma parameterization for negative binomial sampling
+- *(deps)* bump codecov/codecov-action from 4 to 5
+- update docs and result chaining idioms
+- enhance checks for continuous distributions with panic safety
+- improve numerical stability in CDF derivative check
+- add check for derivative of CDF to ensure it matches PDF
+- *(stats_test)* better attribution of sources
+- more coverage for `f_oneway`
+- more coverage for `mannwhitneyu`
+- `mut` in function header instead of in function
+
 ## [0.18.0] - 2024-12-02
 
 ### ✨ Added
