@@ -543,6 +543,56 @@ mod tests {
         assert_sync_send::<MultinomialError>();
     }
 
+    #[cfg(feature = "rand")]
+    #[test]
+    fn test_sample_sums_to_n_smallest_prob_not_last() {
+        use ::rand::distr::Distribution;
+        use ::rand::{rngs::StdRng, SeedableRng};
+
+        // The smallest probability (0.1) is at index 0, not the last
+        // position -- this is the exact shape that exposed a leftover-
+        // assignment bug in an earlier attempt at this algorithm, which
+        // assigned the remainder to the wrong output slot.
+        let dist = try_create(dvector![0.1, 0.6, 0.3], 37);
+        let mut rng = StdRng::seed_from_u64(20260719);
+        for _ in 0..10 {
+            let sample: OVector<u64, Dyn> = dist.sample(&mut rng);
+            assert_eq!(sample.iter().sum::<u64>(), 37);
+        }
+    }
+
+    #[cfg(feature = "rand")]
+    #[test]
+    fn test_sample_dominant_category_gets_almost_all_trials() {
+        use ::rand::distr::Distribution;
+        use ::rand::{rngs::StdRng, SeedableRng};
+
+        let dist = try_create(dvector![1e-9, 1e-9, 1.0 - 2e-9], 500);
+        let mut rng = StdRng::seed_from_u64(20260719);
+        let sample: OVector<u64, Dyn> = dist.sample(&mut rng);
+        assert_eq!(sample.iter().sum::<u64>(), 500);
+        assert!(
+            sample[2] >= 495,
+            "expected the overwhelmingly dominant category to get almost all trials, got {sample}"
+        );
+    }
+
+    #[cfg(feature = "rand")]
+    #[test]
+    fn test_sample_zero_weight_category_always_zero() {
+        use ::rand::distr::Distribution;
+        use ::rand::{rngs::StdRng, SeedableRng};
+
+        // p[1] == 0.0 exactly, and is not the last entry in the vector.
+        let dist = try_create(dvector![0.5, 0.0, 0.5], 41);
+        let mut rng = StdRng::seed_from_u64(20260719);
+        for _ in 0..10 {
+            let sample: OVector<u64, Dyn> = dist.sample(&mut rng);
+            assert_eq!(sample.iter().sum::<u64>(), 41);
+            assert_eq!(sample[1], 0);
+        }
+    }
+
     //     #[test]
     //     #[should_panic]
     //     fn test_pmf_x_wrong_length() {
