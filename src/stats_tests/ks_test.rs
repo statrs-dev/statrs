@@ -375,69 +375,65 @@ fn twosample_schroer_and_trenkler_twosided_pvalue(d: f64, m: usize, n: usize) ->
 /// let data2: Vec<f64> = (-150..2000i32).map(|x| x.pow(2) as f64).collect();
 ///
 /// let (statistic, pvalue) = ks_twosample(
-///   data1.clone(),
-///   data2.clone(),
+///   &data1,
+///   &data2,
 ///   KSTwoSampleAlternativeMethod::TwoSidedAsymptotic,
 ///   NaNPolicy::Error,
 /// ).unwrap();
 /// ```
 pub fn ks_twosample(
-    mut data1: Vec<f64>,
-    mut data2: Vec<f64>,
+    data1: &[f64],
+    data2: &[f64],
     method: KSTwoSampleAlternativeMethod,
     nan_policy: NaNPolicy,
 ) -> Result<(f64, f64), KSTestError> {
     let has_nans1 = data1.iter().any(|x| x.is_nan());
-    if has_nans1 {
-        match nan_policy {
-            NaNPolicy::Propogate => {
-                return Ok((f64::NAN, f64::NAN));
-            }
-            NaNPolicy::Error => {
-                return Err(KSTestError::SampleContainsNaN);
-            }
-            NaNPolicy::Emit => {
-                data1 = data1
-                    .into_iter()
-                    .filter(|x| !x.is_nan())
-                    .collect::<Vec<_>>();
-            }
-        }
-    }
     let has_nans2 = data2.iter().any(|x| x.is_nan());
-    if has_nans2 {
-        match nan_policy {
-            NaNPolicy::Propogate => {
-                return Ok((f64::NAN, f64::NAN));
-            }
-            NaNPolicy::Error => {
-                return Err(KSTestError::SampleContainsNaN);
-            }
-            NaNPolicy::Emit => {
-                data2 = data2
-                    .into_iter()
-                    .filter(|x| !x.is_nan())
-                    .collect::<Vec<_>>();
-            }
-        }
-    }
+
+    if let (true, NaNPolicy::Propogate) = (has_nans1, nan_policy) {
+        return Ok((f64::NAN, f64::NAN));
+    };
+    if let (true, NaNPolicy::Error) = (has_nans1, nan_policy) {
+        return Err(KSTestError::SampleContainsNaN);
+    };
+
+    let data1: Vec<f64> = match (has_nans1, nan_policy) {
+        (true, NaNPolicy::Emit) => data1.iter().copied().filter(|&x| !x.is_nan()).collect(),
+        _ => data1.to_vec(),
+    };
+
+    if let (true, NaNPolicy::Propogate) = (has_nans2, nan_policy) {
+        return Ok((f64::NAN, f64::NAN));
+    };
+    if let (true, NaNPolicy::Error) = (has_nans2, nan_policy) {
+        return Err(KSTestError::SampleContainsNaN);
+    };
+
+    let data2: Vec<f64> = match (has_nans2, nan_policy) {
+        (true, NaNPolicy::Emit) => data2.iter().copied().filter(|&x| !x.is_nan()).collect(),
+        _ => data2.to_vec(),
+    };
+
     let n1 = data1.len() as f64;
     let n2 = data2.len() as f64;
     if (n1 as usize) < 1 || (n2 as usize) < 1 {
         return Err(KSTestError::SampleTooSmall);
     }
-    let n = (n1 as usize).min(n2 as usize);
-    let m = (n1 as usize).max(n2 as usize);
+    let n = (n1).min(n2) as usize;
+    let m = (n1).max(n2) as usize;
 
     // calculate the test statistic
-    data1.sort_by(|a, b| {
-        a.partial_cmp(b)
-            .expect("nans should be filtered out by this point so it should always work")
-    });
-    data2.sort_by(|a, b| {
-        a.partial_cmp(b)
-            .expect("nans should be filtered out by this point so it should always work")
-    });
+    //
+    // commented out these sorts because they're not needed if the concat is sorted right after.
+    // Maybe there's something I'm not seeing, so I'm just keeping it as a comment.
+    //    data1.sort_by(|a, b| {
+    //        a.partial_cmp(b)
+    //           .expect("nans should be filtered out by this point so it should always work")
+    //  });
+    // data2.sort_by(|a, b| {
+    //    a.partial_cmp(b)
+    //        .expect("nans should be filtered out by this point so it should always work")
+    //});
     let mut data_all = [data1.clone(), data2.clone()].concat();
     data_all.sort_by(|a, b| {
         a.partial_cmp(b)
@@ -494,7 +490,6 @@ pub fn ks_twosample(
 
     Ok((statistic, pvalue))
 }
-
 #[cfg(test)]
 mod tests {
 
@@ -773,8 +768,8 @@ mod tests {
         ]);
 
         let (statistic, pvalue) = ks_twosample(
-            data1.clone(),
-            data2.clone(),
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
         )
@@ -783,8 +778,8 @@ mod tests {
         prec::assert_abs_diff_eq!(statistic, 0.26666666666666666, epsilon = 1e-9);
         prec::assert_abs_diff_eq!(pvalue, 0.7315422361996597, epsilon = 1e-9);
         let (statistic, pvalue) = ks_twosample(
-            data2.clone(),
-            data1.clone(),
+            &data2,
+            &data1,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
         )
@@ -794,8 +789,8 @@ mod tests {
         prec::assert_abs_diff_eq!(pvalue, 0.7315422361996597, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_twosample(
-            data1.clone(),
-            data2.clone(),
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::LessAsymptotic,
             NaNPolicy::Error,
         )
@@ -804,8 +799,8 @@ mod tests {
         prec::assert_abs_diff_eq!(statistic, 0.1, epsilon = 1e-9);
         prec::assert_abs_diff_eq!(pvalue, 0.8078867967299911, epsilon = 1e-9);
         let (statistic, pvalue) = ks_twosample(
-            data2.clone(),
-            data1.clone(),
+            &data2,
+            &data1,
             KSTwoSampleAlternativeMethod::LessAsymptotic,
             NaNPolicy::Error,
         )
@@ -815,8 +810,8 @@ mod tests {
         prec::assert_abs_diff_eq!(pvalue, 0.33213219147418116, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_twosample(
-            data1.clone(),
-            data2.clone(),
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::GreaterAsymptotic,
             NaNPolicy::Error,
         )
@@ -825,8 +820,8 @@ mod tests {
         prec::assert_abs_diff_eq!(statistic, 0.26666666666666666, epsilon = 1e-9);
         prec::assert_abs_diff_eq!(pvalue, 0.33213219147418116, epsilon = 1e-9);
         let (statistic, pvalue) = ks_twosample(
-            data2.clone(),
-            data1.clone(),
+            &data2,
+            &data1,
             KSTwoSampleAlternativeMethod::GreaterAsymptotic,
             NaNPolicy::Error,
         )
@@ -843,8 +838,8 @@ mod tests {
         let data2: Vec<f64> = (-150..2000i32).map(|x| x.pow(2) as f64).collect();
 
         let (statistic, pvalue) = ks_twosample(
-            data1.clone(),
-            data2.clone(),
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedAsymptotic,
             NaNPolicy::Error,
         )
@@ -853,8 +848,8 @@ mod tests {
         prec::assert_abs_diff_eq!(statistic, 0.06450000000000002, epsilon = 1e-9);
         prec::assert_abs_diff_eq!(pvalue, 0.0003435848163318721, epsilon = 1e-4);
         let (statistic, pvalue) = ks_twosample(
-            data2.clone(),
-            data1.clone(),
+            &data2,
+            &data1,
             KSTwoSampleAlternativeMethod::TwoSidedAsymptotic,
             NaNPolicy::Error,
         )
@@ -881,8 +876,8 @@ mod tests {
             }
         }
         let (statistic, pvalue) = ks_twosample(
-            x.clone(),
-            y.clone(),
+            &x,
+            &y,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
         )
@@ -902,8 +897,8 @@ mod tests {
         let data2: Vec<f64> = (-150..2000i32).map(|x| x.pow(2) as f64).collect();
 
         let (statistic, pvalue) = ks_twosample(
-            data1.clone(),
-            data2.clone(),
+            &data2,
+            &data1,
             KSTwoSampleAlternativeMethod::TwoSidedAsymptotic,
             NaNPolicy::Error,
         )
@@ -912,8 +907,8 @@ mod tests {
         prec::assert_abs_diff_eq!(statistic, 0.06450000000000002, epsilon = 1e-9);
         prec::assert_abs_diff_eq!(pvalue, 0.0003604729, epsilon = 1e-9);
         let (statistic, pvalue) = ks_twosample(
-            data2.clone(),
-            data1.clone(),
+            &data2,
+            &data1,
             KSTwoSampleAlternativeMethod::TwoSidedAsymptotic,
             NaNPolicy::Error,
         )
@@ -930,8 +925,8 @@ mod tests {
             325.0, 257.0, 303.0, 315.0, 380.0, 153.0, 263.0, 242.0, 206.0, 344.0, 258.0,
         ]);
         let (statistic, pvalue) = ks_twosample(
-            casein.clone(),
-            meatmeal.clone(),
+            &meatmeal,
+            &casein,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
         )
@@ -941,8 +936,8 @@ mod tests {
         prec::assert_abs_diff_eq!(pvalue, 0.1956825, epsilon = 1e-6);
 
         let (statistic, pvalue) = ks_twosample(
-            meatmeal.clone(),
-            casein.clone(),
+            &meatmeal,
+            &casein,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
         )
@@ -957,8 +952,8 @@ mod tests {
         let data2: Vec<f64> = (-150..2000i32).map(|x| x.pow(2) as f64).collect();
 
         let result = ks_twosample(
-            data1.clone(),
-            data2.clone(),
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
         );
@@ -969,8 +964,8 @@ mod tests {
         let data1: Vec<f64> = Vec::new();
         let data2 = Vec::from([-0.009876332, 0.119263550, -2.048604274]);
         let result = ks_twosample(
-            data1,
-            data2,
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
         );
@@ -979,8 +974,8 @@ mod tests {
         let data1: Vec<f64> = Vec::from([f64::NAN]);
         let data2 = Vec::from([-0.009876332, 0.119263550, -2.048604274]);
         let result = ks_twosample(
-            data1,
-            data2,
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Emit,
         );
@@ -989,8 +984,8 @@ mod tests {
         let data1 = Vec::from([-0.009876332, 0.119263550, -2.048604274]);
         let data2: Vec<f64> = Vec::new();
         let result = ks_twosample(
-            data1,
-            data2,
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
         );
@@ -999,8 +994,8 @@ mod tests {
         let data1 = Vec::from([-0.009876332, 0.119263550, -2.048604274]);
         let data2: Vec<f64> = Vec::from([f64::NAN]);
         let result = ks_twosample(
-            data1,
-            data2,
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Emit,
         );
@@ -1041,8 +1036,8 @@ mod tests {
         ]);
 
         let (statistic, pvalue) = ks_twosample(
-            data1.clone(),
-            data2.clone(),
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Emit,
         )
@@ -1055,8 +1050,8 @@ mod tests {
         let data1 = Vec::from([0.75857220, -0.01541150, -1.16067678, -0.49210878, f64::NAN]);
         let data2 = Vec::from([-0.009876332, 0.119263550, -2.048604274]);
         let (statistic, pvalue) = ks_twosample(
-            data1.clone(),
-            data2.clone(),
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Propogate,
         )
@@ -1067,8 +1062,8 @@ mod tests {
         let data1 = Vec::from([-0.009876332, 0.119263550, -2.048604274]);
         let data2 = Vec::from([0.75857220, -0.01541150, -1.16067678, -0.49210878, f64::NAN]);
         let (statistic, pvalue) = ks_twosample(
-            data1.clone(),
-            data2.clone(),
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Propogate,
         )
@@ -1081,8 +1076,8 @@ mod tests {
         let data1 = Vec::from([0.75857220, -0.01541150, -1.16067678, -0.49210878, f64::NAN]);
         let data2 = Vec::from([-0.009876332, 0.119263550, -2.048604274]);
         let result = ks_twosample(
-            data1.clone(),
-            data2.clone(),
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
         );
@@ -1091,8 +1086,8 @@ mod tests {
         let data1 = Vec::from([-0.009876332, 0.119263550, -2.048604274]);
         let data2 = Vec::from([0.75857220, -0.01541150, -1.16067678, -0.49210878, f64::NAN]);
         let result = ks_twosample(
-            data1.clone(),
-            data2.clone(),
+            &data1,
+            &data2,
             KSTwoSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
         );
