@@ -382,62 +382,58 @@ fn twosample_schroer_and_trenkler_twosided_pvalue(d: f64, m: usize, n: usize) ->
 /// ).unwrap();
 /// ```
 pub fn ks_twosample(
-    mut data1: Vec<f64>,
-    mut data2: Vec<f64>,
+    data1: &[f64],
+    data2: &[f64],
     method: KSTwoSampleAlternativeMethod,
     nan_policy: NaNPolicy,
 ) -> Result<(f64, f64), KSTestError> {
     let has_nans1 = data1.iter().any(|x| x.is_nan());
-    if has_nans1 {
-        match nan_policy {
-            NaNPolicy::Propogate => {
-                return Ok((f64::NAN, f64::NAN));
-            }
-            NaNPolicy::Error => {
-                return Err(KSTestError::SampleContainsNaN);
-            }
-            NaNPolicy::Emit => {
-                data1 = data1
-                    .into_iter()
-                    .filter(|x| !x.is_nan())
-                    .collect::<Vec<_>>();
-            }
-        }
-    }
     let has_nans2 = data2.iter().any(|x| x.is_nan());
-    if has_nans2 {
-        match nan_policy {
-            NaNPolicy::Propogate => {
-                return Ok((f64::NAN, f64::NAN));
-            }
-            NaNPolicy::Error => {
-                return Err(KSTestError::SampleContainsNaN);
-            }
-            NaNPolicy::Emit => {
-                data2 = data2
-                    .into_iter()
-                    .filter(|x| !x.is_nan())
-                    .collect::<Vec<_>>();
-            }
-        }
-    }
+
+    if let (true, NaNPolicy::Propogate) = (has_nans1, nan_policy) {
+        return Ok((f64::NAN, f64::NAN));
+    };
+    if let (true, NaNPolicy::Error) = (has_nans1, nan_policy) {
+        return Err(KSTestError::SampleContainsNaN);
+    };
+
+    let data1: Vec<f64> = match (has_nans1, nan_policy) {
+        (true, NaNPolicy::Emit) => data1.iter().copied().filter(|&x| !x.is_nan()).collect(),
+        _ => data1.to_vec(),
+    };
+
+    if let (true, NaNPolicy::Propogate) = (has_nans2, nan_policy) {
+        return Ok((f64::NAN, f64::NAN));
+    };
+    if let (true, NaNPolicy::Error) = (has_nans2, nan_policy) {
+        return Err(KSTestError::SampleContainsNaN);
+    };
+
+    let data2: Vec<f64> = match (has_nans2, nan_policy) {
+        (true, NaNPolicy::Emit) => data2.iter().copied().filter(|&x| !x.is_nan()).collect(),
+        _ => data2.to_vec(),
+    };
+
     let n1 = data1.len() as f64;
     let n2 = data2.len() as f64;
     if (n1 as usize) < 1 || (n2 as usize) < 1 {
         return Err(KSTestError::SampleTooSmall);
     }
-    let n = (n1 as usize).min(n2 as usize);
-    let m = (n1 as usize).max(n2 as usize);
+    let n = (n1).min(n2) as usize;
+    let m = (n1).max(n2) as usize;
 
     // calculate the test statistic
-    data1.sort_by(|a, b| {
-        a.partial_cmp(b)
-            .expect("nans should be filtered out by this point so it should always work")
-    });
-    data2.sort_by(|a, b| {
-        a.partial_cmp(b)
-            .expect("nans should be filtered out by this point so it should always work")
-    });
+    //
+    // commented out these sorts because they're not needed if the concat is sorted right after.
+    // Maybe there's something I'm not seeing, so I'm just keeping it as a comment.
+    //    data1.sort_by(|a, b| {
+    //        a.partial_cmp(b)
+    //           .expect("nans should be filtered out by this point so it should always work")
+    //  });
+    // data2.sort_by(|a, b| {
+    //    a.partial_cmp(b)
+    //        .expect("nans should be filtered out by this point so it should always work")
+    //});
     let mut data_all = [data1.clone(), data2.clone()].concat();
     data_all.sort_by(|a, b| {
         a.partial_cmp(b)
@@ -494,7 +490,6 @@ pub fn ks_twosample(
 
     Ok((statistic, pvalue))
 }
-
 #[cfg(test)]
 mod tests {
 
