@@ -397,7 +397,7 @@ pub fn ks_twosample(
         return Err(KSTestError::SampleContainsNaN);
     };
 
-    let data1: Vec<f64> = match (has_nans1, nan_policy) {
+    let mut data1: Vec<f64> = match (has_nans1, nan_policy) {
         (true, NaNPolicy::Emit) => data1.iter().copied().filter(|&x| !x.is_nan()).collect(),
         _ => data1.to_vec(),
     };
@@ -409,7 +409,7 @@ pub fn ks_twosample(
         return Err(KSTestError::SampleContainsNaN);
     };
 
-    let data2: Vec<f64> = match (has_nans2, nan_policy) {
+    let mut data2: Vec<f64> = match (has_nans2, nan_policy) {
         (true, NaNPolicy::Emit) => data2.iter().copied().filter(|&x| !x.is_nan()).collect(),
         _ => data2.to_vec(),
     };
@@ -426,14 +426,14 @@ pub fn ks_twosample(
     //
     // commented out these sorts because they're not needed if the concat is sorted right after.
     // Maybe there's something I'm not seeing, so I'm just keeping it as a comment.
-    //    data1.sort_by(|a, b| {
-    //        a.partial_cmp(b)
-    //           .expect("nans should be filtered out by this point so it should always work")
-    //  });
-    // data2.sort_by(|a, b| {
-    //    a.partial_cmp(b)
-    //        .expect("nans should be filtered out by this point so it should always work")
-    //});
+    data1.sort_by(|a, b| {
+        a.partial_cmp(b)
+            .expect("nans should be filtered out by this point so it should always work")
+    });
+    data2.sort_by(|a, b| {
+        a.partial_cmp(b)
+            .expect("nans should be filtered out by this point so it should always work")
+    });
     let mut data_all = [data1.clone(), data2.clone()].concat();
     data_all.sort_by(|a, b| {
         a.partial_cmp(b)
