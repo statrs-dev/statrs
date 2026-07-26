@@ -62,6 +62,159 @@ fn tan_pi(x: f64) -> f64 {
     (f64::consts::PI * r).tan()
 }
 
+// ---------------------------------------------------------------------------
+// Saddle-point building blocks (Loader, "Fast and Accurate Computation of
+// Binomial Probabilities", 2000).
+//
+// Densities and incomplete-function prefixes in the gamma/beta family are
+// naturally written as `exp(a * ln x - x - ln_gamma(a))` and friends. Those
+// forms are numerically poor: for `a ~ 1e4` each term is `~1e5` while the sum
+// is `O(1)`, so the `~1e-11` absolute error of the sum becomes the accuracy
+// ceiling of everything downstream.
+//
+// The fix is to split each such exponent into two pieces that are individually
+// `O(1)`:
+//
+//   * `stirling_delta(z)`, the Stirling-series remainder of `ln_gamma`, and
+//   * `bd0(x, np)`, the "deviance" `x * ln(x / np) - (x - np)`, which is
+//     evaluated by a series in `(x - np) / (x + np)` so that the cancellation
+//     for `x` near `np` is performed analytically rather than in floating
+//     point.
+//
+// Nothing large is ever formed, so the cancellation disappears entirely.
+// ---------------------------------------------------------------------------
+
+/// Coefficients `B_2n / (2n (2n - 1))` of the Stirling series for
+/// [`stirling_delta`], ascending in `1/z^2`.
+const STIRLING_SERIES: &[f64] = &[
+    0.08333333333333333,    // 1/12
+    -0.002777777777777778,  // -1/360
+    0.0007936507936507937,  // 1/1260
+    -0.0005952380952380953, // -1/1680
+    0.0008417508417508417,  // 1/1188
+    -0.0019175269175269176, // -691/360360
+];
+
+/// Argument above which the truncated Stirling series is used directly. Six
+/// terms there are good to `1.4e-18` absolute, i.e. invisible.
+pub(crate) const STIRLING_SERIES_MIN: f64 = 16.0;
+
+/// The Stirling-series remainder of `ln_gamma`, for `z > 0`:
+///
+/// ```text
+/// stirling_delta(z) = ln_gamma(z) - [(z - 1/2) ln z - z + ln(2 pi) / 2]
+/// ```
+///
+/// Equivalently `ln(n!) - ln(sqrt(2 pi n) (n / e)^n)` at `z = n`, which is
+/// Loader's `stirlerr`. The value is `O(1 / (12 z))`, and the implementation
+/// keeps it accurate to `~1e-15` *absolute* - which is what matters, since
+/// every caller adds it to an exponent.
+///
+/// Below [`STIRLING_SERIES_MIN`] the recurrence
+/// `delta(z) = delta(z + 1) + (z + 1/2) ln(1 + 1/z) - 1` lifts the argument
+/// into the series range. Each step costs one rounding, so no table (and no
+/// recursive dependency on [`ln_gamma`]) is needed.
+pub(crate) fn stirling_delta(z: f64) -> f64 {
+    let mut acc = 0.0;
+    let mut w = z;
+    while w < STIRLING_SERIES_MIN {
+        acc += (w + 0.5) * (1.0 / w).ln_1p() - 1.0;
+        w += 1.0;
+    }
+    // Horner in 1/z^2. For `w * w == inf` this collapses to the leading
+    // `1 / (12 w)` term, which is the correct limit.
+    let ww = w * w;
+    let series = STIRLING_SERIES.iter().rev().fold(0.0, |s, &c| s / ww + c);
+    acc + series / w
+}
+
+/// The deviance `bd0(x, np) = x * ln(x / np) - (x - np)`, for `x >= 0`,
+/// `np > 0`.
+///
+/// This is the Kullback-Leibler-like term of the Poisson/binomial saddle-point
+/// expansions, and is non-negative with a double root at `x == np`. Writing it
+/// directly loses all precision near that root; with
+/// `v = (x - np) / (x + np)` it has the all-positive series
+///
+/// ```text
+/// bd0 = (x - np) v + 2 x sum_{j >= 1} v^(2j + 1) / (2j + 1)
+/// ```
+///
+/// which is used whenever `|x - np| < (x + np) / 10`, giving `~1e-16` relative
+/// accuracy uniformly.
+pub(crate) fn bd0(x: f64, np: f64) -> f64 {
+    if x == 0.0 {
+        // 0 * ln 0 == 0 by convention; the direct form would give NaN
+        return np;
+    }
+    if (x - np).abs() < 0.1 * (x + np) {
+        let v = (x - np) / (x + np);
+        let mut s = (x - np) * v;
+        if s.abs() < f64::MIN_POSITIVE {
+            return s;
+        }
+        let mut ej = 2.0 * x * v;
+        let v2 = v * v;
+        // |v| < 0.1, so v^(2j) is below f64::MIN_POSITIVE well before j = 200
+        for j in 1..200 {
+            ej *= v2;
+            let s1 = s + ej / (2 * j + 1) as f64;
+            if s1 == s {
+                return s1;
+            }
+            s = s1;
+        }
+        return s;
+    }
+    // `(x / np).ln()` silently loses the whole term when the ratio leaves the
+    // normal range - `bd0(1e-300, 5e99)` has `x / np` underflow to zero, giving
+    // `-inf` where the answer is `+5e99`, which then poisoned the beta prefix
+    // into NaN. Reaching this branch requires `|x - np| >= (x + np) / 10`, so
+    // the ratio is bounded away from 1 and the difference of logs cannot cancel
+    // badly; it is only used where the ratio itself is unusable, since it is
+    // otherwise the less accurate of the two forms.
+    let ratio = x / np;
+    let log_ratio = if (f64::MIN_POSITIVE..f64::INFINITY).contains(&ratio) {
+        ratio.ln()
+    } else {
+        x.ln() - np.ln()
+    };
+    x * log_ratio - (x - np)
+}
+
+/// [`bd0`] with the mean supplied as an exact double-double `np_hi + np_lo`.
+///
+/// The mean usually arrives as a rounded product such as `n * p`, and `bd0` is
+/// sensitive enough for that last half-ulp to dominate everything else:
+/// `d bd0 / d np = 1 - x / np`, so at `n = 2e6`, `p = 0.3` the rounding of
+/// `n * p` alone shifts `bd0` by `~2.5e-13` - a thousand ulps in the resulting
+/// pmf. The correction is first order in `np_lo`; the next term is smaller by
+/// another factor of `np_lo / np`, i.e. utterly negligible.
+pub(crate) fn bd0_dd(x: f64, np_hi: f64, np_lo: f64) -> f64 {
+    bd0(x, np_hi) + (1.0 - x / np_hi) * np_lo
+}
+
+/// `ln(x^a e^-x / Gamma(a))`, the prefix of the incomplete gamma functions.
+///
+/// Written out, this is `a ln x - x - ln_gamma(a)`, where all three terms grow
+/// like `a ln a` while the sum stays `O(ln a)`. The saddle-point form
+///
+/// ```text
+/// = -bd0(a, x) - stirling_delta(a) + ln(a / (2 pi)) / 2
+/// ```
+///
+/// is the same quantity with every piece `O(1)`, so it is accurate to a few
+/// `1e-16` absolute instead of `a ln a * eps` (`~1e-11` at `a = 1e4`).
+pub(crate) fn ln_gamma_prefix(a: f64, x: f64) -> f64 {
+    if a < STIRLING_SERIES_MIN {
+        // No cancellation to remove yet (every term is already `O(1)`), and the
+        // recurrence in `stirling_delta` would cost more roundings than it
+        // saves.
+        return a * x.ln() - x - ln_gamma(a);
+    }
+    -bd0(a, x) - stirling_delta(a) + 0.5 * (a / f64::consts::TAU).ln()
+}
+
 /// Auxiliary variable when evaluating the `gamma_ln` function
 const GAMMA_R: f64 = 10.900511;
 
@@ -353,7 +506,8 @@ pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64, GammaFuncError> {
         return Ok(1.0 - gamma_lr(a, x));
     }
 
-    let mut ax = a * x.ln() - x - ln_gamma(a);
+    // saddle-point form; see `ln_gamma_prefix`
+    let mut ax = ln_gamma_prefix(a, x);
     if ax < -709.78271289338399 {
         return if a < x { Ok(0.0) } else { Ok(1.0) };
     }
@@ -450,7 +604,8 @@ pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64, GammaFuncError> {
         return Ok(0.0);
     }
 
-    let ax = a * x.ln() - x - ln_gamma(a);
+    // saddle-point form; see `ln_gamma_prefix`
+    let ax = ln_gamma_prefix(a, x);
     if ax < -709.78271289338399 {
         if a < x {
             return Ok(1.0);
@@ -1561,6 +1716,92 @@ mod tests {
         for x in [172.0f64, 200.0, 1e3, 1e6, 1e14, 1e15, 1e100, 1e300, f64::MAX] {
             let g = gamma(x);
             assert!(g.is_infinite() && g > 0.0, "gamma({x:e}) should be +inf, got {g}");
+        }
+    }
+
+    /// `bd0`'s direct branch formed `(x / np).ln()`, which underflows to
+    /// `ln(0) = -inf` when `x` is tiny and `np` huge. That propagated through
+    /// the beta prefix and made `beta_reg` return NaN (or silently 1.0 instead
+    /// of 0.0) for extreme parameter ratios.
+    #[test]
+    fn test_bd0_extreme_ratios() {
+        // x / np underflows; true value is ~np
+        let v = super::bd0(1e-300, 5e99);
+        prec::assert_relative_eq!(v, 5e99, epsilon = 0.0, max_relative = 1e-14);
+        // x / np overflows; true value is x*ln(x/np) - x + np
+        let v = super::bd0(5e99, 1e-300);
+        assert!(v.is_finite() && v > 0.0, "bd0(5e99, 1e-300) = {v}");
+        // and it stays non-negative and finite across a wide ratio sweep
+        for ea in [-300i32, -100, -10, 0, 10, 100, 300] {
+            for eb in [-300i32, -100, -10, 0, 10, 100, 300] {
+                let (x, np) = (10f64.powi(ea), 10f64.powi(eb));
+                let v = super::bd0(x, np);
+                assert!(v.is_finite() && v >= 0.0, "bd0(1e{ea}, 1e{eb}) = {v}");
+            }
+        }
+    }
+
+    /// `stirling_delta` lands in an exponent, so its *absolute* accuracy is what
+    /// matters. References are mpmath at 40 significant digits; the tolerances
+    /// sit just above the measured error (`~1e-15` below the series threshold,
+    /// essentially exact above it).
+    #[test]
+    fn test_stirling_delta() {
+        // below the series threshold the recurrence costs one rounding per step,
+        // so the bound is absolute; at or above it the series is limited only by
+        // its own evaluation, so a relative bound is the meaningful one
+        for (z, want) in [
+            (0.5, 0.15342640972002734529),
+            (1.0, 0.08106146679532725822),
+            (2.5, 0.033162873519936287485),
+            (8.0, 0.010411265261972096497),
+            (15.5, 0.0053755990329268344936),
+        ] {
+            prec::assert_abs_diff_eq!(super::stirling_delta(z), want, epsilon = 2e-15);
+        }
+        for (z, want) in [
+            (16.0, 0.0052076559196096404407),
+            (100.0, 0.00083333055563491468338),
+            (10000.0, 8.3333333305555555635e-6),
+        ] {
+            prec::assert_relative_eq!(
+                super::stirling_delta(z),
+                want,
+                epsilon = 0.0,
+                max_relative = 1e-15
+            );
+        }
+        // consistency with the defining identity, away from the recurrence
+        for z in [20.0f64, 63.5, 500.0] {
+            let want = ln_gamma(z) - ((z - 0.5) * z.ln() - z + 0.5 * f64::consts::TAU.ln());
+            prec::assert_abs_diff_eq!(super::stirling_delta(z), want, epsilon = 1e-13);
+        }
+    }
+
+    /// `bd0` must stay *relatively* accurate right through its double root at
+    /// `x == np`, which is the whole point of the series form.
+    #[test]
+    fn test_bd0() {
+        for (x, np, want) in [
+            (10000.0, 10000.0, 0.0),
+            (10000.0, 10001.0, 0.000049996666916646668333),
+            (10000.0, 15000.0, 945.34891891835618022),
+            (1.0, 2.0, 0.30685281944005469058),
+            (600123.0, 600000.0, 0.012606638575794171215),
+        ] {
+            let got = super::bd0(x, np);
+            if want == 0.0 {
+                assert_eq!(got, 0.0);
+            } else {
+                prec::assert_relative_eq!(got, want, epsilon = 0.0, max_relative = 1e-14);
+            }
+        }
+        // non-negative with a root only at x == np, and 0 * ln 0 == 0 at x == 0
+        assert_eq!(super::bd0(0.0, 7.5), 7.5);
+        for i in 1..200 {
+            let x = 1000.0 + i as f64;
+            assert!(super::bd0(x, 1000.0) > 0.0);
+            assert!(super::bd0(1000.0, x) > 0.0);
         }
     }
 

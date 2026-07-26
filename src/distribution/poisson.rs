@@ -276,7 +276,7 @@ impl Discrete<u64, f64> for Poisson {
     ///
     /// where `λ` is the rate
     fn pmf(&self, x: u64) -> f64 {
-        (-self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x)).exp()
+        self.ln_pmf(x).exp()
     }
 
     /// Calculates the log probability mass function for the poisson
@@ -291,7 +291,19 @@ impl Discrete<u64, f64> for Poisson {
     ///
     /// where `λ` is the rate
     fn ln_pmf(&self, x: u64) -> f64 {
-        -self.lambda + x as f64 * self.lambda.ln() - factorial::ln_factorial(x)
+        let k = x as f64;
+        if x == 0 {
+            return -self.lambda;
+        }
+        if k < gamma::STIRLING_SERIES_MIN {
+            // `ln_factorial` is exact from its table here and every term is
+            // small, so the direct form loses nothing
+            return -self.lambda + k * self.lambda.ln() - factorial::ln_factorial(x);
+        }
+        // Saddle-point form (Loader 2000): the direct expression is a
+        // difference of terms that each grow like `x ln x` while the result
+        // stays `O(1)`, which cost ~1e-11 relative at lambda = 1e4.
+        -gamma::stirling_delta(k) - gamma::bd0(k, self.lambda) - 0.5 * (f64::consts::TAU * k).ln()
     }
 }
 
@@ -419,6 +431,24 @@ mod tests {
         test_exact(1.5, u64::MAX, max);
         test_exact(5.4, u64::MAX, max);
         test_exact(10.8, u64::MAX, max);
+    }
+
+    /// Large-lambda pmf: the saddle-point form (`gamma::bd0` /
+    /// `gamma::stirling_delta`) replaced `exp(-lam + x ln lam - ln x!)`, whose
+    /// terms each grow like `x ln x` while the result stays `O(1)`. References
+    /// are mpmath at 40 significant digits; the old form was ~650 ulp median and
+    /// 1.4e7 ulp worst over this range.
+    #[test]
+    fn test_pmf_large_lambda_saddle_point() {
+        let pmf = |arg: u64| move |x: Poisson| x.pmf(arg);
+        test_relative(10000.0, 0.0039893895589628256487, pmf(10000));
+        test_relative(1000000.0, 0.0003989422471562440297, pmf(1000000));
+        test_relative(1000000.0, 0.00024189010120174141723, pmf(1001000));
+        // ln_pmf agrees with ln(pmf) where the pmf is comfortably representable
+        for (lam, k) in [(10000.0f64, 10000u64), (1e6, 1001000)] {
+            let d = create_ok(lam);
+            crate::prec::assert_relative_eq!(d.ln_pmf(k), d.pmf(k).ln(), epsilon = 0.0, max_relative = 1e-14);
+        }
     }
 
     #[test]

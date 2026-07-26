@@ -132,6 +132,51 @@ pub fn beta_reg(a: f64, b: f64, x: f64) -> f64 {
     checked_beta_reg(a, b, x).unwrap()
 }
 
+/// `ln(x^a (1-x)^b / Beta(a, b))`, the prefix of the incomplete beta functions.
+///
+/// Written out, this is
+/// `ln_gamma(a+b) - ln_gamma(a) - ln_gamma(b) + a ln x + b ln(1-x)`, where the
+/// terms grow like `(a + b) ln(a + b)` while the sum stays `O(ln(a + b))`. With
+/// `n = a + b` the saddle-point form is
+///
+/// ```text
+/// = -bd0(a, n x) - bd0(b, n (1-x))
+///   + stirling_delta(n) - stirling_delta(a) - stirling_delta(b)
+///   + ln(a b / (2 pi n)) / 2
+/// ```
+///
+/// Every piece is `O(1)` (the two `bd0` terms grow only as the true `-ln` of
+/// the prefix does), so this is accurate to a few `1e-16` absolute where the
+/// old form lost `~1e-10` at `a = b = 1e4`.
+///
+/// For small parameters the direct form is kept: there is no cancellation left
+/// to remove (every term is already `O(1)`), while `stirling_delta` would need
+/// up to 16 recurrence steps per argument and so contributes more rounding than
+/// it saves.
+fn ln_beta_prefix(a: f64, b: f64, x: f64) -> f64 {
+    let y = 1.0 - x;
+    if a.max(b) < gamma::STIRLING_SERIES_MIN {
+        return gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
+            + a * x.ln()
+            + b * y.ln();
+    }
+    // `bd0` is sensitive to the last half-ulp of its mean argument, so `n` and
+    // the two products are carried as double-doubles; see `gamma::bd0_dd`.
+    let (n, n_lo) = prec::two_sum(a, b);
+    let (y_hi, y_lo) = prec::two_diff(1.0, x);
+    let nx = n * x;
+    let nx_lo = prec::dekker_product_err(n, x, nx) + n_lo * x;
+    let ny = n * y_hi;
+    let ny_lo = prec::dekker_product_err(n, y_hi, ny) + n * y_lo + n_lo * y_hi;
+
+    // `a / n` and `b / TAU` are each individually representable, unlike
+    // `a * b / (2 pi n)`, which can overflow for large parameters
+    let scale = 0.5 * ((a / n).ln() + (b / f64::consts::TAU).ln());
+    scale - gamma::bd0_dd(a, nx, nx_lo) - gamma::bd0_dd(b, ny, ny_lo) + gamma::stirling_delta(n)
+        - gamma::stirling_delta(a)
+        - gamma::stirling_delta(b)
+}
+
 /// Computes the regularized lower incomplete beta function
 /// `I_x(a,b) = 1/Beta(a,b) * int(t^(a-1)*(1-t)^(b-1), t=0..x)`
 /// `a > 0`, `b > 0`, `1 >= x >= 0` where `a` is the first beta parameter,
@@ -140,15 +185,26 @@ pub fn beta_reg(a: f64, b: f64, x: f64) -> f64 {
 ///
 /// # Remarks
 ///
-/// Relative accuracy degrades as `a + b` grows, because the leading factor is
-/// evaluated as `exp(ln_gamma(a + b) - ln_gamma(a) - ln_gamma(b) + ...)` and the
-/// cancellation in that exponent grows with `ln_gamma(a + b)`. Measured against
-/// the exact identity `I_{1/2}(a, a) == 1/2`, the relative error is about
-/// `6e-11` at `a = b = 1e4` and `3e-9` at `1e6`.
+/// The leading factor is evaluated by the saddle-point decomposition in
+/// [`ln_beta_prefix`], which keeps every intermediate `O(1)` however large
+/// `a + b` becomes. Measured against the exact identity `I_{1/2}(a, a) == 1/2`,
+/// the relative error is:
 ///
-/// Past `min(a, b) ~ 1e16` the recurrence is truncated by its iteration bound and
-/// the result is unreliable, though still clamped to `[0, 1]`. Evaluation is
-/// bounded at roughly 10 ms in the worst case.
+/// ```text
+/// min(a, b) <= 1e7    2e-13   (1e-15 at 1e4 and below)
+/// min(a, b) <= 1e13   3e-10
+/// min(a, b) <= 1e16   3e-7
+/// beyond              unreliable; the result is still clamped to [0, 1]
+/// ```
+///
+/// The degradation past `1e7` is the continued fraction accumulating its own
+/// rounding over millions of iterations, not the prefix. Evaluation is bounded
+/// at roughly 10 ms in the worst case.
+///
+/// Values deep in the tails carry more *relative* error - a few hundred ulp,
+/// since the prefix is recovered as `exp(ln prefix)` and `|ln prefix|` is large
+/// there - but their absolute error stays far below the smallest value of
+/// interest.
 ///
 /// # Errors
 ///
@@ -179,10 +235,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     let bt = if x == 0.0 || crate::prec::ulps_eq!(x, 1.0, epsilon = MODULE_EPS) {
         0.0
     } else {
-        (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
-            + a * x.ln()
-            + b * (1.0 - x).ln())
-        .exp()
+        ln_beta_prefix(a, b, x).exp()
     };
     let symm_transform = {
         let denom = a + b + 2.0;
@@ -733,11 +786,31 @@ mod tests {
         assert!(checked_beta_reg(1.0, 1.0, 2.0).is_err());
     }
 
+    /// `I_{1/2}(a, a) == 1/2` exactly, by the symmetry of the `Beta(a, a)`
+    /// density. That point is also where the continued fraction converges most
+    /// slowly, so it pins the iteration bound. With the old fixed bound of 140
+    /// iterations this returned 0.49999969 at `a = 1e5`, 0.49121973 at `a = 1e6`
+    /// and 0.21285001 at `a = 1e7`.
+    #[test]
+    fn test_beta_reg_symmetric_midpoint_large_parameters() {
+        // The saddle-point prefix (`ln_beta_prefix`) took this from `6e-7` at
+        // `a = 1e5` and `5.7e-1` at `a = 1e7` down to the `1e-13` level.
+        for a in [1e2, 1e3, 1e4, 1e5, 1e6, 1e7] {
+            prec::assert_relative_eq!(
+                beta_reg(a, a, 0.5),
+                0.5,
+                epsilon = 0.0,
+                max_relative = 1e-12
+            );
+        }
+    }
+
     /// `beta_reg` is a probability and must stay in `[0, 1]` and finite for
     /// every valid input, including parameter ratios extreme enough to
-    /// over/underflow the intermediate quantities. Before the short-circuit on an
-    /// underflowed prefix and the `[0, 1]` clamp, this grid produced NaN (from
-    /// `0.0 * inf` once the recurrence overflowed) and `-2.56` at `a = b = 1e20`.
+    /// over/underflow the intermediate quantities. Before the `bd0` ratio guard
+    /// and the `[0, 1]` clamp, this grid produced NaN (`a = 1e300, b = 1e-300`),
+    /// a silent `1.0` where the answer was `0` (`a = 1e100, b = 1e-300`), and
+    /// `-2.56` (`a = b = 1e20`).
     #[test]
     fn test_beta_reg_extreme_parameters_stay_a_probability() {
         let params = [

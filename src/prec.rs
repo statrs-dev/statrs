@@ -141,6 +141,19 @@ pub(crate) fn two_diff(a: f64, b: f64) -> (f64, f64) {
     (s, (a - (s - v)) + (-b - v))
 }
 
+/// Knuth's two-sum: returns `(s, e)` with `a + b == s + e` exactly, where
+/// `s = a + b` rounded.
+#[inline]
+pub(crate) fn two_sum(a: f64, b: f64) -> (f64, f64) {
+    let s = a + b;
+    if !s.is_finite() {
+        // see `two_diff`
+        return (s, 0.0);
+    }
+    let v = s - a;
+    (s, (a - (s - v)) + (b - v))
+}
+
 macro_rules! redefine_one_opt_approx_macro {
     (
         $approx_macro:ident,
