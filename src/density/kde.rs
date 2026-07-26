@@ -52,7 +52,7 @@ where
 ///
 /// This builds a k-d tree over `samples` on every call. To evaluate the density
 /// at more than a couple of points, build a
-/// [`DensityEstimator`](crate::density::DensityEstimator) once and call
+/// [`DensityEstimator`] once and call
 /// [`DensityEstimator::kde_pdf`] instead.
 ///
 /// # Examples
