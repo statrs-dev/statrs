@@ -300,12 +300,10 @@ mod tests {
 
         for exp in [0i32, 10, 20, 30, 40] {
             let offset = f64::powi(2.0, exp);
-            let data: Vec<f64> = (0..PERIOD * REPEATS)
+            // Folded straight off the iterator rather than collected, so the
+            // test also builds under `no_std`, where there is no `Vec`.
+            let s = (0..PERIOD * REPEATS)
                 .map(|i| offset + (i % PERIOD) as f64 * STEP)
-                .collect();
-            let s = data
-                .iter()
-                .copied()
                 .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
             prec::assert_relative_eq!(
                 s.variance().unwrap(),
@@ -328,20 +326,14 @@ mod tests {
     /// offsets; check it still matches a single chain on offset data.
     #[test]
     fn merge_reconciles_different_offsets() {
-        let a: Vec<f64> = (0..500).map(|i| 1e12 + i as f64 * 1e-3).collect();
-        let b: Vec<f64> = (0..500).map(|i| 1e12 + 5.0 + i as f64 * 1e-3).collect();
-        let ma = a
-            .iter()
-            .copied()
-            .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-        let mb = b
-            .iter()
-            .copied()
-            .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-        let whole: Vec<f64> = a.iter().chain(b.iter()).copied().collect();
-        let mw = whole
-            .iter()
-            .copied()
+        // Closures returning fresh iterators, so the same data can be folded
+        // three ways without collecting it (there is no `Vec` under `no_std`).
+        let a = || (0..500).map(|i| 1e12 + i as f64 * 1e-3);
+        let b = || (0..500).map(|i| 1e12 + 5.0 + i as f64 * 1e-3);
+        let ma = a().fold(OnlineMoments::<2>::default(), OnlineMoments::push);
+        let mb = b().fold(OnlineMoments::<2>::default(), OnlineMoments::push);
+        let mw = a()
+            .chain(b())
             .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
         prec::assert_relative_eq!(
             ma.merge(mb).variance().unwrap(),
