@@ -779,7 +779,12 @@ mod tests {
     /// (np >= 10), and both flipped (p > 0.5) variants. Seeds are fixed, so
     /// this is deterministic; the 6-sigma acceptance threshold means a failure
     /// indicates a real sampler defect, not chance.
-    #[cfg(feature = "rand")]
+    ///
+    /// Requires `std` as well as `rand`: the histogram and the pooled cells are
+    /// sized from `n` and `p` at run time, and the crate is `no_std` without
+    /// `alloc`. The sampler itself is exercised without `std` by
+    /// [`test_sample_extreme_parameters_moments`], which needs no collections.
+    #[cfg(all(feature = "rand", feature = "std"))]
     #[test]
     fn test_sample_chi_square_goodness_of_fit() {
         use ::rand::SeedableRng;
