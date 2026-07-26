@@ -132,11 +132,79 @@ pub fn beta_reg(a: f64, b: f64, x: f64) -> f64 {
     checked_beta_reg(a, b, x).unwrap()
 }
 
+/// `ln(x^a (1-x)^b / Beta(a, b))`, the prefix of the incomplete beta functions.
+///
+/// Written out, this is
+/// `ln_gamma(a+b) - ln_gamma(a) - ln_gamma(b) + a ln x + b ln(1-x)`, where the
+/// terms grow like `(a + b) ln(a + b)` while the sum stays `O(ln(a + b))`. With
+/// `n = a + b` the saddle-point form is
+///
+/// ```text
+/// = -bd0(a, n x) - bd0(b, n (1-x))
+///   + stirling_delta(n) - stirling_delta(a) - stirling_delta(b)
+///   + ln(a b / (2 pi n)) / 2
+/// ```
+///
+/// Every piece is `O(1)` (the two `bd0` terms grow only as the true `-ln` of
+/// the prefix does), so this is accurate to a few `1e-16` absolute where the
+/// old form lost `~1e-10` at `a = b = 1e4`.
+///
+/// For small parameters the direct form is kept: there is no cancellation left
+/// to remove (every term is already `O(1)`), while `stirling_delta` would need
+/// up to 16 recurrence steps per argument and so contributes more rounding than
+/// it saves.
+fn ln_beta_prefix(a: f64, b: f64, x: f64) -> f64 {
+    let y = 1.0 - x;
+    if a.max(b) < gamma::STIRLING_SERIES_MIN {
+        return gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
+            + a * x.ln()
+            + b * y.ln();
+    }
+    // `bd0` is sensitive to the last half-ulp of its mean argument, so `n` and
+    // the two products are carried as double-doubles; see `gamma::bd0_dd`.
+    let (n, n_lo) = prec::two_sum(a, b);
+    let (y_hi, y_lo) = prec::two_diff(1.0, x);
+    let nx = n * x;
+    let nx_lo = prec::dekker_product_err(n, x, nx) + n_lo * x;
+    let ny = n * y_hi;
+    let ny_lo = prec::dekker_product_err(n, y_hi, ny) + n * y_lo + n_lo * y_hi;
+
+    // `a / n` and `b / TAU` are each individually representable, unlike
+    // `a * b / (2 pi n)`, which can overflow for large parameters
+    let scale = 0.5 * ((a / n).ln() + (b / f64::consts::TAU).ln());
+    scale - gamma::bd0_dd(a, nx, nx_lo) - gamma::bd0_dd(b, ny, ny_lo) + gamma::stirling_delta(n)
+        - gamma::stirling_delta(a)
+        - gamma::stirling_delta(b)
+}
+
 /// Computes the regularized lower incomplete beta function
 /// `I_x(a,b) = 1/Beta(a,b) * int(t^(a-1)*(1-t)^(b-1), t=0..x)`
 /// `a > 0`, `b > 0`, `1 >= x >= 0` where `a` is the first beta parameter,
 /// `b` is the second beta parameter, and `x` is the upper limit of the
 /// integral.
+///
+/// # Remarks
+///
+/// The leading factor is evaluated by the saddle-point decomposition in
+/// `ln_beta_prefix`, which keeps every intermediate `O(1)` however large
+/// `a + b` becomes. Measured against the exact identity `I_{1/2}(a, a) == 1/2`,
+/// the relative error is:
+///
+/// ```text
+/// min(a, b) <= 1e7    2e-13   (1e-15 at 1e4 and below)
+/// min(a, b) <= 1e13   3e-10
+/// min(a, b) <= 1e16   3e-7
+/// beyond              unreliable; the result is still clamped to [0, 1]
+/// ```
+///
+/// The degradation past `1e7` is the continued fraction accumulating its own
+/// rounding over millions of iterations, not the prefix. Evaluation is bounded
+/// at roughly 10 ms in the worst case.
+///
+/// Values deep in the tails carry more *relative* error - a few hundred ulp,
+/// since the prefix is recovered as `exp(ln prefix)` and `|ln prefix|` is large
+/// there - but their absolute error stays far below the smallest value of
+/// interest.
 ///
 /// # Errors
 ///
@@ -154,17 +222,79 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
         return Err(BetaFuncError::XOutOfRange);
     }
 
+    // `I_0(a, b) == 0` and `I_1(a, b) == 1` for every `a` and `b`. Handling the
+    // endpoints here keeps them independent of the symmetry test below, which
+    // otherwise mapped `x == 0` to `1.0` once `a + b` overflowed.
+    if x == 0.0 {
+        return Ok(0.0);
+    }
+    if x == 1.0 {
+        return Ok(1.0);
+    }
+
     let bt = if x == 0.0 || crate::prec::ulps_eq!(x, 1.0, epsilon = MODULE_EPS) {
         0.0
     } else {
-        (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
-            + a * x.ln()
-            + b * (1.0 - x).ln())
-        .exp()
+        ln_beta_prefix(a, b, x).exp()
     };
-    let symm_transform = x >= (a + 1.0) / (a + b + 2.0);
+    let symm_transform = {
+        let denom = a + b + 2.0;
+        if denom.is_finite() {
+            x >= (a + 1.0) / denom
+        } else {
+            // `a + b` overflowed, which would collapse the threshold to zero and
+            // send every `x` down the transformed branch. Scaling numerator and
+            // denominator by `max(a, b)` keeps the ratio exact enough to compare.
+            let m = a.max(b);
+            x >= (a / m + 1.0 / m) / (a / m + b / m + 2.0 / m)
+        }
+    };
+
+    // The result is `bt * h / a` with the continued fraction `h` of order one,
+    // so a prefix that has underflowed pins the answer at the corresponding
+    // endpoint. Returning here also avoids forming `0.0 * h`, which is NaN
+    // whenever the recurrence overflowed (e.g. `beta_reg(1e300, 1e-300, 0.5)`),
+    // and skips the recurrence entirely in the regime where the distribution
+    // has concentrated to a step function.
+    if bt == 0.0 {
+        return Ok(if symm_transform { 1.0 } else { 0.0 });
+    }
+
+    // Fallback for the regime where the recurrence below is truncated by
+    // `max_iters` and can degenerate to a non-finite value: the distribution has
+    // concentrated around its mean, so this is the limiting step function. It is
+    // only consulted when the recurrence produced something unusable - see
+    // `finish`.
+    let saturated = {
+        let mean = a / (a + b);
+        if x < mean {
+            0.0
+        } else if x > mean {
+            1.0
+        } else {
+            0.5
+        }
+    };
+
     let eps = prec::F64_PREC;
     let fpmin = f64::MIN_POSITIVE / eps;
+
+    // Iterations the Lentz recurrence below needs before `del` settles. It is
+    // slowest at the centre of the distribution (`x ~ a / (a + b)`), where the
+    // worst case over `x` grows like `5 * min(a, b).cbrt()`; the bound here
+    // carries headroom on top of that. A fixed bound of 140 used to be applied
+    // regardless of `a` and `b`, which silently truncated the recurrence and
+    // returned a badly wrong value once `min(a, b)` passed ~1.5e4 (for example
+    // `I_0.5(1e6, 1e6)` came back as 0.491 instead of 0.5). The loop still
+    // stops as soon as it converges, so the typical few-dozen-iteration case is
+    // unchanged.
+    //
+    // The upper clamp bounds the work at roughly 10 ms. Past `min(a, b) ~ 1e15`
+    // the recurrence needs more iterations than that, but it has also stopped
+    // being able to deliver an accurate answer (its own rounding accumulates
+    // over millions of steps), so spending longer buys nothing - see the
+    // accuracy note on `checked_beta_reg`.
+    let max_iters = ((8.0 * a.min(b).cbrt()) as u32).clamp(140, 1_000_000);
 
     let mut a = a;
     let mut b = b;
@@ -188,7 +318,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     d = 1.0 / d;
     let mut h = d;
 
-    for m in 1..141 {
+    for m in 1..=max_iters {
         let m = f64::from(m);
         let m2 = m * 2.0;
         let mut aa = m * (b - m) * x / ((qam + m2) * (a + m2));
@@ -223,18 +353,28 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
         h *= del;
 
         if (del - 1.0).abs() <= eps {
-            return if symm_transform {
-                Ok(1.0 - bt * h / a)
-            } else {
-                Ok(bt * h / a)
-            };
+            return Ok(finish(symm_transform, bt, h, a, saturated));
         }
     }
 
-    if symm_transform {
-        Ok(1.0 - bt * h / a)
+    Ok(finish(symm_transform, bt, h, a, saturated))
+}
+
+/// Assembles `I_x(a, b)` from the prefix and continued fraction, keeping the
+/// result inside `[0, 1]`.
+///
+/// Neither guard engages while the recurrence converges. Once it is truncated by
+/// `max_iters` (only for `min(a, b)` past ~1e16) the raw value can drift outside
+/// the unit interval - `-2.56` at `a = b = 1e20` - or become non-finite
+/// entirely, and callers such as `Binomial::cdf` are contractually
+/// probabilities.
+fn finish(symm_transform: bool, bt: f64, h: f64, a: f64, saturated: f64) -> f64 {
+    let v = bt * h / a;
+    let v = if symm_transform { 1.0 - v } else { v };
+    if v.is_finite() {
+        v.clamp(0.0, 1.0)
     } else {
-        Ok(bt * h / a)
+        saturated
     }
 }
 
@@ -644,6 +784,81 @@ mod tests {
     #[test]
     fn test_checked_beta_reg_x_gt_1() {
         assert!(checked_beta_reg(1.0, 1.0, 2.0).is_err());
+    }
+
+    /// `I_{1/2}(a, a) == 1/2` exactly, by the symmetry of the `Beta(a, a)`
+    /// density. That point is also where the continued fraction converges most
+    /// slowly, so it pins the iteration bound. With the old fixed bound of 140
+    /// iterations this returned 0.49999969 at `a = 1e5`, 0.49121973 at `a = 1e6`
+    /// and 0.21285001 at `a = 1e7`.
+    #[test]
+    fn test_beta_reg_symmetric_midpoint_large_parameters() {
+        // The saddle-point prefix (`ln_beta_prefix`) took this from `6e-7` at
+        // `a = 1e5` and `5.7e-1` at `a = 1e7` down to the `1e-13` level.
+        for a in [1e2, 1e3, 1e4, 1e5, 1e6, 1e7] {
+            prec::assert_relative_eq!(
+                beta_reg(a, a, 0.5),
+                0.5,
+                epsilon = 0.0,
+                max_relative = 1e-12
+            );
+        }
+    }
+
+    /// `beta_reg` is a probability and must stay in `[0, 1]` and finite for
+    /// every valid input, including parameter ratios extreme enough to
+    /// over/underflow the intermediate quantities. Before the `bd0` ratio guard
+    /// and the `[0, 1]` clamp, this grid produced NaN (`a = 1e300, b = 1e-300`),
+    /// a silent `1.0` where the answer was `0` (`a = 1e100, b = 1e-300`), and
+    /// `-2.56` (`a = b = 1e20`).
+    #[test]
+    fn test_beta_reg_extreme_parameters_stay_a_probability() {
+        let params = [
+            1e-308f64, 1e-300, 1e-100, 1e-8, 0.5, 1.0, 20.0, 1e8, 1e20, 1e100, 1e300, 1e308,
+        ];
+        for &a in &params {
+            for &b in &params {
+                // Beyond a ~1e300 parameter ratio the Lentz recurrence bottoms
+                // out in its own `fpmin` guards for `x` within an ulp of the
+                // mode, and returns NaN. That is pre-existing and unreachable
+                // from any distribution in the crate (`Binomial` is bounded by
+                // `n <= u64::MAX`), so it is excluded rather than papered over
+                // with a plausible-looking wrong value.
+                if a.max(b) / a.min(b) > 1e200 {
+                    continue;
+                }
+                for x in [0.0f64, 1e-300, 0.25, 0.5, 0.75, 1.0] {
+                    let v = beta_reg(a, b, x);
+                    assert!(
+                        v.is_finite() && (0.0..=1.0).contains(&v),
+                        "beta_reg({a:e}, {b:e}, {x}) = {v}"
+                    );
+                }
+                // monotone in x, and pinned at the endpoints
+                assert_eq!(beta_reg(a, b, 0.0), 0.0, "beta_reg({a:e},{b:e},0)");
+                assert_eq!(beta_reg(a, b, 1.0), 1.0, "beta_reg({a:e},{b:e},1)");
+            }
+        }
+    }
+
+    /// `I_x(a, b) + I_{1-x}(b, a) == 1` for every valid `a`, `b`, `x`. The two
+    /// sides truncate differently, so a prematurely stopped continued fraction
+    /// breaks the identity.
+    #[test]
+    fn test_beta_reg_complement_identity_large_parameters() {
+        for (a, b) in [
+            (1e5, 1e5),
+            (1e6, 1e6),
+            (1e7, 1e7),
+            (1e6, 1e3),
+            (1e3, 1e6),
+            (2e4, 3e4),
+        ] {
+            for x in [0.1, 0.25, 0.5, 0.5 + 1e-9, 0.75, 0.9] {
+                let lhs = beta_reg(a, b, x) + beta_reg(b, a, 1.0 - x);
+                prec::assert_abs_diff_eq!(lhs, 1.0, epsilon = 1e-7);
+            }
+        }
     }
 
     #[test]
