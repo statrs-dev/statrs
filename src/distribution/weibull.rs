@@ -169,6 +169,25 @@ impl ContinuousCDF<f64, f64> for Weibull {
         }
     }
 
+    /// Tail-accurate log of the cdf.
+    fn ln_cdf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            f64::NEG_INFINITY
+        } else {
+            (-(-x.powf(self.shape) * self.scale_pow_shape_inv).exp_m1()).ln()
+        }
+    }
+
+    /// Exact log of the survival function:
+    /// `ln sf = -(x / scale)^shape`, finite long after `sf` underflows.
+    fn ln_sf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            0.0
+        } else {
+            -x.powf(self.shape) * self.scale_pow_shape_inv
+        }
+    }
+
     /// Calculates the inverse cumulative distribution function for the weibull
     /// distribution at `x`
     ///

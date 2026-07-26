@@ -459,6 +459,76 @@ pub fn checked_gamma_li(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     checked_gamma_lr(a, x).map(|x| x * gamma(a))
 }
 
+/// The Legendre continued fraction for `Q(a, x) / (x^a e^-x / Gamma(a))`,
+/// valid for `x >= 1 && x > a`. Shared by [`checked_gamma_ur`] and
+/// [`checked_ln_gamma_ur`]; the value is O(1/x)-ish and does not involve the
+/// prefix, which is what makes a log-domain variant possible.
+fn gamma_ur_fraction(a: f64, x: f64) -> f64 {
+    let eps = 0.000000000000001;
+    let big = 4503599627370496.0;
+    let big_inv = 2.22044604925031308085e-16;
+
+    let mut y = 1.0 - a;
+    let mut z = x + y + 1.0;
+    let mut c = 0.0;
+    let mut pkm2 = 1.0;
+    let mut qkm2 = x;
+    let mut pkm1 = x + 1.0;
+    let mut qkm1 = z * x;
+    let mut ans = pkm1 / qkm1;
+    loop {
+        y += 1.0;
+        z += 2.0;
+        c += 1.0;
+        let yc = y * c;
+        let pk = pkm1 * z - pkm2 * yc;
+        let qk = qkm1 * z - qkm2 * yc;
+
+        pkm2 = pkm1;
+        pkm1 = pk;
+        qkm2 = qkm1;
+        qkm1 = qk;
+
+        if pk.abs() > big {
+            pkm2 *= big_inv;
+            pkm1 *= big_inv;
+            qkm2 *= big_inv;
+            qkm1 *= big_inv;
+        }
+
+        if qk != 0.0 {
+            let r = pk / qk;
+            let t = ((ans - r) / r).abs();
+            ans = r;
+
+            if t <= eps {
+                break;
+            }
+        }
+    }
+    ans
+}
+
+/// The all-positive series for `P(a, x) / (x^a e^-x / Gamma(a))`, valid for
+/// `x <= 1 || x <= a`; returns `ans / a`. Shared by [`checked_gamma_lr`] and
+/// [`checked_ln_gamma_lr`].
+fn gamma_lr_series(a: f64, x: f64) -> f64 {
+    let eps = 0.000000000000001;
+    let mut r2 = a;
+    let mut c2 = 1.0;
+    let mut ans2 = 1.0;
+    loop {
+        r2 += 1.0;
+        c2 *= x / r2;
+        ans2 += c2;
+
+        if c2 / ans2 <= eps {
+            break;
+        }
+    }
+    ans2 / a
+}
+
 /// Computes the upper incomplete regularized gamma function
 /// `Q(a,x) = 1 / Gamma(a) * int(exp(-t)t^(a-1), t=0..x) for a > 0, x > 0`
 /// where `a` is the argument for the gamma function and
@@ -498,10 +568,6 @@ pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64, GammaFuncError> {
         return Err(GammaFuncError::XInvalid);
     }
 
-    let eps = 0.000000000000001;
-    let big = 4503599627370496.0;
-    let big_inv = 2.22044604925031308085e-16;
-
     if x < 1.0 || x <= a {
         return Ok(1.0 - gamma_lr(a, x));
     }
@@ -513,44 +579,7 @@ pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     }
 
     ax = ax.exp();
-    let mut y = 1.0 - a;
-    let mut z = x + y + 1.0;
-    let mut c = 0.0;
-    let mut pkm2 = 1.0;
-    let mut qkm2 = x;
-    let mut pkm1 = x + 1.0;
-    let mut qkm1 = z * x;
-    let mut ans = pkm1 / qkm1;
-    loop {
-        y += 1.0;
-        z += 2.0;
-        c += 1.0;
-        let yc = y * c;
-        let pk = pkm1 * z - pkm2 * yc;
-        let qk = qkm1 * z - qkm2 * yc;
-
-        pkm2 = pkm1;
-        pkm1 = pk;
-        qkm2 = qkm1;
-        qkm1 = qk;
-
-        if pk.abs() > big {
-            pkm2 *= big_inv;
-            pkm1 *= big_inv;
-            qkm2 *= big_inv;
-            qkm1 *= big_inv;
-        }
-
-        if qk != 0.0 {
-            let r = pk / qk;
-            let t = ((ans - r) / r).abs();
-            ans = r;
-
-            if t <= eps {
-                break;
-            }
-        }
-    }
+    let ans = gamma_ur_fraction(a, x);
     Ok(ans * ax)
 }
 
@@ -613,19 +642,7 @@ pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64, GammaFuncError> {
         return Ok(0.0);
     }
     if x <= 1.0 || x <= a {
-        let mut r2 = a;
-        let mut c2 = 1.0;
-        let mut ans2 = 1.0;
-        loop {
-            r2 += 1.0;
-            c2 *= x / r2;
-            ans2 += c2;
-
-            if c2 / ans2 <= eps {
-                break;
-            }
-        }
-        return Ok(ax.exp() * ans2 / a);
+        return Ok(ax.exp() * gamma_lr_series(a, x));
     }
 
     let mut y = 1.0 - a;
@@ -670,6 +687,85 @@ pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64, GammaFuncError> {
         }
     }
     Ok(1.0 - ax.exp() * ans)
+}
+
+/// Computes the natural logarithm of the upper incomplete regularized gamma
+/// function, `ln Q(a, x)`, staying finite far past the point where `Q` itself
+/// underflows.
+///
+/// `gamma_ur` saturates to 0 once its prefix drops below ~exp(-709.78); the
+/// log-domain form has no such cliff, e.g. `ln_gamma_ur(1.0, 1e6) == -1e6`
+/// exactly where `gamma_ur` returns 0. Used by `ln_sf` implementations.
+///
+/// # Panics
+///
+/// if `a` or `x` are not in `(0, +inf)`
+pub fn ln_gamma_ur(a: f64, x: f64) -> f64 {
+    checked_ln_gamma_ur(a, x).unwrap()
+}
+
+/// Non-panicking variant of [`ln_gamma_ur`].
+///
+/// # Errors
+///
+/// if `a` or `x` are not in `(0, +inf)`
+pub fn checked_ln_gamma_ur(a: f64, x: f64) -> Result<f64, GammaFuncError> {
+    if a.is_nan() || x.is_nan() {
+        return Ok(f64::NAN);
+    }
+    if a <= 0.0 || a == f64::INFINITY {
+        return Err(GammaFuncError::AInvalid);
+    }
+    if x <= 0.0 || x == f64::INFINITY {
+        return Err(GammaFuncError::XInvalid);
+    }
+
+    if x < 1.0 || x <= a {
+        // Q is not small in this region (the mass to the right of x is at
+        // least O(1/2) for x <= a), so the linear-domain value is accurate
+        // and `ln_1p` of it loses nothing.
+        return Ok((-gamma_lr(a, x)).ln_1p());
+    }
+    // ln Q = ln(prefix) + ln(fraction): both stay representable long after
+    // `prefix.exp()` underflows.
+    Ok(ln_gamma_prefix(a, x) + gamma_ur_fraction(a, x).ln())
+}
+
+/// Computes the natural logarithm of the lower incomplete regularized gamma
+/// function, `ln P(a, x)`, staying finite far past the point where `P` itself
+/// underflows. Used by `ln_cdf` implementations; see [`ln_gamma_ur`].
+///
+/// # Panics
+///
+/// if `a` or `x` are not in `(0, +inf)`
+pub fn ln_gamma_lr(a: f64, x: f64) -> f64 {
+    checked_ln_gamma_lr(a, x).unwrap()
+}
+
+/// Non-panicking variant of [`ln_gamma_lr`].
+///
+/// # Errors
+///
+/// if `a` or `x` are not in `(0, +inf)`
+pub fn checked_ln_gamma_lr(a: f64, x: f64) -> Result<f64, GammaFuncError> {
+    if a.is_nan() || x.is_nan() {
+        return Ok(f64::NAN);
+    }
+    if a <= 0.0 || a == f64::INFINITY {
+        return Err(GammaFuncError::AInvalid);
+    }
+    if x <= 0.0 || x == f64::INFINITY {
+        return Err(GammaFuncError::XInvalid);
+    }
+
+    if x <= 1.0 || x <= a {
+        // the deep left tail: prefix and series in log domain
+        return Ok(ln_gamma_prefix(a, x) + gamma_lr_series(a, x).ln());
+    }
+    // Here P = 1 - Q with Q accurate (and possibly tiny); exp may underflow to
+    // zero, in which case ln P correctly saturates to -0.
+    let ln_q = ln_gamma_prefix(a, x) + gamma_ur_fraction(a, x).ln();
+    Ok((-ln_q.exp()).ln_1p())
 }
 
 /// Computes the Digamma function which is defined as the derivative of

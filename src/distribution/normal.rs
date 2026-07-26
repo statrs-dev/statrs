@@ -155,6 +155,18 @@ impl ContinuousCDF<f64, f64> for Normal {
         sf_unchecked(x, self.mean, self.std_dev)
     }
 
+    /// Tail-accurate log of the cdf via a dedicated `ln erfc`; finite for
+    /// every representable `x` (`ln_cdf(-100)` is about -5005.5 where
+    /// `cdf(-100).ln()` is `-inf`).
+    fn ln_cdf(&self, x: f64) -> f64 {
+        ln_cdf_unchecked(x, self.mean, self.std_dev)
+    }
+
+    /// Tail-accurate log of the survival function; see [`Self::ln_cdf`].
+    fn ln_sf(&self, x: f64) -> f64 {
+        ln_sf_unchecked(x, self.mean, self.std_dev)
+    }
+
     /// Calculates the inverse cumulative distribution function for the
     /// normal distribution at `x`.
     /// In other languages, such as R, this is known as the the quantile function.
@@ -380,6 +392,50 @@ fn half_erfc(a: f64, b: f64, std_dev: f64) -> f64 {
     half - 0.5 * f64::consts::FRAC_2_SQRT_PI * (-t * t).exp() * delta
 }
 
+/// Log-domain companion of [`half_erfc`]: computes
+/// `ln(0.5 * erfc((a - b) / (std_dev * sqrt 2)))`, staying finite far past the
+/// point where the probability itself underflows (`ln_cdf(-40)` for the
+/// standard normal is about -804.6 where `cdf(-40).ln()` is `-inf`).
+///
+/// The same argument-rounding compensation applies, but additively:
+/// `ln erfc(t + delta) ~= ln erfc(t) + (d ln erfc / dt) delta`.
+fn ln_half_erfc(a: f64, b: f64, std_dev: f64) -> f64 {
+    let (d, d_err) = two_diff(a, b);
+    let s = std_dev * f64::consts::SQRT_2;
+    if d.is_nan() {
+        return f64::NAN;
+    }
+    if d.is_infinite() {
+        return if d > 0.0 { f64::NEG_INFINITY } else { 0.0 };
+    }
+    if !s.is_finite() {
+        // sigma so large the distribution is flat over any finite difference
+        return -f64::consts::LN_2;
+    }
+    let t = d / s;
+    let base = erf::ln_erfc(t) - f64::consts::LN_2;
+    if !(1.5..1e300).contains(&t) || s > 1e300 {
+        // t < 1.5: amplification negligible (and for t < 0, erfc -> 2 with a
+        // vanishing derivative). Bounds also keep the Dekker splits below away
+        // from arguments that would overflow them.
+        return base;
+    }
+    // residuals of the subtraction, the division, and sigma * sqrt(2), exactly
+    // as in `half_erfc`
+    let p = t * s;
+    let r = (d - p) - dekker_product_err(t, s, p);
+    let s_err = dekker_product_err(std_dev, f64::consts::SQRT_2, s) + std_dev * SQRT_2_LO;
+    let delta = (r + d_err - t * s_err) / s;
+    // d/dt ln erfc = -2/sqrt(pi) e^(-t^2) / erfc(t); past the representable
+    // range of erfc use its asymptotic -(2t + 1/t)
+    let dln = if t < 26.0 {
+        -f64::consts::FRAC_2_SQRT_PI * (-t * t).exp() / erf::erfc(t)
+    } else {
+        -(2.0 * t + 1.0 / t)
+    };
+    base + dln * delta
+}
+
 /// performs an unchecked cdf calculation for a normal distribution
 /// with the given mean and standard deviation at x
 pub fn cdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
@@ -390,6 +446,18 @@ pub fn cdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
 /// with the given mean and standard deviation at x
 pub fn sf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
     half_erfc(x, mean, std_dev)
+}
+
+/// performs an unchecked log-cdf calculation for a normal distribution
+/// with the given mean and standard deviation at x
+pub fn ln_cdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
+    ln_half_erfc(mean, x, std_dev)
+}
+
+/// performs an unchecked log-sf calculation for a normal distribution
+/// with the given mean and standard deviation at x
+pub fn ln_sf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
+    ln_half_erfc(x, mean, std_dev)
 }
 
 /// performs an unchecked pdf calculation for a normal distribution

@@ -159,6 +159,25 @@ impl DiscreteCDF<u64, f64> for Geometric {
         }
     }
 
+    /// Tail-accurate log of the cdf.
+    fn ln_cdf(&self, x: u64) -> f64 {
+        if x == 0 {
+            f64::NEG_INFINITY
+        } else {
+            (-((-self.p).ln_1p() * (x as f64)).exp_m1()).ln()
+        }
+    }
+
+    /// Exact log of the survival function: `ln sf = x * ln(1 - p)`, finite for
+    /// every `x` even though `sf` underflows past `x ~ 709 / p`.
+    fn ln_sf(&self, x: u64) -> f64 {
+        if x == 0 {
+            0.0
+        } else {
+            (-self.p).ln_1p() * (x as f64)
+        }
+    }
+
     /// Calculates the inverse cumulative distribution function for the
     /// geometric distribution at `x`.
     /// In other languages, such as R, this is known as the quantile function.

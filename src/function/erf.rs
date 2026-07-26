@@ -1,6 +1,7 @@
 //! Provides the [error](https://en.wikipedia.org/wiki/Error_function) and
 //! related functions
 
+use crate::consts;
 use crate::function::evaluate;
 use core::f64;
 #[cfg(not(feature = "std"))]
@@ -49,6 +50,55 @@ pub fn erfc(x: f64) -> f64 {
     } else {
         erf_impl(x, true)
     }
+}
+
+/// `ln_erfc` calculates the natural logarithm of the complementary error
+/// function at `x`, staying finite far past the point where `erfc` itself
+/// underflows (`x ~ 27`): `ln_erfc(100)` is about -10004.14, and results remain
+/// finite until `x^2` overflows near `x = 1.3e154`.
+///
+/// Accuracy tracks `erfc` where both are representable (a few ulp) because it
+/// reuses the same interval machinery; past the underflow point it continues
+/// with the asymptotic series.
+pub fn ln_erfc(x: f64) -> f64 {
+    if x.is_nan() {
+        return f64::NAN;
+    }
+    if x == f64::INFINITY {
+        return f64::NEG_INFINITY;
+    }
+    if x < 0.5 {
+        // erfc = 1 - erf with erf(x) <= erf(0.5) ~ 0.52 (and negative for
+        // x < 0, where erfc -> 2), so ln_1p is accurate on this whole range
+        return (-erf(x)).ln_1p();
+    }
+    if x < 110.0 {
+        // erfc(z) = exp(-z^2) / z * (b + r); take logs. The rounding error of
+        // the square is recovered exactly (Dekker), and enters the log-domain
+        // result additively rather than through `exp`.
+        let sq = x * x;
+        let split = 134_217_729.0 * x; // 2^27 + 1; x < 110, cannot overflow
+        let x_hi = split - (split - x);
+        let x_lo = x - x_hi;
+        let err = ((x_hi * x_hi - sq) + 2.0 * x_hi * x_lo) + x_lo * x_lo;
+        let (r, b) = erfc_fraction(x);
+        return -sq - err + ((b + r) / x).ln();
+    }
+    // Asymptotic series: erfc(z) ~ exp(-z^2) / (z sqrt(pi)) *
+    // (1 - 1/(2 z^2) + 3/(4 z^4) - 15/(8 z^6) + ...); at z = 110 the dropped
+    // term is ~1e-16 of the correction and utterly negligible in the total.
+    let inv2 = (x * x).recip(); // for x >= 110 the square's rounding is
+    // amplified by nothing: it lands in the tiny series argument
+    let series = -0.5 * inv2 + 0.75 * inv2 * inv2 - 1.875 * inv2 * inv2 * inv2;
+    let sq = x * x;
+    if !sq.is_finite() {
+        return f64::NEG_INFINITY;
+    }
+    let split = 134_217_729.0 * x;
+    let x_hi = split - (split - x);
+    let x_lo = x - x_hi;
+    let err = ((x_hi * x_hi - sq) + 2.0 * x_hi * x_lo) + x_lo * x_lo;
+    -sq - err - x.ln() - 0.5 * consts::LN_PI + series.ln_1p()
 }
 
 /// `erfc_inv` calculates the complementary inverse
@@ -569,6 +619,88 @@ const ERF_INV_IMPL_GD: &[f64] = &[
     0.231558608310259605225e-11,
 ];
 
+/// Selects the rational-approximation interval for `erfc(z) = exp(-z^2)/z *
+/// (b + r)` and returns `(r, b)`. Requires `0.5 <= z < 110`. Shared by
+/// [`erf_impl`] and [`ln_erfc`] so the two stay consistent.
+fn erfc_fraction(z: f64) -> (f64, f64) {
+    if z < 0.75 {
+        (
+            evaluate::polynomial(z - 0.5, ERF_IMPL_BN) / evaluate::polynomial(z - 0.5, ERF_IMPL_BD),
+            0.3440242111682891845703125,
+        )
+    } else if z < 1.25 {
+        (
+            evaluate::polynomial(z - 0.75, ERF_IMPL_CN)
+                / evaluate::polynomial(z - 0.75, ERF_IMPL_CD),
+            0.4199909269809722900390625,
+        )
+    } else if z < 2.25 {
+        (
+            evaluate::polynomial(z - 1.25, ERF_IMPL_DN)
+                / evaluate::polynomial(z - 1.25, ERF_IMPL_DD),
+            0.489862501621246337890625,
+        )
+    } else if z < 3.5 {
+        (
+            evaluate::polynomial(z - 2.25, ERF_IMPL_EN)
+                / evaluate::polynomial(z - 2.25, ERF_IMPL_ED),
+            0.5317370891571044921875,
+        )
+    } else if z < 5.25 {
+        (
+            evaluate::polynomial(z - 3.5, ERF_IMPL_FN) / evaluate::polynomial(z - 3.5, ERF_IMPL_FD),
+            0.548997342586517333984375,
+        )
+    } else if z < 8.0 {
+        (
+            evaluate::polynomial(z - 5.25, ERF_IMPL_GN)
+                / evaluate::polynomial(z - 5.25, ERF_IMPL_GD),
+            0.55717408657073974609375,
+        )
+    } else if z < 11.5 {
+        (
+            evaluate::polynomial(z - 8.0, ERF_IMPL_HN) / evaluate::polynomial(z - 8.0, ERF_IMPL_HD),
+            0.56098079681396484375,
+        )
+    } else if z < 17.0 {
+        (
+            evaluate::polynomial(z - 11.5, ERF_IMPL_IN)
+                / evaluate::polynomial(z - 11.5, ERF_IMPL_ID),
+            0.56264936923980712890625,
+        )
+    } else if z < 24.0 {
+        (
+            evaluate::polynomial(z - 17.0, ERF_IMPL_JN)
+                / evaluate::polynomial(z - 17.0, ERF_IMPL_JD),
+            0.563459813594818115234375,
+        )
+    } else if z < 38.0 {
+        (
+            evaluate::polynomial(z - 24.0, ERF_IMPL_KN)
+                / evaluate::polynomial(z - 24.0, ERF_IMPL_KD),
+            0.5638477802276611328125,
+        )
+    } else if z < 60.0 {
+        (
+            evaluate::polynomial(z - 38.0, ERF_IMPL_LN)
+                / evaluate::polynomial(z - 38.0, ERF_IMPL_LD),
+            0.5640528202056884765625,
+        )
+    } else if z < 85.0 {
+        (
+            evaluate::polynomial(z - 60.0, ERF_IMPL_MN)
+                / evaluate::polynomial(z - 60.0, ERF_IMPL_MD),
+            0.56413090229034423828125,
+        )
+    } else {
+        (
+            evaluate::polynomial(z - 85.0, ERF_IMPL_NN)
+                / evaluate::polynomial(z - 85.0, ERF_IMPL_ND),
+            0.56415843963623046875,
+        )
+    }
+}
+
 /// `erf_impl` computes the error function at `z`.
 /// If `inv` is true, `1 - erf` is calculated as opposed to `erf`
 fn erf_impl(z: f64, inv: bool) -> f64 {
@@ -590,85 +722,7 @@ fn erf_impl(z: f64, inv: bool) -> f64 {
                 + z * evaluate::polynomial(z, ERF_IMPL_AN) / evaluate::polynomial(z, ERF_IMPL_AD)
         }
     } else if z < 110.0 {
-        let (r, b) = if z < 0.75 {
-            (
-                evaluate::polynomial(z - 0.5, ERF_IMPL_BN)
-                    / evaluate::polynomial(z - 0.5, ERF_IMPL_BD),
-                0.3440242111682891845703125,
-            )
-        } else if z < 1.25 {
-            (
-                evaluate::polynomial(z - 0.75, ERF_IMPL_CN)
-                    / evaluate::polynomial(z - 0.75, ERF_IMPL_CD),
-                0.4199909269809722900390625,
-            )
-        } else if z < 2.25 {
-            (
-                evaluate::polynomial(z - 1.25, ERF_IMPL_DN)
-                    / evaluate::polynomial(z - 1.25, ERF_IMPL_DD),
-                0.489862501621246337890625,
-            )
-        } else if z < 3.5 {
-            (
-                evaluate::polynomial(z - 2.25, ERF_IMPL_EN)
-                    / evaluate::polynomial(z - 2.25, ERF_IMPL_ED),
-                0.5317370891571044921875,
-            )
-        } else if z < 5.25 {
-            (
-                evaluate::polynomial(z - 3.5, ERF_IMPL_FN)
-                    / evaluate::polynomial(z - 3.5, ERF_IMPL_FD),
-                0.548997342586517333984375,
-            )
-        } else if z < 8.0 {
-            (
-                evaluate::polynomial(z - 5.25, ERF_IMPL_GN)
-                    / evaluate::polynomial(z - 5.25, ERF_IMPL_GD),
-                0.55717408657073974609375,
-            )
-        } else if z < 11.5 {
-            (
-                evaluate::polynomial(z - 8.0, ERF_IMPL_HN)
-                    / evaluate::polynomial(z - 8.0, ERF_IMPL_HD),
-                0.56098079681396484375,
-            )
-        } else if z < 17.0 {
-            (
-                evaluate::polynomial(z - 11.5, ERF_IMPL_IN)
-                    / evaluate::polynomial(z - 11.5, ERF_IMPL_ID),
-                0.56264936923980712890625,
-            )
-        } else if z < 24.0 {
-            (
-                evaluate::polynomial(z - 17.0, ERF_IMPL_JN)
-                    / evaluate::polynomial(z - 17.0, ERF_IMPL_JD),
-                0.563459813594818115234375,
-            )
-        } else if z < 38.0 {
-            (
-                evaluate::polynomial(z - 24.0, ERF_IMPL_KN)
-                    / evaluate::polynomial(z - 24.0, ERF_IMPL_KD),
-                0.5638477802276611328125,
-            )
-        } else if z < 60.0 {
-            (
-                evaluate::polynomial(z - 38.0, ERF_IMPL_LN)
-                    / evaluate::polynomial(z - 38.0, ERF_IMPL_LD),
-                0.5640528202056884765625,
-            )
-        } else if z < 85.0 {
-            (
-                evaluate::polynomial(z - 60.0, ERF_IMPL_MN)
-                    / evaluate::polynomial(z - 60.0, ERF_IMPL_MD),
-                0.56413090229034423828125,
-            )
-        } else {
-            (
-                evaluate::polynomial(z - 85.0, ERF_IMPL_NN)
-                    / evaluate::polynomial(z - 85.0, ERF_IMPL_ND),
-                0.56415843963623046875,
-            )
-        };
+        let (r, b) = erfc_fraction(z);
         // `z * z` is rounded before `exp` sees it, which costs roughly `z^2`
         // ulps in the result (~460 ulps by z = 27). Recover the rounding error
         // of the square exactly with a Dekker product and fold it back in:

@@ -119,6 +119,152 @@ pub fn checked_beta_inc(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     checked_beta_reg(a, b, x).and_then(|x| checked_beta(a, b).map(|y| x * y))
 }
 
+/// Computes the natural logarithm of the regularized lower incomplete beta
+/// function, `ln I_x(a, b)`, staying finite far past the point where `I_x`
+/// itself underflows (below ~1e-308).
+///
+/// `beta_reg` computes `exp(ln prefix) * fraction` and so saturates to 0 once
+/// the prefix passes the underflow limit; the log-domain form has no cliff.
+/// Used by `ln_cdf`/`ln_sf` implementations on the beta family
+/// (`Binomial::ln_sf(x)` is `ln_beta_reg(x+1, n-x, p)` and stays finite for
+/// p-values far beyond representable).
+///
+/// Accuracy: the deep tail (where the untransformed branch is taken) is
+/// limited by the prefix, a few 1e-16 *absolute* in the log - i.e. the
+/// *relative* error of the underlying probability. Near the centre the result
+/// is `ln1p(-v)` of a well-conditioned `v` and tracks `beta_reg` itself.
+///
+/// # Panics
+///
+/// if `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
+pub fn ln_beta_reg(a: f64, b: f64, x: f64) -> f64 {
+    checked_ln_beta_reg(a, b, x).unwrap()
+}
+
+/// Non-panicking variant of [`ln_beta_reg`].
+///
+/// # Errors
+///
+/// if `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
+pub fn checked_ln_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
+    if a <= 0.0 {
+        return Err(BetaFuncError::ANotGreaterThanZero);
+    }
+    if b <= 0.0 {
+        return Err(BetaFuncError::BNotGreaterThanZero);
+    }
+    if !(0.0..=1.0).contains(&x) {
+        return Err(BetaFuncError::XOutOfRange);
+    }
+    if x == 0.0 {
+        return Ok(f64::NEG_INFINITY);
+    }
+    if x == 1.0 {
+        return Ok(0.0);
+    }
+
+    let symm_transform = beta_reg_symm_transform(a, b, x);
+    let max_iters = ((8.0 * a.min(b).cbrt()) as u32).clamp(140, 1_000_000);
+
+    let (a, b, x) = if symm_transform {
+        (b, a, 1.0 - x)
+    } else {
+        (a, b, x)
+    };
+
+    // ln(bt * h / a): every piece stays representable long after `bt` itself
+    // underflows.
+    let ln_v = ln_beta_prefix(a, b, x) + (beta_reg_fraction(a, b, x, max_iters) / a).ln();
+    if symm_transform {
+        // I = 1 - v; `exp` may underflow to 0, in which case ln I correctly
+        // saturates to -0. Clamp guards the truncated-recurrence regime where
+        // v could exceed 1 (see `finish`).
+        Ok((-ln_v.min(0.0).exp()).ln_1p())
+    } else {
+        // a probability's log is never positive; > 0 only ever arises from the
+        // truncated-recurrence regime
+        Ok(ln_v.min(0.0))
+    }
+}
+
+/// Whether `I_x(a, b)` should be computed via the symmetry
+/// `I_x(a, b) = 1 - I_{1-x}(b, a)`; true when `x` is past the distribution's
+/// bulk, where the direct continued fraction converges poorly.
+fn beta_reg_symm_transform(a: f64, b: f64, x: f64) -> bool {
+    let denom = a + b + 2.0;
+    if denom.is_finite() {
+        x >= (a + 1.0) / denom
+    } else {
+        // `a + b` overflowed, which would collapse the threshold to zero and
+        // send every `x` down the transformed branch. Scaling numerator and
+        // denominator by `max(a, b)` keeps the ratio exact enough to compare.
+        let m = a.max(b);
+        x >= (a / m + 1.0 / m) / (a / m + b / m + 2.0 / m)
+    }
+}
+
+/// The Lentz continued fraction for `I_x(a, b) * a / (x^a (1-x)^b / B(a, b))`,
+/// evaluated after the symmetry transform. Shared by [`checked_beta_reg`] and
+/// [`checked_ln_beta_reg`]; the value is O(1) and independent of the prefix,
+/// which is what makes the log-domain variant possible.
+fn beta_reg_fraction(a: f64, b: f64, x: f64, max_iters: u32) -> f64 {
+    let eps = prec::F64_PREC;
+    let fpmin = f64::MIN_POSITIVE / eps;
+
+    let qab = a + b;
+    let qap = a + 1.0;
+    let qam = a - 1.0;
+    let mut c = 1.0;
+    let mut d = 1.0 - qab * x / qap;
+
+    if d.abs() < fpmin {
+        d = fpmin;
+    }
+    d = 1.0 / d;
+    let mut h = d;
+
+    for m in 1..=max_iters {
+        let m = f64::from(m);
+        let m2 = m * 2.0;
+        let mut aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+        d = 1.0 + aa * d;
+
+        if d.abs() < fpmin {
+            d = fpmin;
+        }
+
+        c = 1.0 + aa / c;
+        if c.abs() < fpmin {
+            c = fpmin;
+        }
+
+        d = 1.0 / d;
+        h = h * d * c;
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+        d = 1.0 + aa * d;
+
+        if d.abs() < fpmin {
+            d = fpmin;
+        }
+
+        c = 1.0 + aa / c;
+
+        if c.abs() < fpmin {
+            c = fpmin;
+        }
+
+        d = 1.0 / d;
+        let del = d * c;
+        h *= del;
+
+        if (del - 1.0).abs() <= eps {
+            break;
+        }
+    }
+
+    h
+}
+
 /// Computes the regularized lower incomplete beta function
 /// `I_x(a,b) = 1/Beta(a,b) * int(t^(a-1)*(1-t)^(b-1), t=0..x)`
 /// `a > 0`, `b > 0`, `1 >= x >= 0` where `a` is the first beta parameter,
@@ -237,18 +383,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     } else {
         ln_beta_prefix(a, b, x).exp()
     };
-    let symm_transform = {
-        let denom = a + b + 2.0;
-        if denom.is_finite() {
-            x >= (a + 1.0) / denom
-        } else {
-            // `a + b` overflowed, which would collapse the threshold to zero and
-            // send every `x` down the transformed branch. Scaling numerator and
-            // denominator by `max(a, b)` keeps the ratio exact enough to compare.
-            let m = a.max(b);
-            x >= (a / m + 1.0 / m) / (a / m + b / m + 2.0 / m)
-        }
-    };
+    let symm_transform = beta_reg_symm_transform(a, b, x);
 
     // The result is `bt * h / a` with the continued fraction `h` of order one,
     // so a prefix that has underflowed pins the answer at the corresponding
@@ -275,9 +410,6 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
             0.5
         }
     };
-
-    let eps = prec::F64_PREC;
-    let fpmin = f64::MIN_POSITIVE / eps;
 
     // Iterations the Lentz recurrence below needs before `del` settles. It is
     // slowest at the centre of the distribution (`x ~ a / (a + b)`), where the
@@ -306,57 +438,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
         b = swap;
     }
 
-    let qab = a + b;
-    let qap = a + 1.0;
-    let qam = a - 1.0;
-    let mut c = 1.0;
-    let mut d = 1.0 - qab * x / qap;
-
-    if d.abs() < fpmin {
-        d = fpmin;
-    }
-    d = 1.0 / d;
-    let mut h = d;
-
-    for m in 1..=max_iters {
-        let m = f64::from(m);
-        let m2 = m * 2.0;
-        let mut aa = m * (b - m) * x / ((qam + m2) * (a + m2));
-        d = 1.0 + aa * d;
-
-        if d.abs() < fpmin {
-            d = fpmin;
-        }
-
-        c = 1.0 + aa / c;
-        if c.abs() < fpmin {
-            c = fpmin;
-        }
-
-        d = 1.0 / d;
-        h = h * d * c;
-        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
-        d = 1.0 + aa * d;
-
-        if d.abs() < fpmin {
-            d = fpmin;
-        }
-
-        c = 1.0 + aa / c;
-
-        if c.abs() < fpmin {
-            c = fpmin;
-        }
-
-        d = 1.0 / d;
-        let del = d * c;
-        h *= del;
-
-        if (del - 1.0).abs() <= eps {
-            return Ok(finish(symm_transform, bt, h, a, saturated));
-        }
-    }
-
+    let h = beta_reg_fraction(a, b, x, max_iters);
     Ok(finish(symm_transform, bt, h, a, saturated))
 }
 

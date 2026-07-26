@@ -172,6 +172,32 @@ impl ContinuousCDF<f64, f64> for Beta {
         }
     }
 
+    /// Tail-accurate log of the cdf via [`beta::ln_beta_reg`].
+    fn ln_cdf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            f64::NEG_INFINITY
+        } else if x >= 1.0 {
+            0.0
+        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
+            x.ln()
+        } else {
+            beta::ln_beta_reg(self.shape_a, self.shape_b, x)
+        }
+    }
+
+    /// Tail-accurate log of the survival function via [`beta::ln_beta_reg`].
+    fn ln_sf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            0.0
+        } else if x >= 1.0 {
+            f64::NEG_INFINITY
+        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
+            (-x).ln_1p()
+        } else {
+            beta::ln_beta_reg(self.shape_b, self.shape_a, 1.0 - x)
+        }
+    }
+
     /// Calculates the inverse cumulative distribution function for the beta
     /// distribution at `x`.
     ///

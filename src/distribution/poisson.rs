@@ -145,6 +145,17 @@ impl DiscreteCDF<u64, f64> for Poisson {
     fn sf(&self, x: u64) -> f64 {
         gamma::gamma_lr(x as f64 + 1.0, self.lambda)
     }
+
+    /// Tail-accurate log of the cdf via [`gamma::ln_gamma_ur`]; finite far
+    /// past where `cdf` underflows.
+    fn ln_cdf(&self, x: u64) -> f64 {
+        gamma::ln_gamma_ur(x as f64 + 1.0, self.lambda)
+    }
+
+    /// Tail-accurate log of the survival function via [`gamma::ln_gamma_lr`].
+    fn ln_sf(&self, x: u64) -> f64 {
+        gamma::ln_gamma_lr(x as f64 + 1.0, self.lambda)
+    }
 }
 
 impl Min<u64> for Poisson {

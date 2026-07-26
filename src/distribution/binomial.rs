@@ -169,6 +169,27 @@ impl DiscreteCDF<u64, f64> for Binomial {
             beta::beta_reg(k as f64 + 1.0, (self.n - k) as f64, self.p)
         }
     }
+
+    /// Tail-accurate log of the cdf via [`beta::ln_beta_reg`]; finite far past
+    /// where `cdf` underflows (Bonferroni-scale p-values stay representable).
+    fn ln_cdf(&self, x: u64) -> f64 {
+        if x >= self.n {
+            0.0
+        } else {
+            let k = x;
+            beta::ln_beta_reg((self.n - k) as f64, k as f64 + 1.0, 1.0 - self.p)
+        }
+    }
+
+    /// Tail-accurate log of the survival function via [`beta::ln_beta_reg`].
+    fn ln_sf(&self, x: u64) -> f64 {
+        if x >= self.n {
+            f64::NEG_INFINITY
+        } else {
+            let k = x;
+            beta::ln_beta_reg(k as f64 + 1.0, (self.n - k) as f64, self.p)
+        }
+    }
 }
 
 impl Min<u64> for Binomial {

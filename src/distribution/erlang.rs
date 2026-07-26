@@ -123,6 +123,16 @@ impl ContinuousCDF<f64, f64> for Erlang {
         self.g.sf(x)
     }
 
+    /// Delegates to the wrapped Gamma's tail-accurate implementation.
+    fn ln_cdf(&self, x: f64) -> f64 {
+        self.g.ln_cdf(x)
+    }
+
+    /// Delegates to the wrapped Gamma's tail-accurate implementation.
+    fn ln_sf(&self, x: f64) -> f64 {
+        self.g.ln_sf(x)
+    }
+
     /// Calculates the inverse cumulative distribution function for the erlang
     /// distribution at `x`
     ///

@@ -178,6 +178,29 @@ impl ContinuousCDF<f64, f64> for LogNormal {
         }
     }
 
+    /// Tail-accurate log of the cdf, via the normal log-cdf at `ln x`.
+    fn ln_cdf(&self, x: f64) -> f64 {
+        if x <= 0.0 {
+            f64::NEG_INFINITY
+        } else if x.is_infinite() {
+            0.0
+        } else {
+            super::normal::ln_cdf_unchecked(x.ln(), self.location, self.scale)
+        }
+    }
+
+    /// Tail-accurate log of the survival function, via the normal log-sf at
+    /// `ln x`.
+    fn ln_sf(&self, x: f64) -> f64 {
+        if x <= 0.0 {
+            0.0
+        } else if x.is_infinite() {
+            f64::NEG_INFINITY
+        } else {
+            super::normal::ln_sf_unchecked(x.ln(), self.location, self.scale)
+        }
+    }
+
     /// Calculates the inverse cumulative distribution function for the
     /// log-normal distribution at `p`
     ///
