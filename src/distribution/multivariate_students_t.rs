@@ -1,6 +1,6 @@
 use crate::distribution::Continuous;
 use crate::function::gamma;
-use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
+use crate::statistics::{Max, MeanN, Median, Min, Mode, VarianceN};
 use core::f64::consts::PI;
 use nalgebra::{Cholesky, Const, DMatrix, Dim, DimMin, Dyn, OMatrix, OVector};
 
@@ -305,6 +305,36 @@ where
     }
 }
 
+impl<D> Median<OVector<f64, D>> for MultivariateStudent<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator:
+        nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
+{
+    /// Returns the median of the multivariate student's t-distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// μ
+    /// ```
+    ///
+    /// where `μ` is the location
+    ///
+    /// # Remarks
+    ///
+    /// The distribution is symmetric about its location for every `ν`, so the
+    /// marginal, geometric and halfspace medians all coincide there; see
+    /// [`MultivariateNormal::median`](crate::distribution::MultivariateNormal::median).
+    ///
+    /// Note this is defined for `ν <= 1`, where
+    /// [`mean`](crate::statistics::MeanN::mean) is `None` because the first
+    /// moment does not converge. A median requires no moments to exist.
+    fn median(&self) -> OVector<f64, D> {
+        self.location.clone()
+    }
+}
+
 impl<D> Mode<OVector<f64, D>> for MultivariateStudent<D>
 where
     D: Dim,
@@ -400,7 +430,7 @@ mod tests  {
 
     use crate::{
         distribution::{Continuous, MultivariateStudent, MultivariateNormal},
-        statistics::{Max, MeanN, Min, Mode, VarianceN},
+        statistics::{Max, MeanN, Median, Min, Mode, VarianceN},
     };
 
     use super::MultivariateStudentError;
@@ -521,6 +551,26 @@ mod tests  {
     fn test_bad_variance() {
         let variance = |x: MultivariateStudent<Dyn>| x.variance();
         test_case(vec![0., 0.], vec![1., 0., 0., 1.], 2., None, variance);
+    }
+
+    #[test]
+    fn test_median() {
+        let median = |x: MultivariateStudent<Dyn>| x.median();
+        test_case(vec![0., 0.], vec![1., 0., 0., 1.], 1., dvec![0., 0.], median);
+        test_case(vec![-1., 2.], vec![2., 0., 0., 3.], 5., dvec![-1., 2.], median);
+    }
+
+    /// The median exists for every `freedom`, including the values at or below
+    /// one where the mean does not converge and `mean()` is `None`.
+    #[test]
+    fn test_median_defined_where_mean_is_not() {
+        for freedom in [0.5, 1.0] {
+            let d = MultivariateStudent::new(vec![3., -4.], vec![1., 0., 0., 1.], freedom).unwrap();
+            assert!(d.mean().is_none(), "premise: mean undefined for v = {freedom}");
+            assert_eq!(d.median(), dvec![3., -4.]);
+            // and it still agrees with the mode, by symmetry
+            assert_eq!(d.median(), d.mode());
+        }
     }
 
     #[test]
