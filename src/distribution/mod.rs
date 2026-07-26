@@ -27,6 +27,7 @@ pub use self::geometric::{Geometric, GeometricError};
 pub use self::gumbel::{Gumbel, GumbelError};
 pub use self::hypergeometric::{Hypergeometric, HypergeometricError};
 pub use self::inverse_gamma::{InverseGamma, InverseGammaError};
+pub use self::inverse_gaussian::{InverseGaussian, InverseGaussianError};
 pub use self::laplace::{Laplace, LaplaceError};
 pub use self::levy::{Levy, LevyError};
 pub use self::log_normal::{LogNormal, LogNormalError};
@@ -70,6 +71,7 @@ mod hypergeometric;
 #[macro_use]
 mod internal;
 mod inverse_gamma;
+mod inverse_gaussian;
 mod laplace;
 mod levy;
 mod log_normal;

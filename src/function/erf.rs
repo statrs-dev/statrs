@@ -52,6 +52,60 @@ pub fn erfc(x: f64) -> f64 {
     }
 }
 
+/// The `1 - 1/(2z^2) + 3/(4z^4) - 15/(8z^6)` correction of the asymptotic
+/// expansion `erfc(z) ~ exp(-z^2) / (z sqrt(pi)) * (...)`, returned as the
+/// series *minus one* so callers can use `ln_1p`. Only used for `z >= 110`,
+/// where the first dropped term is ~1e-16 of the correction.
+fn erfc_asymptotic_correction(z: f64) -> f64 {
+    let inv2 = (z * z).recip();
+    -0.5 * inv2 + 0.75 * inv2 * inv2 - 1.875 * inv2 * inv2 * inv2
+}
+
+/// `erfcx` calculates the scaled complementary error function
+/// `exp(x^2) erfc(x)`.
+///
+/// Unlike `erfc`, this does not underflow: it decays only like
+/// `1 / (x sqrt(pi))`, so it stays useful across the whole positive axis where
+/// `erfc` has long since become zero. For `x` below about -26.6 the `exp(x^2)`
+/// factor overflows and the result is `+inf`; use [`ln_erfcx`] there.
+pub fn erfcx(x: f64) -> f64 {
+    if x.is_nan() {
+        return f64::NAN;
+    }
+    if x >= 0.5 {
+        if x < 110.0 {
+            // erfc(z) = exp(-z^2)/z * (b + r), so erfcx(z) = (b + r)/z with no
+            // exponential involved at all
+            let (r, b) = erfc_fraction(x);
+            return (b + r) / x;
+        }
+        return (1.0 + erfc_asymptotic_correction(x)) * (0.5 * f64::consts::FRAC_2_SQRT_PI) / x;
+    }
+    // |x| < 0.5, or negative: `exp(x^2)` is harmless up to x^2 = 709
+    (x * x).exp() * erfc(x)
+}
+
+/// `ln_erfcx` calculates the natural logarithm of the scaled complementary
+/// error function, `x^2 + ln erfc(x)`.
+///
+/// Finite over the entire range of `f64`, unlike both `erfc` (which underflows)
+/// and `erfcx` (which overflows for very negative `x`). Differences of this
+/// function are the well-conditioned way to form ratios of two `erfc` values:
+/// the `x^2` terms that would otherwise dominate cancel analytically.
+pub fn ln_erfcx(x: f64) -> f64 {
+    if x.is_nan() {
+        return f64::NAN;
+    }
+    if x >= 0.5 {
+        if x < 110.0 {
+            let (r, b) = erfc_fraction(x);
+            return ((b + r) / x).ln();
+        }
+        return -x.ln() - 0.5 * consts::LN_PI + erfc_asymptotic_correction(x).ln_1p();
+    }
+    x * x + ln_erfc(x)
+}
+
 /// `ln_erfc` calculates the natural logarithm of the complementary error
 /// function at `x`, staying finite far past the point where `erfc` itself
 /// underflows (`x ~ 27`): `ln_erfc(100)` is about -10004.14, and results remain
@@ -87,9 +141,7 @@ pub fn ln_erfc(x: f64) -> f64 {
     // Asymptotic series: erfc(z) ~ exp(-z^2) / (z sqrt(pi)) *
     // (1 - 1/(2 z^2) + 3/(4 z^4) - 15/(8 z^6) + ...); at z = 110 the dropped
     // term is ~1e-16 of the correction and utterly negligible in the total.
-    let inv2 = (x * x).recip(); // for x >= 110 the square's rounding is
-    // amplified by nothing: it lands in the tiny series argument
-    let series = -0.5 * inv2 + 0.75 * inv2 * inv2 - 1.875 * inv2 * inv2 * inv2;
+    let series = erfc_asymptotic_correction(x);
     let sq = x * x;
     if !sq.is_finite() {
         return f64::NEG_INFINITY;
@@ -875,6 +927,71 @@ mod tests {
         assert_eq!(erf_inv(1.0), f64::INFINITY);
         assert_eq!(erf_inv(f64::INFINITY), f64::INFINITY);
         assert_eq!(erf_inv(f64::NEG_INFINITY), f64::NEG_INFINITY);
+    }
+
+    /// `erfcx(x) = exp(x^2) erfc(x)` does not underflow the way `erfc` does, so
+    /// it is what makes ratios of two `erfc` values well conditioned
+    /// (statrs-dev/statrs#202). References are mpmath at 50 significant digits,
+    /// computed via the asymptotic expansion past `1e6` where mpmath's own
+    /// `erfc` can no longer represent the intermediate.
+    #[test]
+    fn test_erfcx() {
+        for (x, want) in [
+            (-5.0, 144009798674.66104041),
+            (-1.0, 5.0089800807622834663),
+            (-0.25, 1.3586423701047221152),
+            (0.0, 1.0),
+            (0.25, 0.77034654773099674392),
+            (0.5, 0.61569034419292587487),
+            (1.0, 0.42758357615580700441),
+            (5.0, 0.11070463773306862637),
+            (25.0, 0.022549572432641358944),
+            (109.9, 0.005133450685917941343),
+            (110.0, 0.0051287842983465685351),
+            (200.0, 0.0028209126572120463987),
+            (1e5, 5.6418958351954680777e-6),
+            (1e100, 5.6418958354775628695e-101),
+            (1e300, 5.6418958354775628695e-301),
+        ] {
+            prec::assert_relative_eq!(erfcx(x), want, epsilon = 0.0, max_relative = 1e-14);
+        }
+        assert!(erfcx(f64::NAN).is_nan());
+        // erfcx stays finite across the whole positive axis, where erfc is zero
+        assert_eq!(erfc(1e5), 0.0, "premise: erfc has underflowed");
+        assert!(erfcx(1e5) > 0.0);
+        // and overflows only where exp(x^2) does
+        assert_eq!(erfcx(-30.0), f64::INFINITY);
+    }
+
+    /// `ln_erfcx` is finite over the entire range of f64, unlike both `erfc`
+    /// (underflows) and `erfcx` (overflows for very negative `x`).
+    #[test]
+    fn test_ln_erfcx() {
+        for (x, want) in [
+            (-30.0, 900.69314718055994531),
+            (-1.0, 1.6112323176780704946),
+            (0.5, -0.48501112983708440303),
+            (1.0, -0.84960550993324824858),
+            (110.0, -5.2728866267632017793),
+            (1e5, -12.085290407944928507),
+            (1e150, -345.96012889203155269),
+            (1e300, -691.34789284113840529),
+        ] {
+            prec::assert_relative_eq!(ln_erfcx(x), want, epsilon = 0.0, max_relative = 1e-14);
+        }
+        assert!(ln_erfcx(f64::NAN).is_nan());
+        // Consistency with ln_erfc where the latter is meaningful. The tolerance
+        // has to scale with `x * x`, because forming `x * x + ln_erfc(x)` cancels
+        // two values of that magnitude to reach an O(1) result -- which is the
+        // whole reason `ln_erfcx` computes it directly instead.
+        for x in [-3.0f64, -0.5, 0.0, 0.5, 2.0, 20.0, 100.0, 200.0] {
+            let cancelled = x * x + ln_erfc(x);
+            prec::assert_abs_diff_eq!(ln_erfcx(x), cancelled, epsilon = 1e-15 * (1.0 + x * x));
+        }
+        // and with erfcx where that is representable
+        for x in [-20.0f64, -1.0, 0.5, 3.0, 50.0, 1e4] {
+            prec::assert_relative_eq!(ln_erfcx(x), erfcx(x).ln(), epsilon = 0.0, max_relative = 1e-13);
+        }
     }
 
     #[test]
