@@ -579,4 +579,23 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_inverse_cdf_p0_p1() {
+        let d = create_ok(3);
+        assert_eq!(d.inverse_cdf(0.0), d.min());
+        assert_eq!(d.inverse_cdf(1.0), d.max());
+    }
+
+    #[test]
+    #[should_panic(expected = "p must be in [0, 1]")]
+    fn test_inverse_cdf_p_above_one() {
+        create_ok(3).inverse_cdf(1.0 + f64::EPSILON);
+    }
+
+    #[test]
+    #[should_panic(expected = "p must be in [0, 1]")]
+    fn test_inverse_cdf_p_below_zero() {
+        create_ok(3).inverse_cdf(-1e-300);
+    }
 }
