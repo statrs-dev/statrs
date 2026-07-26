@@ -29,6 +29,7 @@
 //! - `DEFAULT_RELATIVE_ACC`: 1e-14 for relative comparisons
 //! - `DEFAULT_EPS`: 1e-9 for absolute comparisons
 //! - `DEFAULT_ULPS`: 5 for ULPs comparisons
+//! - `DEFAULT_ULPS_EPS`: `f64::EPSILON`, the absolute floor paired with `DEFAULT_ULPS`
 //!
 //! These defaults should be used unless there is a specific reason to use different
 //! precision levels.
@@ -61,6 +62,16 @@ pub const DEFAULT_EPS: f64 = 1e-9;
 
 /// Default and target ULPs accuracy for f64 operations
 pub const DEFAULT_ULPS: u32 = 5;
+
+/// Default absolute epsilon for ULPs comparisons.
+///
+/// `approx`'s `ulps_eq` short-circuits on `abs_diff_eq(epsilon)` before it looks
+/// at the ULPs distance, so pairing it with [`DEFAULT_EPS`] (`1e-9`) would make
+/// the ULPs bound unreachable and turn `ulps_eq!(x, y)` into a `1e-9` absolute
+/// comparison. `ulps_eq!` is used inside the crate to recognise exact parameter
+/// values (`p == 1.0`, `x == x.floor()`), so its epsilon has to stay at the
+/// scale of a genuine rounding error.
+pub const DEFAULT_ULPS_EPS: f64 = f64::EPSILON;
 
 /// Compares if two floats are close via `approx::abs_diff_eq`
 /// using a maximum absolute difference (epsilon) of `acc`.
@@ -144,7 +155,7 @@ mod macros {
     );
     redefine_two_opt_approx_macro!(
         ulps_eq,
-        { epsilon: crate::prec::DEFAULT_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
+        { epsilon: crate::prec::DEFAULT_ULPS_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
     );
 
     pub(crate) use abs_diff_eq;
@@ -162,7 +173,7 @@ mod macros {
     );
     redefine_two_opt_approx_macro!(
         assert_ulps_eq,
-        { epsilon: crate::prec::DEFAULT_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
+        { epsilon: crate::prec::DEFAULT_ULPS_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
     );
 
     pub(crate) use assert_abs_diff_eq;
