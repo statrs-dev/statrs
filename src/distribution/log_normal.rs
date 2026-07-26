@@ -750,13 +750,13 @@ mod tests {
         test_absolute(-0.1, 0.1, 1.0, 1e-107, sf(0.1));
 
         // Wolfram Alpha:: SurvivalFunction[ LogNormalDistribution(-0.1, 0.1), 0.8]
-        test_absolute(-0.1, 0.1, 0.890919989231123, 1e-14, sf(0.8));
+        test_absolute(-0.1, 0.1, 0.890919989236242017902656326193, 1e-14, sf(0.8));
 
         // Wolfram Alpha:: SurvivalFunction[LogNormalDistribution[1.5, 1], 0.8]
-        test_absolute(1.5, 1.0, 0.957568715612642, 1e-14, sf(0.8));
+        test_absolute(1.5, 1.0, 0.957568715614411289470712253063, 1e-14, sf(0.8));
 
         // Wolfram Alpha:: SurvivalFunction[ LogNormalDistribution(2.5, 1.5), 0.1]
-        test_absolute(2.5, 1.5, 0.9993169594777358, 1e-14, sf(0.1));
+        test_absolute(2.5, 1.5, 0.999316959477792115067727898746, 1e-14, sf(0.1));
     }
 
     #[test]
