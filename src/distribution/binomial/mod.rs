@@ -1,6 +1,8 @@
 use crate::distribution::{Discrete, DiscreteCDF};
-use crate::function::{beta, factorial};
+use crate::function::{beta, factorial, gamma};
+use crate::prec;
 use crate::statistics::*;
+use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -289,10 +291,7 @@ impl Discrete<u64, f64> for Binomial {
         } else if self.p == 1.0 {
             if x == self.n { 1.0 } else { 0.0 }
         } else {
-            (factorial::ln_binomial(self.n, x)
-                + x as f64 * self.p.ln()
-                + (self.n - x) as f64 * (1.0 - self.p).ln())
-            .exp()
+            self.ln_pmf(x).exp()
         }
     }
 
@@ -312,9 +311,38 @@ impl Discrete<u64, f64> for Binomial {
         } else if self.p == 1.0 {
             if x == self.n { 0.0 } else { f64::NEG_INFINITY }
         } else {
-            factorial::ln_binomial(self.n, x)
-                + x as f64 * self.p.ln()
-                + (self.n - x) as f64 * (1.0 - self.p).ln()
+            let n = self.n as f64;
+            let k = x as f64;
+            let q = 1.0 - self.p;
+            if x == 0 {
+                return n * q.ln();
+            }
+            if x == self.n {
+                return n * self.p.ln();
+            }
+            if n < gamma::STIRLING_SERIES_MIN {
+                // `ln_binomial` is exact from the factorial table here and all
+                // terms are small, so the direct form loses nothing
+                return factorial::ln_binomial(self.n, x) + k * self.p.ln() + (n - k) * q.ln();
+            }
+            // Saddle-point form (Loader 2000): the direct expression differences
+            // terms growing like `n ln n` to produce an `O(1)` result, which
+            // cost ~2e-10 relative at n = 1e5.
+            let nk = n - k;
+            // `bd0` is sensitive to the last half-ulp of its mean argument, and
+            // both `1 - p` and the products round, so they are carried as
+            // double-doubles; see `gamma::bd0_dd`.
+            let (q_hi, q_lo) = prec::two_diff(1.0, self.p);
+            let np = n * self.p;
+            let np_lo = prec::dekker_product_err(n, self.p, np);
+            let nq = n * q_hi;
+            let nq_lo = prec::dekker_product_err(n, q_hi, nq) + n * q_lo;
+            gamma::stirling_delta(n)
+                - gamma::stirling_delta(k)
+                - gamma::stirling_delta(nk)
+                - gamma::bd0_dd(k, np, np_lo)
+                - gamma::bd0_dd(nk, nq, nq_lo)
+                + 0.5 * (n / (f64_consts::TAU * k * nk)).ln()
         }
     }
 }
@@ -395,6 +423,61 @@ mod tests {
         let max = |x: Binomial| x.max();
         test_exact(0.3, 10, 0, min);
         test_exact(0.3, 10, 10, max);
+    }
+
+    /// `p` very close to but not equal to 1 must take the general path, not the
+    /// degenerate `p == 1` branch. The branch is guarded by `prec::ulps_eq!`,
+    /// whose default epsilon was `1e-9` *absolute*, so any `p` within `1e-9` of
+    /// 1 collapsed to a point mass at `n`.
+    ///
+    /// `1 - 2^-33` is used rather than `1 - 1e-10` so that `1 - p` is exact and
+    /// the reference values are not limited by the representation of `p`.
+    #[test]
+    fn test_pmf_p_near_one_is_not_degenerate() {
+        let n = Binomial::new(1.0 - f64::powi(2.0, -33), 100).unwrap();
+        prec::assert_relative_eq!(n.pmf(99), 1.1641532048523463366e-8, epsilon = 0.0, max_relative = 1e-13);
+        prec::assert_relative_eq!(n.pmf(100), 0.99999998835846788439, epsilon = 0.0, max_relative = 1e-14);
+        prec::assert_relative_eq!(n.ln_pmf(99), -18.268686784015220704, epsilon = 0.0, max_relative = 5e-15);
+        // entropy of a non-degenerate distribution is strictly positive
+        assert!(n.entropy().unwrap() > 0.0);
+    }
+
+    /// `entropy()` sums `-p * ln(p)` over the whole support, so it used to
+    /// return `NaN` as soon as one mass underflowed to zero (`0 * -inf`). For
+    /// `p = 0.5` that starts at around `n = 1100`.
+    #[test]
+    fn test_entropy_with_underflowing_masses() {
+        for n in [1_100, 2_000, 5_000, 20_000] {
+            let d = Binomial::new(0.5, n).unwrap();
+            let h = d.entropy().unwrap();
+            assert!(h.is_finite(), "entropy for n={n} was {h}");
+            // 0.5 * ln(2 * pi * e * n * p * q) is the asymptotic form
+            let approx = 0.5 * (2.0 * f64_consts::PI * f64_consts::E * n as f64 * 0.25).ln();
+            prec::assert_relative_eq!(h, approx, epsilon = 0.0, max_relative = 1e-3);
+        }
+        assert!(Binomial::new(0.1, 5_000).unwrap().entropy().unwrap().is_finite());
+    }
+
+    /// Large-`n` pmf: the saddle-point form (`gamma::bd0` /
+    /// `gamma::stirling_delta`, with double-double means) replaced
+    /// `exp(ln_binomial + x ln p + (n-x) ln q)`, whose terms each grow like
+    /// `n ln n` while the result stays `O(1)`. References are mpmath at 40
+    /// significant digits; the old form was ~7e-11 relative here.
+    #[test]
+    fn test_pmf_large_n_saddle_point() {
+        let pmf = |arg: u64| move |x: Binomial| x.pmf(arg);
+        test_relative(0.5, 100000, 0.0025231262141967398855, pmf(50000));
+        test_relative(0.3, 2000000, 0.00061558120658465376062, pmf(600000));
+        // ln_pmf agrees with ln(pmf) where the pmf is comfortably representable
+        for (p, n, k) in [(0.5f64, 100000u64, 50000u64), (0.3, 2000000, 600000)] {
+            let d = create_ok(p, n);
+            prec::assert_relative_eq!(d.ln_pmf(k), d.pmf(k).ln(), epsilon = 0.0, max_relative = 1e-14);
+        }
+        // the endpoints reduce to q^n and p^n; `exp(n ln q)` carries ~1e-15
+        // relative (|n ln q| ~ 11.5 here), which is the honest bound
+        let d = create_ok(0.25, 40);
+        prec::assert_relative_eq!(d.pmf(0), 1.0056585161637497e-5, epsilon = 0.0, max_relative = 1e-14);
+        prec::assert_relative_eq!(d.pmf(40), 8.271806125530277e-25, epsilon = 0.0, max_relative = 1e-14);
     }
 
     #[test]
