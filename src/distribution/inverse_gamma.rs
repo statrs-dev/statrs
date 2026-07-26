@@ -288,6 +288,24 @@ impl Distribution<f64> for InverseGamma {
     }
 }
 
+impl Median<f64> for InverseGamma {
+    /// Returns the median of the inverse gamma distribution.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// CDF^-1(0.5)
+    /// ```
+    ///
+    /// # Remarks
+    ///
+    /// No closed form exists, so this inverts the cdf by numerical search and
+    /// costs many cdf evaluations rather than `O(1)`.
+    fn median(&self) -> f64 {
+        self.inverse_cdf(0.5)
+    }
+}
+
 impl Mode<Option<f64>> for InverseGamma {
     /// Returns the mode of the inverse gamma distribution
     ///
