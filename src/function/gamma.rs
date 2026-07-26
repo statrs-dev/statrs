@@ -1195,6 +1195,25 @@ mod tests {
         assert!(super::checked_gamma_ui(1.0, f64::INFINITY).is_err());
     }
 
+    /// `digamma` has poles at the non-positive integers and returns -inf there.
+    /// The pole test is `prec::ulps_eq!(x.floor(), x)`, whose default epsilon
+    /// was `1e-9` absolute, so a whole neighbourhood around each pole returned
+    /// -inf instead of a large finite value.
+    ///
+    /// The tolerance is loose because `digamma(x < 0)` goes through the
+    /// reflection formula and `(PI * x).tan()` loses roughly
+    /// `ulp(PI) / dist_to_pole` of relative accuracy; what is pinned here is
+    /// that the values are finite and of the right magnitude.
+    #[test]
+    fn test_digamma_near_negative_integer_poles_is_finite() {
+        prec::assert_relative_eq!(digamma(-1.0 + f64::powi(2.0, -33)), -8589934591.5772156646, epsilon = 0.0, max_relative = 1e-5);
+        prec::assert_relative_eq!(digamma(-1.0 - f64::powi(2.0, -33)),  8589934592.4227843348, epsilon = 0.0, max_relative = 1e-5);
+        // the poles themselves are unchanged
+        assert_eq!(digamma(-1.0), f64::NEG_INFINITY);
+        assert_eq!(digamma(0.0), f64::NEG_INFINITY);
+        assert_eq!(digamma(-5.0), f64::NEG_INFINITY);
+    }
+
     // TODO: precision testing could be more accurate
     #[test]
     fn test_digamma() {
