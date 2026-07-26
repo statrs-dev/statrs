@@ -1,15 +1,59 @@
 use kdtree::distance::squared_euclidean;
 
 use crate::{
-    density::{Container, DensityError, nearest_neighbors},
+    density::{Container, DensityError, DensityEstimator},
     function::kernel::{Gaussian, Kernel},
 };
+
+impl<S, X> DensityEstimator<'_, S, X>
+where
+    S: AsRef<[X]> + Container,
+    X: AsRef<[f64]> + Container + PartialEq,
+{
+    /// Computes the kernel density estimate at `x`, using the distance to the
+    /// furthest neighbor as a local bandwidth.
+    ///
+    /// The optimal `k` is computed using [Orava's](https://www.sav.sk/journals/uploads/0127102604orava.pdf)
+    /// formula when `bandwidth` is `None`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DensityError::EmptyNeighborhood`] if no sample falls inside the
+    /// neighborhood of `x`.
+    pub fn kde_pdf(&self, x: &X, bandwidth: Option<f64>) -> Result<f64, DensityError> {
+        // The neighborhood is used only for its radius: the kernel sum below
+        // runs over every sample, so this stays O(n) per evaluation.
+        let neighbors = self.nearest_neighbors(x, bandwidth)?;
+        if neighbors.is_empty() {
+            return Err(DensityError::EmptyNeighborhood);
+        }
+        let radius = neighbors.radius;
+        let d = x.length() as i32;
+        Ok((1. / (self.n_samples() * radius.powi(d)))
+            * self
+                .samples()
+                .as_ref()
+                .iter()
+                .map(|xi| {
+                    Gaussian.evaluate(squared_euclidean(x.as_ref(), xi.as_ref()).sqrt() / radius)
+                        / crate::consts::SQRT_2PI.powi(d - 1)
+                })
+                .sum::<f64>())
+    }
+}
 
 /// Computes the kernel density estimate for a given point `x`
 /// using the samples provided and a specified kernel.
 ///
 /// The optimal `k` is computed using [Orava's](https://www.sav.sk/journals/uploads/0127102604orava.pdf)
 /// formula when `bandwidth` is `None`.
+///
+/// # Performance
+///
+/// This builds a k-d tree over `samples` on every call. To evaluate the density
+/// at more than a couple of points, build a
+/// [`DensityEstimator`](crate::density::DensityEstimator) once and call
+/// [`DensityEstimator::kde_pdf`] instead.
 ///
 /// # Examples
 ///
@@ -25,23 +69,7 @@ where
     S: AsRef<[X]> + Container,
     X: AsRef<[f64]> + Container + PartialEq,
 {
-    let n_samples = samples.length() as f64;
-    let neighbors = nearest_neighbors(x, samples, bandwidth)?.0;
-    if neighbors.is_empty() {
-        Err(DensityError::EmptyNeighborhood)
-    } else {
-        let radius = neighbors.last().unwrap().sqrt(); // safe to unwrap here since `neighbors` is not empty
-        let d = x.length() as i32;
-        Ok((1. / (n_samples * radius.powi(d)))
-            * samples
-                .as_ref()
-                .iter()
-                .map(|xi| {
-                    Gaussian.evaluate(squared_euclidean(x.as_ref(), xi.as_ref()).sqrt() / radius)
-                        / crate::consts::SQRT_2PI.powi(d - 1)
-                })
-                .sum::<f64>())
-    }
+    DensityEstimator::new(samples)?.kde_pdf(x, bandwidth)
 }
 
 #[cfg(test)]
