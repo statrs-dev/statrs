@@ -203,7 +203,48 @@ impl DiscreteCDF<u64, f64> for Geometric {
                 self.p, x
             );
         }
-        k as u64
+        // `ln1p(-x) / ln1p(-p)` is only approximately integral at the step
+        // boundaries, so `ceil` lands on either side of the true one and
+        // `inverse_cdf(cdf(k)) != k` for most `p` (statrs-dev/statrs#342).
+        // Everything below corrects the closed form against the definition
+        // being inverted: the least `k` with `cdf(k) >= x`.
+        let candidate = (k.max(1.0) as u64).max(self.min());
+        let is_answer = |k: u64| self.cdf(k) >= x && (k <= self.min() || self.cdf(k - 1) < x);
+
+        // Ordinary rounding puts the closed form within one step, so this is
+        // the path essentially always taken - two or three `cdf` evaluations.
+        if is_answer(candidate) {
+            return candidate;
+        }
+        if candidate > self.min() && is_answer(candidate - 1) {
+            return candidate - 1;
+        }
+        if is_answer(candidate + 1) {
+            return candidate + 1;
+        }
+
+        // Once `x` is within a few ulp of 1, `1 - x` has lost every significant
+        // bit and the closed form can be off by an unbounded number of steps
+        // (`cdf` has a long plateau there - about 1/p wide). Bisect instead,
+        // which is exact by definition regardless of how far off `candidate` is.
+        let mut hi = candidate;
+        while self.cdf(hi) < x {
+            let Some(doubled) = hi.checked_mul(2) else {
+                hi = u64::MAX;
+                break;
+            };
+            hi = doubled;
+        }
+        let mut lo = self.min();
+        while lo < hi {
+            let mid = lo + (hi - lo) / 2;
+            if self.cdf(mid) >= x {
+                hi = mid;
+            } else {
+                lo = mid + 1;
+            }
+        }
+        lo
     }
 }
 
@@ -572,6 +613,74 @@ mod tests {
         density_util::check_discrete_distribution(&create_ok(1.0), 1);
     }
 
+    /// `inverse_cdf` must return the least `k` with `cdf(k) >= x`, and so must
+    /// round-trip `cdf` wherever `cdf` is injective.
+    ///
+    /// The closed form `ceil(ln1p(-x) / ln1p(-p))` is only approximately
+    /// integral at the step boundaries, so on its own it landed on the wrong
+    /// side for 7255 of 16200 (p, k) pairs (statrs-dev/statrs#342).
+    #[test]
+    fn test_inverse_cdf_round_trips_and_matches_definition() {
+        let mut mismatches = 0;
+        for i in 1..200 {
+            let p = i as f64 / 200.0;
+            let g = create_ok(p);
+            for k in 1..=400u64 {
+                let c = g.cdf(k);
+                if c >= 1.0 {
+                    break;
+                }
+                // only meaningful where `cdf` actually separates k-1 from k
+                if g.cdf(k - 1) < c && g.inverse_cdf(c) != k {
+                    mismatches += 1;
+                }
+            }
+        }
+        assert_eq!(mismatches, 0, "cdf/inverse_cdf round-trip failures");
+    }
+
+    #[test]
+    fn test_inverse_cdf_is_least_k_with_cdf_at_least_x() {
+        for i in 1..60 {
+            let p = i as f64 / 60.0;
+            let g = create_ok(p);
+            // Chained rather than collected, so the test also builds under
+            // `no_std`, where there is no `Vec`. The second and third groups
+            // put x within a few ulp of 1, where `1 - x` has lost every
+            // significant bit and the closed form needs the bisection fallback.
+            let xs = (1..400)
+                .map(|j| j as f64 / 400.0)
+                .chain((1..6).map(|u| 1.0 - u as f64 * f64::EPSILON / 2.0))
+                .chain((1..6).map(|u| u as f64 * f64::MIN_POSITIVE))
+                .chain((1..400).map(|j| g.cdf(j)));
+            for x in xs {
+                // `x == 1` saturates to `u64::MAX` by design, iCDF(1) = +inf
+                if !(0.0..=1.0).contains(&x) || x == 1.0 {
+                    continue;
+                }
+                let k = g.inverse_cdf(x);
+                assert!(g.cdf(k) >= x, "p={p} x={x:e}: cdf({k}) < x");
+                assert!(
+                    k <= g.min() || g.cdf(k - 1) < x,
+                    "p={p} x={x:e}: {k} is not the least such k"
+                );
+            }
+        }
+    }
+
+    /// Tiny `p` gives `cdf` a plateau roughly `1/p` wide near 1, so the
+    /// bisection fallback has to cover an unbounded number of steps.
+    #[test]
+    fn test_inverse_cdf_long_plateau() {
+        for p in [1e-3f64, 1e-6, 1e-9] {
+            let g = create_ok(p);
+            let x = 1.0 - f64::EPSILON / 2.0;
+            let k = g.inverse_cdf(x);
+            assert!(g.cdf(k) >= x, "p={p:e}: cdf({k}) < x");
+            assert!(k <= g.min() || g.cdf(k - 1) < x, "p={p:e}: {k} not least");
+        }
+    }
+
     #[test]
     fn test_inverse_cdf() {
         let invcdf = |arg: f64| move |x: Geometric| x.inverse_cdf(arg);
@@ -605,8 +714,9 @@ mod tests {
         distribution.inverse_cdf(0.5);
     }
 
+    /// Un-ignored: this failed until `inverse_cdf` was corrected against the
+    /// definition (statrs-dev/statrs#342).
     #[test]
-    #[ignore = "Gaps in pathological corner cases and testing"]
     fn test_inverse_cdf_small_p() {
         let ident_prob = |arg: f64| move |x: Geometric| x.cdf(x.inverse_cdf(arg));
         let ident_count = |count: u64| move |x: Geometric| x.inverse_cdf(x.cdf(count));
@@ -619,9 +729,8 @@ mod tests {
         test_relative(0.5, q, ident_prob(q));
     }
 
-    #[test]
-    #[ignore = "Gaps in pathological corner cases and testing"]
     /// large k, small p regime
+    #[test]
     fn test_inverse_cdf_extreme_tail() {
         // k_below(k): probability midpoint of the k-th bucket — strictly between cdf(k-1) and
         // cdf(k) — so inverse_cdf must return k.
