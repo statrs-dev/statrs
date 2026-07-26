@@ -248,6 +248,25 @@ impl DiscreteDistribution<f64> for NegativeBinomial {
     }
 }
 
+impl Median<f64> for NegativeBinomial {
+    /// Returns the median of the negative binomial distribution.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// CDF^-1(0.5)
+    /// ```
+    ///
+    /// # Remarks
+    ///
+    /// No closed form exists. This is the smallest `k` with `cdf(k) >= 0.5`,
+    /// the standard convention for a discrete median, found by bisection. The
+    /// result is an exact integer despite the search.
+    fn median(&self) -> f64 {
+        self.inverse_cdf(0.5) as f64
+    }
+}
+
 impl Mode<Option<f64>> for NegativeBinomial {
     /// Returns the mode for the negative binomial distribution.
     ///

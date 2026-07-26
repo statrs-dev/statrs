@@ -321,6 +321,27 @@ impl Distribution<f64> for Gamma {
     }
 }
 
+impl Median<f64> for Gamma {
+    /// Returns the median of the gamma distribution.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// CDF^-1(0.5)
+    /// ```
+    ///
+    /// # Remarks
+    ///
+    /// The gamma median has no closed form for general shape -- it is known only
+    /// to lie between `shape - 1/3` and `shape` (scaled by the rate) for
+    /// `shape >= 1`. This inverts the cdf by numerical search, so it costs many
+    /// cdf evaluations rather than the `O(1)` arithmetic of the closed-form
+    /// `median` impls elsewhere in the crate.
+    fn median(&self) -> f64 {
+        self.inverse_cdf(0.5)
+    }
+}
+
 impl Mode<Option<f64>> for Gamma {
     /// Returns the mode for the gamma distribution
     ///
