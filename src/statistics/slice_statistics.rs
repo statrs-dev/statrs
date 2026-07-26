@@ -510,7 +510,8 @@ mod tests {
     /// place in a total order, so the search stays in bounds.
     #[test]
     fn test_order_statistics_with_nan_do_not_panic() {
-        let mut v: Vec<f64> = (0..1000).map(|i| (i as f64 * 0.7).sin()).collect();
+        // Arrays rather than `Vec`, so the test also builds under `no_std`.
+        let mut v: [f64; 1000] = core::array::from_fn(|i| (i as f64 * 0.7).sin());
         for i in (0..1000).step_by(7) {
             v[i] = f64::NAN;
         }
@@ -525,10 +526,10 @@ mod tests {
         let _ = d.interquartile_range();
 
         // all-NaN, and NaN at the exact positions the old partition tripped on
-        let mut all_nan = Data::new(vec![f64::NAN; 64]);
+        let mut all_nan = Data::new([f64::NAN; 64]);
         let _ = all_nan.quantile(0.5);
         for pos in [0usize, 1, 31, 62, 63] {
-            let mut v = vec![0.0f64; 64];
+            let mut v = [0.0f64; 64];
             v[pos] = f64::NAN;
             let _ = Data::new(v).quantile(0.5);
         }
