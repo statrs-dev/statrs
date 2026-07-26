@@ -644,12 +644,15 @@ mod tests {
         for i in 1..60 {
             let p = i as f64 / 60.0;
             let g = create_ok(p);
-            let mut xs: Vec<f64> = (1..400).map(|j| j as f64 / 400.0).collect();
-            // x within a few ulp of 1 is where `1 - x` has lost every
-            // significant bit and the closed form needs the bisection fallback
-            xs.extend((1..6).map(|u| 1.0 - u as f64 * f64::EPSILON / 2.0));
-            xs.extend((1..6).map(|u| u as f64 * f64::MIN_POSITIVE));
-            xs.extend((1..400).map(|j| g.cdf(j)));
+            // Chained rather than collected, so the test also builds under
+            // `no_std`, where there is no `Vec`. The second and third groups
+            // put x within a few ulp of 1, where `1 - x` has lost every
+            // significant bit and the closed form needs the bisection fallback.
+            let xs = (1..400)
+                .map(|j| j as f64 / 400.0)
+                .chain((1..6).map(|u| 1.0 - u as f64 * f64::EPSILON / 2.0))
+                .chain((1..6).map(|u| u as f64 * f64::MIN_POSITIVE))
+                .chain((1..400).map(|j| g.cdf(j)));
             for x in xs {
                 // `x == 1` saturates to `u64::MAX` by design, iCDF(1) = +inf
                 if !(0.0..=1.0).contains(&x) || x == 1.0 {
