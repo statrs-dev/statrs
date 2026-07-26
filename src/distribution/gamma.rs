@@ -184,6 +184,37 @@ impl ContinuousCDF<f64, f64> for Gamma {
         }
     }
 
+    /// Tail-accurate log of the cdf via [`gamma::ln_gamma_lr`]; stays finite
+    /// far past where `cdf` underflows.
+    fn ln_cdf(&self, x: f64) -> f64 {
+        if x <= 0.0 {
+            f64::NEG_INFINITY
+        } else if prec::ulps_eq!(x, self.shape) && self.rate.is_infinite() {
+            0.0
+        } else if self.rate.is_infinite() {
+            f64::NEG_INFINITY
+        } else if x.is_infinite() {
+            0.0
+        } else {
+            gamma::ln_gamma_lr(self.shape, x * self.rate)
+        }
+    }
+
+    /// Tail-accurate log of the survival function via [`gamma::ln_gamma_ur`].
+    fn ln_sf(&self, x: f64) -> f64 {
+        if x <= 0.0 {
+            0.0
+        } else if prec::ulps_eq!(x, self.shape) && self.rate.is_infinite() {
+            f64::NEG_INFINITY
+        } else if self.rate.is_infinite() {
+            0.0
+        } else if x.is_infinite() {
+            f64::NEG_INFINITY
+        } else {
+            gamma::ln_gamma_ur(self.shape, x * self.rate)
+        }
+    }
+
     fn inverse_cdf(&self, p: f64) -> f64 {
         if !(0.0..=1.0).contains(&p) {
             panic!("default inverse_cdf implementation should be provided probability on [0,1]")

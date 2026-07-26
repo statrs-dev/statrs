@@ -117,7 +117,9 @@ impl ContinuousCDF<f64, f64> for Exp {
         if x < 0.0 {
             0.0
         } else {
-            1.0 - (-self.rate * x).exp()
+            // `-expm1` rather than `1 - exp`: the latter cancels for small
+            // `rate * x`, losing ~7 digits by `rate * x = 1e-10`
+            -(-self.rate * x).exp_m1()
         }
     }
 
@@ -133,6 +135,22 @@ impl ContinuousCDF<f64, f64> for Exp {
     /// where `λ` is the rate
     fn sf(&self, x: f64) -> f64 {
         if x < 0.0 { 1.0 } else { (-self.rate * x).exp() }
+    }
+
+    /// Tail-accurate log of the cdf: `ln(-expm1(-rate x))`.
+    fn ln_cdf(&self, x: f64) -> f64 {
+        if x < 0.0 {
+            f64::NEG_INFINITY
+        } else {
+            (-(-self.rate * x).exp_m1()).ln()
+        }
+    }
+
+    /// Exact log of the survival function: `ln sf = -rate * x`, finite for
+    /// every representable `x` even though `sf` underflows past
+    /// `x ~ 709 / rate`.
+    fn ln_sf(&self, x: f64) -> f64 {
+        if x < 0.0 { 0.0 } else { -self.rate * x }
     }
 
     /// Calculates the inverse cumulative distribution function.
