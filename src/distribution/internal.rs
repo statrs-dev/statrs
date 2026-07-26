@@ -43,12 +43,14 @@ pub fn integral_bisection_search<K: Num + Clone, T: Num + PartialOrd>(
 /// distribution's own functions and `p` must lie strictly inside `(0, 1)`.
 ///
 /// The bracket `[low, high]` is kept as an invariant and only ever tightened, so
-/// a Newton step that is non-finite or would leave the bracket falls back to
-/// bisection and the iterate can never escape the support — the guard that keeps
-/// a quantile sitting against a boundary from diverging to NaN (cf. Gamma in
-/// #382). In the upper half the survival function is inverted rather than the
-/// cdf: as `cdf` saturates to one it can no longer resolve a deep upper-tail
-/// quantile, whereas `sf` stays well conditioned there.
+/// a Newton step that is non-finite, would leave the bracket, or is not shrinking
+/// at least as fast as a bisection falls back to bisection; the iterate can never
+/// escape the support — the guard that keeps a quantile sitting against a
+/// boundary from diverging to NaN (cf. Gamma in #382) — and the bracket is halved
+/// often enough to reach the root within the iteration budget. In the upper half
+/// the survival function is inverted rather than the cdf: as `cdf` saturates to
+/// one it can no longer resolve a deep upper-tail quantile, whereas `sf` stays
+/// well conditioned there.
 pub fn newton_raphson_quantile(
     p: f64,
     cdf: impl Fn(f64) -> f64,
@@ -82,6 +84,7 @@ pub fn newton_raphson_quantile(
     let accuracy = crate::prec::DEFAULT_RELATIVE_ACC;
     const MAX_ITERATIONS: usize = 100;
     let mut x = (low + high) / 2.0;
+    let mut last_step = high - low;
     for _ in 0..MAX_ITERATIONS {
         let residual = if upper {
             target - sf(x)
@@ -96,18 +99,27 @@ pub fn newton_raphson_quantile(
         if (newton - x).abs() <= accuracy * x.abs() {
             return newton;
         }
-        // Tighten the bracket by the sign of the (increasing) residual, then take
-        // the Newton step only while it stays strictly inside, else bisect.
+        // Tighten the bracket by the sign of the (increasing) residual.
         if residual >= 0.0 {
             high = x;
         } else {
             low = x;
         }
-        x = if newton.is_finite() && newton > low && newton < high {
-            newton
+        // Take the Newton step only while it stays strictly inside the bracket
+        // *and* shrinks at least as fast as a bisection would, else bisect. The
+        // second half of that test is what bounds the iteration count: a tail
+        // where the step is merely linear — the inverse gamma's `exp(-b/x)`
+        // advances `b/x` by one per step regardless of how far the root is —
+        // otherwise creeps toward the root and runs out of iterations short of
+        // it, e.g. `InverseGamma(1, 1).inverse_cdf(1e-200)` off by 4%.
+        let step = (newton - x).abs();
+        if newton.is_finite() && newton > low && newton < high && 2.0 * step <= last_step {
+            x = newton;
+            last_step = step;
         } else {
-            (low + high) / 2.0
-        };
+            last_step = (high - low) / 2.0;
+            x = low + last_step;
+        }
     }
     x
 }

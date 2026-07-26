@@ -540,4 +540,46 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_inverse_cdf_deep_lower_tail() {
+        // A Newton step on `exp(-rate/x)` only advances `rate/x` by one however
+        // far the root is, so without the bisection-progress guard the search
+        // runs out of iterations short of it. References from mpmath (dps=60).
+        let cases: &[(f64, f64, f64, f64)] = &[
+            (1.0, 1.0, 1e-100, 0.0043429448190325185),
+            (1.0, 1.0, 1e-200, 0.0021714724095162593),
+            (1.0, 1.0, 1e-300, 0.0014476482730108394),
+            (0.01, 1.0, 1e-200, 0.00222287682578071),
+            (0.01, 1.0, 1e-300, 0.0014711980613782147),
+            (100.0, 1.0, 1e-100, 0.0020694527796494867),
+            (100.0, 1.0, 1e-200, 0.0013193408747368574),
+            (1.0, 400.0, 1e-300, 0.5790593092043358),
+            (0.5, 1e6, 1e-200, 2188.7520668986626),
+        ];
+        for &(a, b, p, expected) in cases {
+            let q = InverseGamma::new(a, b).unwrap().inverse_cdf(p);
+            let relerr = ((q - expected) / expected).abs();
+            assert!(relerr <= 1e-14, "InverseGamma({a}, {b}).inverse_cdf({p}) = {q}, want {expected} (relerr {relerr:e})");
+        }
+    }
+
+    #[test]
+    fn test_inverse_cdf_p0_p1() {
+        let d = create_ok(1.0, 1.0);
+        assert_eq!(d.inverse_cdf(0.0), d.min());
+        assert_eq!(d.inverse_cdf(1.0), d.max());
+    }
+
+    #[test]
+    #[should_panic(expected = "p must be in [0, 1]")]
+    fn test_inverse_cdf_p_above_one() {
+        create_ok(1.0, 1.0).inverse_cdf(1.0 + f64::EPSILON);
+    }
+
+    #[test]
+    #[should_panic(expected = "p must be in [0, 1]")]
+    fn test_inverse_cdf_p_below_zero() {
+        create_ok(1.0, 1.0).inverse_cdf(-1e-300);
+    }
 }
