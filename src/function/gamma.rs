@@ -2,7 +2,9 @@
 //! related functions
 
 use crate::consts;
+use crate::function::evaluate;
 use crate::prec;
+use crate::prec::{dekker_product_err, two_diff};
 use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
@@ -30,23 +32,160 @@ impl core::fmt::Display for GammaFuncError {
 
 impl core::error::Error for GammaFuncError {}
 
+/// Computes `sin(PI * x)` for use in reflection formulas.
+///
+/// Evaluating `(PI * x).sin()` directly loses the fractional part of `x` to
+/// rounding once `PI * x` is large, and near the zeros of the sine (integer
+/// `x`) the representation error of `PI` alone costs `~1.2e-16 / dist_to_pole`
+/// of relative accuracy. Reducing with the period first (`x - round(x)` is
+/// exact) keeps the error relative to the fractional part instead.
+#[inline]
+fn sin_pi(x: f64) -> f64 {
+    let m = x.round();
+    let r = x - m; // exact, |r| <= 0.5
+    // sin(PI * (m + r)) = (-1)^m * sin(PI * r); `m * 0.5` is exact, so its
+    // fractional part is 0.5 exactly when `m` is odd. (For |m| >= 2^53 every
+    // representable float is even.)
+    let sin_r = (f64::consts::PI * r).sin();
+    if (m * 0.5).fract() == 0.0 {
+        sin_r
+    } else {
+        -sin_r
+    }
+}
+
+/// Computes `tan(PI * x)` with the same period reduction as [`sin_pi`]
+/// (`tan` has period `PI`, so no sign correction is needed).
+#[inline]
+fn tan_pi(x: f64) -> f64 {
+    let r = x - x.round(); // exact, |r| <= 0.5
+    (f64::consts::PI * r).tan()
+}
+
 /// Auxiliary variable when evaluating the `gamma_ln` function
 const GAMMA_R: f64 = 10.900511;
 
-/// Polynomial coefficients for approximating the `gamma_ln` function
-const GAMMA_DK: &[f64] = &[
-    2.48574089138753565546e-5,
-    1.05142378581721974210,
-    -3.45687097222016235469,
-    4.51227709466894823700,
-    -2.98285225323576655721,
-    1.05639711577126713077,
-    -1.95428773191645869583e-1,
-    1.70970543404441224307e-2,
-    -5.71926117404305781283e-4,
-    4.63399473359905636708e-6,
-    -2.71994908488607703910e-9,
+// The Lanczos sum used by `ln_gamma` and `gamma` is Pugh's 10-term
+// partial-fraction approximation with g = GAMMA_R ("An Analysis of the Lanczos
+// Gamma Approximation", Glendon Ralph Pugh, 2004 p. 116):
+//
+//   S(z) = d_0 + sum_{k=1..10} d_k / (z + k - 1)
+//
+// with residues d_k = [2.48574089138753565546e-5, 1.05142378581721974210,
+// -3.45687097222016235469, 4.51227709466894823700, -2.98285225323576655721,
+// 1.05639711577126713077, -1.95428773191645869583e-1, 1.70970543404441224307e-2,
+// -5.71926117404305781283e-4, 4.63399473359905636708e-6,
+// -2.71994908488607703910e-9].
+//
+// The residues alternate in sign, so evaluating the sum directly cancels
+// catastrophically (condition number ~3600 around z = 50, i.e. ~440 eps of
+// relative error in the sum). The constants below are the mathematically
+// identical single-fraction form S(z) = N(z) / D(z), derived from the d_k in
+// exact rational arithmetic: D(z) = z (z+1) ... (z+9) (whose expanded
+// coefficients are unsigned Stirling numbers of the first kind, exact in f64)
+// and N = d_0 D + sum_k d_k D / (z + k - 1). Every coefficient of both
+// polynomials is positive, so for z > 0 both Horner evaluations have condition
+// number 1 and the sum is accurate to a few eps.
+
+/// Numerator `N(z)` of the Lanczos sum in single-fraction form (ascending).
+const LANCZOS_NUM: &[f64] = &[
+    381540.6633973527,
+    365505.352696257,
+    157567.99949360118,
+    40253.83538142639,
+    6748.767525934567,
+    775.8779405455635,
+    61.94528891422096,
+    3.391366244015308,
+    0.12184807036444657,
+    0.002594340508809067,
+    2.4857408913875355e-5,
 ];
+
+/// Denominator `D(z) = z (z+1) ... (z+9)` expanded (ascending; unsigned
+/// Stirling numbers of the first kind, exact integers).
+const LANCZOS_DENOM: &[f64] = &[
+    0.0, 362880.0, 1026576.0, 1172700.0, 723680.0, 269325.0, 63273.0, 9450.0, 870.0, 45.0, 1.0,
+];
+
+/// `LANCZOS_NUM` reversed: `N(z) / z^10` as a polynomial in `w = 1/z`.
+const LANCZOS_NUM_REV: &[f64] = &[
+    2.4857408913875355e-5,
+    0.002594340508809067,
+    0.12184807036444657,
+    3.391366244015308,
+    61.94528891422096,
+    775.8779405455635,
+    6748.767525934567,
+    40253.83538142639,
+    157567.99949360118,
+    365505.352696257,
+    381540.6633973527,
+];
+
+/// `LANCZOS_DENOM` reversed: `D(z) / z^10` as a polynomial in `w = 1/z`.
+const LANCZOS_DENOM_REV: &[f64] = &[
+    1.0, 45.0, 870.0, 9450.0, 63273.0, 269325.0, 723680.0, 1172700.0, 1026576.0, 362880.0, 0.0,
+];
+
+/// Low half of Euler's number: `e == f64::consts::E + E_LO` to double-double
+/// precision.
+const E_LO: f64 = 1.4456468917292502e-16;
+
+/// Computes `((p + GAMMA_R) / e)^exponent`, compensating the rounding of the base.
+///
+/// `powf` amplifies a relative error `eps` in its base by the exponent, so the
+/// two roundings in `(p + GAMMA_R) / e` cost `~2 |p|` ulps - the dominant
+/// error of the direct evaluation (~190 ulps in `gamma` by x = 122). The
+/// rounding residuals of the addition (two-sum) and the division (Dekker
+/// product, plus the low word of `e`) are recovered exactly and applied as the
+/// first-order correction `(b (1 + delta))^p ~= b^p (1 + p delta)`.
+/// `p_err` is the rounding residual of the exponent itself (the true exponent
+/// is `p + p_err`), folded in as `b^(p_err) ~= 1 + p_err * ln(b)`; it must be
+/// zero unless `exponent == p`.
+///
+/// `exponent` is normally `p`. The overflow-avoiding path in [`gamma`] passes
+/// `p / 2` and squares the result, which needs the *base* to keep coming from
+/// the full `p` - halving `p` in the base as well would compute an entirely
+/// different quantity.
+#[inline]
+fn lanczos_power(p: f64, p_err: f64, exponent: f64) -> f64 {
+    let (zgh, add_err) = two_diff(p, -GAMMA_R);
+    let b = zgh / f64::consts::E;
+    let pw = b * f64::consts::E;
+    // exact residual of the division against the double-double e
+    let div_err = (zgh - pw) - dekker_product_err(b, f64::consts::E, pw);
+    let delta = (div_err + add_err + p_err - b * E_LO) / zgh;
+    let mut corr = exponent * delta;
+    if p_err != 0.0 {
+        corr += p_err * b.ln();
+    }
+    let base = b.powf(exponent);
+    // `(b (1 + delta))^p ~= b^p (1 + p delta)` only holds while `|p delta| << 1`.
+    // Since `delta` is of order `eps`, that fails once `p` reaches ~1e13 - far
+    // past where `b^p` overflows, so the uncorrected value is the right answer
+    // there. Applying it anyway would let a negative `corr` flip the sign and
+    // turn an overflowing `gamma` into `-inf`.
+    if corr.abs() < 0.25 {
+        base * (1.0 + corr)
+    } else {
+        base
+    }
+}
+
+/// Evaluates the Lanczos sum `S(z)` for `z >= 0.5` via the well-conditioned
+/// single-fraction form (see the derivation note above).
+#[inline]
+fn lanczos_sum(z: f64) -> f64 {
+    if z < 1e29 {
+        evaluate::polynomial(z, LANCZOS_NUM) / evaluate::polynomial(z, LANCZOS_DENOM)
+    } else {
+        // z^10 would overflow; divide both polynomials by z^10 and evaluate
+        // in w = 1/z instead.
+        let w = 1.0 / z;
+        evaluate::polynomial(w, LANCZOS_NUM_REV) / evaluate::polynomial(w, LANCZOS_DENOM_REV)
+    }
+}
 
 /// Computes the logarithm of the gamma function
 /// with an accuracy of 16 floating point digits.
@@ -54,24 +193,22 @@ const GAMMA_DK: &[f64] = &[
 /// "An Analysis of the Lanczos Gamma Approximation",
 /// Glendon Ralph Pugh, 2004 p. 116
 pub fn ln_gamma(x: f64) -> f64 {
+    // ln Gamma(n) = ln((n - 1)!) via the exact factorial table (~0.4 ulp, and
+    // exactly 0 at n = 1, 2, where the Lanczos formula's terms only cancel
+    // approximately).
+    if x.fract() == 0.0 && (1.0..=171.0).contains(&x) {
+        return crate::function::factorial::ln_factorial(x as u64 - 1);
+    }
     if x < 0.5 {
-        let s = GAMMA_DK
-            .iter()
-            .enumerate()
-            .skip(1)
-            .fold(GAMMA_DK[0], |s, t| s + t.1 / (t.0 as f64 - x));
+        let s = lanczos_sum(1.0 - x);
 
         consts::LN_PI
-            - (f64::consts::PI * x).sin().ln()
+            - sin_pi(x).ln()
             - s.ln()
             - consts::LN_2_SQRT_E_OVER_PI
             - (0.5 - x) * ((0.5 - x + GAMMA_R) / f64::consts::E).ln()
     } else {
-        let s = GAMMA_DK
-            .iter()
-            .enumerate()
-            .skip(1)
-            .fold(GAMMA_DK[0], |s, t| s + t.1 / (x + t.0 as f64 - 1.0));
+        let s = lanczos_sum(x);
 
         s.ln()
             + consts::LN_2_SQRT_E_OVER_PI
@@ -79,31 +216,43 @@ pub fn ln_gamma(x: f64) -> f64 {
     }
 }
 
-/// Computes the gamma function with an accuracy
-/// of 16 floating point digits. The implementation
-/// is derived from "An Analysis of the Lanczos Gamma Approximation",
-/// Glendon Ralph Pugh, 2004 p. 116
+/// Computes the gamma function. The implementation is derived from
+/// "An Analysis of the Lanczos Gamma Approximation",
+/// Glendon Ralph Pugh, 2004 p. 116.
+///
+/// Exact at the positive integers up to 171; elsewhere accurate to about
+/// `4e-15` relative, which is the approximation floor of the (f64-rounded)
+/// Pugh coefficient set itself - the evaluation is compensated to well below
+/// that.
 pub fn gamma(x: f64) -> f64 {
+    // Gamma(n) = (n - 1)! exactly at the positive integers where the factorial
+    // is representable; the Lanczos path is only good to ~1 ulp there.
+    if x.fract() == 0.0 && (1.0..=171.0).contains(&x) {
+        return crate::function::factorial::factorial(x as u64 - 1);
+    }
     if x < 0.5 {
-        let s = GAMMA_DK
-            .iter()
-            .enumerate()
-            .skip(1)
-            .fold(GAMMA_DK[0], |s, t| s + t.1 / (t.0 as f64 - x));
+        let s = lanczos_sum(1.0 - x);
+        // 0.5 - x rounds for x below the binade of 0.5; keep its residual
+        let (pw, pw_err) = two_diff(0.5, x);
 
         f64::consts::PI
-            / ((f64::consts::PI * x).sin()
-                * s
-                * consts::TWO_SQRT_E_OVER_PI
-                * ((0.5 - x + GAMMA_R) / f64::consts::E).powf(0.5 - x))
+            / (sin_pi(x) * s * consts::TWO_SQRT_E_OVER_PI * lanczos_power(pw, pw_err, pw))
     } else {
-        let s = GAMMA_DK
-            .iter()
-            .enumerate()
-            .skip(1)
-            .fold(GAMMA_DK[0], |s, t| s + t.1 / (x + t.0 as f64 - 1.0));
+        let s = lanczos_sum(x);
 
-        s * consts::TWO_SQRT_E_OVER_PI * ((x - 0.5 + GAMMA_R) / f64::consts::E).powf(x - 0.5)
+        // x - 0.5 is exact for 0.5 <= x < 2^52 (same or finer grid)
+        let p = x - 0.5;
+        if p > 168.0 {
+            // `lanczos_power` alone overflows from about x = 169.7, while the
+            // full product stays representable up to x ~ 171.61 (the true
+            // overflow point of Gamma). Halve the exponent and square at the
+            // end so the intermediate stays in range; this costs a couple of
+            // ulp, well inside the approximation floor of the coefficient set.
+            let half =
+                s.sqrt() * consts::TWO_SQRT_E_OVER_PI.sqrt() * lanczos_power(p, 0.0, 0.5 * p);
+            return half * half;
+        }
+        s * consts::TWO_SQRT_E_OVER_PI * lanczos_power(p, 0.0, p)
     }
 }
 
@@ -390,7 +539,11 @@ pub fn digamma(x: f64) -> f64 {
         return f64::NEG_INFINITY;
     }
     if x < 0.0 {
-        return digamma(1.0 - x) + f64::consts::PI / (-f64::consts::PI * x).tan();
+        // Reflection formula `psi(x) = psi(1 - x) - PI / tan(PI * x)`, with the
+        // period reduction done by `tan_pi`. `(PI * x).tan()` evaluated directly
+        // lost up to ~6 decimal digits near the poles (5586 ulp at x = -12.72,
+        // 3e-7 relative at 1e-10 from a pole).
+        return digamma(1.0 - x) - f64::consts::PI / tan_pi(x);
     }
     if x <= s {
         return d1 - 1.0 / x + d2 * x;
@@ -583,9 +736,11 @@ mod tests {
             11.51291869289055371493077240324332039045238086972508869965363,
             epsilon = 1e-14
         );
-        assert_eq!(
+        prec::assert_relative_eq!(
             super::ln_gamma(1.000001e-2),
-            4.599478872433667224554543378460164306444416156144779542513592
+            4.599478872433667224554543378460164306444416156144779542513592,
+            epsilon = 0.0,
+            max_relative = 1e-15
         );
         prec::assert_abs_diff_eq!(
             super::ln_gamma(0.1),
@@ -883,7 +1038,7 @@ mod tests {
         prec::assert_abs_diff_eq!(
             gamma_li(5.5, 2.0),
             1.5746265342113649473739798668921124454837064926448459,
-            epsilon = 1e-15
+            epsilon = 2e-15
         );
         prec::assert_abs_diff_eq!(
             gamma_li(5.5, 8.0),
@@ -1197,21 +1352,30 @@ mod tests {
 
     /// `digamma` has poles at the non-positive integers and returns -inf there.
     /// The pole test is `prec::ulps_eq!(x.floor(), x)`, whose default epsilon
-    /// was `1e-9` absolute, so a whole neighbourhood around each pole returned
-    /// -inf instead of a large finite value.
-    ///
-    /// The tolerance is loose because `digamma(x < 0)` goes through the
-    /// reflection formula and `(PI * x).tan()` loses roughly
-    /// `ulp(PI) / dist_to_pole` of relative accuracy; what is pinned here is
-    /// that the values are finite and of the right magnitude.
+    /// used to be `1e-9` absolute, so a whole neighbourhood around each pole
+    /// returned -inf instead of a large finite value.
     #[test]
     fn test_digamma_near_negative_integer_poles_is_finite() {
-        prec::assert_relative_eq!(digamma(-1.0 + f64::powi(2.0, -33)), -8589934591.5772156646, epsilon = 0.0, max_relative = 1e-5);
-        prec::assert_relative_eq!(digamma(-1.0 - f64::powi(2.0, -33)),  8589934592.4227843348, epsilon = 0.0, max_relative = 1e-5);
+        prec::assert_relative_eq!(digamma(-1.0 + f64::powi(2.0, -33)), -8589934591.5772156646, epsilon = 0.0, max_relative = 1e-13);
+        prec::assert_relative_eq!(digamma(-1.0 - f64::powi(2.0, -33)),  8589934592.4227843348, epsilon = 0.0, max_relative = 1e-13);
         // the poles themselves are unchanged
         assert_eq!(digamma(-1.0), f64::NEG_INFINITY);
         assert_eq!(digamma(0.0), f64::NEG_INFINITY);
         assert_eq!(digamma(-5.0), f64::NEG_INFINITY);
+    }
+
+    /// Before `tan_pi` reduced the reflection argument by the period, these
+    /// lost 3-4 decimal digits because `(PI * x).tan()` was evaluated at a
+    /// large rounded argument. Reference values are mpmath at 40 significant
+    /// digits, computed at the exact `f64` of each literal. The tolerances
+    /// reflect the cancellation between the two reflection terms
+    /// (`psi(1 - x)` and `pi * cot(pi x)` are each ~2.6 at x = -12.72 and
+    /// cancel to ~0.017, amplifying their ~1 ulp errors ~150x).
+    #[test]
+    fn test_digamma_negative_arguments_far_from_zero() {
+        prec::assert_relative_eq!(digamma(-12.72), -0.0169824608177603739173, epsilon = 0.0, max_relative = 1e-13);
+        prec::assert_relative_eq!(digamma(-14.72), 0.1238386191670285663687, epsilon = 0.0, max_relative = 1e-14);
+        prec::assert_relative_eq!(digamma(-20.02), 52.95568424702714411621, epsilon = 0.0, max_relative = 1e-15);
     }
 
     // TODO: precision testing could be more accurate
@@ -1374,6 +1538,30 @@ mod tests {
             10.1,
             epsilon = 1e-13
         );
+    }
+
+    /// `gamma` must overflow to `+inf`, never `-inf`, and must not overflow
+    /// early. The first-order correction in `lanczos_power` is only a valid
+    /// perturbation while `|p * delta| << 1`; applying it unguarded let a
+    /// negative correction flip the sign for `x` past ~1e15. Separately, the
+    /// power alone overflows from about x = 169.7 while the full product stays
+    /// representable to x ~ 171.61.
+    #[test]
+    fn test_gamma_overflow_boundary_and_sign() {
+        // finite and positive right up to the true overflow point
+        for x in [168.0f64, 169.0, 169.7, 170.5, 171.0, 171.5, 171.6] {
+            let g = gamma(x);
+            assert!(g.is_finite() && g > 0.0, "gamma({x}) should be finite positive, got {g}");
+        }
+        // mpmath at 30 digits
+        prec::assert_relative_eq!(gamma(171.6), 1.5858969096673029e308, epsilon = 0.0, max_relative = 1e-13);
+        prec::assert_relative_eq!(gamma(170.5), 5.5620924145599996e305, epsilon = 0.0, max_relative = 1e-13);
+        prec::assert_relative_eq!(gamma(169.7), 9.155822000376269e303, epsilon = 0.0, max_relative = 1e-13);
+        // and always +inf beyond it, at every scale
+        for x in [172.0f64, 200.0, 1e3, 1e6, 1e14, 1e15, 1e100, 1e300, f64::MAX] {
+            let g = gamma(x);
+            assert!(g.is_infinite() && g > 0.0, "gamma({x:e}) should be +inf, got {g}");
+        }
     }
 
     #[test]

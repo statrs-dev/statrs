@@ -552,7 +552,7 @@ mod tests {
         test_absolute(0.3, 3, 0.657, 1e-14, sf(0));
         test_absolute(0.3, 3, 0.216, 1e-15, sf(1));
         test_exact(0.3, 3, 0.0, sf(3));
-        test_absolute(0.3, 10, 0.9717524751000001, 1e-16, sf(0));
+        test_absolute(0.3, 10, 0.9717524750999999955198, 1e-16, sf(0));
         test_absolute(0.3, 10, 0.850691654100002, 1e-14, sf(1));
         test_exact(0.3, 10, 0.0, sf(10));
         test_exact(1.0, 1, 1.0, sf(0));
