@@ -237,7 +237,11 @@ impl Distribution<f64> for Binomial {
         } else {
             (0..self.n + 1).fold(0.0, |acc, x| {
                 let p = self.pmf(x);
-                acc - p * p.ln()
+                // A mass that underflows to zero contributes nothing, taking
+                // `0 * ln 0 == 0` as usual for entropy. Evaluating it would give
+                // `0 * -inf == NaN` and poison the whole sum, which made
+                // `entropy()` return `NaN` for any `n` past roughly 1100.
+                if p > 0.0 { acc - p * p.ln() } else { acc }
             })
         };
         Some(entr)
@@ -412,6 +416,39 @@ mod tests {
         test_exact(0.3, 10, 10, max);
     }
 
+    /// `p` very close to but not equal to 1 must take the general path, not the
+    /// degenerate `p == 1` branch. The branch is guarded by `prec::ulps_eq!`,
+    /// whose default epsilon was `1e-9` *absolute*, so any `p` within `1e-9` of
+    /// 1 collapsed to a point mass at `n`.
+    ///
+    /// `1 - 2^-33` is used rather than `1 - 1e-10` so that `1 - p` is exact and
+    /// the reference values are not limited by the representation of `p`.
+    #[test]
+    fn test_pmf_p_near_one_is_not_degenerate() {
+        let n = Binomial::new(1.0 - f64::powi(2.0, -33), 100).unwrap();
+        prec::assert_relative_eq!(n.pmf(99), 1.1641532048523463366e-8, epsilon = 0.0, max_relative = 1e-13);
+        prec::assert_relative_eq!(n.pmf(100), 0.99999998835846788439, epsilon = 0.0, max_relative = 1e-14);
+        prec::assert_relative_eq!(n.ln_pmf(99), -18.268686784015220704, epsilon = 0.0, max_relative = 5e-15);
+        // entropy of a non-degenerate distribution is strictly positive
+        assert!(n.entropy().unwrap() > 0.0);
+    }
+
+    /// `entropy()` sums `-p * ln(p)` over the whole support, so it used to
+    /// return `NaN` as soon as one mass underflowed to zero (`0 * -inf`). For
+    /// `p = 0.5` that starts at around `n = 1100`.
+    #[test]
+    fn test_entropy_with_underflowing_masses() {
+        for n in [1_100, 2_000, 5_000, 20_000] {
+            let d = Binomial::new(0.5, n).unwrap();
+            let h = d.entropy().unwrap();
+            assert!(h.is_finite(), "entropy for n={n} was {h}");
+            // 0.5 * ln(2 * pi * e * n * p * q) is the asymptotic form
+            let approx = 0.5 * (2.0 * f64::consts::PI * f64::consts::E * n as f64 * 0.25).ln();
+            prec::assert_relative_eq!(h, approx, epsilon = 0.0, max_relative = 1e-3);
+        }
+        assert!(Binomial::new(0.1, 5_000).unwrap().entropy().unwrap().is_finite());
+    }
+
     #[test]
     fn test_pmf() {
         let pmf = |arg: u64| move |x: Binomial| x.pmf(arg);
@@ -515,7 +552,7 @@ mod tests {
         test_absolute(0.3, 3, 0.657, 1e-14, sf(0));
         test_absolute(0.3, 3, 0.216, 1e-15, sf(1));
         test_exact(0.3, 3, 0.0, sf(3));
-        test_absolute(0.3, 10, 0.9717524751000001, 1e-16, sf(0));
+        test_absolute(0.3, 10, 0.9717524750999999955198, 1e-16, sf(0));
         test_absolute(0.3, 10, 0.850691654100002, 1e-14, sf(1));
         test_exact(0.3, 10, 0.0, sf(10));
         test_exact(1.0, 1, 1.0, sf(0));
