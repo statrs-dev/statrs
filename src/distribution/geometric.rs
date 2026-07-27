@@ -437,6 +437,18 @@ mod tests {
         test_exact(0.3, u64::MAX, max);
     }
 
+    /// As in [`Binomial`](crate::distribution::Binomial), the `p == 1` branches
+    /// here are guarded by `prec::ulps_eq!`; its default epsilon was `1e-9`
+    /// absolute, so `p = 1 - 2^-33` was treated as a point mass at 1.
+    #[test]
+    fn test_p_near_one_is_not_degenerate() {
+        let g = Geometric::new(1.0 - f64::powi(2.0, -33)).unwrap();
+        assert_eq!(g.max(), u64::MAX);
+        prec::assert_relative_eq!(g.skewness().unwrap(), 92681.900034472750337, epsilon = 0.0, max_relative = 1e-14);
+        prec::assert_relative_eq!(g.pmf(2), 1.164153218133822873e-10, epsilon = 0.0, max_relative = 1e-14);
+        prec::assert_relative_eq!(g.ln_pmf(2), -22.873856958594610533, epsilon = 0.0, max_relative = 1e-14);
+    }
+
     #[test]
     fn test_pmf() {
         let pmf = |arg: u64| move |x: Geometric| x.pmf(arg);
