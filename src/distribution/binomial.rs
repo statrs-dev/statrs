@@ -133,43 +133,88 @@ impl ::rand::distr::Distribution<u64> for Binomial {
 // Apache-2.0), which implements Kachitvichyanukul & Schmeiser (1988) with the
 // corrected Stirling-series signs from GSL.
 
+/// Which algorithm `sample_unchecked` uses, after reflecting `p > 0.5` onto
+/// `[0, 0.5]`. Carries the reduced parameters so the reduction happens once.
+#[cfg(feature = "rand")]
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Path {
+    /// `p` is 0 or 1, or there are no trials: the outcome is deterministic and
+    /// already accounts for any reflection.
+    Degenerate(u64),
+    /// `1 - p` rounds to 1, so the distribution is Poisson(`mean`) to `O(p)`.
+    PoissonLimit { mean: f64 },
+    /// Sequential inversion, for `n * p < 10`.
+    Binv { p: f64, q: f64 },
+    /// Triangle/parallelogram/exponential rejection, for `n * p >= 10`.
+    Btpe { p: f64, q: f64 },
+}
+
+/// A chosen [`Path`] together with whether the variate it produces counts
+/// failures and so must be reflected back to `n - x`.
+#[cfg(feature = "rand")]
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Plan {
+    path: Path,
+    flipped: bool,
+}
+
+#[cfg(feature = "rand")]
+impl Plan {
+    /// Chooses the sampling path for `(n, p)`.
+    ///
+    /// Kept free of the RNG so the branch selection can be tested directly. That
+    /// matters most for [`Path::PoissonLimit`], which is otherwise unreachable
+    /// from the public API in its reflected form: entering it needs
+    /// `p <= 2^-54`, while reflection cannot produce a `p` below `2^-53`, the
+    /// largest `f64` under one being `1 - 2^-53`. The reflection is still
+    /// applied to that path -- see [`sample_unchecked`] -- rather than resting
+    /// correctness on a one-bit spacing argument.
+    fn new(n: u64, p: f64) -> Self {
+        if p <= 0.0 || n == 0 {
+            return Self {
+                path: Path::Degenerate(0),
+                flipped: false,
+            };
+        }
+        if p >= 1.0 {
+            return Self {
+                path: Path::Degenerate(n),
+                flipped: false,
+            };
+        }
+
+        // the distribution is symmetric under p -> 1 - p
+        let flipped = p > 0.5;
+        let p = if flipped { 1.0 - p } else { p };
+        let q = 1.0 - p;
+
+        let path = if q == 1.0 {
+            Path::PoissonLimit { mean: n as f64 * p }
+        } else if n as f64 * p < 10.0 {
+            // Threshold for preferring BINV; the paper suggests 10.
+            Path::Binv { p, q }
+        } else {
+            Path::Btpe { p, q }
+        };
+        Self { path, flipped }
+    }
+}
+
 /// Samples from a binomial distribution with the given `n` and `p`, without
 /// validating the parameters.
 #[cfg(feature = "rand")]
 pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, n: u64, p: f64) -> u64 {
-    if p <= 0.0 || n == 0 {
-        return 0;
-    }
-    if p >= 1.0 {
-        return n;
-    }
-
-    // the distribution is symmetric under p -> 1 - p
-    let flipped = p > 0.5;
-    let p = if flipped { 1.0 - p } else { p };
-    let q = 1.0 - p;
-
-    if q == 1.0 {
-        // `p` is at or below 2^-54, so `1 - p` is not representable and the
-        // distribution is indistinguishable from Poisson(n * p) to O(p).
-        //
-        // Reaching here with `flipped` set would require `p <= 2^-54`, while
-        // reflection can only produce `p >= 2^-53` (the largest f64 below 1 is
-        // `1 - 2^-53`), so the reflection below is unreachable. It is applied
-        // anyway: this branch should be correct on its own terms rather than
-        // resting on a one-bit spacing argument that a later change to the
-        // guard could silently invalidate. The clamp is needed for the same
-        // reason -- a Poisson variate has no upper bound, unlike a binomial one.
-        let sample = (super::poisson::sample_unchecked(rng, n as f64 * p) as u64).min(n);
-        return if flipped { n - sample } else { sample };
-    }
-
-    // Threshold for preferring BINV; the paper suggests 10.
-    let sample = if n as f64 * p < 10.0 {
-        binv(rng, n, p, q)
-    } else {
-        btpe(rng, n, p, q)
+    let Plan { path, flipped } = Plan::new(n, p);
+    let sample = match path {
+        Path::Degenerate(x) => return x,
+        // The clamp is needed because a Poisson variate has no upper bound,
+        // unlike a binomial one.
+        Path::PoissonLimit { mean } => (super::poisson::sample_unchecked(rng, mean) as u64).min(n),
+        Path::Binv { p, q } => binv(rng, n, p, q),
+        Path::Btpe { p, q } => btpe(rng, n, p, q),
     };
+    // Every non-degenerate path reflects here, in one place, so a path cannot
+    // be added or changed without inheriting it.
     if flipped { n - sample } else { sample }
 }
 
@@ -911,30 +956,65 @@ mod tests {
         assert!((total as f64 - 2000.0).abs() < 268.0, "Poisson-limit path total {total}");
     }
 
-    /// The Poisson-limit branch reflects its result like every other path, but
-    /// that reflection is currently unreachable: entering the branch needs
-    /// `p <= 2^-54`, while reflecting can never produce a `p` below `2^-53`.
-    /// The margin is a single bit, so pin it -- a later change to either the
-    /// guard or the reflection that makes the branch reachable should fail here
-    /// rather than silently return an unreflected variate.
+    /// The branch selection, tested directly rather than by probing `f64` bit
+    /// patterns through the sampler.
+    #[cfg(feature = "rand")]
     #[test]
-    fn test_poisson_limit_branch_unreachable_when_flipped() {
-        let largest_below_one = f64::from_bits(1.0f64.to_bits() - 1);
-        assert!(largest_below_one > 0.5, "premise: this value gets flipped");
+    fn test_sampling_path_selection() {
+        use super::{Path, Plan};
 
-        // Reflection is exact here (Sterbenz), and bottoms out at 2^-53.
-        let reflected = 1.0 - largest_below_one;
-        assert_eq!(reflected, (-53f64).exp2());
+        // degenerate parameters, which carry no reflection of their own
+        assert_eq!(Plan::new(50, 0.0), Plan { path: Path::Degenerate(0), flipped: false });
+        assert_eq!(Plan::new(50, 1.0), Plan { path: Path::Degenerate(50), flipped: false });
+        assert_eq!(Plan::new(0, 0.5), Plan { path: Path::Degenerate(0), flipped: false });
 
-        // The branch guard is `1.0 - p == 1.0`, which needs p <= 2^-54.
-        assert_eq!(1.0 - (-54f64).exp2(), 1.0, "premise: 2^-54 is the threshold");
-        assert_ne!(1.0 - reflected, 1.0, "a flipped p reached the Poisson branch");
+        // n * p straddling the BINV/BTPE threshold of 10
+        assert!(matches!(Plan::new(20, 0.3), Plan { path: Path::Binv { .. }, flipped: false }));
+        assert!(matches!(Plan::new(100, 0.4), Plan { path: Path::Btpe { .. }, flipped: false }));
+
+        // p > 0.5 is reflected, and the threshold then applies to the reduced p
+        assert!(matches!(Plan::new(100, 0.93), Plan { path: Path::Binv { .. }, flipped: true }));
+        assert!(matches!(Plan::new(2000, 0.995), Plan { path: Path::Btpe { .. }, flipped: true }));
+
+        // the Poisson limit: p small enough that 1 - p rounds to 1
+        assert_eq!(
+            Plan::new(10_000_000_000_000_000, 1e-18),
+            Plan { path: Path::PoissonLimit { mean: 0.01 }, flipped: false }
+        );
     }
 
-    /// Mirror of the Poisson-limit case above, on the flipped side: `p` is the
-    /// largest value below one, so the reflected `p` is `2^-53` -- one bit clear
-    /// of the Poisson guard, on the ordinary BINV path. Failures rather than
-    /// successes are counted, which is what the reflection has to get right.
+    /// The Poisson limit is unreachable in its reflected form: entering it needs
+    /// `p <= 2^-54`, while reflection cannot produce a `p` below `2^-53`. The
+    /// margin is one bit, so pin it -- a change to the guard that makes the path
+    /// reachable should fail here rather than silently return an unreflected
+    /// variate. Expressed over the path selection, so it tests the branch logic
+    /// and not the float representation.
+    #[cfg(feature = "rand")]
+    #[test]
+    fn test_poisson_limit_never_reached_flipped() {
+        use super::{Path, Plan};
+
+        // walk the f64 values immediately below 1, which are the only candidates
+        let mut p = 1.0f64;
+        for _ in 0..64 {
+            p = f64::from_bits(p.to_bits() - 1);
+            let plan = Plan::new(u64::MAX, p);
+            assert!(
+                !(plan.flipped && matches!(plan.path, Path::PoissonLimit { .. })),
+                "p = {p:e} reached the Poisson limit while flipped"
+            );
+        }
+
+        // and the same for the reflected value the guard would have to admit
+        let largest_below_one = f64::from_bits(1.0f64.to_bits() - 1);
+        assert_eq!(1.0 - largest_below_one, (-53f64).exp2(), "reflection bottoms out at 2^-53");
+        assert_eq!(1.0 - (-54f64).exp2(), 1.0, "the guard admits 2^-54 and below");
+    }
+
+    /// The reflected side at its extreme: `p` is the largest value below one, so
+    /// the reduced `p` is `2^-53`, one bit clear of the Poisson guard and on the
+    /// BINV path. Counts failures rather than successes, which is what the
+    /// reflection has to get right.
     #[cfg(feature = "rand")]
     #[test]
     fn test_sample_p_adjacent_to_one() {
