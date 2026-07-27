@@ -150,9 +150,18 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, n: u64, p: f64) ->
     let q = 1.0 - p;
 
     if q == 1.0 {
-        // p is below ~2^-54 (and not flipped, since p <= 0.5): the
-        // distribution is indistinguishable from Poisson(n * p) to O(p)
-        return super::poisson::sample_unchecked(rng, n as f64 * p) as u64;
+        // `p` is at or below 2^-54, so `1 - p` is not representable and the
+        // distribution is indistinguishable from Poisson(n * p) to O(p).
+        //
+        // Reaching here with `flipped` set would require `p <= 2^-54`, while
+        // reflection can only produce `p >= 2^-53` (the largest f64 below 1 is
+        // `1 - 2^-53`), so the reflection below is unreachable. It is applied
+        // anyway: this branch should be correct on its own terms rather than
+        // resting on a one-bit spacing argument that a later change to the
+        // guard could silently invalidate. The clamp is needed for the same
+        // reason -- a Poisson variate has no upper bound, unlike a binomial one.
+        let sample = (super::poisson::sample_unchecked(rng, n as f64 * p) as u64).min(n);
+        return if flipped { n - sample } else { sample };
     }
 
     // Threshold for preferring BINV; the paper suggests 10.
@@ -791,6 +800,8 @@ mod tests {
         use ::rand::distr::Distribution as _;
         use ::rand::rngs::StdRng;
 
+        use crate::stats_tests::chisquare::chisquare;
+
         const SAMPLES: usize = 100_000;
         for &(n, p) in &[
             (20u64, 0.3f64), // BINV
@@ -802,49 +813,62 @@ mod tests {
             let dist = create_ok(p, n);
             let mut rng = StdRng::seed_from_u64(0x5EED + n);
 
-            let mean = n as f64 * p;
-            let sd = (mean * (1.0 - p)).sqrt();
-            let lo = (mean - 6.0 * sd).floor().max(0.0) as u64;
-            let hi = ((mean + 6.0 * sd).ceil() as u64).min(n);
-
-            let mut counts = vec![0u64; (hi - lo + 1) as usize];
-            let mut outside = 0u64;
+            let mut counts = vec![0usize; (n + 1) as usize];
             for _ in 0..SAMPLES {
                 let x: u64 = dist.sample(&mut rng);
-                match counts.get_mut((x.max(lo) - lo) as usize) {
-                    Some(c) if x >= lo => *c += 1,
-                    _ => outside += 1,
-                }
+                assert!(x <= n, "n={n} p={p}: sampled {x}, outside the support");
+                counts[x as usize] += 1;
             }
-            // beyond 6 sigma the expected count over 1e5 draws is << 1
-            assert!(outside <= 3, "n={n} p={p}: {outside} samples beyond 6 sigma");
 
-            // pool adjacent cells until each has expected count >= 5
-            let mut cells: Vec<(f64, u64)> = Vec::new();
-            let mut acc = (0.0_f64, 0u64);
-            for k in lo..=hi {
+            // Bin over the whole support, pooling adjacent outcomes until each
+            // cell expects at least 5 -- the usual condition for the chi-square
+            // approximation. Covering the full support rather than a window
+            // also makes the observed and expected totals agree exactly, which
+            // `chisquare` checks.
+            let mut observed: Vec<usize> = Vec::new();
+            let mut expected: Vec<f64> = Vec::new();
+            let mut acc = (0.0f64, 0usize);
+            for k in 0..=n {
                 acc.0 += SAMPLES as f64 * dist.pmf(k);
-                acc.1 += counts[(k - lo) as usize];
+                acc.1 += counts[k as usize];
                 if acc.0 >= 5.0 {
-                    cells.push(acc);
+                    expected.push(acc.0);
+                    observed.push(acc.1);
                     acc = (0.0, 0);
                 }
             }
-            if let Some(last) = cells.last_mut() {
-                last.0 += acc.0;
-                last.1 += acc.1;
-            }
+            // Fold the leftover tail into the final cell so nothing is dropped.
+            *expected.last_mut().unwrap() += acc.0;
+            *observed.last_mut().unwrap() += acc.1;
 
-            let chi2: f64 = cells
-                .iter()
-                .map(|&(e, o)| (o as f64 - e) * (o as f64 - e) / e)
-                .sum();
-            let df = (cells.len() - 1) as f64;
-            let threshold = df + 6.0 * (2.0 * df).sqrt();
+            assert_eq!(
+                observed.iter().sum::<usize>(),
+                SAMPLES,
+                "n={n} p={p}: binning lost samples"
+            );
+
+            // `chisquare` rejects inputs whose observed and expected totals
+            // disagree, and summing the pmf over the support accumulates enough
+            // rounding to trip that check. Pin the last cell to the exact
+            // remainder instead: the sum of the others is unchanged, so the
+            // total then lands on `SAMPLES` to the last bit (the subtraction is
+            // exact by Sterbenz, the operands being within a factor of two).
+            let last = expected.len() - 1;
+            let rest: f64 = expected[..last].iter().sum();
+            expected[last] = SAMPLES as f64 - rest;
+            debug_assert_eq!(expected.iter().sum::<f64>(), SAMPLES as f64);
+
+            let (statistic, pvalue) = chisquare(&observed, Some(&expected), None)
+                .expect("observed and expected totals agree by construction");
+
+            // The seeds are fixed, so this is deterministic. The threshold is
+            // deliberately far out in the tail: a correct sampler yields uniform
+            // p-values, so 1e-6 will not fire by chance, and anything below it
+            // indicates a real defect rather than an unlucky run.
             assert!(
-                chi2 < threshold,
-                "n={n} p={p}: chi2 = {chi2:.1} over {} cells (threshold {threshold:.1})",
-                cells.len()
+                pvalue > 1e-6,
+                "n={n} p={p}: chi-square = {statistic:.1} over {} cells, p = {pvalue:.3e}",
+                observed.len()
             );
         }
     }
@@ -885,6 +909,59 @@ mod tests {
         }
         // total ~ Poisson(200_000 * 0.01 = 2000); 6 sigma is +-268
         assert!((total as f64 - 2000.0).abs() < 268.0, "Poisson-limit path total {total}");
+    }
+
+    /// The Poisson-limit branch reflects its result like every other path, but
+    /// that reflection is currently unreachable: entering the branch needs
+    /// `p <= 2^-54`, while reflecting can never produce a `p` below `2^-53`.
+    /// The margin is a single bit, so pin it -- a later change to either the
+    /// guard or the reflection that makes the branch reachable should fail here
+    /// rather than silently return an unreflected variate.
+    #[test]
+    fn test_poisson_limit_branch_unreachable_when_flipped() {
+        let largest_below_one = f64::from_bits(1.0f64.to_bits() - 1);
+        assert!(largest_below_one > 0.5, "premise: this value gets flipped");
+
+        // Reflection is exact here (Sterbenz), and bottoms out at 2^-53.
+        let reflected = 1.0 - largest_below_one;
+        assert_eq!(reflected, (-53f64).exp2());
+
+        // The branch guard is `1.0 - p == 1.0`, which needs p <= 2^-54.
+        assert_eq!(1.0 - (-54f64).exp2(), 1.0, "premise: 2^-54 is the threshold");
+        assert_ne!(1.0 - reflected, 1.0, "a flipped p reached the Poisson branch");
+    }
+
+    /// Mirror of the Poisson-limit case above, on the flipped side: `p` is the
+    /// largest value below one, so the reflected `p` is `2^-53` -- one bit clear
+    /// of the Poisson guard, on the ordinary BINV path. Failures rather than
+    /// successes are counted, which is what the reflection has to get right.
+    #[cfg(feature = "rand")]
+    #[test]
+    fn test_sample_p_adjacent_to_one() {
+        use ::rand::SeedableRng;
+        use ::rand::distr::Distribution as _;
+        use ::rand::rngs::StdRng;
+
+        let n = 10_000_000_000_000_000u64;
+        let p = f64::from_bits(1.0f64.to_bits() - 1);
+        let dist = create_ok(p, n);
+        let mut rng = StdRng::seed_from_u64(11);
+
+        const DRAWS: usize = 200_000;
+        let mut failures = 0u64;
+        for _ in 0..DRAWS {
+            let x: u64 = dist.sample(&mut rng);
+            assert!(x <= n, "sample {x} exceeds n");
+            failures += n - x;
+        }
+
+        // failures ~ Poisson(DRAWS * n * 2^-53); 6 sigma either side
+        let mean = DRAWS as f64 * n as f64 * (-53f64).exp2();
+        let tol = 6.0 * mean.sqrt();
+        assert!(
+            (failures as f64 - mean).abs() < tol,
+            "{failures} failures, expected {mean:.0} +- {tol:.0}"
+        );
     }
 
     /// Degenerate parameters short-circuit.
