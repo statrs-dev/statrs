@@ -1,8 +1,11 @@
 use crate::distribution::Continuous;
 use crate::function::gamma;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
+use alloc::vec::Vec;
 use core::f64::consts::PI;
 use nalgebra::{Cholesky, Const, DMatrix, Dim, DimMin, Dyn, OMatrix, OVector};
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the [Multivariate Student's t-distribution](https://en.wikipedia.org/wiki/Multivariate_t-distribution)
 /// distribution using the "nalgebra" crate for matrix operations.

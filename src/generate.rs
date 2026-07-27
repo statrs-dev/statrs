@@ -1,6 +1,7 @@
 //! Provides utility functions for generating data sequences
 
 use crate::euclid::Modulus;
+use alloc::{vec, vec::Vec};
 use core::f64::consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
@@ -15,7 +16,6 @@ use num_traits::Float as _;
 /// let x = generate::log_spaced(5, 0.0, 4.0);
 /// assert_eq!(x, [1.0, 10.0, 100.0, 1000.0, 10000.0]);
 /// ```
-#[cfg(feature = "std")]
 pub fn log_spaced(length: usize, start_exp: f64, stop_exp: f64) -> Vec<f64> {
     match length {
         0 => Vec::new(),

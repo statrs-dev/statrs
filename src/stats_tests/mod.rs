@@ -1,17 +1,10 @@
-#[cfg(feature = "std")]
 pub mod anderson_darling;
-#[cfg(feature = "std")]
 pub mod chisquare;
-#[cfg(feature = "std")]
 pub mod f_oneway;
 pub mod fisher;
-#[cfg(feature = "std")]
 pub mod ks_test;
-#[cfg(feature = "std")]
 pub mod mannwhitneyu;
-#[cfg(feature = "std")]
 pub mod skewtest;
-#[cfg(feature = "std")]
 pub mod ttest_onesample;
 
 /// Specifies an [alternative hypothesis](https://en.wikipedia.org/wiki/Alternative_hypothesis)

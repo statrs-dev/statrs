@@ -1,0 +1,21 @@
+[workspace]
+
+[package]
+name = "statrs-no-std-runtime"
+version = "0.0.0"
+edition = "2024"
+publish = false
+rust-version = "1.89.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+dlmalloc = { version = "0.2.14", features = ["global"] }
+statrs = { path = "../..", default-features = false, features = ["nalgebra"] }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

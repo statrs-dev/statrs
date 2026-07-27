@@ -3,6 +3,9 @@
 
 use crate::distribution::{ContinuousCDF, Normal};
 use crate::stats_tests::{Alternative, NaNPolicy};
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Represents the errors that can occur when computing the skewtest function
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
