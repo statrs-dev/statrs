@@ -148,6 +148,32 @@ impl ContinuousCDF<f64, f64> for Chi {
             gamma::gamma_ur(self.freedom() as f64 / 2.0, x * x / 2.0)
         }
     }
+
+    /// Calculates the inverse cumulative distribution function for the chi
+    /// distribution at `p`, i.e. the `p`-quantile.
+    ///
+    /// # Panics
+    ///
+    /// If `p` is not in `[0, 1]`.
+    fn inverse_cdf(&self, p: f64) -> f64 {
+        if !(0.0..=1.0).contains(&p) {
+            panic!("p must be in [0, 1]")
+        }
+        if p == 0.0 {
+            return self.min();
+        }
+        if p == 1.0 {
+            return self.max();
+        }
+        // The chi cdf has no closed-form inverse; solve it with the shared
+        // safeguarded Newton search instead of the generic bisection default.
+        super::internal::newton_raphson_quantile(
+            p,
+            |x| self.cdf(x),
+            |x| self.sf(x),
+            |x| self.pdf(x),
+        )
+    }
 }
 
 impl Min<f64> for Chi {
@@ -552,5 +578,24 @@ mod tests {
                 assert!((back - p).abs() <= 1e-9 * p, "Chi({k}) round-trip p={p}: cdf(inverse_cdf(p))={back}");
             }
         }
+    }
+
+    #[test]
+    fn test_inverse_cdf_p0_p1() {
+        let d = create_ok(3);
+        assert_eq!(d.inverse_cdf(0.0), d.min());
+        assert_eq!(d.inverse_cdf(1.0), d.max());
+    }
+
+    #[test]
+    #[should_panic(expected = "p must be in [0, 1]")]
+    fn test_inverse_cdf_p_above_one() {
+        create_ok(3).inverse_cdf(1.0 + f64::EPSILON);
+    }
+
+    #[test]
+    #[should_panic(expected = "p must be in [0, 1]")]
+    fn test_inverse_cdf_p_below_zero() {
+        create_ok(3).inverse_cdf(-1e-300);
     }
 }
