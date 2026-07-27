@@ -94,5 +94,66 @@ fn bench_order_statistic(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_order_statistic);
+/// Selection cost across input sizes and shapes.
+///
+/// Kept separate from the fixed-size group above so the two can evolve
+/// independently, and written against only the public `Data` API so the same
+/// file compiles on any branch. To compare two implementations:
+///
+/// ```text
+/// git checkout main    && cargo bench --bench order_statistics -- --save-baseline main
+/// git checkout <branch> && cargo bench --bench order_statistics -- --baseline main
+/// ```
+///
+/// The shapes matter as much as the sizes. A median-of-three pivot is fine on
+/// random data and degrades on input built to defeat it, so a random-only
+/// benchmark would understate the difference between a quickselect and an
+/// introselect with an O(n) fallback.
+fn bench_selection_scaling(c: &mut Criterion) {
+    fn shaped(shape: &str, n: usize) -> Vec<f64> {
+        let mut rng = StdRng::seed_from_u64(0xB0A7);
+        match shape {
+            // shuffled, the ordinary case
+            "random" => {
+                let mut v: Vec<f64> = (0..n).map(|i| i as f64).collect();
+                v.shuffle(&mut rng);
+                v
+            }
+            // already ordered, both directions
+            "sorted" => (0..n).map(|i| i as f64).collect(),
+            "reversed" => (0..n).rev().map(|i| i as f64).collect(),
+            // ascends then descends: the classic median-of-three adversary,
+            // since the first, middle and last elements are unrepresentative
+            "organ_pipe" => (0..n)
+                .map(|i| if i < n / 2 { i } else { n - i } as f64)
+                .collect(),
+            // few distinct values, so partitions are heavily unbalanced
+            "duplicates" => {
+                let distinct = ((n as f64).sqrt() as usize).max(1);
+                let mut v: Vec<f64> = (0..n).map(|i| (i % distinct) as f64).collect();
+                v.shuffle(&mut rng);
+                v
+            }
+            other => panic!("unknown shape {other}"),
+        }
+    }
+
+    let mut group = c.benchmark_group("selection scaling");
+    for &n in &[1_024usize, 65_536, 1_048_576] {
+        for shape in ["random", "sorted", "reversed", "organ_pipe", "duplicates"] {
+            let data = shaped(shape, n);
+            group.throughput(Throughput::Elements(n as u64));
+            group.bench_function(format!("median/{shape}/{n}"), |b| {
+                b.iter_batched(
+                    || Data::new(data.clone()),
+                    |data| black_box(data.median()),
+                    BatchSize::LargeInput,
+                )
+            });
+        }
+    }
+    group.finish();
+}
+
+criterion_group!(benches, bench_order_statistic, bench_selection_scaling);
 criterion_main!(benches);

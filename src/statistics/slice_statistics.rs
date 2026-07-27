@@ -64,12 +64,19 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Data<D> {
         self.0.as_ref().iter()
     }
 
-    // Selection via `<[T]>::select_nth_unstable_by`, which is an introselect
-    // with an O(n) worst case. The previous hand-rolled Numerical Recipes
-    // quickselect was ~4x slower on large uniform data and quadratic on
-    // adversarial inputs; `total_cmp` also gives NaN a defined ordering
-    // (positive NaNs sort past +inf) instead of the arbitrary result the NR
-    // partition produced.
+    // Selection via `<[T]>::select_nth_unstable_by`, an introselect with an
+    // O(n) worst case. `total_cmp` also gives NaN a defined position (positive
+    // NaNs sort past +inf) rather than the arbitrary result the previous
+    // Numerical Recipes partition produced, which is the point of the change.
+    //
+    // The ordered fast paths are not incidental. The NR quickselect took its
+    // pivot from a median of three, which on sorted or reverse-sorted input
+    // lands on the true median immediately and finishes in a single partition
+    // -- so it beat plain introselect on exactly those shapes. Testing for
+    // order first recovers that, and improves on it: the answer becomes an
+    // index rather than a partition. Both checks stop at the first out-of-order
+    // pair, costing a couple of comparisons on unordered input, and they also
+    // pay off in `median` and `quantile`, which call this twice.
     fn select_inplace(&mut self, rank: usize) -> f64 {
         if rank == 0 {
             return self.min();
@@ -78,11 +85,19 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Data<D> {
             return self.max();
         }
 
-        *self
-            .0
-            .as_mut()
-            .select_nth_unstable_by(rank, |a, b| a.total_cmp(b))
-            .1
+        // `<=` rather than `total_cmp` here, which is both cheaper per element
+        // and still correct: any NaN makes some comparison false, so a slice
+        // containing one never takes a fast path and falls through to the
+        // general case, and without NaN the two orderings agree.
+        let slice = self.0.as_mut();
+        if slice.is_sorted_by(|a, b| a <= b) {
+            return slice[rank];
+        }
+        if slice.is_sorted_by(|a, b| a >= b) {
+            return slice[slice.len() - 1 - rank];
+        }
+
+        *slice.select_nth_unstable_by(rank, |a, b| a.total_cmp(b)).1
     }
 }
 
@@ -503,6 +518,110 @@ mod tests {
     }
 
     // TODO: test codeplex issue 5667 (Math.NET)
+
+    /// Selection agrees with sorting, on ordinary values across a range of
+    /// shapes and sizes.
+    ///
+    /// The counterpart to the NaN and infinity tests below, which pin that
+    /// nothing panics but say nothing about the values returned. This also
+    /// covers the ordered fast paths in `select_inplace`: those return an
+    /// index instead of partitioning, so they have to produce exactly what the
+    /// general path would, including for the descending case where the index
+    /// is counted from the far end.
+    #[test]
+    #[cfg(feature = "std")]
+    fn test_order_statistics_match_sorted_reference() {
+        fn shaped(shape: &str, n: usize) -> Vec<f64> {
+            match shape {
+                // deterministic pseudo-random, no rand dependency needed
+                "scattered" => (0..n).map(|i| ((i * 7919 + 13) % 1000) as f64 * 0.5).collect(),
+                "sorted" => (0..n).map(|i| i as f64 * 1.5).collect(),
+                "reversed" => (0..n).rev().map(|i| i as f64 * 1.5).collect(),
+                "organ_pipe" => (0..n).map(|i| if i < n / 2 { i } else { n - i } as f64).collect(),
+                "duplicates" => (0..n).map(|i| (i % 3) as f64).collect(),
+                "constant" => vec![4.25; n],
+                "negatives" => (0..n).map(|i| -((i * 37 % 100) as f64)).collect(),
+                other => panic!("unknown shape {other}"),
+            }
+        }
+
+        for n in [1usize, 2, 3, 4, 5, 8, 17, 101, 1000] {
+            for shape in [
+                "scattered", "sorted", "reversed", "organ_pipe", "duplicates", "constant",
+                "negatives",
+            ] {
+                let data = shaped(shape, n);
+                let mut sorted = data.clone();
+                sorted.sort_by(f64::total_cmp);
+
+                // every order statistic, 1-based
+                for order in 1..=n {
+                    let mut d = Data::new(data.clone());
+                    assert_eq!(
+                        d.order_statistic(order),
+                        sorted[order - 1],
+                        "{shape}/{n}: order_statistic({order})"
+                    );
+                }
+
+                // out of range on either side
+                let mut d = Data::new(data.clone());
+                assert!(d.order_statistic(0).is_nan(), "{shape}/{n}: order 0");
+                assert!(d.order_statistic(n + 1).is_nan(), "{shape}/{n}: order n+1");
+
+                // median, including the even case that averages two selections
+                let expected_median = if n % 2 == 1 {
+                    sorted[n / 2]
+                } else {
+                    (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
+                };
+                let mut d = Data::new(data.clone());
+                assert_eq!(
+                    OrderStatistics::median(&mut d),
+                    expected_median,
+                    "{shape}/{n}: median"
+                );
+
+                // the quantile endpoints, and that interior values stay in range
+                let mut d = Data::new(data.clone());
+                assert_eq!(d.quantile(0.0), sorted[0], "{shape}/{n}: quantile(0)");
+                assert_eq!(d.quantile(1.0), sorted[n - 1], "{shape}/{n}: quantile(1)");
+                for &tau in &[0.1, 0.25, 0.5, 0.75, 0.9] {
+                    let q = d.quantile(tau);
+                    assert!(
+                        q >= sorted[0] && q <= sorted[n - 1],
+                        "{shape}/{n}: quantile({tau}) = {q} outside [{}, {}]",
+                        sorted[0],
+                        sorted[n - 1]
+                    );
+                }
+            }
+        }
+    }
+
+    /// Selection must not depend on the order the input happens to arrive in.
+    #[test]
+    #[cfg(feature = "std")]
+    fn test_order_statistic_is_permutation_invariant() {
+        let base: Vec<f64> = (0..64).map(|i| ((i * 31 + 7) % 41) as f64).collect();
+        let mut sorted = base.clone();
+        sorted.sort_by(f64::total_cmp);
+
+        // a few fixed permutations, including the ones that hit the fast paths
+        let mut rotated = base.clone();
+        rotated.rotate_left(23);
+        let mut ascending = base.clone();
+        ascending.sort_by(f64::total_cmp);
+        let mut descending = ascending.clone();
+        descending.reverse();
+
+        for variant in [base.clone(), rotated, ascending, descending] {
+            for order in 1..=variant.len() {
+                let mut d = Data::new(variant.clone());
+                assert_eq!(d.order_statistic(order), sorted[order - 1]);
+            }
+        }
+    }
 
     /// `select_inplace` used to implement the Numerical Recipes quickselect by
     /// hand, whose partition loop walks off the end of the array when the slice
