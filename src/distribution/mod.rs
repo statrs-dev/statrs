@@ -8,6 +8,9 @@ use num_traits::NumAssignOps;
 pub use self::bernoulli::Bernoulli;
 pub use self::beta::{Beta, BetaError};
 pub use self::binomial::{Binomial, BinomialError};
+#[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
+pub use self::binomial::{BinomialAlgorithm, BinomialAlgorithmError, BinomialSampler};
 #[cfg(feature = "std")]
 pub use self::categorical::{Categorical, CategoricalError};
 pub use self::cauchy::{Cauchy, CauchyError};
