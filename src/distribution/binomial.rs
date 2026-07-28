@@ -122,6 +122,13 @@ impl ::rand::distr::Distribution<u64> for Binomial {
     /// Kachitvichyanukul, V. and Schmeiser, B. W. (1988). Binomial random
     /// variate generation. Communications of the ACM 31(2), 216-222.
     /// <https://doi.org/10.1145/42372.42381>
+    ///
+    /// # Remarks
+    ///
+    /// This picks the algorithm for you, which is what you want unless you have
+    /// a specific reason otherwise. To choose explicitly, build a
+    /// [`BinomialSampler`] with [`Binomial::sampler`]; both algorithms are
+    /// selectable, subject to BTPE being defined for the parameters.
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> u64 {
         sample_unchecked(rng, self.n, self.p)
     }
@@ -200,11 +207,166 @@ impl Plan {
     }
 }
 
+/// Which algorithm draws a sample, for callers who want to choose rather than
+/// take the default.
+///
+/// Obtain one via [`Binomial::sampler`]. Sampling a [`Binomial`] directly uses
+/// [`Automatic`](Self::Automatic), which is the right choice unless you have a
+/// specific reason otherwise.
+#[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum BinomialAlgorithm {
+    /// Choose per draw from `n * min(p, 1 - p)`: inversion below 10, rejection
+    /// at or above it. The threshold is the one suggested by the paper.
+    #[default]
+    Automatic,
+    /// Sequential inversion (BINV).
+    ///
+    /// Defined for every parameter set, but the expected number of iterations
+    /// is proportional to `n * min(p, 1 - p)`, so it grows without bound. Worth
+    /// forcing if you want a shorter, more predictable code path and know the
+    /// mean is small.
+    Inversion,
+    /// Triangle/parallelogram/exponential rejection (BTPE).
+    ///
+    /// Constant expected time regardless of `n`. Only defined once the triangle
+    /// region is non-degenerate -- see
+    /// [`BinomialAlgorithmError`] -- so it cannot be forced for a small mean.
+    Rejection,
+}
+
+/// Returned by [`Binomial::sampler`] when the requested algorithm is not
+/// defined for the distribution's parameters.
+#[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
+#[derive(Copy, Clone, PartialEq, Debug)]
+#[non_exhaustive]
+pub enum BinomialAlgorithmError {
+    /// [`BinomialAlgorithm::Rejection`] was requested for too small a mean.
+    ///
+    /// BTPE's triangle region has radius
+    /// `floor(2.195 sqrt(n p q) - 4.6 q) + 0.5`, which is negative once
+    /// `2.195 sqrt(n p q) < 4.6 q`, inverting the region boundaries. The
+    /// sampler still terminates, but the distribution it produces is not
+    /// binomial: at `n = 100, p = 0.04` a chi-square test against the exact pmf
+    /// gives a statistic over 11 million on 14 degrees of freedom. Rejecting
+    /// the request is therefore the only safe option.
+    RejectionMeanTooSmall,
+}
+
+#[cfg(feature = "rand")]
+impl core::fmt::Display for BinomialAlgorithmError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        match self {
+            BinomialAlgorithmError::RejectionMeanTooSmall => write!(
+                f,
+                "BTPE rejection sampling is undefined for this mean; 2.195*sqrt(n*p*q) must be at least 4.6*q"
+            ),
+        }
+    }
+}
+
+#[cfg(feature = "rand")]
+impl core::error::Error for BinomialAlgorithmError {}
+
+/// A [`Binomial`] bound to a particular [`BinomialAlgorithm`], from
+/// [`Binomial::sampler`].
+///
+/// The algorithm is validated once, when this is built, so drawing from it is
+/// infallible and composes with the usual `rand` machinery.
+///
+/// ```
+/// # #[cfg(feature = "rand")] {
+/// use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
+/// use statrs::distribution::{Binomial, BinomialAlgorithm};
+///
+/// let dist = Binomial::new(0.3, 1_000).unwrap();
+/// let sampler = dist.sampler(BinomialAlgorithm::Rejection).unwrap();
+/// let mut rng = StdRng::seed_from_u64(0);
+/// let draws: Vec<u64> = sampler.sample_iter(&mut rng).take(5).collect();
+/// assert_eq!(draws.len(), 5);
+/// # }
+/// ```
+#[cfg(feature = "rand")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct BinomialSampler {
+    n: u64,
+    plan: Plan,
+}
+
+#[cfg(feature = "rand")]
+impl ::rand::distr::Distribution<u64> for BinomialSampler {
+    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> u64 {
+        sample_plan(rng, self.n, self.plan)
+    }
+}
+
+#[cfg(feature = "rand")]
+impl Binomial {
+    /// Binds this distribution to a specific sampling algorithm.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`BinomialAlgorithmError::RejectionMeanTooSmall`] if
+    /// [`BinomialAlgorithm::Rejection`] is requested for parameters where BTPE
+    /// is undefined. [`BinomialAlgorithm::Inversion`] and
+    /// [`BinomialAlgorithm::Automatic`] never fail.
+    ///
+    /// # Remarks
+    ///
+    /// The choice applies only where there is one. Degenerate parameters
+    /// (`p == 0`, `p == 1`, `n == 0`) return a constant, and a `p` so small that
+    /// `1 - p` rounds to `1` is drawn from the Poisson limit; neither runs
+    /// BINV or BTPE, so both ignore the request rather than fail.
+    pub fn sampler(
+        &self,
+        algorithm: BinomialAlgorithm,
+    ) -> Result<BinomialSampler, BinomialAlgorithmError> {
+        let plan = Plan::new(self.n, self.p);
+        let path = match (algorithm, plan.path) {
+            (BinomialAlgorithm::Automatic, path) => path,
+            (BinomialAlgorithm::Inversion, Path::Binv { p, q } | Path::Btpe { p, q }) => {
+                Path::Binv { p, q }
+            }
+            (BinomialAlgorithm::Rejection, Path::Binv { p, q } | Path::Btpe { p, q }) => {
+                if !btpe_is_defined(self.n, p, q) {
+                    return Err(BinomialAlgorithmError::RejectionMeanTooSmall);
+                }
+                Path::Btpe { p, q }
+            }
+            // no algorithm runs on these, so there is nothing to override
+            (_, path @ (Path::Degenerate(_) | Path::PoissonLimit { .. })) => path,
+        };
+        Ok(BinomialSampler {
+            n: self.n,
+            plan: Plan { path, ..plan },
+        })
+    }
+}
+
+/// Whether BTPE's triangle region is non-degenerate for these parameters, which
+/// is what makes the algorithm valid. Mirrors the `p1` expression in [`btpe`].
+#[cfg(feature = "rand")]
+fn btpe_is_defined(n: u64, p: f64, q: f64) -> bool {
+    2.195 * (n as f64 * p * q).sqrt() - 4.6 * q >= 0.0
+}
+
 /// Samples from a binomial distribution with the given `n` and `p`, without
 /// validating the parameters.
 #[cfg(feature = "rand")]
 pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, n: u64, p: f64) -> u64 {
-    let Plan { path, flipped } = Plan::new(n, p);
+    sample_plan(rng, n, Plan::new(n, p))
+}
+
+/// Draws according to an already-chosen [`Plan`], shared by [`sample_unchecked`]
+/// and [`BinomialSampler`] so that both reflect identically.
+#[cfg(feature = "rand")]
+fn sample_plan<R: ::rand::Rng + ?Sized>(rng: &mut R, n: u64, plan: Plan) -> u64 {
+    let Plan { path, flipped } = plan;
     let sample = match path {
         Path::Degenerate(x) => return x,
         // The clamp is needed because a Poisson variate has no upper bound,
@@ -838,6 +1000,130 @@ mod tests {
     /// sized from `n` and `p` at run time, and the crate is `no_std` without
     /// `alloc`. The sampler itself is exercised without `std` by
     /// [`test_sample_extreme_parameters_moments`], which needs no collections.
+    /// Forcing an algorithm must still sample the right distribution. Same
+    /// chi-square check as the default path, run for each explicit choice.
+    #[cfg(all(feature = "rand", feature = "std"))]
+    #[test]
+    fn test_forced_algorithms_sample_correctly() {
+        use crate::distribution::{BinomialAlgorithm, BinomialAlgorithmError};
+        use crate::stats_tests::chisquare::chisquare;
+        use ::rand::SeedableRng;
+        use ::rand::distr::Distribution as _;
+        use ::rand::rngs::StdRng;
+
+        const SAMPLES: usize = 100_000;
+        // (n, p, which algorithms are valid here)
+        let cases: &[(u64, f64, &[BinomialAlgorithm])] = &[
+            // small mean: inversion only, BTPE's triangle is degenerate
+            (20, 0.1, &[BinomialAlgorithm::Automatic, BinomialAlgorithm::Inversion]),
+            // large mean: both, so inversion is being forced off its default
+            (
+                200,
+                0.4,
+                &[
+                    BinomialAlgorithm::Automatic,
+                    BinomialAlgorithm::Inversion,
+                    BinomialAlgorithm::Rejection,
+                ],
+            ),
+            // flipped, both valid
+            (
+                500,
+                0.85,
+                &[
+                    BinomialAlgorithm::Automatic,
+                    BinomialAlgorithm::Inversion,
+                    BinomialAlgorithm::Rejection,
+                ],
+            ),
+        ];
+
+        for &(n, p, algorithms) in cases {
+            let dist = create_ok(p, n);
+            for &algorithm in algorithms {
+                let sampler = dist.sampler(algorithm).unwrap();
+                let mut rng = StdRng::seed_from_u64(0xA1_60 + n);
+
+                let mut counts = vec![0usize; (n + 1) as usize];
+                for _ in 0..SAMPLES {
+                    let x: u64 = sampler.sample(&mut rng);
+                    assert!(x <= n, "{algorithm:?} n={n} p={p}: sampled {x} > n");
+                    counts[x as usize] += 1;
+                }
+
+                let (mut observed, mut expected) = (Vec::new(), Vec::new());
+                let mut acc = (0.0f64, 0usize);
+                for k in 0..=n {
+                    acc.0 += SAMPLES as f64 * dist.pmf(k);
+                    acc.1 += counts[k as usize];
+                    if acc.0 >= 5.0 {
+                        expected.push(acc.0);
+                        observed.push(acc.1);
+                        acc = (0.0, 0);
+                    }
+                }
+                *expected.last_mut().unwrap() += acc.0;
+                *observed.last_mut().unwrap() += acc.1;
+                let last = expected.len() - 1;
+                let rest: f64 = expected[..last].iter().sum();
+                expected[last] = SAMPLES as f64 - rest;
+
+                let (statistic, pvalue) = chisquare(&observed, Some(&expected), None).unwrap();
+                assert!(
+                    pvalue > 1e-6,
+                    "{algorithm:?} n={n} p={p}: chi-square = {statistic:.1}, p = {pvalue:.3e}"
+                );
+            }
+        }
+
+        // Rejection is refused where BTPE is undefined, rather than silently
+        // producing the wrong distribution.
+        let small = create_ok(0.04, 100);
+        assert_eq!(
+            small.sampler(BinomialAlgorithm::Rejection),
+            Err(BinomialAlgorithmError::RejectionMeanTooSmall)
+        );
+        // the other two always work
+        assert!(small.sampler(BinomialAlgorithm::Inversion).is_ok());
+        assert!(small.sampler(BinomialAlgorithm::Automatic).is_ok());
+    }
+
+    /// The validity bound tracks BTPE's own triangle radius, and the default
+    /// path never selects BTPE where it would be undefined.
+    #[cfg(feature = "rand")]
+    #[test]
+    fn test_rejection_validity_bound() {
+        use super::{Path, Plan, btpe_is_defined};
+        use crate::distribution::BinomialAlgorithm;
+
+        // measured boundary: n=100 is wrong at p=0.04, correct from p=0.044
+        assert!(!btpe_is_defined(100, 0.04, 0.96));
+        assert!(btpe_is_defined(100, 0.044, 0.956));
+
+        for n in [1u64, 5, 20, 100, 1000, 100_000] {
+            for i in 1..100 {
+                let p = i as f64 / 100.0;
+                // whenever Automatic picks BTPE, BTPE must be defined
+                if let Path::Btpe { p: rp, q } = Plan::new(n, p).path {
+                    assert!(
+                        btpe_is_defined(n, rp, q),
+                        "automatic chose BTPE where it is undefined: n={n} p={p}"
+                    );
+                }
+                // and `sampler` agrees with the predicate
+                let dist = create_ok(p, n);
+                let forced = dist.sampler(BinomialAlgorithm::Rejection);
+                let plan = Plan::new(n, p);
+                if let Path::Binv { p: rp, q } | Path::Btpe { p: rp, q } = plan.path {
+                    assert_eq!(forced.is_ok(), btpe_is_defined(n, rp, q), "n={n} p={p}");
+                } else {
+                    // degenerate or Poisson limit: no algorithm to reject
+                    assert!(forced.is_ok(), "n={n} p={p}");
+                }
+            }
+        }
+    }
+
     #[cfg(all(feature = "rand", feature = "std"))]
     #[test]
     fn test_sample_chi_square_goodness_of_fit() {
