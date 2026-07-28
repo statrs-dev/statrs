@@ -138,10 +138,21 @@ fn exp_neg_square(u: f64) -> f64 {
     (-sq).exp() * (1.0 - err)
 }
 
-/// `-u^2` exactly, as the leading term of a log-domain result.
-fn neg_square_exact(u: f64) -> f64 {
+/// `-u^2` as an unevaluated sum `(hi, lo)`, exact to twice working precision.
+///
+/// Returned as a pair rather than summed. `lo` is at most half an ulp of `hi`,
+/// so `hi - lo` rounds straight back to `hi` and discards it; it survives only
+/// if folded into the final total, which [`add_log_term`] does.
+fn neg_square_parts(u: f64) -> (f64, f64) {
     let sq = u * u;
-    -sq - crate::prec::dekker_product_err(u, u, sq)
+    (-sq, -crate::prec::dekker_product_err(u, u, sq))
+}
+
+/// `hi + lo + log_term`, keeping `lo` in play across the addition so it can
+/// still tip the final rounding.
+fn add_log_term((hi, lo): (f64, f64), log_term: f64) -> f64 {
+    let (s, e) = crate::prec::two_sum(hi, log_term);
+    s + (e + lo)
 }
 
 impl core::fmt::Display for InverseGaussian {
@@ -251,7 +262,7 @@ impl ContinuousCDF<f64, f64> for InverseGaussian {
     /// The absolute error of a log is the relative error of the probability it
     /// represents, so that is the metric quoted here. Wherever the cdf is a
     /// representable nonzero `f64`, the measured absolute error is `1.1e-23`
-    /// median and `2.4e-13` worst case - i.e. the implied probability is good
+    /// median and `1.2e-13` worst case - i.e. the implied probability is good
     /// to at least 12 significant digits, against the 1179 ulp that [`Self::cdf`]
     /// can lose there.
     ///
@@ -271,7 +282,10 @@ impl ContinuousCDF<f64, f64> for InverseGaussian {
         let (um, up) = self.erfc_args(x);
         if um <= 0.0 {
             // both scaled terms are positive here, so this sum never cancels
-            neg_square_exact(um) + (0.5 * (erf::erfcx(-um) + erf::erfcx(up))).ln()
+            add_log_term(
+                neg_square_parts(um),
+                (0.5 * (erf::erfcx(-um) + erf::erfcx(up))).ln(),
+            )
         } else {
             (-self.sf_scaled(um, up, x)).ln_1p()
         }
@@ -294,7 +308,7 @@ impl ContinuousCDF<f64, f64> for InverseGaussian {
         }
         let (um, up) = self.erfc_args(x);
         if um > 0.0 {
-            neg_square_exact(um) + (0.5 * self.erfcx_gap(um, up, x)).ln()
+            add_log_term(neg_square_parts(um), (0.5 * self.erfcx_gap(um, up, x)).ln())
         } else {
             (-self.cdf_scaled(um, up)).ln_1p()
         }

@@ -332,7 +332,7 @@ fn ln_beta_prefix(a: f64, b: f64, x: f64) -> f64 {
 /// # Remarks
 ///
 /// The leading factor is evaluated by the saddle-point decomposition in
-/// [`ln_beta_prefix`], which keeps every intermediate `O(1)` however large
+/// `ln_beta_prefix`, which keeps every intermediate `O(1)` however large
 /// `a + b` becomes. Measured against the exact identity `I_{1/2}(a, a) == 1/2`,
 /// the relative error is:
 ///

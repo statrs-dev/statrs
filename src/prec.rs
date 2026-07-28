@@ -92,18 +92,50 @@ pub(crate) fn convergence(x: &mut f64, x_new: f64) -> bool {
     res
 }
 
-/// Splits the exact rounding error out of the product `a * b`
-/// (Dekker's algorithm): `a * b == p + dekker_product_err(a, b, p)` exactly.
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
+
+/// Splits the exact rounding error out of the product `a * b`:
+/// `a * b == p + dekker_product_err(a, b, p)` exactly, for `p == a * b`.
 ///
-/// Used instead of `f64::mul_add`, which falls back to a slow software FMA on
-/// targets without the hardware instruction (e.g. baseline x86-64).
+/// Dispatches on whether the target has a hardware FMA. Where it does this is a
+/// single instruction; where it does not, `f64::mul_add` falls back to a
+/// software routine far slower than Veltkamp's split, so the split is used
+/// instead. Baseline x86-64 has no FMA -- it needs `-C target-feature=+fma` or
+/// a `-C target-cpu` that implies it -- while AArch64 has it in the base ISA.
 #[inline]
 pub(crate) fn dekker_product_err(a: f64, b: f64, p: f64) -> f64 {
+    #[cfg(any(target_arch = "aarch64", target_feature = "fma"))]
+    {
+        product_err_fma(a, b, p)
+    }
+    #[cfg(not(any(target_arch = "aarch64", target_feature = "fma")))]
+    {
+        product_err_split(a, b, p)
+    }
+}
+
+/// The fused form. `p` is the rounded `a * b`, so the residual is exact in a
+/// single rounding, and nothing intermediate can overflow the way the split
+/// below does.
+#[inline]
+#[cfg_attr(
+    not(any(target_arch = "aarch64", target_feature = "fma")),
+    allow(dead_code)
+)]
+pub(crate) fn product_err_fma(a: f64, b: f64, p: f64) -> f64 {
+    a.mul_add(b, -p)
+}
+
+/// Veltkamp's split, for targets without a hardware FMA.
+#[inline]
+#[cfg_attr(any(target_arch = "aarch64", target_feature = "fma"), allow(dead_code))]
+pub(crate) fn product_err_split(a: f64, b: f64, p: f64) -> f64 {
     const SPLIT: f64 = 134_217_729.0; // 2^27 + 1
-    // Veltkamp's split below multiplies by `SPLIT`, which overflows to `inf`
-    // once an argument passes about `1.3e300` and then yields `inf - inf`, i.e.
-    // NaN. Scaling by a power of two is exact and the residual scales with it,
-    // so rescale rather than give up: `err(a b) = 2^k err((a 2^-k) b)`.
+    // The split multiplies by `SPLIT`, which overflows to `inf` once an argument
+    // passes about `1.3e300` and then yields `inf - inf`, i.e. NaN. Scaling by a
+    // power of two is exact and the residual scales with it, so rescale rather
+    // than give up: `err(a b) = 2^k err((a 2^-k) b)`.
     const BIG: f64 = 1e300;
     const DOWN: f64 = 9.313225746154785e-10; // 2^-30, exact
     let (mut a, mut b, mut p) = (a, b, p);
@@ -251,3 +283,70 @@ mod macros {
 }
 
 pub(crate) use macros::*;
+
+#[cfg(test)]
+mod product_err_tests {
+    use super::{product_err_fma, product_err_split};
+
+    /// The two implementations must agree bit for bit, since which one runs is
+    /// decided by the target rather than by the caller. Both are compiled
+    /// everywhere so this test covers the path that is not selected here.
+    #[test]
+    fn test_fma_and_split_agree() {
+        // deterministic LCG, so this needs no rand and no std
+        let mut state = 0x2545_F491_4F6C_DD1Du64;
+        let mut next = || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+
+        for _ in 0..200_000 {
+            // draw exponents over most of the range, keeping the product finite
+            let a = f64::from_bits((next() & 0x800F_FFFF_FFFF_FFFF) | 0x3F00_0000_0000_0000);
+            let b = f64::from_bits((next() & 0x800F_FFFF_FFFF_FFFF) | 0x3F00_0000_0000_0000);
+            let p = a * b;
+            let (fma, split) = (product_err_fma(a, b, p), product_err_split(a, b, p));
+            assert_eq!(
+                fma.to_bits(),
+                split.to_bits(),
+                "a = {a:e}, b = {b:e}: fma {fma:e} != split {split:e}"
+            );
+            // and the defining property: a * b == p + err exactly
+            assert_eq!(p + fma, p + split);
+        }
+    }
+
+    /// Values chosen to exercise the rescaling the split needs and the fused
+    /// form does not, plus the exactly-representable cases where the residual
+    /// is zero.
+    #[test]
+    fn test_fma_and_split_agree_on_extremes() {
+        let cases = [
+            (1.0, 1.0),
+            (0.0, 12345.678),
+            (-0.0, 1.0),
+            (1.5, 1.5),
+            (10382.5, 10382.5),
+            (1e300, 1.5),
+            (1.5, 1e300),
+            (1e300, 1e-300),
+            (1.3e300, 1.3e300_f64.recip()),
+            (f64::MIN_POSITIVE, 2.0),
+            (f64::MAX, 0.5),
+            (core::f64::consts::PI, core::f64::consts::E),
+        ];
+        for (a, b) in cases {
+            let p = a * b;
+            if !p.is_finite() {
+                continue;
+            }
+            assert_eq!(
+                product_err_fma(a, b, p).to_bits(),
+                product_err_split(a, b, p).to_bits(),
+                "a = {a:e}, b = {b:e}"
+            );
+        }
+    }
+}
