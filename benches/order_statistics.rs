@@ -96,38 +96,25 @@ fn bench_order_statistic(c: &mut Criterion) {
 
 /// Selection cost across input sizes and shapes.
 ///
-/// Kept separate from the fixed-size group above so the two can evolve
-/// independently, and written against only the public `Data` API so the same
-/// file compiles on any branch. To compare two implementations:
-///
-/// ```text
-/// git checkout main    && cargo bench --bench order_statistics -- --save-baseline main
-/// git checkout <branch> && cargo bench --bench order_statistics -- --baseline main
-/// ```
-///
-/// The shapes matter as much as the sizes. A median-of-three pivot is fine on
+/// Shape matters as much as size here: a median-of-three pivot is fine on
 /// random data and degrades on input built to defeat it, so a random-only
-/// benchmark would understate the difference between a quickselect and an
-/// introselect with an O(n) fallback.
+/// benchmark would not tell the two implementations apart.
 fn bench_selection_scaling(c: &mut Criterion) {
     fn shaped(shape: &str, n: usize) -> Vec<f64> {
         let mut rng = StdRng::seed_from_u64(0xB0A7);
         match shape {
-            // shuffled, the ordinary case
             "random" => {
                 let mut v: Vec<f64> = (0..n).map(|i| i as f64).collect();
                 v.shuffle(&mut rng);
                 v
             }
-            // already ordered, both directions
             "sorted" => (0..n).map(|i| i as f64).collect(),
             "reversed" => (0..n).rev().map(|i| i as f64).collect(),
-            // ascends then descends: the classic median-of-three adversary,
-            // since the first, middle and last elements are unrepresentative
+            // ascends then descends: defeats median-of-three
             "organ_pipe" => (0..n)
                 .map(|i| if i < n / 2 { i } else { n - i } as f64)
                 .collect(),
-            // few distinct values, so partitions are heavily unbalanced
+            // few distinct values: unbalanced partitions
             "duplicates" => {
                 let distinct = ((n as f64).sqrt() as usize).max(1);
                 let mut v: Vec<f64> = (0..n).map(|i| (i % distinct) as f64).collect();
