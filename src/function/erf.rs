@@ -1,6 +1,7 @@
 //! Provides the [error](https://en.wikipedia.org/wiki/Error_function) and
 //! related functions
 
+use crate::consts;
 use crate::function::evaluate;
 use core::f64;
 #[cfg(not(feature = "std"))]
@@ -49,6 +50,117 @@ pub fn erfc(x: f64) -> f64 {
     } else {
         erf_impl(x, true)
     }
+}
+
+/// The `1 - 1/(2z^2) + 3/(4z^4) - 15/(8z^6)` correction of the asymptotic
+/// expansion `erfc(z) ~ exp(-z^2) / (z sqrt(pi)) * (...)`, returned as the
+/// series *minus one* so callers can use `ln_1p`. Only used for `z >= 110`,
+/// where the first dropped term is ~1e-16 of the correction.
+fn erfc_asymptotic_correction(z: f64) -> f64 {
+    let inv2 = (z * z).recip();
+    -0.5 * inv2 + 0.75 * inv2 * inv2 - 1.875 * inv2 * inv2 * inv2
+}
+
+/// `erfcx` calculates the scaled complementary error function
+/// `exp(x^2) erfc(x)`.
+///
+/// Unlike `erfc`, this does not underflow: it decays only like
+/// `1 / (x sqrt(pi))`, so it stays useful across the whole positive axis where
+/// `erfc` has long since become zero. For `x` below about -26.6 the `exp(x^2)`
+/// factor overflows and the result is `+inf`; use [`ln_erfcx`] there.
+pub fn erfcx(x: f64) -> f64 {
+    if x.is_nan() {
+        return f64::NAN;
+    }
+    if x >= 0.5 {
+        if x < 110.0 {
+            // erfc(z) = exp(-z^2)/z * (b + r), so erfcx(z) = (b + r)/z with no
+            // exponential involved at all
+            let (r, b) = erfc_fraction(x);
+            return (b + r) / x;
+        }
+        return (1.0 + erfc_asymptotic_correction(x)) * (0.5 * f64::consts::FRAC_2_SQRT_PI) / x;
+    }
+    // |x| < 0.5, or negative.
+    //
+    // `exp(x * x)` is not good enough here. `x * x` carries up to half an ulp,
+    // and exponentiating multiplies that by `x^2`, so the result drifts by
+    // roughly `x^2 / 2` ulp -- around 340 by `x = -26`, which is where this
+    // branch bottoms out before `exp` overflows. Splitting the square into its
+    // rounded part and the exact residual, and folding the residual in as
+    // `exp(e) ~ 1 + e`, removes the amplification: `e` is below `1e-13` over the
+    // whole branch, so the neglected `e^2 / 2` is far under an ulp.
+    let sq = x * x;
+    let e = crate::prec::dekker_product_err(x, x, sq);
+    sq.exp() * (1.0 + e) * erfc(x)
+}
+
+/// `ln_erfcx` calculates the natural logarithm of the scaled complementary
+/// error function, `x^2 + ln erfc(x)`.
+///
+/// Finite over the entire range of `f64`, unlike both `erfc` (which underflows)
+/// and `erfcx` (which overflows for very negative `x`). Differences of this
+/// function are the well-conditioned way to form ratios of two `erfc` values:
+/// the `x^2` terms that would otherwise dominate cancel analytically.
+pub fn ln_erfcx(x: f64) -> f64 {
+    if x.is_nan() {
+        return f64::NAN;
+    }
+    if x >= 0.5 {
+        if x < 110.0 {
+            let (r, b) = erfc_fraction(x);
+            return ((b + r) / x).ln();
+        }
+        return -x.ln() - 0.5 * consts::LN_PI + erfc_asymptotic_correction(x).ln_1p();
+    }
+    x * x + ln_erfc(x)
+}
+
+/// `ln_erfc` calculates the natural logarithm of the complementary error
+/// function at `x`, staying finite far past the point where `erfc` itself
+/// underflows (`x ~ 27`): `ln_erfc(100)` is about -10004.14, and results remain
+/// finite until `x^2` overflows near `x = 1.3e154`.
+///
+/// Accuracy tracks `erfc` where both are representable (a few ulp) because it
+/// reuses the same interval machinery; past the underflow point it continues
+/// with the asymptotic series.
+pub fn ln_erfc(x: f64) -> f64 {
+    if x.is_nan() {
+        return f64::NAN;
+    }
+    if x == f64::INFINITY {
+        return f64::NEG_INFINITY;
+    }
+    if x < 0.5 {
+        // erfc = 1 - erf with erf(x) <= erf(0.5) ~ 0.52 (and negative for
+        // x < 0, where erfc -> 2), so ln_1p is accurate on this whole range
+        return (-erf(x)).ln_1p();
+    }
+    if x < 110.0 {
+        // erfc(z) = exp(-z^2) / z * (b + r); take logs. The rounding error of
+        // the square is recovered exactly (Dekker), and enters the log-domain
+        // result additively rather than through `exp`.
+        let sq = x * x;
+        let split = 134_217_729.0 * x; // 2^27 + 1; x < 110, cannot overflow
+        let x_hi = split - (split - x);
+        let x_lo = x - x_hi;
+        let err = ((x_hi * x_hi - sq) + 2.0 * x_hi * x_lo) + x_lo * x_lo;
+        let (r, b) = erfc_fraction(x);
+        return -sq - err + ((b + r) / x).ln();
+    }
+    // Asymptotic series: erfc(z) ~ exp(-z^2) / (z sqrt(pi)) *
+    // (1 - 1/(2 z^2) + 3/(4 z^4) - 15/(8 z^6) + ...); at z = 110 the dropped
+    // term is ~1e-16 of the correction and utterly negligible in the total.
+    let series = erfc_asymptotic_correction(x);
+    let sq = x * x;
+    if !sq.is_finite() {
+        return f64::NEG_INFINITY;
+    }
+    let split = 134_217_729.0 * x;
+    let x_hi = split - (split - x);
+    let x_lo = x - x_hi;
+    let err = ((x_hi * x_hi - sq) + 2.0 * x_hi * x_lo) + x_lo * x_lo;
+    -sq - err - x.ln() - 0.5 * consts::LN_PI + series.ln_1p()
 }
 
 /// `erfc_inv` calculates the complementary inverse
@@ -569,6 +681,88 @@ const ERF_INV_IMPL_GD: &[f64] = &[
     0.231558608310259605225e-11,
 ];
 
+/// Selects the rational-approximation interval for `erfc(z) = exp(-z^2)/z *
+/// (b + r)` and returns `(r, b)`. Requires `0.5 <= z < 110`. Shared by
+/// [`erf_impl`] and [`ln_erfc`] so the two stay consistent.
+fn erfc_fraction(z: f64) -> (f64, f64) {
+    if z < 0.75 {
+        (
+            evaluate::polynomial(z - 0.5, ERF_IMPL_BN) / evaluate::polynomial(z - 0.5, ERF_IMPL_BD),
+            0.3440242111682891845703125,
+        )
+    } else if z < 1.25 {
+        (
+            evaluate::polynomial(z - 0.75, ERF_IMPL_CN)
+                / evaluate::polynomial(z - 0.75, ERF_IMPL_CD),
+            0.4199909269809722900390625,
+        )
+    } else if z < 2.25 {
+        (
+            evaluate::polynomial(z - 1.25, ERF_IMPL_DN)
+                / evaluate::polynomial(z - 1.25, ERF_IMPL_DD),
+            0.489862501621246337890625,
+        )
+    } else if z < 3.5 {
+        (
+            evaluate::polynomial(z - 2.25, ERF_IMPL_EN)
+                / evaluate::polynomial(z - 2.25, ERF_IMPL_ED),
+            0.5317370891571044921875,
+        )
+    } else if z < 5.25 {
+        (
+            evaluate::polynomial(z - 3.5, ERF_IMPL_FN) / evaluate::polynomial(z - 3.5, ERF_IMPL_FD),
+            0.548997342586517333984375,
+        )
+    } else if z < 8.0 {
+        (
+            evaluate::polynomial(z - 5.25, ERF_IMPL_GN)
+                / evaluate::polynomial(z - 5.25, ERF_IMPL_GD),
+            0.55717408657073974609375,
+        )
+    } else if z < 11.5 {
+        (
+            evaluate::polynomial(z - 8.0, ERF_IMPL_HN) / evaluate::polynomial(z - 8.0, ERF_IMPL_HD),
+            0.56098079681396484375,
+        )
+    } else if z < 17.0 {
+        (
+            evaluate::polynomial(z - 11.5, ERF_IMPL_IN)
+                / evaluate::polynomial(z - 11.5, ERF_IMPL_ID),
+            0.56264936923980712890625,
+        )
+    } else if z < 24.0 {
+        (
+            evaluate::polynomial(z - 17.0, ERF_IMPL_JN)
+                / evaluate::polynomial(z - 17.0, ERF_IMPL_JD),
+            0.563459813594818115234375,
+        )
+    } else if z < 38.0 {
+        (
+            evaluate::polynomial(z - 24.0, ERF_IMPL_KN)
+                / evaluate::polynomial(z - 24.0, ERF_IMPL_KD),
+            0.5638477802276611328125,
+        )
+    } else if z < 60.0 {
+        (
+            evaluate::polynomial(z - 38.0, ERF_IMPL_LN)
+                / evaluate::polynomial(z - 38.0, ERF_IMPL_LD),
+            0.5640528202056884765625,
+        )
+    } else if z < 85.0 {
+        (
+            evaluate::polynomial(z - 60.0, ERF_IMPL_MN)
+                / evaluate::polynomial(z - 60.0, ERF_IMPL_MD),
+            0.56413090229034423828125,
+        )
+    } else {
+        (
+            evaluate::polynomial(z - 85.0, ERF_IMPL_NN)
+                / evaluate::polynomial(z - 85.0, ERF_IMPL_ND),
+            0.56415843963623046875,
+        )
+    }
+}
+
 /// `erf_impl` computes the error function at `z`.
 /// If `inv` is true, `1 - erf` is calculated as opposed to `erf`
 fn erf_impl(z: f64, inv: bool) -> f64 {
@@ -590,86 +784,20 @@ fn erf_impl(z: f64, inv: bool) -> f64 {
                 + z * evaluate::polynomial(z, ERF_IMPL_AN) / evaluate::polynomial(z, ERF_IMPL_AD)
         }
     } else if z < 110.0 {
-        let (r, b) = if z < 0.75 {
-            (
-                evaluate::polynomial(z - 0.5, ERF_IMPL_BN)
-                    / evaluate::polynomial(z - 0.5, ERF_IMPL_BD),
-                0.3440242112,
-            )
-        } else if z < 1.25 {
-            (
-                evaluate::polynomial(z - 0.75, ERF_IMPL_CN)
-                    / evaluate::polynomial(z - 0.75, ERF_IMPL_CD),
-                0.419990927,
-            )
-        } else if z < 2.25 {
-            (
-                evaluate::polynomial(z - 1.25, ERF_IMPL_DN)
-                    / evaluate::polynomial(z - 1.25, ERF_IMPL_DD),
-                0.4898625016,
-            )
-        } else if z < 3.5 {
-            (
-                evaluate::polynomial(z - 2.25, ERF_IMPL_EN)
-                    / evaluate::polynomial(z - 2.25, ERF_IMPL_ED),
-                0.5317370892,
-            )
-        } else if z < 5.25 {
-            (
-                evaluate::polynomial(z - 3.5, ERF_IMPL_FN)
-                    / evaluate::polynomial(z - 3.5, ERF_IMPL_FD),
-                0.5489973426,
-            )
-        } else if z < 8.0 {
-            (
-                evaluate::polynomial(z - 5.25, ERF_IMPL_GN)
-                    / evaluate::polynomial(z - 5.25, ERF_IMPL_GD),
-                0.5571740866,
-            )
-        } else if z < 11.5 {
-            (
-                evaluate::polynomial(z - 8.0, ERF_IMPL_HN)
-                    / evaluate::polynomial(z - 8.0, ERF_IMPL_HD),
-                0.5609807968,
-            )
-        } else if z < 17.0 {
-            (
-                evaluate::polynomial(z - 11.5, ERF_IMPL_IN)
-                    / evaluate::polynomial(z - 11.5, ERF_IMPL_ID),
-                0.5626493692,
-            )
-        } else if z < 24.0 {
-            (
-                evaluate::polynomial(z - 17.0, ERF_IMPL_JN)
-                    / evaluate::polynomial(z - 17.0, ERF_IMPL_JD),
-                0.5634598136,
-            )
-        } else if z < 38.0 {
-            (
-                evaluate::polynomial(z - 24.0, ERF_IMPL_KN)
-                    / evaluate::polynomial(z - 24.0, ERF_IMPL_KD),
-                0.5638477802,
-            )
-        } else if z < 60.0 {
-            (
-                evaluate::polynomial(z - 38.0, ERF_IMPL_LN)
-                    / evaluate::polynomial(z - 38.0, ERF_IMPL_LD),
-                0.5640528202,
-            )
-        } else if z < 85.0 {
-            (
-                evaluate::polynomial(z - 60.0, ERF_IMPL_MN)
-                    / evaluate::polynomial(z - 60.0, ERF_IMPL_MD),
-                0.5641309023,
-            )
-        } else {
-            (
-                evaluate::polynomial(z - 85.0, ERF_IMPL_NN)
-                    / evaluate::polynomial(z - 85.0, ERF_IMPL_ND),
-                0.5641584396,
-            )
-        };
-        let g = (-z * z).exp() / z;
+        let (r, b) = erfc_fraction(z);
+        // `z * z` is rounded before `exp` sees it, which costs roughly `z^2`
+        // ulps in the result (~460 ulps by z = 27). Recover the rounding error
+        // of the square exactly with a Dekker product and fold it back in:
+        // `exp(-z^2) = exp(-sq) * exp(-err)`, and `exp(-err) ~= 1 - err` since
+        // `|err| <= ulp(sq)/2`. Dekker's split is used instead of
+        // `f64::mul_add` because the latter falls back to a slow software FMA
+        // on targets without the hardware instruction (e.g. baseline x86-64).
+        let sq = z * z;
+        let split = 134_217_729.0 * z; // 2^27 + 1; cannot overflow, z < 110
+        let z_hi = split - (split - z);
+        let z_lo = z - z_hi;
+        let err = ((z_hi * z_hi - sq) + 2.0 * z_hi * z_lo) + z_lo * z_lo;
+        let g = (-sq).exp() * (1.0 - err) / z;
         g * b + g * r
     } else {
         0.0
@@ -747,19 +875,19 @@ mod tests {
     #[test]
     fn test_erf() {
         assert!(erf(f64::NAN).is_nan());
-        prec::assert_abs_diff_eq!(erf(-1.0), -0.84270079294971486934122063508260925929606699796630291, epsilon = 1e-11);
+        prec::assert_abs_diff_eq!(erf(-1.0), -0.84270079294971486934122063508260925929606699796630291, epsilon = 4.441e-16);
         assert_eq!(erf(0.0), 0.0);
         assert_eq!(erf(1e-15), 0.0000000000000011283791670955126615773132947717431253912942469337536);
         assert_eq!(erf(0.1), 0.1124629160182848984047122510143040617233925185058162);
         prec::assert_abs_diff_eq!(erf(0.2), 0.22270258921047846617645303120925671669511570710081967, epsilon = 1e-16);
         assert_eq!(erf(0.3), 0.32862675945912741618961798531820303325847175931290341);
         assert_eq!(erf(0.4), 0.42839235504666847645410962730772853743532927705981257);
-        prec::assert_abs_diff_eq!(erf(0.5), 0.5204998778130465376827466538919645287364515757579637, epsilon = 1e-9);
-        prec::assert_abs_diff_eq!(erf(1.0), 0.84270079294971486934122063508260925929606699796630291, epsilon = 1e-11);
-        prec::assert_abs_diff_eq!(erf(1.5), 0.96610514647531072706697626164594785868141047925763678, epsilon = 1e-11);
-        prec::assert_abs_diff_eq!(erf(2.0), 0.99532226501895273416206925636725292861089179704006008, epsilon = 1e-11);
-        prec::assert_abs_diff_eq!(erf(2.5), 0.99959304798255504106043578426002508727965132259628658, epsilon = 1e-13);
-        prec::assert_abs_diff_eq!(erf(3.0), 0.99997790950300141455862722387041767962015229291260075, epsilon = 1e-11);
+        prec::assert_abs_diff_eq!(erf(0.5), 0.5204998778130465376827466538919645287364515757579637, epsilon = 4.441e-16);
+        prec::assert_abs_diff_eq!(erf(1.0), 0.84270079294971486934122063508260925929606699796630291, epsilon = 4.441e-16);
+        prec::assert_abs_diff_eq!(erf(1.5), 0.96610514647531072706697626164594785868141047925763678, epsilon = 4.441e-16);
+        prec::assert_abs_diff_eq!(erf(2.0), 0.99532226501895273416206925636725292861089179704006008, epsilon = 4.441e-16);
+        prec::assert_abs_diff_eq!(erf(2.5), 0.99959304798255504106043578426002508727965132259628658, epsilon = 4.441e-16);
+        prec::assert_abs_diff_eq!(erf(3.0), 0.99997790950300141455862722387041767962015229291260075, epsilon = 4.441e-16);
         assert_eq!(erf(4.0), 0.99999998458274209971998114784032651311595142785474641);
         assert_eq!(erf(5.0), 0.99999999999846254020557196514981165651461662110988195);
         assert_eq!(erf(6.0), 0.99999999999999997848026328750108688340664960081261537);
@@ -770,24 +898,24 @@ mod tests {
     #[test]
     fn test_erfc() {
         assert!(erfc(f64::NAN).is_nan());
-        prec::assert_abs_diff_eq!(erfc(-1.0), 1.8427007929497148693412206350826092592960669979663028, epsilon = 1e-11);
+        prec::assert_abs_diff_eq!(erfc(-1.0), 1.8427007929497148693412206350826092592960669979663028, epsilon = 8.882e-16);
         assert_eq!(erfc(0.0), 1.0);
-        prec::assert_abs_diff_eq!(erfc(0.1), 0.88753708398171510159528774898569593827660748149418343, epsilon = 1e-15);
+        prec::assert_abs_diff_eq!(erfc(0.1), 0.88753708398171510159528774898569593827660748149418343, epsilon = 4.441e-16);
         assert_eq!(erfc(0.2), 0.77729741078952153382354696879074328330488429289918085);
         assert_eq!(erfc(0.3), 0.67137324054087258381038201468179696674152824068709621);
-        prec::assert_abs_diff_eq!(erfc(0.4), 0.57160764495333152354589037269227146256467072294018715, epsilon = 1e-15);
-        prec::assert_abs_diff_eq!(erfc(0.5), 0.47950012218695346231725334610803547126354842424203654, epsilon = 1e-9);
-        prec::assert_abs_diff_eq!(erfc(1.0), 0.15729920705028513065877936491739074070393300203369719, epsilon = 1e-11);
-        prec::assert_abs_diff_eq!(erfc(1.5), 0.033894853524689272933023738354052141318589520742363247, epsilon = 1e-11);
-        prec::assert_abs_diff_eq!(erfc(2.0), 0.0046777349810472658379307436327470713891082029599399245, epsilon = 1e-11);
-        prec::assert_abs_diff_eq!(erfc(2.5), 0.00040695201744495893956421573997491272034867740371342016, epsilon = 1e-13);
-        prec::assert_abs_diff_eq!(erfc(3.0), 0.00002209049699858544137277612958232037984770708739924966, epsilon = 1e-11);
-        prec::assert_abs_diff_eq!(erfc(4.0), 0.000000015417257900280018852159673486884048572145253589191167, epsilon = 1e-18);
-        prec::assert_abs_diff_eq!(erfc(5.0), 0.0000000000015374597944280348501883434853833788901180503147233804, epsilon = 1e-22);
-        prec::assert_abs_diff_eq!(erfc(6.0), 2.1519736712498913116593350399187384630477514061688559e-17, epsilon = 1e-26);
-        prec::assert_abs_diff_eq!(erfc(10.0), 2.0884875837625447570007862949577886115608181193211634e-45, epsilon = 1e-55);
-        prec::assert_abs_diff_eq!(erfc(15.0), 7.2129941724512066665650665586929271099340909298253858e-100, epsilon = 1e-109);
-        prec::assert_abs_diff_eq!(erfc(20.0), 5.3958656116079009289349991679053456040882726709236071e-176, epsilon = 1e-186);
+        prec::assert_abs_diff_eq!(erfc(0.4), 0.57160764495333152354589037269227146256467072294018715, epsilon = 4.441e-16);
+        prec::assert_abs_diff_eq!(erfc(0.5), 0.47950012218695346231725334610803547126354842424203654, epsilon = 2.220e-16);
+        prec::assert_abs_diff_eq!(erfc(1.0), 0.15729920705028513065877936491739074070393300203369719, epsilon = 1.110e-16);
+        prec::assert_abs_diff_eq!(erfc(1.5), 0.033894853524689272933023738354052141318589520742363247, epsilon = 2.776e-17);
+        prec::assert_abs_diff_eq!(erfc(2.0), 0.0046777349810472658379307436327470713891082029599399245, epsilon = 3.469e-18);
+        prec::assert_abs_diff_eq!(erfc(2.5), 0.00040695201744495893956421573997491272034867740371342016, epsilon = 2.168e-19);
+        prec::assert_abs_diff_eq!(erfc(3.0), 0.00002209049699858544137277612958232037984770708739924966, epsilon = 1.355e-20);
+        prec::assert_abs_diff_eq!(erfc(4.0), 0.000000015417257900280018852159673486884048572145253589191167, epsilon = 1.323e-23);
+        prec::assert_abs_diff_eq!(erfc(5.0), 0.0000000000015374597944280348501883434853833788901180503147233804, epsilon = 8.078e-28);
+        prec::assert_abs_diff_eq!(erfc(6.0), 2.1519736712498913116593350399187384630477514061688559e-17, epsilon = 1.233e-32);
+        prec::assert_abs_diff_eq!(erfc(10.0), 2.0884875837625447570007862949577886115608181193211634e-45, epsilon = 1.245e-60);
+        prec::assert_abs_diff_eq!(erfc(15.0), 7.2129941724512066665650665586929271099340909298253858e-100, epsilon = 4.061e-115);
+        prec::assert_abs_diff_eq!(erfc(20.0), 5.3958656116079009289349991679053456040882726709236071e-176, epsilon = 2.806e-191);
         assert_eq!(erfc(30.0), 2.5646562037561116000333972775014471465488897227786155e-393);
         assert_eq!(erfc(50.0), 2.0709207788416560484484478751657887929322509209953988e-1088);
         assert_eq!(erfc(80.0), 2.3100265595063985852034904366341042118385080919280966e-2782);
@@ -800,9 +928,9 @@ mod tests {
         assert!(erf_inv(f64::NAN).is_nan());
         assert_eq!(erf_inv(-1.0), f64::NEG_INFINITY);
         assert_eq!(erf_inv(0.0), 0.0);
-        prec::assert_abs_diff_eq!(erf_inv(1e-15), 8.86226925452758013649e-16, epsilon = 1e-30);
+        prec::assert_abs_diff_eq!(erf_inv(1e-15), 8.86226925452758013649e-16, epsilon = 3.944e-31);
         assert_eq!(erf_inv(0.1), 0.08885599049425768701574);
-        prec::assert_abs_diff_eq!(erf_inv(0.2), 0.1791434546212916764927, epsilon = 1e-15);
+        prec::assert_abs_diff_eq!(erf_inv(0.2), 0.1791434546212916764927, epsilon = 1.110e-16);
         assert_eq!(erf_inv(0.3), 0.272462714726754355622);
         assert_eq!(erf_inv(0.4), 0.3708071585935579290582);
         assert_eq!(erf_inv(0.5), 0.4769362762044698733814);
@@ -811,16 +939,102 @@ mod tests {
         assert_eq!(erf_inv(f64::NEG_INFINITY), f64::NEG_INFINITY);
     }
 
+    /// `erfcx(x) = exp(x^2) erfc(x)` does not underflow the way `erfc` does, so
+    /// it is what makes ratios of two `erfc` values well conditioned
+    /// (statrs-dev/statrs#202). References are mpmath at 50 significant digits,
+    /// computed via the asymptotic expansion past `1e6` where mpmath's own
+    /// `erfc` can no longer represent the intermediate.
+    #[test]
+    fn test_erfcx() {
+        for (x, want) in [
+            (-5.0, 144009798674.66104041),
+            (-1.0, 5.0089800807622834663),
+            (-0.25, 1.3586423701047221152),
+            (0.0, 1.0),
+            (0.25, 0.77034654773099674392),
+            (0.5, 0.61569034419292587487),
+            (1.0, 0.42758357615580700441),
+            (5.0, 0.11070463773306862637),
+            (25.0, 0.022549572432641358944),
+            (109.9, 0.005133450685917941343),
+            (110.0, 0.0051287842983465685351),
+            (200.0, 0.0028209126572120463987),
+            (1e5, 5.6418958351954680777e-6),
+            (1e100, 5.6418958354775628695e-101),
+            (1e300, 5.6418958354775628695e-301),
+        ] {
+            prec::assert_relative_eq!(erfcx(x), want, epsilon = 0.0, max_relative = 1e-14);
+        }
+        assert!(erfcx(f64::NAN).is_nan());
+
+        // The negative branch forms `exp(x^2)`, where a half-ulp error in
+        // `x * x` is amplified by `x^2` -- roughly 340 ulp by `x = -26` if the
+        // square is not compensated (statrs-dev/statrs#423).
+        //
+        // References come from the f64 values, not the decimal literals. That
+        // is not pedantry here: -26.6 differs from the f64 nearest it by
+        // 1.4e-15, which the same amplification turns into 687 ulp of erfcx.
+        // Every other argument below is exactly representable.
+        for (x, want) in [
+            (-2.0, 108.94090438997797241),
+            (-5.0, 144009798674.66104041),
+            (-10.0, 5.3762342836322708968e43),
+            (-15.0, 1.0406110275769709185e98),
+            (-20.0, 1.0442939379528287901e174),
+            (-26.0, 7.6577249314905683515e293),
+            (-26.6, 3.8943377196055849981e307),
+        ] {
+            prec::assert_relative_eq!(erfcx(x), want, epsilon = 0.0, max_relative = 1e-15);
+        }
+
+        // erfcx stays finite across the whole positive axis, where erfc is zero
+        assert_eq!(erfc(1e5), 0.0, "premise: erfc has underflowed");
+        assert!(erfcx(1e5) > 0.0);
+        // and overflows only where exp(x^2) does
+        assert_eq!(erfcx(-30.0), f64::INFINITY);
+    }
+
+    /// `ln_erfcx` is finite over the entire range of f64, unlike both `erfc`
+    /// (underflows) and `erfcx` (overflows for very negative `x`).
+    #[test]
+    fn test_ln_erfcx() {
+        for (x, want) in [
+            (-30.0, 900.69314718055994531),
+            (-1.0, 1.6112323176780704946),
+            (0.5, -0.48501112983708440303),
+            (1.0, -0.84960550993324824858),
+            (110.0, -5.2728866267632017793),
+            (1e5, -12.085290407944928507),
+            (1e150, -345.96012889203155269),
+            (1e300, -691.34789284113840529),
+        ] {
+            prec::assert_relative_eq!(ln_erfcx(x), want, epsilon = 0.0, max_relative = 1e-14);
+        }
+        assert!(ln_erfcx(f64::NAN).is_nan());
+        // Consistency with ln_erfc where the latter is meaningful. The tolerance
+        // has to scale with `x * x`, because forming `x * x + ln_erfc(x)` cancels
+        // two values of that magnitude to reach an O(1) result -- which is the
+        // whole reason `ln_erfcx` computes it directly instead.
+        for x in [-3.0f64, -0.5, 0.0, 0.5, 2.0, 20.0, 100.0, 200.0] {
+            let cancelled = x * x + ln_erfc(x);
+            prec::assert_abs_diff_eq!(ln_erfcx(x), cancelled, epsilon = 1e-15 * (1.0 + x * x));
+        }
+        // and with erfcx where that is representable
+        for x in [-20.0f64, -1.0, 0.5, 3.0, 50.0, 1e4] {
+            prec::assert_relative_eq!(ln_erfcx(x), erfcx(x).ln(), epsilon = 0.0, max_relative = 1e-13);
+        }
+    }
+
     #[test]
     fn test_erfc_inv() {
         assert_eq!(erfc_inv(0.0), f64::INFINITY);
-        prec::assert_abs_diff_eq!(erfc_inv(1e-100), 15.065574702593, epsilon = 1e-11);
-        prec::assert_abs_diff_eq!(erfc_inv(1e-30), 8.1486162231699, epsilon = 1e-12);
-        prec::assert_abs_diff_eq!(erfc_inv(1e-20), 6.6015806223551, epsilon = 1e-13);
-        prec::assert_abs_diff_eq!(erfc_inv(1e-10), 4.5728249585449249378479309946884581365517663258840893, epsilon = 1e-7);
-        prec::assert_abs_diff_eq!(erfc_inv(1e-5), 3.1234132743415708640270717579666062107939039971365252, epsilon = 1e-11);
-        prec::assert_abs_diff_eq!(erfc_inv(0.1), 1.1630871536766741628440954340547000483801487126688552, epsilon = 1e-14);
-        prec::assert_abs_diff_eq!(erfc_inv(0.2), 0.90619380243682330953597079527631536107443494091638384, epsilon = 1e-15);
+        prec::assert_abs_diff_eq!(erfc_inv(1e-100), 15.065574702592645704404610541369, epsilon = 7.105e-15);
+        prec::assert_abs_diff_eq!(erfc_inv(1e-30), 8.1486162231698646073845666606481, epsilon = 7.105e-15);
+        prec::assert_abs_diff_eq!(erfc_inv(1e-20), 6.6015806223551425615163916324187, epsilon = 3.553e-15);
+        prec::assert_abs_diff_eq!(erfc_inv(1e-10), 4.5728249673894852787410436731442, epsilon = 3.553e-15);
+        prec::assert_abs_diff_eq!(erfc_inv(1e-5), 3.1234132743408750302472925681804, epsilon = 1.776e-15);
+        prec::assert_abs_diff_eq!(erfc_inv(0.1), 1.1630871536766740867262542605629, epsilon = 8.882e-16);
+        prec::assert_abs_diff_eq!(erfc_inv(0.2), 0.90619380243682322007116270309566, epsilon = 4.441e-16);
         assert_eq!(erfc_inv(0.5), 0.47693627620446987338141835364313055980896974905947083);
         assert_eq!(erfc_inv(1.0), 0.0);
         assert_eq!(erfc_inv(1.5), -0.47693627620446987338141835364313055980896974905947083);

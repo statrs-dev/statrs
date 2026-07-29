@@ -29,6 +29,7 @@
 //! - `DEFAULT_RELATIVE_ACC`: 1e-14 for relative comparisons
 //! - `DEFAULT_EPS`: 1e-9 for absolute comparisons
 //! - `DEFAULT_ULPS`: 5 for ULPs comparisons
+//! - `DEFAULT_ULPS_EPS`: `f64::EPSILON`, the absolute floor paired with `DEFAULT_ULPS`
 //!
 //! These defaults should be used unless there is a specific reason to use different
 //! precision levels.
@@ -62,6 +63,16 @@ pub const DEFAULT_EPS: f64 = 1e-9;
 /// Default and target ULPs accuracy for f64 operations
 pub const DEFAULT_ULPS: u32 = 5;
 
+/// Default absolute epsilon for ULPs comparisons.
+///
+/// `approx`'s `ulps_eq` short-circuits on `abs_diff_eq(epsilon)` before it looks
+/// at the ULPs distance, so pairing it with [`DEFAULT_EPS`] (`1e-9`) would make
+/// the ULPs bound unreachable and turn `ulps_eq!(x, y)` into a `1e-9` absolute
+/// comparison. `ulps_eq!` is used inside the crate to recognise exact parameter
+/// values (`p == 1.0`, `x == x.floor()`), so its epsilon has to stay at the
+/// scale of a genuine rounding error.
+pub const DEFAULT_ULPS_EPS: f64 = f64::EPSILON;
+
 /// Compares if two floats are close via `approx::abs_diff_eq`
 /// using a maximum absolute difference (epsilon) of `acc`.
 #[deprecated(since = "0.19.0", note = "Use abs_diff_eq! macro instead")]
@@ -79,6 +90,102 @@ pub(crate) fn convergence(x: &mut f64, x_new: f64) -> bool {
     let res = relative_eq!(*x, x_new);
     *x = x_new;
     res
+}
+
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
+
+/// Splits the exact rounding error out of the product `a * b`:
+/// `a * b == p + dekker_product_err(a, b, p)` exactly, for `p == a * b`.
+///
+/// Dispatches on whether the target has a hardware FMA. Where it does this is a
+/// single instruction; where it does not, `f64::mul_add` falls back to a
+/// software routine far slower than Veltkamp's split, so the split is used
+/// instead.
+///
+/// The condition is `cfg(statrs_hardware_fma)`, set in build.rs. It is not just
+/// x86 and AArch64: RISC-V, PowerPC, LoongArch, MIPS and WASM all have the
+/// instruction under the right target features. Nor is AArch64 unconditional --
+/// a softfloat AArch64 target has no NEON and so no hardware FMA, where the
+/// split is the right choice.
+#[inline]
+pub(crate) fn dekker_product_err(a: f64, b: f64, p: f64) -> f64 {
+    #[cfg(statrs_hardware_fma)]
+    {
+        product_err_fma(a, b, p)
+    }
+    #[cfg(not(statrs_hardware_fma))]
+    {
+        product_err_split(a, b, p)
+    }
+}
+
+/// The fused form. `p` is the rounded `a * b`, so the residual is exact in a
+/// single rounding, and nothing intermediate can overflow the way the split
+/// below does.
+#[inline]
+#[cfg_attr(not(statrs_hardware_fma), allow(dead_code))]
+pub(crate) fn product_err_fma(a: f64, b: f64, p: f64) -> f64 {
+    a.mul_add(b, -p)
+}
+
+/// Veltkamp's split, for targets without a hardware FMA.
+#[inline]
+#[cfg_attr(statrs_hardware_fma, allow(dead_code))]
+pub(crate) fn product_err_split(a: f64, b: f64, p: f64) -> f64 {
+    const SPLIT: f64 = 134_217_729.0; // 2^27 + 1
+    // The split multiplies by `SPLIT`, which overflows to `inf` once an argument
+    // passes about `1.3e300` and then yields `inf - inf`, i.e. NaN. Scaling by a
+    // power of two is exact and the residual scales with it, so rescale rather
+    // than give up: `err(a b) = 2^k err((a 2^-k) b)`.
+    const BIG: f64 = 1e300;
+    const DOWN: f64 = 9.313225746154785e-10; // 2^-30, exact
+    let (mut a, mut b, mut p) = (a, b, p);
+    let mut scale = 1.0;
+    if a.abs() > BIG {
+        a *= DOWN;
+        p *= DOWN;
+        scale /= DOWN;
+    }
+    if b.abs() > BIG {
+        b *= DOWN;
+        p *= DOWN;
+        scale /= DOWN;
+    }
+    let ca = SPLIT * a;
+    let a_hi = ca - (ca - a);
+    let a_lo = a - a_hi;
+    let cb = SPLIT * b;
+    let b_hi = cb - (cb - b);
+    let b_lo = b - b_hi;
+    scale * (((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo)
+}
+
+/// Knuth's two-sum for a difference: returns `(s, e)` with
+/// `a - b == s + e` exactly, where `s = a - b` rounded.
+#[inline]
+pub(crate) fn two_diff(a: f64, b: f64) -> (f64, f64) {
+    let s = a - b;
+    if !s.is_finite() {
+        // the residual is not representable; 0 is the safe choice, and the
+        // alternative is `inf - inf == NaN` poisoning every caller
+        return (s, 0.0);
+    }
+    let v = s - a;
+    (s, (a - (s - v)) + (-b - v))
+}
+
+/// Knuth's two-sum: returns `(s, e)` with `a + b == s + e` exactly, where
+/// `s = a + b` rounded.
+#[inline]
+pub(crate) fn two_sum(a: f64, b: f64) -> (f64, f64) {
+    let s = a + b;
+    if !s.is_finite() {
+        // see `two_diff`
+        return (s, 0.0);
+    }
+    let v = s - a;
+    (s, (a - (s - v)) + (b - v))
 }
 
 macro_rules! redefine_one_opt_approx_macro {
@@ -144,7 +251,7 @@ mod macros {
     );
     redefine_two_opt_approx_macro!(
         ulps_eq,
-        { epsilon: crate::prec::DEFAULT_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
+        { epsilon: crate::prec::DEFAULT_ULPS_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
     );
 
     pub(crate) use abs_diff_eq;
@@ -162,7 +269,7 @@ mod macros {
     );
     redefine_two_opt_approx_macro!(
         assert_ulps_eq,
-        { epsilon: crate::prec::DEFAULT_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
+        { epsilon: crate::prec::DEFAULT_ULPS_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
     );
 
     pub(crate) use assert_abs_diff_eq;
@@ -178,3 +285,71 @@ mod macros {
 }
 
 pub(crate) use macros::*;
+
+#[cfg(test)]
+mod product_err_tests {
+
+    use super::{product_err_fma, product_err_split};
+
+    /// The two implementations must agree bit for bit, since which one runs is
+    /// decided by the target rather than by the caller. Both are compiled
+    /// everywhere so this test covers the path that is not selected here.
+    #[test]
+    fn test_fma_and_split_agree() {
+        // deterministic LCG, so this needs no rand and no std
+        let mut state = 0x2545_F491_4F6C_DD1Du64;
+        let mut next = || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+
+        for _ in 0..200_000 {
+            // draw exponents over most of the range, keeping the product finite
+            let a = f64::from_bits((next() & 0x800F_FFFF_FFFF_FFFF) | 0x3F00_0000_0000_0000);
+            let b = f64::from_bits((next() & 0x800F_FFFF_FFFF_FFFF) | 0x3F00_0000_0000_0000);
+            let p = a * b;
+            let (fma, split) = (product_err_fma(a, b, p), product_err_split(a, b, p));
+            assert_eq!(
+                fma.to_bits(),
+                split.to_bits(),
+                "a = {a:e}, b = {b:e}: fma {fma:e} != split {split:e}"
+            );
+            // and the defining property: a * b == p + err exactly
+            assert_eq!(p + fma, p + split);
+        }
+    }
+
+    /// Values chosen to exercise the rescaling the split needs and the fused
+    /// form does not, plus the exactly-representable cases where the residual
+    /// is zero.
+    #[test]
+    fn test_fma_and_split_agree_on_extremes() {
+        let cases = [
+            (1.0, 1.0),
+            (0.0, 12345.678),
+            (-0.0, 1.0),
+            (1.5, 1.5),
+            (10382.5, 10382.5),
+            (1e300, 1.5),
+            (1.5, 1e300),
+            (1e300, 1e-300),
+            (1.3e300, 1.3e300_f64.recip()),
+            (f64::MIN_POSITIVE, 2.0),
+            (f64::MAX, 0.5),
+            (core::f64::consts::PI, core::f64::consts::E),
+        ];
+        for (a, b) in cases {
+            let p = a * b;
+            if !p.is_finite() {
+                continue;
+            }
+            assert_eq!(
+                product_err_fma(a, b, p).to_bits(),
+                product_err_split(a, b, p).to_bits(),
+                "a = {a:e}, b = {b:e}"
+            );
+        }
+    }
+}

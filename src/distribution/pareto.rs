@@ -171,6 +171,25 @@ impl ContinuousCDF<f64, f64> for Pareto {
         }
     }
 
+    /// Tail-accurate log of the cdf: `ln1p(-(scale / x)^shape)`.
+    fn ln_cdf(&self, x: f64) -> f64 {
+        if x < self.scale {
+            f64::NEG_INFINITY
+        } else {
+            (-(self.scale / x).powf(self.shape)).ln_1p()
+        }
+    }
+
+    /// Exact log of the survival function:
+    /// `ln sf = shape * ln(scale / x)`, finite long after `sf` underflows.
+    fn ln_sf(&self, x: f64) -> f64 {
+        if x < self.scale {
+            0.0
+        } else {
+            self.shape * (self.scale / x).ln()
+        }
+    }
+
     /// Calculates the inverse cumulative distribution function for the Pareto
     /// distribution at `x`
     ///

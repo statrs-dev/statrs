@@ -178,6 +178,29 @@ impl ContinuousCDF<f64, f64> for LogNormal {
         }
     }
 
+    /// Tail-accurate log of the cdf, via the normal log-cdf at `ln x`.
+    fn ln_cdf(&self, x: f64) -> f64 {
+        if x <= 0.0 {
+            f64::NEG_INFINITY
+        } else if x.is_infinite() {
+            0.0
+        } else {
+            super::normal::ln_cdf_unchecked(x.ln(), self.location, self.scale)
+        }
+    }
+
+    /// Tail-accurate log of the survival function, via the normal log-sf at
+    /// `ln x`.
+    fn ln_sf(&self, x: f64) -> f64 {
+        if x <= 0.0 {
+            0.0
+        } else if x.is_infinite() {
+            f64::NEG_INFINITY
+        } else {
+            super::normal::ln_sf_unchecked(x.ln(), self.location, self.scale)
+        }
+    }
+
     /// Calculates the inverse cumulative distribution function for the
     /// log-normal distribution at `p`
     ///
@@ -750,13 +773,13 @@ mod tests {
         test_absolute(-0.1, 0.1, 1.0, 1e-107, sf(0.1));
 
         // Wolfram Alpha:: SurvivalFunction[ LogNormalDistribution(-0.1, 0.1), 0.8]
-        test_absolute(-0.1, 0.1, 0.890919989231123, 1e-14, sf(0.8));
+        test_absolute(-0.1, 0.1, 0.890919989236242017902656326193, 1e-14, sf(0.8));
 
         // Wolfram Alpha:: SurvivalFunction[LogNormalDistribution[1.5, 1], 0.8]
-        test_absolute(1.5, 1.0, 0.957568715612642, 1e-14, sf(0.8));
+        test_absolute(1.5, 1.0, 0.957568715614411289470712253063, 1e-14, sf(0.8));
 
         // Wolfram Alpha:: SurvivalFunction[ LogNormalDistribution(2.5, 1.5), 0.1]
-        test_absolute(2.5, 1.5, 0.9993169594777358, 1e-14, sf(0.1));
+        test_absolute(2.5, 1.5, 0.999316959477792115067727898746, 1e-14, sf(0.1));
     }
 
     #[test]

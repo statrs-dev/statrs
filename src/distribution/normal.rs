@@ -155,6 +155,18 @@ impl ContinuousCDF<f64, f64> for Normal {
         sf_unchecked(x, self.mean, self.std_dev)
     }
 
+    /// Tail-accurate log of the cdf via a dedicated `ln erfc`; finite for
+    /// every representable `x` (`ln_cdf(-100)` is about -5005.5 where
+    /// `cdf(-100).ln()` is `-inf`).
+    fn ln_cdf(&self, x: f64) -> f64 {
+        ln_cdf_unchecked(x, self.mean, self.std_dev)
+    }
+
+    /// Tail-accurate log of the survival function; see [`Self::ln_cdf`].
+    fn ln_sf(&self, x: f64) -> f64 {
+        ln_sf_unchecked(x, self.mean, self.std_dev)
+    }
+
     /// Calculates the inverse cumulative distribution function for the
     /// normal distribution at `x`.
     /// In other languages, such as R, this is known as the the quantile function.
@@ -324,16 +336,128 @@ impl Continuous<f64, f64> for Normal {
     }
 }
 
+use crate::prec::{dekker_product_err, two_diff};
+
+/// Low half of `sqrt(2)`: `sqrt(2) == SQRT_2 + SQRT_2_LO` to double-double
+/// precision.
+const SQRT_2_LO: f64 = -9.667293313452913e-17;
+
+/// Computes `0.5 * erfc((a - b) / (std_dev * sqrt(2)))`, compensating the
+/// rounding of the argument in the tails.
+///
+/// `erfc` amplifies a relative error `e` in its argument `t` by `2 * t^2`, so
+/// the roundings in `(a - b) / (sigma * SQRT_2)` cost ~`4 t^2` ulps - about 80
+/// ulps by `t = 6`. For `|t| > 1.5` this recovers the argument's rounding
+/// residual `delta` (subtraction, division, and the double-double value of
+/// `sigma * sqrt(2)`) and applies the first-order correction
+/// `erfc(t + delta) ~= erfc(t) + erfc'(t) * delta`, which brings the tail
+/// back to `erfc`'s intrinsic ~2 ulp.
+#[inline]
+fn half_erfc(a: f64, b: f64, std_dev: f64) -> f64 {
+    let (d, d_err) = two_diff(a, b);
+    let s = std_dev * f64::consts::SQRT_2;
+    // An infinite `x` makes `d` infinite, and a `std_dev` near `f64::MAX` makes
+    // `s` infinite; `d / s` is then `inf / inf == NaN`. Both limits are
+    // well defined, so take them directly rather than returning NaN.
+    if d.is_nan() {
+        return f64::NAN;
+    }
+    if d.is_infinite() {
+        return if d > 0.0 { 0.0 } else { 1.0 };
+    }
+    if !s.is_finite() {
+        // sigma so large the distribution is flat over any finite difference
+        return 0.5;
+    }
+    let t = d / s;
+    let half = 0.5 * erf::erfc(t);
+    // Skip the correction where it cannot help or cannot be formed safely:
+    //   * `|t| <= 1.5`: the amplification is negligible and `erfc` is
+    //     absolutely well conditioned, so this only costs an `exp`;
+    //   * `|t| >= 30`: `erfc` has already saturated to exactly 0 or 2;
+    //   * `s > 1e300`: the Dekker splits below multiply by `2^27 + 1`, which
+    //     would overflow to `inf` and turn the whole result into NaN.
+    // A NaN `t` fails the range test and so falls through here as well.
+    if !(1.5..30.0).contains(&t.abs()) || s > 1e300 {
+        return half;
+    }
+    // exact residual of the division: d - t * s, via a Dekker product
+    let p = t * s;
+    let r = (d - p) - dekker_product_err(t, s, p);
+    // s itself is short of sigma * sqrt(2) by its product rounding error and
+    // by sigma * SQRT_2_LO
+    let s_err = dekker_product_err(std_dev, f64::consts::SQRT_2, s) + std_dev * SQRT_2_LO;
+    let delta = (r + d_err - t * s_err) / s;
+    // erfc'(t) = -2/sqrt(pi) * exp(-t^2); halved for the 0.5 * erfc form
+    half - 0.5 * f64::consts::FRAC_2_SQRT_PI * (-t * t).exp() * delta
+}
+
+/// Log-domain companion of [`half_erfc`]: computes
+/// `ln(0.5 * erfc((a - b) / (std_dev * sqrt 2)))`, staying finite far past the
+/// point where the probability itself underflows (`ln_cdf(-40)` for the
+/// standard normal is about -804.6 where `cdf(-40).ln()` is `-inf`).
+///
+/// The same argument-rounding compensation applies, but additively:
+/// `ln erfc(t + delta) ~= ln erfc(t) + (d ln erfc / dt) delta`.
+fn ln_half_erfc(a: f64, b: f64, std_dev: f64) -> f64 {
+    let (d, d_err) = two_diff(a, b);
+    let s = std_dev * f64::consts::SQRT_2;
+    if d.is_nan() {
+        return f64::NAN;
+    }
+    if d.is_infinite() {
+        return if d > 0.0 { f64::NEG_INFINITY } else { 0.0 };
+    }
+    if !s.is_finite() {
+        // sigma so large the distribution is flat over any finite difference
+        return -f64::consts::LN_2;
+    }
+    let t = d / s;
+    let base = erf::ln_erfc(t) - f64::consts::LN_2;
+    if !(1.5..1e300).contains(&t) || s > 1e300 {
+        // t < 1.5: amplification negligible (and for t < 0, erfc -> 2 with a
+        // vanishing derivative). Bounds also keep the Dekker splits below away
+        // from arguments that would overflow them.
+        return base;
+    }
+    // residuals of the subtraction, the division, and sigma * sqrt(2), exactly
+    // as in `half_erfc`
+    let p = t * s;
+    let r = (d - p) - dekker_product_err(t, s, p);
+    let s_err = dekker_product_err(std_dev, f64::consts::SQRT_2, s) + std_dev * SQRT_2_LO;
+    let delta = (r + d_err - t * s_err) / s;
+    // d/dt ln erfc = -2/sqrt(pi) e^(-t^2) / erfc(t); past the representable
+    // range of erfc use its asymptotic -(2t + 1/t)
+    let dln = if t < 26.0 {
+        -f64::consts::FRAC_2_SQRT_PI * (-t * t).exp() / erf::erfc(t)
+    } else {
+        -(2.0 * t + 1.0 / t)
+    };
+    base + dln * delta
+}
+
 /// performs an unchecked cdf calculation for a normal distribution
 /// with the given mean and standard deviation at x
 pub fn cdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
-    0.5 * erf::erfc((mean - x) / (std_dev * f64::consts::SQRT_2))
+    half_erfc(mean, x, std_dev)
 }
 
 /// performs an unchecked sf calculation for a normal distribution
 /// with the given mean and standard deviation at x
 pub fn sf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
-    0.5 * erf::erfc((x - mean) / (std_dev * f64::consts::SQRT_2))
+    half_erfc(x, mean, std_dev)
+}
+
+/// performs an unchecked log-cdf calculation for a normal distribution
+/// with the given mean and standard deviation at x
+pub fn ln_cdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
+    ln_half_erfc(mean, x, std_dev)
+}
+
+/// performs an unchecked log-sf calculation for a normal distribution
+/// with the given mean and standard deviation at x
+pub fn ln_sf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
+    ln_half_erfc(x, mean, std_dev)
 }
 
 /// performs an unchecked pdf calculation for a normal distribution
@@ -506,6 +630,57 @@ mod tests {
         test_exact(-5.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(-5.0));
         test_exact(-5.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(0.0));
         test_exact(-5.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(100.0));
+    }
+
+    /// The tail compensation in `half_erfc` splits its arguments with Dekker's
+    /// algorithm, which multiplies by `2^27 + 1`; for extreme `std_dev` or `x`
+    /// that overflowed to `inf` and made the whole result NaN. cdf/sf must stay
+    /// in `[0, 1]` for every representable input.
+    #[test]
+    fn test_cdf_sf_extreme_arguments_are_not_nan() {
+        let cases = [
+            (0.0f64, 1.0f64),
+            (0.0, f64::MIN_POSITIVE),
+            (0.0, 1e-300),
+            (0.0, 1e300),
+            (0.0, f64::MAX),
+            (1e300, 1e-100),
+            (-1e300, 1e300),
+        ];
+        for (mean, sd) in cases {
+            let d = Normal::new(mean, sd).unwrap();
+            for x in [-f64::MAX, -1e300, -1e10, -1.0, 0.0, 1.0, 1e10, 1e300, f64::MAX] {
+                let c = d.cdf(x);
+                let sf = d.sf(x);
+                assert!(
+                    (0.0..=1.0).contains(&c),
+                    "cdf out of range for N({mean:e},{sd:e}) at x={x:e}: {c}"
+                );
+                assert!(
+                    (0.0..=1.0).contains(&sf),
+                    "sf out of range for N({mean:e},{sd:e}) at x={x:e}: {sf}"
+                );
+            }
+            assert_eq!(d.cdf(f64::NEG_INFINITY), 0.0);
+            assert_eq!(d.cdf(f64::INFINITY), 1.0);
+        }
+    }
+
+    /// Far-tail cdf/sf: without the argument compensation in `half_erfc` these
+    /// carried ~40-80 ulp from `erfc`'s `2 t^2` amplification of the argument
+    /// roundings. References are mpmath at 40 significant digits.
+    #[test]
+    fn test_cdf_sf_far_tail() {
+        let n = Normal::standard();
+        prec::assert_relative_eq!(n.cdf(-8.0), 6.220960574271784123516e-16, epsilon = 0.0, max_relative = 1e-15);
+        prec::assert_relative_eq!(n.cdf(-6.0), 9.865876450376981407009e-10, epsilon = 0.0, max_relative = 1e-15);
+        prec::assert_relative_eq!(n.sf(8.0), 6.220960574271784123516e-16, epsilon = 0.0, max_relative = 1e-15);
+        prec::assert_relative_eq!(n.sf(6.0), 9.865876450376981407009e-10, epsilon = 0.0, max_relative = 1e-15);
+        // non-standard parameters: the `x - mean` subtraction rounds too and
+        // is compensated by the two_diff
+        let m = Normal::new(0.3, 1.7).unwrap();
+        prec::assert_relative_eq!(m.cdf(-13.3), 6.220960574271752778279e-16, epsilon = 0.0, max_relative = 1e-14);
+        prec::assert_relative_eq!(m.sf(13.9), 6.220960574271762676775e-16, epsilon = 0.0, max_relative = 1e-14);
     }
 
     #[test]

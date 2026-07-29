@@ -27,6 +27,7 @@ pub use self::geometric::{Geometric, GeometricError};
 pub use self::gumbel::{Gumbel, GumbelError};
 pub use self::hypergeometric::{Hypergeometric, HypergeometricError};
 pub use self::inverse_gamma::{InverseGamma, InverseGammaError};
+pub use self::inverse_gaussian::{InverseGaussian, InverseGaussianError};
 pub use self::laplace::{Laplace, LaplaceError};
 pub use self::levy::{Levy, LevyError};
 pub use self::log_normal::{LogNormal, LogNormalError};
@@ -70,6 +71,7 @@ mod hypergeometric;
 #[macro_use]
 mod internal;
 mod inverse_gamma;
+mod inverse_gaussian;
 mod laplace;
 mod levy;
 mod log_normal;
@@ -132,6 +134,26 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
     /// assert_eq!(0.5, n.cdf(0.5));
     /// ```
     fn cdf(&self, x: K) -> T;
+
+    /// Returns the natural logarithm of the cumulative distribution function
+    /// at `x`.
+    ///
+    /// The default implementation is `self.cdf(x).ln()`, which loses the left
+    /// tail once `cdf(x)` underflows (below ~1e-308). Distributions override it
+    /// where a tail-accurate form exists; overrides stay finite far past the
+    /// underflow point, e.g. `Normal::ln_cdf(-100.0)` is about -5005.5 where
+    /// the default is `-inf`.
+    fn ln_cdf(&self, x: K) -> T {
+        self.cdf(x).ln()
+    }
+
+    /// Returns the natural logarithm of the survival function at `x`.
+    ///
+    /// The default implementation is `self.sf(x).ln()`; see [`Self::ln_cdf`]
+    /// for the tail-accuracy caveat and override behaviour.
+    fn ln_sf(&self, x: K) -> T {
+        self.sf(x).ln()
+    }
 
     /// Returns the survival function calculated
     /// at `x` for a given distribution. May panic depending
@@ -247,6 +269,24 @@ pub trait DiscreteCDF<K: Sized + Num + Ord + Clone + NumAssignOps, T: Float>:
     /// assert_eq!(0.6, n.cdf(6));
     /// ```
     fn cdf(&self, x: K) -> T;
+
+    /// Returns the natural logarithm of the cumulative distribution function
+    /// at `x`.
+    ///
+    /// The default implementation is `self.cdf(x).ln()`, which loses the left
+    /// tail once `cdf(x)` underflows (below ~1e-308); distributions override it
+    /// where a tail-accurate form exists.
+    fn ln_cdf(&self, x: K) -> T {
+        self.cdf(x).ln()
+    }
+
+    /// Returns the natural logarithm of the survival function at `x`.
+    ///
+    /// The default implementation is `self.sf(x).ln()`; see [`Self::ln_cdf`]
+    /// for the tail-accuracy caveat.
+    fn ln_sf(&self, x: K) -> T {
+        self.sf(x).ln()
+    }
 
     /// Returns the survival function calculated at `x` for
     /// a given distribution. May panic depending on the implementor.
