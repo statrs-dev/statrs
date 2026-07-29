@@ -81,8 +81,18 @@ pub fn erfcx(x: f64) -> f64 {
         }
         return (1.0 + erfc_asymptotic_correction(x)) * (0.5 * f64::consts::FRAC_2_SQRT_PI) / x;
     }
-    // |x| < 0.5, or negative: `exp(x^2)` is harmless up to x^2 = 709
-    (x * x).exp() * erfc(x)
+    // |x| < 0.5, or negative.
+    //
+    // `exp(x * x)` is not good enough here. `x * x` carries up to half an ulp,
+    // and exponentiating multiplies that by `x^2`, so the result drifts by
+    // roughly `x^2 / 2` ulp -- around 340 by `x = -26`, which is where this
+    // branch bottoms out before `exp` overflows. Splitting the square into its
+    // rounded part and the exact residual, and folding the residual in as
+    // `exp(e) ~ 1 + e`, removes the amplification: `e` is below `1e-13` over the
+    // whole branch, so the neglected `e^2 / 2` is far under an ulp.
+    let sq = x * x;
+    let e = crate::prec::dekker_product_err(x, x, sq);
+    sq.exp() * (1.0 + e) * erfc(x)
 }
 
 /// `ln_erfcx` calculates the natural logarithm of the scaled complementary
@@ -956,6 +966,27 @@ mod tests {
             prec::assert_relative_eq!(erfcx(x), want, epsilon = 0.0, max_relative = 1e-14);
         }
         assert!(erfcx(f64::NAN).is_nan());
+
+        // The negative branch forms `exp(x^2)`, where a half-ulp error in
+        // `x * x` is amplified by `x^2` -- roughly 340 ulp by `x = -26` if the
+        // square is not compensated (statrs-dev/statrs#423).
+        //
+        // References come from the f64 values, not the decimal literals. That
+        // is not pedantry here: -26.6 differs from the f64 nearest it by
+        // 1.4e-15, which the same amplification turns into 687 ulp of erfcx.
+        // Every other argument below is exactly representable.
+        for (x, want) in [
+            (-2.0, 108.94090438997797241),
+            (-5.0, 144009798674.66104041),
+            (-10.0, 5.3762342836322708968e43),
+            (-15.0, 1.0406110275769709185e98),
+            (-20.0, 1.0442939379528287901e174),
+            (-26.0, 7.6577249314905683515e293),
+            (-26.6, 3.8943377196055849981e307),
+        ] {
+            prec::assert_relative_eq!(erfcx(x), want, epsilon = 0.0, max_relative = 1e-15);
+        }
+
         // erfcx stays finite across the whole positive axis, where erfc is zero
         assert_eq!(erfc(1e5), 0.0, "premise: erfc has underflowed");
         assert!(erfcx(1e5) > 0.0);
