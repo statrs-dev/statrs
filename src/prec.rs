@@ -101,15 +101,20 @@ use num_traits::Float as _;
 /// Dispatches on whether the target has a hardware FMA. Where it does this is a
 /// single instruction; where it does not, `f64::mul_add` falls back to a
 /// software routine far slower than Veltkamp's split, so the split is used
-/// instead. Baseline x86-64 has no FMA -- it needs `-C target-feature=+fma` or
-/// a `-C target-cpu` that implies it -- while AArch64 has it in the base ISA.
+/// instead.
+///
+/// The condition is `cfg(statrs_hardware_fma)`, set in build.rs. It is not just
+/// x86 and AArch64: RISC-V, PowerPC, LoongArch, MIPS and WASM all have the
+/// instruction under the right target features. Nor is AArch64 unconditional --
+/// a softfloat AArch64 target has no NEON and so no hardware FMA, where the
+/// split is the right choice.
 #[inline]
 pub(crate) fn dekker_product_err(a: f64, b: f64, p: f64) -> f64 {
-    #[cfg(any(target_arch = "aarch64", target_feature = "fma"))]
+    #[cfg(statrs_hardware_fma)]
     {
         product_err_fma(a, b, p)
     }
-    #[cfg(not(any(target_arch = "aarch64", target_feature = "fma")))]
+    #[cfg(not(statrs_hardware_fma))]
     {
         product_err_split(a, b, p)
     }
@@ -119,17 +124,14 @@ pub(crate) fn dekker_product_err(a: f64, b: f64, p: f64) -> f64 {
 /// single rounding, and nothing intermediate can overflow the way the split
 /// below does.
 #[inline]
-#[cfg_attr(
-    not(any(target_arch = "aarch64", target_feature = "fma")),
-    allow(dead_code)
-)]
+#[cfg_attr(not(statrs_hardware_fma), allow(dead_code))]
 pub(crate) fn product_err_fma(a: f64, b: f64, p: f64) -> f64 {
     a.mul_add(b, -p)
 }
 
 /// Veltkamp's split, for targets without a hardware FMA.
 #[inline]
-#[cfg_attr(any(target_arch = "aarch64", target_feature = "fma"), allow(dead_code))]
+#[cfg_attr(statrs_hardware_fma, allow(dead_code))]
 pub(crate) fn product_err_split(a: f64, b: f64, p: f64) -> f64 {
     const SPLIT: f64 = 134_217_729.0; // 2^27 + 1
     // The split multiplies by `SPLIT`, which overflows to `inf` once an argument
@@ -286,6 +288,7 @@ pub(crate) use macros::*;
 
 #[cfg(test)]
 mod product_err_tests {
+
     use super::{product_err_fma, product_err_split};
 
     /// The two implementations must agree bit for bit, since which one runs is
