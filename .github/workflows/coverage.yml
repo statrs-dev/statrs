@@ -27,10 +27,10 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: llvm-tools-preview
 
-      - uses: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@v2.85.4
         with:
           tool: nextest
-      - uses: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@v2.85.4
         with:
           tool: cargo-llvm-cov
 
