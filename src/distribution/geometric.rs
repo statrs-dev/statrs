@@ -133,6 +133,11 @@ impl DiscreteCDF<u64, f64> for Geometric {
     fn cdf(&self, x: u64) -> f64 {
         if x == 0 {
             0.0
+        } else if x == 1 {
+            // Mathematically cdf(1) = p. Evaluating via expm1/ln1p can
+            // undershoot by a ulp on some platforms (notably MSVC), which then
+            // makes inverse_cdf(p) pick k=2 via the definition check.
+            self.p
         } else {
             // 1 - (1 - p) ^ x = 1 - exp(log(1 - p)*x)
             //                 = -expm1(log1p(-p)*x))
@@ -154,6 +159,9 @@ impl DiscreteCDF<u64, f64> for Geometric {
         //           = exp(log1p(-p) * x)
         if x == 0 {
             1.0
+        } else if x == 1 {
+            // Mathematically sf(1) = 1 - p. Keep exact to match cdf(1) = p.
+            1.0 - self.p
         } else {
             ((-self.p).ln_1p() * (x as f64)).exp()
         }
@@ -163,11 +171,17 @@ impl DiscreteCDF<u64, f64> for Geometric {
     /// geometric distribution at `x`.
     /// In other languages, such as R, this is known as the quantile function.
     ///
+    /// Returns the least `k` such that `cdf(k) >= x`.
+    ///
     /// # Formula
     ///
     /// ```text
     /// k = ceil(log(1 - x) / log(1 - p))
     /// ```
+    ///
+    /// The closed form is only approximately integral at the step boundaries, so
+    /// the result is corrected against the definition above (and falls back to
+    /// bisection near the upper tail where `1 - x` loses precision).
     ///
     /// # Panics
     ///
@@ -189,6 +203,12 @@ impl DiscreteCDF<u64, f64> for Geometric {
             // degenerate distribution: all mass at k=1
             return self.min();
         }
+        // cdf(1) = p exactly, so every probability in (0, p] maps to the mode.
+        // Handle this before the closed form so platform-dependent ln1p/expm1
+        // noise in cdf cannot push the answer to 2 (observed on Windows MSVC).
+        if x <= self.p {
+            return self.min();
+        }
         let k = (-x).ln_1p() / (-self.p).ln_1p();
         if !k.is_finite() {
             panic!(
@@ -203,7 +223,51 @@ impl DiscreteCDF<u64, f64> for Geometric {
                 self.p, x
             );
         }
-        k as u64
+
+        // `ln1p(-x) / ln1p(-p)` is only approximately integral at the step
+        // boundaries, so plain `ceil` can land on either side of the true
+        // quantile and break `inverse_cdf(cdf(k)) == k` (statrs-dev/statrs#342).
+        // Correct the closed form against the definition: least k with cdf(k) >= x.
+        let candidate = (k.max(1.0) as u64).max(self.min());
+        let is_answer = |k: u64| self.cdf(k) >= x && (k <= self.min() || self.cdf(k - 1) < x);
+
+        // Ordinary rounding puts the closed form within one step, so this is
+        // the path essentially always taken: two or three cdf evaluations.
+        if is_answer(candidate) {
+            return candidate;
+        }
+        if candidate > self.min() && is_answer(candidate - 1) {
+            return candidate - 1;
+        }
+        if candidate < u64::MAX && is_answer(candidate + 1) {
+            return candidate + 1;
+        }
+
+        // Once x is within a few ulp of 1, `1 - x` has lost significant bits and
+        // the closed form can be off by an unbounded number of steps (cdf has a
+        // plateau roughly 1/p wide there). Bisect instead; exact by definition.
+        let mut hi = candidate;
+        while self.cdf(hi) < x {
+            match hi.checked_mul(2) {
+                Some(doubled) => hi = doubled,
+                None => {
+                    hi = u64::MAX;
+                    break;
+                }
+            }
+        }
+        let mut lo = self.min();
+        // If the closed-form candidate overshot, pull the upper bound down and
+        // start the lower bound from min; bisection still finds the least k.
+        while lo < hi {
+            let mid = lo + (hi - lo) / 2;
+            if self.cdf(mid) >= x {
+                hi = mid;
+            } else {
+                lo = mid + 1;
+            }
+        }
+        lo
     }
 }
 
@@ -572,16 +636,100 @@ mod tests {
         density_util::check_discrete_distribution(&create_ok(1.0), 1);
     }
 
+    /// `inverse_cdf` must return the least `k` with `cdf(k) >= x`, and so must
+    /// round-trip `cdf` wherever `cdf` is injective.
+    ///
+    /// The closed form `ceil(ln1p(-x) / ln1p(-p))` alone landed on the wrong
+    /// side for thousands of (p, k) pairs (statrs-dev/statrs#342).
+    #[test]
+    fn test_inverse_cdf_round_trips_and_matches_definition() {
+        let mut mismatches = 0;
+        for i in 1..200 {
+            let p = i as f64 / 200.0;
+            let g = create_ok(p);
+            for k in 1..=400u64 {
+                let c = g.cdf(k);
+                if c >= 1.0 {
+                    break;
+                }
+                // only meaningful where `cdf` actually separates k-1 from k
+                if g.cdf(k - 1) < c && g.inverse_cdf(c) != k {
+                    mismatches += 1;
+                }
+            }
+        }
+        assert_eq!(mismatches, 0, "cdf/inverse_cdf round-trip failures");
+    }
+
+    #[test]
+    fn test_inverse_cdf_is_least_k_with_cdf_at_least_x() {
+        for i in 1..60 {
+            let p = i as f64 / 60.0;
+            let g = create_ok(p);
+            // Chained rather than collected, so the test also builds under
+            // `no_std`, where there is no `Vec`. The second and third groups
+            // put x within a few ulp of 1, where `1 - x` has lost every
+            // significant bit and the closed form needs the bisection fallback.
+            let xs = (1..400)
+                .map(|j| j as f64 / 400.0)
+                .chain((1..6).map(|u| 1.0 - u as f64 * f64::EPSILON / 2.0))
+                .chain((1..6).map(|u| u as f64 * f64::MIN_POSITIVE))
+                .chain((1..400).map(|j| g.cdf(j)));
+            for x in xs {
+                // `x == 1` saturates to `u64::MAX` by design, iCDF(1) = +inf
+                if !(0.0..=1.0).contains(&x) || x == 1.0 {
+                    continue;
+                }
+                let k = g.inverse_cdf(x);
+                assert!(g.cdf(k) >= x, "p={p} x={x:e}: cdf({k}) < x");
+                assert!(
+                    k <= g.min() || g.cdf(k - 1) < x,
+                    "p={p} x={x:e}: {k} is not the least such k"
+                );
+            }
+        }
+    }
+
+    /// Tiny `p` gives `cdf` a plateau roughly `1/p` wide near 1, so the
+    /// bisection fallback has to cover an unbounded number of steps.
+    #[test]
+    fn test_inverse_cdf_long_plateau() {
+        for p in [1e-3f64, 1e-6, 1e-9] {
+            let g = create_ok(p);
+            let x = 1.0 - f64::EPSILON / 2.0;
+            let k = g.inverse_cdf(x);
+            assert!(g.cdf(k) >= x, "p={p:e}: cdf({k}) < x");
+            assert!(k <= g.min() || g.cdf(k - 1) < x, "p={p:e}: {k} not least");
+        }
+    }
+
     #[test]
     fn test_inverse_cdf() {
         let invcdf = |arg: f64| move |x: Geometric| x.inverse_cdf(arg);
         test_exact(1., 1, invcdf(0.));
         test_exact(1., 1, invcdf(1.));
+        // Support starts at 1 (trials until first success). cdf(1) = p, so
+        // inverse_cdf(p) must be 1 for any valid p — including values where
+        // ln1p/expm1 would otherwise undershoot p by a ulp (e.g. p=0.25).
         test_exact(0.2, 1, invcdf(0.2));
+        test_exact(0.25, 1, invcdf(0.25));
         test_exact(0.2, u64::MAX, invcdf(1.));
         test_exact(0.004, 173, invcdf(0.5));
         test_exact(0.5, u64::MAX, invcdf(1.));
         test_exact(0.5, 2, invcdf(0.75));
+    }
+
+    #[test]
+    fn test_cdf_one_is_exactly_p() {
+        // Guard the special-case that keeps inverse_cdf(p) == 1 portable.
+        for p in [0.1f64, 0.2, 0.25, 0.3, 0.5, 0.9, 1.0] {
+            let g = create_ok(p);
+            assert_eq!(g.cdf(1), p, "cdf(1) must equal p exactly");
+            assert_eq!(g.sf(1), 1.0 - p, "sf(1) must equal 1-p exactly");
+            if p < 1.0 {
+                assert_eq!(g.inverse_cdf(p), 1);
+            }
+        }
     }
 
     #[test]
