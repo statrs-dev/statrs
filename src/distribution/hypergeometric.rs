@@ -395,14 +395,11 @@ impl Discrete<u64, f64> for Hypergeometric {
     /// ```
     ///
     /// where `N` is population, `K` is successes, and `n` is draws
+    ///
+    /// Computed in log space via [`Self::ln_pmf`] so large binomial
+    /// coefficients that overflow `f64` still yield a finite probability.
     fn pmf(&self, x: u64) -> f64 {
-        if x > self.draws {
-            0.0
-        } else {
-            factorial::binomial(self.successes, x)
-                * factorial::binomial(self.population - self.successes, self.draws - x)
-                / factorial::binomial(self.population, self.draws)
-        }
+        self.ln_pmf(x).exp()
     }
 
     /// Calculates the log probability mass function for the hypergeometric
@@ -416,6 +413,9 @@ impl Discrete<u64, f64> for Hypergeometric {
     ///
     /// where `N` is population, `K` is successes, and `n` is draws
     fn ln_pmf(&self, x: u64) -> f64 {
+        if x > self.draws || x > self.successes || x < self.min() {
+            return f64::NEG_INFINITY;
+        }
         factorial::ln_binomial(self.successes, x)
             + factorial::ln_binomial(self.population - self.successes, self.draws - x)
             - factorial::ln_binomial(self.population, self.draws)
@@ -530,10 +530,42 @@ mod tests {
         test_exact(2, 1, 1, 0.5, pmf(0));
         test_exact(2, 1, 1, 0.5, pmf(1));
         test_exact(2, 2, 2, 1.0, pmf(2));
-        test_exact(10, 1, 1, 0.9, pmf(0));
-        test_exact(10, 1, 1, 0.1, pmf(1));
-        test_exact(10, 5, 3, 0.41666666666666666667, pmf(1));
-        test_exact(10, 5, 3, 0.083333333333333333333, pmf(3));
+        test_absolute(10, 1, 1, 0.9, 1e-14, pmf(0));
+        test_absolute(10, 1, 1, 0.1, 1e-14, pmf(1));
+        test_absolute(10, 5, 3, 0.41666666666666666667, 1e-14, pmf(1));
+        test_absolute(10, 5, 3, 0.083333333333333333333, 1e-14, pmf(3));
+    }
+
+    #[test]
+    fn test_pmf_large_population_no_overflow() {
+        // Regression for #426: binomial coefficients overflow f64 for large N,
+        // so the old coeff product/division returned 0.0 or NaN.
+        let pmf = |arg: u64| move |x: Hypergeometric| x.pmf(arg);
+        test_absolute(1030, 1, 515, 0.5, 1e-12, pmf(0));
+        test_absolute(1030, 1, 515, 0.5, 1e-12, pmf(1));
+        test_absolute(20000, 200, 300, 0.047931510683835526, 1e-11, pmf(0));
+        test_absolute(20000, 200, 300, 0.22687643066364876, 1e-11, pmf(3));
+
+        let d = create_ok(20000, 200, 300);
+        assert!(d.pmf(0).is_finite());
+        assert!(d.pmf(3).is_finite());
+        assert!(d.ln_pmf(0).is_finite());
+        assert!(d.ln_pmf(3).is_finite());
+    }
+
+    #[test]
+    fn test_pmf_out_of_support() {
+        let pmf = |arg: u64| move |x: Hypergeometric| x.pmf(arg);
+        let ln_pmf = |arg: u64| move |x: Hypergeometric| x.ln_pmf(arg);
+        // x > draws
+        test_exact(10, 5, 3, 0.0, pmf(4));
+        test_exact(10, 5, 3, f64::NEG_INFINITY, ln_pmf(4));
+        // x > successes
+        test_exact(10, 2, 5, 0.0, pmf(3));
+        test_exact(10, 2, 5, f64::NEG_INFINITY, ln_pmf(3));
+        // x < min (draws + successes > population)
+        test_exact(10, 8, 5, 0.0, pmf(2));
+        test_exact(10, 8, 5, f64::NEG_INFINITY, ln_pmf(2));
     }
 
     #[test]
