@@ -133,6 +133,11 @@ impl DiscreteCDF<u64, f64> for Geometric {
     fn cdf(&self, x: u64) -> f64 {
         if x == 0 {
             0.0
+        } else if x == 1 {
+            // Mathematically cdf(1) = p. Evaluating via expm1/ln1p can
+            // undershoot by a ulp on some platforms (notably MSVC), which then
+            // makes inverse_cdf(p) pick k=2 via the definition check.
+            self.p
         } else {
             // 1 - (1 - p) ^ x = 1 - exp(log(1 - p)*x)
             //                 = -expm1(log1p(-p)*x))
@@ -154,6 +159,9 @@ impl DiscreteCDF<u64, f64> for Geometric {
         //           = exp(log1p(-p) * x)
         if x == 0 {
             1.0
+        } else if x == 1 {
+            // Mathematically sf(1) = 1 - p. Keep exact to match cdf(1) = p.
+            1.0 - self.p
         } else {
             ((-self.p).ln_1p() * (x as f64)).exp()
         }
@@ -193,6 +201,12 @@ impl DiscreteCDF<u64, f64> for Geometric {
         }
         if prec::ulps_eq!(self.p, 1.0) {
             // degenerate distribution: all mass at k=1
+            return self.min();
+        }
+        // cdf(1) = p exactly, so every probability in (0, p] maps to the mode.
+        // Handle this before the closed form so platform-dependent ln1p/expm1
+        // noise in cdf cannot push the answer to 2 (observed on Windows MSVC).
+        if x <= self.p {
             return self.min();
         }
         let k = (-x).ln_1p() / (-self.p).ln_1p();
@@ -694,11 +708,28 @@ mod tests {
         let invcdf = |arg: f64| move |x: Geometric| x.inverse_cdf(arg);
         test_exact(1., 1, invcdf(0.));
         test_exact(1., 1, invcdf(1.));
+        // Support starts at 1 (trials until first success). cdf(1) = p, so
+        // inverse_cdf(p) must be 1 for any valid p — including values where
+        // ln1p/expm1 would otherwise undershoot p by a ulp (e.g. p=0.25).
         test_exact(0.2, 1, invcdf(0.2));
+        test_exact(0.25, 1, invcdf(0.25));
         test_exact(0.2, u64::MAX, invcdf(1.));
         test_exact(0.004, 173, invcdf(0.5));
         test_exact(0.5, u64::MAX, invcdf(1.));
         test_exact(0.5, 2, invcdf(0.75));
+    }
+
+    #[test]
+    fn test_cdf_one_is_exactly_p() {
+        // Guard the special-case that keeps inverse_cdf(p) == 1 portable.
+        for p in [0.1f64, 0.2, 0.25, 0.3, 0.5, 0.9, 1.0] {
+            let g = create_ok(p);
+            assert_eq!(g.cdf(1), p, "cdf(1) must equal p exactly");
+            assert_eq!(g.sf(1), 1.0 - p, "sf(1) must equal 1-p exactly");
+            if p < 1.0 {
+                assert_eq!(g.inverse_cdf(p), 1);
+            }
+        }
     }
 
     #[test]
