@@ -1,5 +1,5 @@
 use crate::distribution::Continuous;
-use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
+use crate::statistics::{Max, MeanN, Median, Min, Mode, VarianceN};
 use core::f64;
 use core::f64::consts::{E, PI};
 use nalgebra::{Cholesky, Const, DMatrix, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
@@ -475,6 +475,36 @@ where
     }
 }
 
+impl<D> Median<OVector<f64, D>> for MultivariateNormal<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator:
+        nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
+{
+    /// Returns the median of the multivariate normal distribution
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// μ
+    /// ```
+    ///
+    /// where `μ` is the mean
+    ///
+    /// # Remarks
+    ///
+    /// A multivariate distribution has several competing notions of median --
+    /// the vector of marginal medians, the geometric (spatial) median, the
+    /// halfspace median -- which in general disagree. For a distribution
+    /// symmetric about a point they all coincide there, so for the multivariate
+    /// normal every one of them equals `μ`, as do the mean and the mode. That
+    /// agreement is what makes this unambiguous; it does not hold for
+    /// `Multinomial` or `Dirichlet`, which is why neither implements this trait.
+    fn median(&self) -> OVector<f64, D> {
+        self.mu.clone()
+    }
+}
+
 impl<D> Mode<OVector<f64, D>> for MultivariateNormal<D>
 where
     D: Dim,
@@ -536,7 +566,7 @@ mod tests  {
 
     use crate::{
         distribution::{Continuous, MultivariateNormal},
-        statistics::{Max, MeanN, Min, Mode, VarianceN},
+        statistics::{Max, MeanN, Median, Min, Mode, VarianceN},
     };
 
     use super::MultivariateNormalError;
@@ -670,6 +700,22 @@ mod tests  {
             f64::INFINITY,
             entropy,
         );
+    }
+
+    #[test]
+    fn test_median() {
+        let median = |x: MultivariateNormal<_>| x.median();
+        test_case(vector![0., 0.], matrix![1., 0.; 0., 1.], vector![0., 0.], median);
+        test_case(vector![-3., 5.], matrix![2., 0.5; 0.5, 4.], vector![-3., 5.], median);
+    }
+
+    /// Every notion of centre coincides for a symmetric distribution, which is
+    /// what makes `median` unambiguous here.
+    #[test]
+    fn test_median_mean_and_mode_coincide() {
+        let d = MultivariateNormal::new(vec![1.5, -2.0], vec![3.0, 0.7, 0.7, 2.0]).unwrap();
+        assert_eq!(d.median(), d.mode());
+        assert_eq!(d.median(), d.mean().unwrap());
     }
 
     #[test]

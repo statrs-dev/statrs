@@ -211,6 +211,26 @@ impl ContinuousCDF<f64, f64> for FisherSnedecor {
     }
 }
 
+impl Median<f64> for FisherSnedecor {
+    /// Returns the median of the fisher-snedecor distribution.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// CDF^-1(0.5)
+    /// ```
+    ///
+    /// # Remarks
+    ///
+    /// No closed form exists. Computed by inverting the cdf, which for this
+    /// distribution reduces to
+    /// [`inv_beta_reg`](crate::function::beta::inv_beta_reg) and so is a
+    /// root-find rather than `O(1)` arithmetic.
+    fn median(&self) -> f64 {
+        self.inverse_cdf(0.5)
+    }
+}
+
 impl Min<f64> for FisherSnedecor {
     /// Returns the minimum value in the domain of the
     /// fisher-snedecor distribution representable by a double precision

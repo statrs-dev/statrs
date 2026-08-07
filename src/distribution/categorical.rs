@@ -310,6 +310,31 @@ impl Median<f64> for Categorical {
     }
 }
 
+impl Mode<Option<u64>> for Categorical {
+    /// Returns the mode of the categorical distribution, the index of the
+    /// largest probability.
+    ///
+    /// # Remarks
+    ///
+    /// Always `Some`, since a categorical distribution is constructed from at
+    /// least one non-zero weight. The `Option` is for consistency with the other
+    /// discrete distributions.
+    ///
+    /// The mode of a categorical distribution is not unique when two categories
+    /// tie for the largest probability, as they do for a fair die. This returns
+    /// the *lowest* such index, which is the only choice that does not depend on
+    /// iteration order.
+    fn mode(&self) -> Option<u64> {
+        let mut best = 0;
+        for (i, &p) in self.norm_pmf.iter().enumerate().skip(1) {
+            if p > self.norm_pmf[best] {
+                best = i;
+            }
+        }
+        Some(best as u64)
+    }
+}
+
 impl Discrete<u64, f64> for Categorical {
     /// Calculates the probability mass function for the categorical
     /// distribution at `x`
@@ -392,6 +417,29 @@ mod tests {
         let median = |x: Categorical| x.median();
         test_exact(&[0.0, 3.0, 1.0, 1.0], 1.0, median);
         test_exact(&[4.0, 2.5, 2.5, 1.0], 1.0, median);
+    }
+
+    #[test]
+    fn test_mode() {
+        let mode = |x: Categorical| x.mode();
+        test_exact(&[1.0, 2.0, 3.0], Some(2), mode);
+        test_exact(&[0.0, 3.0, 1.0, 1.0], Some(1), mode);
+        test_exact(&[4.0, 2.5, 2.5, 1.0], Some(0), mode);
+        // Weights need not be normalized, and the largest may sit anywhere.
+        test_exact(&[1.0, 9.0, 1.0, 1.0], Some(1), mode);
+    }
+
+    /// A tie has no unique mode; the documented convention is the lowest index.
+    #[test]
+    fn test_mode_breaks_ties_by_lowest_index() {
+        let mode = |x: Categorical| x.mode();
+        test_exact(&[1.0, 1.0], Some(0), mode);
+        test_exact(&[1.0; 6], Some(0), mode);
+        test_exact(&[0.0, 5.0, 5.0, 1.0], Some(1), mode);
+        // The tie is genuine: the two candidates really do have equal mass.
+        let d = create_ok(&[0.0, 5.0, 5.0, 1.0]);
+        assert_eq!(d.pmf(1), d.pmf(2));
+        assert!(d.pmf(1) > d.pmf(3));
     }
 
     #[test]
