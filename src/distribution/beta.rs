@@ -167,6 +167,13 @@ impl ContinuousCDF<f64, f64> for Beta {
             0.0
         } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
             1. - x
+        } else if x < (self.shape_a + 1.0) / (self.shape_a + self.shape_b + 2.0) {
+            // Below the continued fraction split point of `beta_reg`,
+            // `beta_reg(b, a, 1 - x)` reduces to `1 - beta_reg(a, b, x)`;
+            // computing the complement here instead avoids `1.0 - x`
+            // rounding to 1.0 for tiny x (< ~1.1e-16), which would lose
+            // the lower tail entirely. See #432 
+            1.0 - beta::beta_reg(self.shape_a, self.shape_b, x)
         } else {
             beta::beta_reg(self.shape_b, self.shape_a, 1.0 - x)
         }
@@ -611,6 +618,20 @@ mod tests {
             ((5.0, 100.0), 0.0, 1.0),
             ((5.0, 100.0), 0.5, 0.0),
             ((5.0, 100.0), 1.0, 0.0),
+            // Regression test for issue #432
+            // Reference values computed with mpmath at 60 decimal digits of precision.
+            ((0.05, 0.95), 1e-16, 0.84216163834910015),
+            ((0.05, 0.95), 1e-18, 0.87462453281806800),
+            ((0.05, 0.95), 1e-20, 0.90041072647564386),
+            ((0.05, 0.95), 1e-30, 0.96850710651415303),
+            ((0.05, 0.95), 1e-100, 0.99999004107264756),
+            ((0.05, 0.05), 1e-16, 0.92045095674306394),
+            ((0.05, 0.05), 1e-18, 0.93681194889571247),
+            ((0.05, 0.05), 1e-20, 0.94980794691066360),
+            ((0.05, 0.05), 1e-30, 0.98412787917976062),
+            ((0.05, 0.05), 1e-100, 0.99999498079469107),
+            ((2.0, 3.0), 1e-16, 1.0),
+            ((2.0, 3.0), 1e-100, 1.0),
         ];
         for ((a, b), x, expect) in test {
             test_relative(a, b, expect, sf(x));
