@@ -386,7 +386,7 @@ pub fn digamma(x: f64) -> f64 {
     if x == f64::NEG_INFINITY || x.is_nan() {
         return f64::NAN;
     }
-    if x <= 0.0 && prec::ulps_eq!(x.floor(), x) {
+    if x <= 0.0 && x.floor() == x {
         return f64::NEG_INFINITY;
     }
     if x < 0.0 {
@@ -1279,6 +1279,11 @@ mod tests {
             2.2622143570941481235561593642219403924532310597356171,
             epsilon = 1e-14
         );
+    }
+
+    #[test]
+    fn test_digamma_near_negative_integer_is_finite() {
+        assert!(super::digamma(-1.0 + 5e-10).is_finite());
     }
 
     #[test]

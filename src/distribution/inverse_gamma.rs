@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
-use crate::prec;
 use crate::statistics::*;
 use core::f64;
 #[cfg(not(feature = "std"))]
@@ -344,7 +343,7 @@ impl Continuous<f64, f64> for InverseGamma {
     fn pdf(&self, x: f64) -> f64 {
         if x <= 0.0 || x.is_infinite() {
             0.0
-        } else if prec::ulps_eq!(self.shape, 1.0) {
+        } else if self.shape == 1.0 {
             self.rate / (x * x) * (-self.rate / x).exp()
         } else {
             self.rate.powf(self.shape) * x.powf(-self.shape - 1.0) * (-self.rate / x).exp()
@@ -372,7 +371,7 @@ impl Continuous<f64, f64> for InverseGamma {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
-
+    use crate::prec;
 
     testing_boiler!(shape: f64, rate: f64; InverseGamma; InverseGammaError);
 
@@ -465,6 +464,22 @@ mod tests {
         test_absolute(0.1, 1.0, 0.0297426109178248997426, 1e-15, pdf(2.0));
         test_exact(1.0, 0.1, 0.04157808822362745501024, pdf(1.5));
         test_exact(1.0, 1.0, 0.3018043114632487660842, pdf(1.2));
+    }
+
+    #[test]
+    fn test_pdf_for_shape_near_one() {
+        let shape = 1.0 + 5e-10;
+        let rate = 1.0;
+        let x = 1.2_f64;
+        let dist = create_ok(shape, rate);
+        let expected = rate.powf(shape) * x.powf(-shape - 1.0) * (-rate / x).exp()
+            / gamma::gamma(shape);
+        prec::assert_relative_eq!(
+            dist.pdf(x),
+            expected,
+            epsilon = 1e-15,
+            max_relative = 1e-14
+        );
     }
 
     #[test]
