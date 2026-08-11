@@ -17,7 +17,6 @@ pub fn polynomial(z: f64, coeff: &[f64]) -> f64 {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use core::f64;
 
     // these tests probably could be more robust
     #[test]

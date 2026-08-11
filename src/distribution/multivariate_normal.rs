@@ -1,6 +1,5 @@
 use crate::distribution::Continuous;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
-use core::f64;
 use core::f64::consts::{E, PI};
 use nalgebra::{Cholesky, Const, DMatrix, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
 

@@ -1,7 +1,6 @@
 //! Provides the [Kolmogorov-Smirnov (KS) test](https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test) and related
 //! functions
 
-use core::f64;
 use core::iter::zip;
 
 use num_traits::clamp;

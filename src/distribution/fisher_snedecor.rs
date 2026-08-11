@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::beta;
 use crate::statistics::*;
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 

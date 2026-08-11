@@ -2,7 +2,6 @@
 //! related functions
 
 use crate::function::evaluate;
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -740,7 +739,6 @@ fn erf_inv_impl(p: f64, q: f64, s: f64) -> f64 {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use core::f64;
     use super::*;
     use crate::prec;
 

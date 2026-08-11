@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -409,7 +408,7 @@ impl Continuous<f64, f64> for StudentsT {
             (gamma::ln_gamma((self.freedom + 1.0) / 2.0) - gamma::ln_gamma(self.freedom / 2.0))
                 .exp()
                 * (1.0 + d * d / self.freedom).powf(-0.5 * (self.freedom + 1.0))
-                / (self.freedom * f64::consts::PI).sqrt()
+                / (self.freedom * core::f64::consts::PI).sqrt()
                 / self.scale
         }
     }
@@ -438,7 +437,7 @@ impl Continuous<f64, f64> for StudentsT {
             gamma::ln_gamma((self.freedom + 1.0) / 2.0)
                 - 0.5 * ((self.freedom + 1.0) * (1.0 + d * d / self.freedom).ln())
                 - gamma::ln_gamma(self.freedom / 2.0)
-                - 0.5 * (self.freedom * f64::consts::PI).ln()
+                - 0.5 * (self.freedom * core::f64::consts::PI).ln()
                 - self.scale.ln()
         }
     }

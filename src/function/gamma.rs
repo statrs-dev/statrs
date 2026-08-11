@@ -3,7 +3,6 @@
 
 use crate::consts;
 use crate::prec;
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -62,10 +61,10 @@ pub fn ln_gamma(x: f64) -> f64 {
             .fold(GAMMA_DK[0], |s, t| s + t.1 / (t.0 as f64 - x));
 
         consts::LN_PI
-            - (f64::consts::PI * x).sin().ln()
+            - (core::f64::consts::PI * x).sin().ln()
             - s.ln()
             - consts::LN_2_SQRT_E_OVER_PI
-            - (0.5 - x) * ((0.5 - x + GAMMA_R) / f64::consts::E).ln()
+            - (0.5 - x) * ((0.5 - x + GAMMA_R) / core::f64::consts::E).ln()
     } else {
         let s = GAMMA_DK
             .iter()
@@ -75,7 +74,7 @@ pub fn ln_gamma(x: f64) -> f64 {
 
         s.ln()
             + consts::LN_2_SQRT_E_OVER_PI
-            + (x - 0.5) * ((x - 0.5 + GAMMA_R) / f64::consts::E).ln()
+            + (x - 0.5) * ((x - 0.5 + GAMMA_R) / core::f64::consts::E).ln()
     }
 }
 
@@ -91,11 +90,11 @@ pub fn gamma(x: f64) -> f64 {
             .skip(1)
             .fold(GAMMA_DK[0], |s, t| s + t.1 / (t.0 as f64 - x));
 
-        f64::consts::PI
-            / ((f64::consts::PI * x).sin()
+        core::f64::consts::PI
+            / ((core::f64::consts::PI * x).sin()
                 * s
                 * consts::TWO_SQRT_E_OVER_PI
-                * ((0.5 - x + GAMMA_R) / f64::consts::E).powf(0.5 - x))
+                * ((0.5 - x + GAMMA_R) / core::f64::consts::E).powf(0.5 - x))
     } else {
         let s = GAMMA_DK
             .iter()
@@ -103,7 +102,7 @@ pub fn gamma(x: f64) -> f64 {
             .skip(1)
             .fold(GAMMA_DK[0], |s, t| s + t.1 / (x + t.0 as f64 - 1.0));
 
-        s * consts::TWO_SQRT_E_OVER_PI * ((x - 0.5 + GAMMA_R) / f64::consts::E).powf(x - 0.5)
+        s * consts::TWO_SQRT_E_OVER_PI * ((x - 0.5 + GAMMA_R) / core::f64::consts::E).powf(x - 0.5)
     }
 }
 
@@ -390,7 +389,7 @@ pub fn digamma(x: f64) -> f64 {
         return f64::NEG_INFINITY;
     }
     if x < 0.0 {
-        return digamma(1.0 - x) + f64::consts::PI / (-f64::consts::PI * x).tan();
+        return digamma(1.0 - x) + core::f64::consts::PI / (-core::f64::consts::PI * x).tan();
     }
     if x <= s {
         return d1 - 1.0 / x + d2 * x;
@@ -621,7 +620,7 @@ mod tests {
         );
         prec::assert_abs_diff_eq!(
             super::ln_gamma(3.0),
-            f64::consts::LN_2,
+            core::f64::consts::LN_2,
             epsilon = 1e-14
         );
         prec::assert_abs_diff_eq!(

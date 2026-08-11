@@ -1,6 +1,5 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 use num_traits::{One, Zero};
@@ -310,7 +309,7 @@ impl Median<f64> for Geometric {
     /// ceil(-1 / log_2(1 - p))
     /// ```
     fn median(&self) -> f64 {
-        (-f64::consts::LN_2 / (1.0 - self.p).ln()).ceil()
+        (-core::f64::consts::LN_2 / (1.0 - self.p).ln()).ceil()
     }
 }
 

@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF, Gamma, GammaError};
 use crate::statistics::*;
-use core::f64;
 
 /// Implements the
 /// [Chi-squared](https://en.wikipedia.org/wiki/Chi-squared_distribution)

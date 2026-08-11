@@ -1,7 +1,6 @@
 use super::{Continuous, ContinuousCDF};
 use crate::consts::EULER_MASCHERONI;
 use crate::statistics::*;
-use core::f64;
 use core::f64::consts::PI;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;

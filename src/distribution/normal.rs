@@ -2,7 +2,6 @@ use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -175,7 +174,7 @@ impl ContinuousCDF<f64, f64> for Normal {
         if !(0.0..=1.0).contains(&x) {
             panic!("x must be in [0, 1]");
         } else {
-            self.mean - (self.std_dev * f64::consts::SQRT_2 * erf::erfc_inv(2.0 * x))
+            self.mean - (self.std_dev * core::f64::consts::SQRT_2 * erf::erfc_inv(2.0 * x))
         }
     }
 }
@@ -327,13 +326,13 @@ impl Continuous<f64, f64> for Normal {
 /// performs an unchecked cdf calculation for a normal distribution
 /// with the given mean and standard deviation at x
 pub fn cdf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
-    0.5 * erf::erfc((mean - x) / (std_dev * f64::consts::SQRT_2))
+    0.5 * erf::erfc((mean - x) / (std_dev * core::f64::consts::SQRT_2))
 }
 
 /// performs an unchecked sf calculation for a normal distribution
 /// with the given mean and standard deviation at x
 pub fn sf_unchecked(x: f64, mean: f64, std_dev: f64) -> f64 {
-    0.5 * erf::erfc((x - mean) / (std_dev * f64::consts::SQRT_2))
+    0.5 * erf::erfc((x - mean) / (std_dev * core::f64::consts::SQRT_2))
 }
 
 /// performs an unchecked pdf calculation for a normal distribution
