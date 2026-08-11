@@ -1,8 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, factorial};
-use crate::prec;
 use crate::statistics::*;
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -218,12 +216,12 @@ impl Distribution<f64> for Binomial {
     /// (1 / 2) * ln (2 * π * e * n * p * (1 - p))
     /// ```
     fn entropy(&self) -> Option<f64> {
-        let entr = if self.p == 0.0 || prec::ulps_eq!(self.p, 1.0) {
+        let entr = if self.p == 0.0 || self.p == 1.0 {
             0.0
         } else {
             (0..self.n + 1).fold(0.0, |acc, x| {
                 let p = self.pmf(x);
-                acc - p * p.ln()
+                if p == 0.0 { acc } else { acc - p * p.ln() }
             })
         };
         Some(entr)
@@ -265,7 +263,7 @@ impl Mode<Option<u64>> for Binomial {
     fn mode(&self) -> Option<u64> {
         let mode = if self.p == 0.0 {
             0
-        } else if prec::ulps_eq!(self.p, 1.0) {
+        } else if self.p == 1.0 {
             self.n
         } else {
             ((self.n as f64 + 1.0) * self.p).floor() as u64
@@ -288,7 +286,7 @@ impl Discrete<u64, f64> for Binomial {
             0.0
         } else if self.p == 0.0 {
             if x == 0 { 1.0 } else { 0.0 }
-        } else if prec::ulps_eq!(self.p, 1.0) {
+        } else if self.p == 1.0 {
             if x == self.n { 1.0 } else { 0.0 }
         } else {
             (factorial::ln_binomial(self.n, x)
@@ -311,7 +309,7 @@ impl Discrete<u64, f64> for Binomial {
             f64::NEG_INFINITY
         } else if self.p == 0.0 {
             if x == 0 { 0.0 } else { f64::NEG_INFINITY }
-        } else if prec::ulps_eq!(self.p, 1.0) {
+        } else if self.p == 1.0 {
             if x == self.n { 0.0 } else { f64::NEG_INFINITY }
         } else {
             factorial::ln_binomial(self.n, x)
@@ -326,6 +324,7 @@ impl Discrete<u64, f64> for Binomial {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
+    use crate::prec;
     crate::distribution::internal::testing_boiler!(p: f64, n: u64; Binomial; BinomialError);
 
     #[test]
@@ -454,6 +453,20 @@ mod tests {
         test_exact(1.0, 10, f64::NEG_INFINITY, ln_pmf(0));
         test_exact(1.0, 10, f64::NEG_INFINITY, ln_pmf(1));
         test_exact(1.0, 10, 0.0, ln_pmf(10));
+    }
+
+    #[test]
+    fn test_probability_near_one_is_not_degenerate() {
+        let p = 1.0 - 5e-10;
+        let n = 10;
+        let dist = create_ok(p, n);
+        let expected = n as f64 * p.powi(n as i32 - 1) * (1.0 - p);
+        prec::assert_relative_eq!(dist.pmf(n - 1), expected);
+        prec::assert_relative_eq!(dist.ln_pmf(n - 1), expected.ln());
+        assert!(dist.entropy().unwrap() > 0.0);
+
+        let large_dist = create_ok(p, 1000);
+        assert!(large_dist.entropy().unwrap().is_finite());
     }
 
     #[test]

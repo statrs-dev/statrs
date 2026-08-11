@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF, InverseCdfError};
 use crate::function::{beta, gamma};
-use crate::prec;
 use crate::statistics::*;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
@@ -143,7 +142,7 @@ impl ContinuousCDF<f64, f64> for Beta {
             0.0
         } else if x >= 1.0 {
             1.0
-        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
+        } else if self.shape_a == 1.0 && self.shape_b == 1.0 {
             x
         } else {
             beta::beta_reg(self.shape_a, self.shape_b, x)
@@ -165,8 +164,15 @@ impl ContinuousCDF<f64, f64> for Beta {
             1.0
         } else if x >= 1.0 {
             0.0
-        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
+        } else if self.shape_a == 1.0 && self.shape_b == 1.0 {
             1. - x
+        } else if x < (self.shape_a + 1.0) / (self.shape_a + self.shape_b + 2.0) {
+            // Below the continued fraction split point of `beta_reg`,
+            // `beta_reg(b, a, 1 - x)` reduces to `1 - beta_reg(a, b, x)`;
+            // computing the complement here instead avoids `1.0 - x`
+            // rounding to 1.0 for tiny x (< ~1.1e-16), which would lose
+            // the lower tail entirely. See #432
+            1.0 - beta::beta_reg(self.shape_a, self.shape_b, x)
         } else {
             beta::beta_reg(self.shape_b, self.shape_a, 1.0 - x)
         }
@@ -358,7 +364,7 @@ impl Continuous<f64, f64> for Beta {
     fn pdf(&self, x: f64) -> f64 {
         if !(0.0..=1.0).contains(&x) {
             0.0
-        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
+        } else if self.shape_a == 1.0 && self.shape_b == 1.0 {
             1.0
         } else if self.shape_a > 80.0 || self.shape_b > 80.0 {
             self.ln_pdf(x).exp()
@@ -384,23 +390,31 @@ impl Continuous<f64, f64> for Beta {
     fn ln_pdf(&self, x: f64) -> f64 {
         if !(0.0..=1.0).contains(&x) {
             f64::NEG_INFINITY
-        } else if prec::ulps_eq!(self.shape_a, 1.0) && prec::ulps_eq!(self.shape_b, 1.0) {
+        } else if self.shape_a == 1.0 && self.shape_b == 1.0 {
             0.0
         } else {
             let aa = gamma::ln_gamma(self.shape_a + self.shape_b)
                 - gamma::ln_gamma(self.shape_a)
                 - gamma::ln_gamma(self.shape_b);
-            let bb = if prec::ulps_eq!(self.shape_a, 1.0) && x == 0.0 {
-                0.0
-            } else if x == 0.0 {
-                f64::NEG_INFINITY
+            let bb = if x == 0.0 {
+                if self.shape_a < 1.0 {
+                    f64::INFINITY
+                } else if self.shape_a == 1.0 {
+                    0.0
+                } else {
+                    f64::NEG_INFINITY
+                }
             } else {
                 (self.shape_a - 1.0) * x.ln()
             };
-            let cc = if prec::ulps_eq!(self.shape_b, 1.0) && prec::ulps_eq!(x, 1.0) {
-                0.0
-            } else if prec::ulps_eq!(x, 1.0) {
-                f64::NEG_INFINITY
+            let cc = if x == 1.0 {
+                if self.shape_b < 1.0 {
+                    f64::INFINITY
+                } else if self.shape_b == 1.0 {
+                    0.0
+                } else {
+                    f64::NEG_INFINITY
+                }
             } else {
                 (self.shape_b - 1.0) * (1.0 - x).ln()
             };
@@ -568,6 +582,45 @@ mod tests {
     }
 
     #[test]
+    fn test_ln_pdf_near_upper_boundary() {
+        let x = 1.0 - 1e-9;
+        let test = [
+            ((2.0, 3.0), -38.961625081668685701),
+            ((0.05, 0.05), 16.002056822547670151),
+            ((5.0, 0.001), 13.796869938301040045),
+        ];
+        for ((a, b), expect) in test {
+            test_absolute(a, b, expect, 5e-14, |dist| dist.ln_pdf(x));
+        }
+    }
+
+    #[test]
+    fn test_density_at_boundaries() {
+        test_exact(0.5, 2.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
+        test_exact(2.0, 0.5, f64::INFINITY, |dist| dist.ln_pdf(1.0));
+        test_relative(1.0, 2.0, 2.0_f64.ln(), |dist| dist.ln_pdf(0.0));
+        test_exact(2.0, 3.0, f64::NEG_INFINITY, |dist| dist.ln_pdf(0.0));
+        test_exact(2.0, 3.0, f64::NEG_INFINITY, |dist| dist.ln_pdf(1.0));
+    }
+
+    #[test]
+    fn test_near_uniform_shapes_are_not_uniform() {
+        let shape_a = 1.0 + 5e-10;
+        let x = 0.5_f64;
+        test_absolute(shape_a, 1.0, x.powf(shape_a), 5e-15, |dist| dist.cdf(x));
+        test_absolute(shape_a, 1.0, 1.0 - x.powf(shape_a), 5e-15, |dist| {
+            dist.sf(x)
+        });
+        test_absolute(
+            shape_a,
+            1.0,
+            shape_a * x.powf(shape_a - 1.0),
+            5e-15,
+            |dist| dist.pdf(x),
+        );
+    }
+
+    #[test]
     fn test_ln_pdf_input_lt_0() {
         let ln_pdf = |arg: f64| move |x: Beta| x.ln_pdf(arg);
         test_relative(1.0, 1.0, f64::NEG_INFINITY, ln_pdf(-1.0));
@@ -611,6 +664,20 @@ mod tests {
             ((5.0, 100.0), 0.0, 1.0),
             ((5.0, 100.0), 0.5, 0.0),
             ((5.0, 100.0), 1.0, 0.0),
+            // Regression test for issue #432
+            // Reference values computed with mpmath at 60 decimal digits of precision.
+            ((0.05, 0.95), 1e-16, 0.84216163834910015),
+            ((0.05, 0.95), 1e-18, 0.87462453281806800),
+            ((0.05, 0.95), 1e-20, 0.90041072647564386),
+            ((0.05, 0.95), 1e-30, 0.96850710651415303),
+            ((0.05, 0.95), 1e-100, 0.99999004107264756),
+            ((0.05, 0.05), 1e-16, 0.92045095674306394),
+            ((0.05, 0.05), 1e-18, 0.93681194889571247),
+            ((0.05, 0.05), 1e-20, 0.94980794691066360),
+            ((0.05, 0.05), 1e-30, 0.98412787917976062),
+            ((0.05, 0.05), 1e-100, 0.99999498079469107),
+            ((2.0, 3.0), 1e-16, 1.0),
+            ((2.0, 3.0), 1e-100, 1.0),
         ];
         for ((a, b), x, expect) in test {
             test_relative(a, b, expect, sf(x));

@@ -2,7 +2,6 @@
 //! functions
 
 use alloc::{vec, vec::Vec};
-use core::f64;
 use core::iter::zip;
 
 #[cfg(not(feature = "std"))]

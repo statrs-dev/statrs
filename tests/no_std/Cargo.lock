@@ -169,7 +169,7 @@ dependencies = [
 
 [[package]]
 name = "statrs"
-version = "0.19.0"
+version = "0.19.1"
 dependencies = [
  "approx",
  "nalgebra",

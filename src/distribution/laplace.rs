@@ -1,6 +1,5 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::{Distribution, Max, Median, Min, Mode};
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -323,6 +322,7 @@ impl Continuous<f64, f64> for Laplace {
 mod tests {
     use super::*;
     use crate::prec;
+    use core::f64::consts as f64_consts;
 
     testing_boiler!(location: f64, scale: f64; Laplace; LaplaceError);
 
@@ -383,13 +383,13 @@ mod tests {
         test_absolute(
             f64::NEG_INFINITY,
             0.1,
-            (2.0 * f64::consts::E * 0.1).ln(),
+            (2.0 * f64_consts::E * 0.1).ln(),
             1E-12,
             entropy,
         );
-        test_absolute(-6.0, 1.0, (2.0 * f64::consts::E).ln(), 1E-12, entropy);
-        test_absolute(1.0, 7.0, (2.0 * f64::consts::E * 7.0).ln(), 1E-12, entropy);
-        test_absolute(5., 10., (2. * f64::consts::E * 10.).ln(), 1E-12, entropy);
+        test_absolute(-6.0, 1.0, (2.0 * f64_consts::E).ln(), 1E-12, entropy);
+        test_absolute(1.0, 7.0, (2.0 * f64_consts::E * 7.0).ln(), 1E-12, entropy);
+        test_absolute(5., 10., (2. * f64_consts::E * 10.).ln(), 1E-12, entropy);
         test_absolute(f64::INFINITY, f64::INFINITY, f64::INFINITY, 1E-12, entropy);
     }
 
@@ -471,7 +471,7 @@ mod tests {
         test_exact(f64::NEG_INFINITY, 0.1, f64::NEG_INFINITY, ln_pdf(-0.0));
         test_exact(0.0, 1.0, f64::NEG_INFINITY, ln_pdf(f64::INFINITY));
         test_absolute(1.0, 1.0, -4.693147180559945, 1E-12, ln_pdf(5.0));
-        test_absolute(-1.0, 1.0, -f64::consts::LN_2, 1E-12, ln_pdf(-1.0));
+        test_absolute(-1.0, 1.0, -f64_consts::LN_2, 1E-12, ln_pdf(-1.0));
         test_absolute(5.0, 1.0, -6.693147180559945, 1E-12, ln_pdf(-1.0));
         test_absolute(-5.0, 1.0, -8.193147180559945, 1E-12, ln_pdf(2.5));
         test_exact(f64::INFINITY, 0.1, f64::NEG_INFINITY, ln_pdf(2.0));
@@ -541,7 +541,7 @@ mod tests {
         test_rel_close(loc, scale, expected, reltol, inverse_cdf(0.001));
 
         // Wolfram Alpha: Inverse CDF[LaplaceDistribution[0, 1], 95/100]
-        let expected = f64::consts::LN_10;
+        let expected = f64_consts::LN_10;
         test_rel_close(loc, scale, expected, reltol, inverse_cdf(0.95));
     }
 

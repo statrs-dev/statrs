@@ -1,9 +1,8 @@
 use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
-use crate::prec;
 use crate::statistics::*;
-use core::f64;
+use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -298,7 +297,7 @@ impl Median<f64> for Weibull {
     ///
     /// where `k` is the shape and `λ` is the scale
     fn median(&self) -> f64 {
-        self.scale * f64::consts::LN_2.powf(1.0 / self.shape)
+        self.scale * f64_consts::LN_2.powf(1.0 / self.shape)
     }
 }
 
@@ -317,7 +316,7 @@ impl Mode<Option<f64>> for Weibull {
     ///
     /// where `k` is the shape and `λ` is the scale
     fn mode(&self) -> Option<f64> {
-        let mode = if prec::ulps_eq!(self.shape, 1.0) {
+        let mode = if self.shape <= 1.0 {
             0.0
         } else {
             self.scale * ((self.shape - 1.0) / self.shape).powf(1.0 / self.shape)
@@ -340,7 +339,7 @@ impl Continuous<f64, f64> for Weibull {
     fn pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if x == 0.0 && prec::ulps_eq!(self.shape, 1.0) {
+        } else if x == 0.0 && self.shape == 1.0 {
             1.0 / self.scale
         } else if x.is_infinite() {
             0.0
@@ -365,7 +364,7 @@ impl Continuous<f64, f64> for Weibull {
     fn ln_pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             f64::NEG_INFINITY
-        } else if x == 0.0 && prec::ulps_eq!(self.shape, 1.0) {
+        } else if x == 0.0 && self.shape == 1.0 {
             0.0 - self.scale.ln()
         } else if x.is_infinite() {
             f64::NEG_INFINITY
@@ -446,7 +445,7 @@ mod tests {
     fn test_median() {
         let median = |x: Weibull| x.median();
         test_exact(1.0, 0.1, 0.069314718055994530941723212145817656807550013436026, median);
-        test_exact(1.0, 1.0, f64::consts::LN_2, median);
+        test_exact(1.0, 1.0, f64_consts::LN_2, median);
         test_exact(10.0, 10.0, 9.6401223546778973665856033763604752124634905617583, median);
         test_exact(10.0, 1.0, 0.96401223546778973665856033763604752124634905617583, median);
     }
@@ -458,6 +457,7 @@ mod tests {
         test_exact(1.0, 1.0, 0.0, mode);
         test_exact(10.0, 10.0, 9.8951925820621439264623017041980483215553841533709, mode);
         test_exact(10.0, 1.0, 0.98951925820621439264623017041980483215553841533709, mode);
+        test_exact(0.5, 1.0, 0.0, mode);
     }
 
     #[test]
@@ -486,9 +486,17 @@ mod tests {
     }
 
     #[test]
+    fn test_density_at_zero_for_shape_near_one() {
+        test_exact(1.0 + 5e-10, 1.0, 0.0, |dist| dist.pdf(0.0));
+        test_exact(1.0 + 5e-10, 1.0, f64::NEG_INFINITY, |dist| dist.ln_pdf(0.0));
+        test_exact(1.0 - 5e-10, 1.0, f64::INFINITY, |dist| dist.pdf(0.0));
+        test_exact(1.0 - 5e-10, 1.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
+    }
+
+    #[test]
     fn test_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: Weibull| x.ln_pdf(arg);
-        test_absolute(1.0, 0.1, f64::consts::LN_10, 1e-15, ln_pdf(0.0));
+        test_absolute(1.0, 0.1, f64_consts::LN_10, 1e-15, ln_pdf(0.0));
         test_absolute(1.0, 0.1, -7.6974149070059543159820085453156357923988985113712, 1e-15, ln_pdf(1.0));
         test_exact(1.0, 0.1, -97.697414907005954315982008545315635792398898511371, ln_pdf(10.0));
         test_exact(1.0, 1.0, 0.0, ln_pdf(0.0));

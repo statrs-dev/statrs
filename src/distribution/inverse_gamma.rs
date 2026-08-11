@@ -1,8 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
-use crate::prec;
 use crate::statistics::*;
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -344,7 +342,7 @@ impl Continuous<f64, f64> for InverseGamma {
     fn pdf(&self, x: f64) -> f64 {
         if x <= 0.0 || x.is_infinite() {
             0.0
-        } else if prec::ulps_eq!(self.shape, 1.0) {
+        } else if self.shape == 1.0 {
             self.rate / (x * x) * (-self.rate / x).exp()
         } else {
             self.rate.powf(self.shape) * x.powf(-self.shape - 1.0) * (-self.rate / x).exp()
@@ -372,7 +370,8 @@ impl Continuous<f64, f64> for InverseGamma {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
-
+    use crate::prec;
+    use core::f64::consts as f64_consts;
 
     testing_boiler!(shape: f64, rate: f64; InverseGamma; InverseGammaError);
 
@@ -468,6 +467,22 @@ mod tests {
     }
 
     #[test]
+    fn test_pdf_for_shape_near_one() {
+        let shape = 1.0 + 5e-10;
+        let rate = 1.0;
+        let x = 1.2_f64;
+        let dist = create_ok(shape, rate);
+        let expected = rate.powf(shape) * x.powf(-shape - 1.0) * (-rate / x).exp()
+            / gamma::gamma(shape);
+        prec::assert_relative_eq!(
+            dist.pdf(x),
+            expected,
+            epsilon = 1e-15,
+            max_relative = 1e-14
+        );
+    }
+
+    #[test]
     fn test_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: InverseGamma| x.ln_pdf(arg);
         test_absolute(0.1, 0.1, 0.0628591853882328004197f64.ln(), 1e-15, ln_pdf(1.2));
@@ -509,7 +524,7 @@ mod tests {
         // p = 1 - 1e-12 (quantile ~6.4e23) where the old search lost all precision.
         let cases: &[(f64, f64, f64, f64)] = &[
             (1.0, 1.0, 1e-12, 0.03619120682527099),  (1.0, 1.0, 1e-6, 0.07238241365054197),
-            (1.0, 1.0, 1e-2, 0.21714724095162594),   (1.0, 1.0, 0.5, f64::consts::LOG2_E), // median = 1/ln 2
+            (1.0, 1.0, 1e-2, 0.21714724095162594),   (1.0, 1.0, 0.5, f64_consts::LOG2_E), // median = 1/ln 2
 
             (1.0, 1.0, 0.9999, 9999.499991667344),   (1.0, 1.0, 0.99999999, 99999998.99752413),
             (1.0, 1.0, 0.999999999999, 1000022122209.0044),

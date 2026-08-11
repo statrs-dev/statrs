@@ -1,7 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
-use crate::prec;
 use crate::statistics::*;
-use core::f64;
+use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 use num_traits::{One, Zero};
@@ -101,7 +100,7 @@ impl core::fmt::Display for Geometric {
 #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 impl ::rand::distr::Distribution<u64> for Geometric {
     fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> u64 {
-        if prec::ulps_eq!(self.p, 1.0) {
+        if self.p == 1.0 {
             1
         } else {
             let x: f64 = r.sample(::rand::distr::OpenClosed01);
@@ -185,7 +184,7 @@ impl DiscreteCDF<u64, f64> for Geometric {
         if !(<f64>::zero()..=<f64>::one()).contains(&x) {
             panic!("x must be in [0, 1]");
         }
-        if prec::ulps_eq!(self.p, 1.0) {
+        if self.p == 1.0 {
             // degenerate distribution: all mass at k=1
             return self.min();
         }
@@ -233,11 +232,7 @@ impl Max<u64> for Geometric {
     /// 2^63 - 1
     /// ```
     fn max(&self) -> u64 {
-        if prec::ulps_eq!(self.p, 1.0) {
-            1
-        } else {
-            u64::MAX
-        }
+        if self.p == 1.0 { 1 } else { u64::MAX }
     }
 }
 
@@ -284,7 +279,7 @@ impl Distribution<f64> for Geometric {
     /// (2 - p) / sqrt(1 - p)
     /// ```
     fn skewness(&self) -> Option<f64> {
-        if prec::ulps_eq!(self.p, 1.0) {
+        if self.p == 1.0 {
             return Some(f64::INFINITY);
         };
         Some((2.0 - self.p) / (1.0 - self.p).sqrt())
@@ -315,7 +310,7 @@ impl Median<f64> for Geometric {
     /// ceil(-1 / log_2(1 - p))
     /// ```
     fn median(&self) -> f64 {
-        (-f64::consts::LN_2 / (1.0 - self.p).ln()).ceil()
+        (-f64_consts::LN_2 / (1.0 - self.p).ln()).ceil()
     }
 }
 
@@ -347,9 +342,9 @@ impl Discrete<u64, f64> for Geometric {
     fn ln_pmf(&self, x: u64) -> f64 {
         if x == 0 {
             f64::NEG_INFINITY
-        } else if prec::ulps_eq!(self.p, 1.0) && x == 1 {
+        } else if self.p == 1.0 && x == 1 {
             0.0
-        } else if prec::ulps_eq!(self.p, 1.0) {
+        } else if self.p == 1.0 {
             f64::NEG_INFINITY
         } else {
             ((x - 1) as f64 * (1.0 - self.p).ln()) + self.p.ln()
@@ -370,6 +365,16 @@ mod tests {
     fn test_create() {
         create_ok(0.3);
         create_ok(1.0);
+    }
+
+    #[test]
+    #[cfg(feature = "rand")]
+    fn test_sample_degenerate() {
+        use rand::{distr::Distribution as _, rngs::StdRng, SeedableRng};
+
+        let mut rng = StdRng::seed_from_u64(437);
+        let sample: u64 = create_ok(1.0).sample(&mut rng);
+        assert_eq!(sample, 1);
     }
 
     #[test]
@@ -461,6 +466,16 @@ mod tests {
         test_absolute(0.3, -1.560647748264668371535, 1e-15, ln_pmf(2));
         test_exact(1.0, 0.0, ln_pmf(1));
         test_exact(1.0, f64::NEG_INFINITY, ln_pmf(2));
+    }
+
+    #[test]
+    fn test_probability_near_one_is_not_degenerate() {
+        let p = 1.0 - 5e-10;
+        let dist = create_ok(p);
+        assert_eq!(dist.max(), u64::MAX);
+        prec::assert_relative_eq!(dist.ln_pmf(2), ((1.0 - p) * p).ln());
+        assert!(dist.skewness().unwrap().is_finite());
+        assert_eq!(dist.inverse_cdf((1.0 + p) / 2.0), 2);
     }
 
     #[test]

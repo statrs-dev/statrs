@@ -1,7 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use core::f64;
+use core::f64::consts as f64_consts;
 use core::num::NonZeroU64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
@@ -234,7 +234,7 @@ impl Distribution<f64> for Chi {
                         * (1.0 - 0.046875 / (freedom * freedom * freedom))),
             )
         } else {
-            let mean = f64::consts::SQRT_2 * gamma::gamma((freedom + 1.0) / 2.0)
+            let mean = f64_consts::SQRT_2 * gamma::gamma((freedom + 1.0) / 2.0)
                 / gamma::gamma(freedom / 2.0);
             Some(mean)
         }
@@ -425,7 +425,7 @@ mod tests {
         let mode = |x: Chi| x.mode().unwrap();
         test_exact(1, 0.0, mode);
         test_exact(2, 1.0, mode);
-        test_exact(3, f64::consts::SQRT_2, mode);
+        test_exact(3, f64_consts::SQRT_2, mode);
     }
 
     #[test]

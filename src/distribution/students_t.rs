@@ -1,7 +1,7 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::{beta, gamma};
 use crate::statistics::*;
-use core::f64;
+use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -409,7 +409,7 @@ impl Continuous<f64, f64> for StudentsT {
             (gamma::ln_gamma((self.freedom + 1.0) / 2.0) - gamma::ln_gamma(self.freedom / 2.0))
                 .exp()
                 * (1.0 + d * d / self.freedom).powf(-0.5 * (self.freedom + 1.0))
-                / (self.freedom * f64::consts::PI).sqrt()
+                / (self.freedom * f64_consts::PI).sqrt()
                 / self.scale
         }
     }
@@ -438,7 +438,7 @@ impl Continuous<f64, f64> for StudentsT {
             gamma::ln_gamma((self.freedom + 1.0) / 2.0)
                 - 0.5 * ((self.freedom + 1.0) * (1.0 + d * d / self.freedom).ln())
                 - gamma::ln_gamma(self.freedom / 2.0)
-                - 0.5 * (self.freedom * f64::consts::PI).ln()
+                - 0.5 * (self.freedom * f64_consts::PI).ln()
                 - self.scale.ln()
         }
     }
@@ -589,7 +589,7 @@ mod tests {
     #[test]
     fn test_pdf() {
         let pdf = |arg: f64| move |x: StudentsT| x.pdf(arg);
-        test_relative(0.0, 1.0, 1.0, core::f64::consts::FRAC_1_PI, pdf(0.0));
+        test_relative(0.0, 1.0, 1.0, f64_consts::FRAC_1_PI, pdf(0.0));
         test_relative(0.0, 1.0, 1.0, 0.159154943091895, pdf(1.0));
         test_relative(0.0, 1.0, 1.0, 0.159154943091895, pdf(-1.0));
         test_relative(0.0, 1.0, 1.0, 0.063661977236758, pdf(2.0));

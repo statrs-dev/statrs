@@ -30,7 +30,6 @@ pub fn checked_logit(p: f64) -> Option<f64> {
 #[rustfmt::skip]
 #[cfg(test)]
 mod tests {
-    use core::f64;
     use crate::prec;
     use super::*;
 

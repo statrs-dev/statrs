@@ -148,7 +148,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
     fn cdf(&self, x: f64) -> f64 {
         if x <= 0.0 {
             0.0
-        } else if prec::ulps_eq!(x, self.shape) && self.rate.is_infinite() {
+        } else if x == self.shape && self.rate.is_infinite() {
             1.0
         } else if self.rate.is_infinite() {
             0.0
@@ -173,7 +173,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
     fn sf(&self, x: f64) -> f64 {
         if x <= 0.0 {
             1.0
-        } else if prec::ulps_eq!(x, self.shape) && self.rate.is_infinite() {
+        } else if x == self.shape && self.rate.is_infinite() {
             0.0
         } else if self.rate.is_infinite() {
             1.0
@@ -359,7 +359,7 @@ impl Continuous<f64, f64> for Gamma {
     fn pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             0.0
-        } else if prec::ulps_eq!(self.shape, 1.0) {
+        } else if self.shape == 1.0 {
             self.rate * (-self.rate * x).exp()
         } else if self.shape > 160.0 {
             self.ln_pdf(x).exp()
@@ -390,7 +390,7 @@ impl Continuous<f64, f64> for Gamma {
     fn ln_pdf(&self, x: f64) -> f64 {
         if x < 0.0 {
             f64::NEG_INFINITY
-        } else if prec::ulps_eq!(self.shape, 1.0) {
+        } else if self.shape == 1.0 {
             self.rate.ln() - self.rate * x
         } else if x.is_infinite() {
             f64::NEG_INFINITY
@@ -617,6 +617,14 @@ mod tests {
     }
 
     #[test]
+    fn test_pdf_at_zero_for_shape_near_one() {
+        test_exact(1.0 + 5e-10, 1.0, 0.0, |dist| dist.pdf(0.0));
+        test_exact(1.0 + 5e-10, 1.0, f64::NEG_INFINITY, |dist| dist.ln_pdf(0.0));
+        test_exact(1.0 - 5e-10, 1.0, f64::INFINITY, |dist| dist.pdf(0.0));
+        test_exact(1.0 - 5e-10, 1.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
+    }
+
+    #[test]
     fn test_ln_pdf() {
         let f = |arg: f64| move |x: Gamma| x.ln_pdf(arg);
         let test = [
@@ -660,6 +668,13 @@ mod tests {
     #[test]
     fn test_cdf_at_zero() {
         test_relative(1.0, 0.1, 0.0, |x| x.cdf(0.0));
+    }
+
+    #[test]
+    fn test_infinite_rate_special_point_is_exact() {
+        let dist = create_ok(10.0, f64::INFINITY);
+        assert_eq!(dist.cdf(10.0 - 5e-10), 0.0);
+        assert_eq!(dist.sf(10.0 - 5e-10), 1.0);
     }
 
     #[test]

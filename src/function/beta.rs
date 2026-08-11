@@ -5,7 +5,6 @@
 
 use crate::function::gamma;
 use crate::prec;
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -429,6 +428,7 @@ pub fn inv_beta_reg(mut a: f64, mut b: f64, mut x: f64) -> f64 {
 mod tests {
     use super::*;
     use crate::prec;
+    use core::f64::consts as f64_consts;
     const MODULE_RELATIVE_ACC: f64 = 1e-14;
 
     fn beta_assert_relative_eq(a: f64, b: f64) {
@@ -447,9 +447,9 @@ mod tests {
     #[test]
     fn test_ln_beta() {
         beta_assert_relative_eq(ln_beta(0.5, 0.5), 1.144729885849400174144);
-        beta_assert_relative_eq(ln_beta(1.0, 0.5), f64::consts::LN_2);
+        beta_assert_relative_eq(ln_beta(1.0, 0.5), f64_consts::LN_2);
         beta_assert_relative_eq(ln_beta(2.5, 0.5), 0.163900632837673937284);
-        beta_assert_relative_eq(ln_beta(0.5, 1.0), f64::consts::LN_2);
+        beta_assert_relative_eq(ln_beta(0.5, 1.0), f64_consts::LN_2);
         beta_assert_relative_eq(ln_beta(1.0, 1.0), 0.0);
         beta_assert_relative_eq(ln_beta(2.5, 1.0), -0.9162907318741550651835);
         beta_assert_relative_eq(ln_beta(0.5, 2.5), 0.163900632837673937284);
@@ -503,7 +503,7 @@ mod tests {
 
     #[test]
     fn test_beta() {
-        beta_assert_relative_eq(beta(0.5, 0.5), f64::consts::PI);
+        beta_assert_relative_eq(beta(0.5, 0.5), f64_consts::PI);
         beta_assert_relative_eq(beta(1.0, 0.5), 2.0);
         beta_assert_relative_eq(beta(2.5, 0.5), 1.17809724509617246442);
         beta_assert_relative_eq(beta(0.5, 1.0), 2.0);
@@ -516,13 +516,13 @@ mod tests {
 
     #[test]
     fn test_beta_inc() {
-        beta_assert_relative_eq(beta_inc(0.5, 0.5, 0.5), f64::consts::FRAC_PI_2);
-        beta_assert_relative_eq(beta_inc(0.5, 0.5, 1.0), f64::consts::PI);
+        beta_assert_relative_eq(beta_inc(0.5, 0.5, 0.5), f64_consts::FRAC_PI_2);
+        beta_assert_relative_eq(beta_inc(0.5, 0.5, 1.0), f64_consts::PI);
         beta_assert_relative_eq(beta_inc(1.0, 0.5, 0.5), 0.5857864376269049511983);
         beta_assert_relative_eq(beta_inc(1.0, 0.5, 1.0), 2.0);
         beta_assert_relative_eq(beta_inc(2.5, 0.5, 0.5), 0.0890486225480862322117);
         beta_assert_relative_eq(beta_inc(2.5, 0.5, 1.0), 1.17809724509617246442);
-        beta_assert_relative_eq(beta_inc(0.5, 1.0, 0.5), f64::consts::SQRT_2);
+        beta_assert_relative_eq(beta_inc(0.5, 1.0, 0.5), f64_consts::SQRT_2);
         beta_assert_relative_eq(beta_inc(0.5, 1.0, 1.0), 2.0);
         beta_assert_relative_eq(beta_inc(1.0, 1.0, 0.5), 0.5);
         beta_assert_relative_eq(beta_inc(1.0, 1.0, 1.0), 1.0);
@@ -588,7 +588,7 @@ mod tests {
         assert_eq!(beta_reg(1.0, 0.5, 1.0), 1.0);
         beta_assert_abs_diff_eq(beta_reg(2.5, 0.5, 0.5), 0.07558681842161243795);
         assert_eq!(beta_reg(2.5, 0.5, 1.0), 1.0);
-        beta_assert_abs_diff_eq(beta_reg(0.5, 1.0, 0.5), f64::consts::FRAC_1_SQRT_2);
+        beta_assert_abs_diff_eq(beta_reg(0.5, 1.0, 0.5), f64_consts::FRAC_1_SQRT_2);
         assert_eq!(beta_reg(0.5, 1.0, 1.0), 1.0);
         beta_assert_abs_diff_eq(beta_reg(1.0, 1.0, 0.5), 0.5);
         assert_eq!(beta_reg(1.0, 1.0, 1.0), 1.0);

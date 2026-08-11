@@ -134,7 +134,7 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> OrderStatistics<f64> for Data<D> {
         if hf <= 0 || tau == 0.0 {
             return self.min();
         }
-        if hf >= self.len() as i64 || crate::prec::ulps_eq!(tau, 1.0) {
+        if hf >= self.len() as i64 || tau == 1.0 {
             return self.max();
         }
 

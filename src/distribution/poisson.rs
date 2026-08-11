@@ -1,7 +1,7 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{factorial, gamma};
 use crate::statistics::*;
-use core::f64;
+use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -213,7 +213,7 @@ impl Distribution<f64> for Poisson {
     /// where `λ` is the rate
     fn entropy(&self) -> Option<f64> {
         Some(
-            0.5 * (2.0 * f64::consts::PI * f64::consts::E * self.lambda).ln()
+            0.5 * (2.0 * f64_consts::PI * f64_consts::E * self.lambda).ln()
                 - 1.0 / (12.0 * self.lambda)
                 - 1.0 / (24.0 * self.lambda * self.lambda)
                 - 19.0 / (360.0 * self.lambda * self.lambda * self.lambda),
@@ -316,7 +316,7 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, lambda: f64) -> f6
         count
     } else {
         let c = 0.767 - 3.36 / lambda;
-        let beta = f64::consts::PI / (3.0 * lambda).sqrt();
+        let beta = f64_consts::PI / (3.0 * lambda).sqrt();
         let alpha = beta * lambda;
         let k = c.ln() - lambda - beta.ln();
 
@@ -352,6 +352,18 @@ mod tests {
         create_ok(1.5);
         create_ok(5.4);
         create_ok(10.8);
+    }
+
+    #[test]
+    #[cfg(feature = "rand")]
+    fn test_sample_large_lambda() {
+        use rand::{rngs::StdRng, SeedableRng};
+
+        let mut rng = StdRng::seed_from_u64(437);
+        let sample = sample_unchecked(&mut rng, 30.0);
+        assert!(sample.is_finite());
+        assert!(sample >= 0.0);
+        assert_eq!(sample.fract(), 0.0);
     }
 
     #[test]

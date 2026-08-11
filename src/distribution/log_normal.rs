@@ -2,7 +2,7 @@ use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf;
 use crate::statistics::*;
-use core::f64;
+use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -144,7 +144,7 @@ impl ContinuousCDF<f64, f64> for LogNormal {
         } else if x.is_infinite() {
             1.0
         } else {
-            0.5 * erf::erfc((self.location - x.ln()) / (self.scale * f64::consts::SQRT_2))
+            0.5 * erf::erfc((self.location - x.ln()) / (self.scale * f64_consts::SQRT_2))
         }
     }
 
@@ -174,7 +174,7 @@ impl ContinuousCDF<f64, f64> for LogNormal {
         } else if x.is_infinite() {
             0.0
         } else {
-            0.5 * erf::erfc((x.ln() - self.location) / (self.scale * f64::consts::SQRT_2))
+            0.5 * erf::erfc((x.ln() - self.location) / (self.scale * f64_consts::SQRT_2))
         }
     }
 
@@ -197,7 +197,7 @@ impl ContinuousCDF<f64, f64> for LogNormal {
         if p == 0.0 {
             0.0
         } else if p < 1.0 {
-            (self.location - (self.scale * f64::consts::SQRT_2 * erf::erfc_inv(2.0 * p))).exp()
+            (self.location - (self.scale * f64_consts::SQRT_2 * erf::erfc_inv(2.0 * p))).exp()
         } else if p == 1.0 {
             f64::INFINITY
         } else {
