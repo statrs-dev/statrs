@@ -2,6 +2,7 @@ use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::erf::{erf, erfc, erfc_inv};
 
 use crate::statistics::*;
+use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -308,8 +309,7 @@ impl Continuous<f64, f64> for Levy {
             0.0
         } else {
             let diff = x - self.mu;
-            (self.c / core::f64::consts::TAU).sqrt() * (-((0.5 * self.c) / diff)).exp()
-                / diff.powf(1.5)
+            (self.c / f64_consts::TAU).sqrt() * (-((0.5 * self.c) / diff)).exp() / diff.powf(1.5)
         }
     }
 

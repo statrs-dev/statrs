@@ -427,6 +427,7 @@ mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
     use crate::distribution::internal::testing_boiler;
+    use core::f64::consts as f64_consts;
 
     testing_boiler!(population: u64, successes: u64, draws: u64; Hypergeometric; HypergeometricError);
 
@@ -540,11 +541,11 @@ mod tests {
         let ln_pmf = |arg: u64| move |x: Hypergeometric| x.ln_pmf(arg);
         test_exact(0, 0, 0, 0.0, ln_pmf(0));
         test_exact(1, 1, 1, 0.0, ln_pmf(1));
-        test_exact(2, 1, 1, -core::f64::consts::LN_2, ln_pmf(0));
-        test_exact(2, 1, 1, -core::f64::consts::LN_2, ln_pmf(1));
+        test_exact(2, 1, 1, -f64_consts::LN_2, ln_pmf(0));
+        test_exact(2, 1, 1, -f64_consts::LN_2, ln_pmf(1));
         test_exact(2, 2, 2, 0.0, ln_pmf(2));
         test_absolute(10, 1, 1, -0.1053605156578263012275, 1e-14, ln_pmf(0));
-        test_absolute(10, 1, 1, -core::f64::consts::LN_10, 1e-14, ln_pmf(1));
+        test_absolute(10, 1, 1, -f64_consts::LN_10, 1e-14, ln_pmf(1));
         test_absolute(10, 5, 3, -0.875468737353899935621, 1e-14, ln_pmf(1));
         test_absolute(10, 5, 3, -2.484906649788000310234, 1e-14, ln_pmf(3));
     }
