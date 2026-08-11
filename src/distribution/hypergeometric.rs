@@ -394,9 +394,6 @@ impl Discrete<u64, f64> for Hypergeometric {
     /// ```
     ///
     /// where `N` is population, `K` is successes, and `n` is draws
-    ///
-    /// Computed in log space via [`Self::ln_pmf`] so large binomial
-    /// coefficients that overflow `f64` still yield a finite probability.
     fn pmf(&self, x: u64) -> f64 {
         self.ln_pmf(x).exp()
     }
