@@ -1,7 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -524,7 +523,7 @@ mod tests {
         // p = 1 - 1e-12 (quantile ~6.4e23) where the old search lost all precision.
         let cases: &[(f64, f64, f64, f64)] = &[
             (1.0, 1.0, 1e-12, 0.03619120682527099),  (1.0, 1.0, 1e-6, 0.07238241365054197),
-            (1.0, 1.0, 1e-2, 0.21714724095162594),   (1.0, 1.0, 0.5, f64::consts::LOG2_E), // median = 1/ln 2
+            (1.0, 1.0, 1e-2, 0.21714724095162594),   (1.0, 1.0, 0.5, core::f64::consts::LOG2_E), // median = 1/ln 2
 
             (1.0, 1.0, 0.9999, 9999.499991667344),   (1.0, 1.0, 0.99999999, 99999998.99752413),
             (1.0, 1.0, 0.999999999999, 1000022122209.0044),

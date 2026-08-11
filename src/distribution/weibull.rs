@@ -2,7 +2,6 @@ use crate::consts;
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::function::gamma;
 use crate::statistics::*;
-use core::f64;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -297,7 +296,7 @@ impl Median<f64> for Weibull {
     ///
     /// where `k` is the shape and `λ` is the scale
     fn median(&self) -> f64 {
-        self.scale * f64::consts::LN_2.powf(1.0 / self.shape)
+        self.scale * core::f64::consts::LN_2.powf(1.0 / self.shape)
     }
 }
 
@@ -445,7 +444,7 @@ mod tests {
     fn test_median() {
         let median = |x: Weibull| x.median();
         test_exact(1.0, 0.1, 0.069314718055994530941723212145817656807550013436026, median);
-        test_exact(1.0, 1.0, f64::consts::LN_2, median);
+        test_exact(1.0, 1.0, core::f64::consts::LN_2, median);
         test_exact(10.0, 10.0, 9.6401223546778973665856033763604752124634905617583, median);
         test_exact(10.0, 1.0, 0.96401223546778973665856033763604752124634905617583, median);
     }
@@ -496,7 +495,7 @@ mod tests {
     #[test]
     fn test_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: Weibull| x.ln_pdf(arg);
-        test_absolute(1.0, 0.1, f64::consts::LN_10, 1e-15, ln_pdf(0.0));
+        test_absolute(1.0, 0.1, core::f64::consts::LN_10, 1e-15, ln_pdf(0.0));
         test_absolute(1.0, 0.1, -7.6974149070059543159820085453156357923988985113712, 1e-15, ln_pdf(1.0));
         test_exact(1.0, 0.1, -97.697414907005954315982008545315635792398898511371, ln_pdf(10.0));
         test_exact(1.0, 1.0, 0.0, ln_pdf(0.0));

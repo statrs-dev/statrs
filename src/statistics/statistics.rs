@@ -25,7 +25,6 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -48,7 +47,6 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -71,7 +69,6 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -94,7 +91,6 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -120,7 +116,6 @@ pub trait Statistics<T> {
     /// ```
     /// use approx::assert_abs_diff_eq;
     ///
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
@@ -149,7 +144,6 @@ pub trait Statistics<T> {
     /// ```
     /// use approx::assert_abs_diff_eq;
     ///
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
@@ -187,7 +181,6 @@ pub trait Statistics<T> {
     /// ```
     /// use approx::assert_abs_diff_eq;
     ///
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
@@ -223,7 +216,6 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -251,7 +243,6 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -277,7 +268,6 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -303,7 +293,6 @@ pub trait Statistics<T> {
     /// # Examples
     ///
     /// ```
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// let x = &[];
@@ -337,7 +326,6 @@ pub trait Statistics<T> {
     /// ```
     /// use approx::assert_abs_diff_eq;
     ///
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
@@ -373,7 +361,6 @@ pub trait Statistics<T> {
     /// ```
     /// use approx::assert_abs_diff_eq;
     ///
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {
@@ -402,7 +389,6 @@ pub trait Statistics<T> {
     /// ```
     /// use approx::assert_abs_diff_eq;
     ///
-    /// use core::f64;
     /// use statrs::statistics::Statistics;
     ///
     /// # fn main() {

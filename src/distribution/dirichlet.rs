@@ -2,7 +2,6 @@ use crate::distribution::Continuous;
 use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
-use core::f64;
 use nalgebra::{Dim, Dyn, OMatrix, OVector};
 
 /// Implements the
