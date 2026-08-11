@@ -106,28 +106,14 @@ impl Binomial {
     }
 }
 
+#[cfg(feature = "rand")]
+mod sampling;
+#[cfg(feature = "rand")]
+pub use sampling::{BinomialAlgorithm, BinomialAlgorithmError, BinomialSampler};
+
 impl core::fmt::Display for Binomial {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Bin({},{})", self.p, self.n)
-    }
-}
-
-#[cfg(feature = "rand")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distr::Distribution<u64> for Binomial {
-    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> u64 {
-        (0..self.n).fold(0, |acc, _| {
-            let n: f64 = ::rand::RngExt::random(rng);
-            if n < self.p { acc + 1 } else { acc }
-        })
-    }
-}
-
-#[cfg(feature = "rand")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
-impl ::rand::distr::Distribution<f64> for Binomial {
-    fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        ::rand::RngExt::sample::<u64, _>(rng, self) as f64
     }
 }
 

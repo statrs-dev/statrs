@@ -94,5 +94,53 @@ fn bench_order_statistic(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_order_statistic);
+/// Selection cost across input sizes and shapes.
+///
+/// Shape matters as much as size here: a median-of-three pivot is fine on
+/// random data and degrades on input built to defeat it, so a random-only
+/// benchmark would not tell the two implementations apart.
+fn bench_selection_scaling(c: &mut Criterion) {
+    fn shaped(shape: &str, n: usize) -> Vec<f64> {
+        let mut rng = StdRng::seed_from_u64(0xB0A7);
+        match shape {
+            "random" => {
+                let mut v: Vec<f64> = (0..n).map(|i| i as f64).collect();
+                v.shuffle(&mut rng);
+                v
+            }
+            "sorted" => (0..n).map(|i| i as f64).collect(),
+            "reversed" => (0..n).rev().map(|i| i as f64).collect(),
+            // ascends then descends: defeats median-of-three
+            "organ_pipe" => (0..n)
+                .map(|i| if i < n / 2 { i } else { n - i } as f64)
+                .collect(),
+            // few distinct values: unbalanced partitions
+            "duplicates" => {
+                let distinct = ((n as f64).sqrt() as usize).max(1);
+                let mut v: Vec<f64> = (0..n).map(|i| (i % distinct) as f64).collect();
+                v.shuffle(&mut rng);
+                v
+            }
+            other => panic!("unknown shape {other}"),
+        }
+    }
+
+    let mut group = c.benchmark_group("selection scaling");
+    for &n in &[1_024usize, 65_536, 1_048_576] {
+        for shape in ["random", "sorted", "reversed", "organ_pipe", "duplicates"] {
+            let data = shaped(shape, n);
+            group.throughput(Throughput::Elements(n as u64));
+            group.bench_function(format!("median/{shape}/{n}"), |b| {
+                b.iter_batched(
+                    || Data::new(data.clone()),
+                    |data| black_box(data.median()),
+                    BatchSize::LargeInput,
+                )
+            });
+        }
+    }
+    group.finish();
+}
+
+criterion_group!(benches, bench_order_statistic, bench_selection_scaling);
 criterion_main!(benches);

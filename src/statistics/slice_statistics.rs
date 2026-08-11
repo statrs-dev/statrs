@@ -65,8 +65,15 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Data<D> {
         self.0.as_ref().iter()
     }
 
-    // Selection algorithm from Numerical Recipes
-    // See: https://en.wikipedia.org/wiki/Selection_algorithm
+    // Introselect via `select_nth_unstable_by`, ordered by `total_cmp` so NaN
+    // has a defined position instead of the arbitrary one the old Numerical
+    // Recipes partition produced.
+    //
+    // Already-ordered input is checked first. Median-of-three picked a perfect
+    // pivot on such input, so plain introselect was slower there than the code
+    // it replaced; indexing is faster than either. The checks stop at the first
+    // out-of-order pair, and `median` and `quantile` select twice, so they
+    // benefit twice.
     fn select_inplace(&mut self, rank: usize) -> f64 {
         if rank == 0 {
             return self.min();
@@ -75,61 +82,15 @@ impl<D: AsMut<[f64]> + AsRef<[f64]>> Data<D> {
             return self.max();
         }
 
-        let mut low = 0;
-        let mut high = self.len() - 1;
-        loop {
-            if high <= low + 1 {
-                if high == low + 1 && self[high] < self[low] {
-                    self.swap(low, high)
-                }
-                return self[rank];
-            }
-
-            let middle = (low + high) / 2;
-            self.swap(middle, low + 1);
-
-            if self[low] > self[high] {
-                self.swap(low, high);
-            }
-            if self[low + 1] > self[high] {
-                self.swap(low + 1, high);
-            }
-            if self[low] > self[low + 1] {
-                self.swap(low, low + 1);
-            }
-
-            let mut begin = low + 1;
-            let mut end = high;
-            let pivot = self[begin];
-            loop {
-                loop {
-                    begin += 1;
-                    if self[begin] >= pivot {
-                        break;
-                    }
-                }
-                loop {
-                    end -= 1;
-                    if self[end] <= pivot {
-                        break;
-                    }
-                }
-                if end < begin {
-                    break;
-                }
-                self.swap(begin, end);
-            }
-
-            self[low + 1] = self[end];
-            self[end] = pivot;
-
-            if end >= rank {
-                high = end - 1;
-            }
-            if end <= rank {
-                low = begin;
-            }
+        let slice = self.0.as_mut();
+        if slice.is_sorted_by(|a, b| a.total_cmp(b).is_le()) {
+            return slice[rank];
         }
+        if slice.is_sorted_by(|a, b| a.total_cmp(b).is_ge()) {
+            return slice[slice.len() - 1 - rank];
+        }
+
+        *slice.select_nth_unstable_by(rank, |a, b| a.total_cmp(b)).1
     }
 }
 
@@ -548,6 +509,153 @@ mod tests {
     }
 
     // TODO: test codeplex issue 5667 (Math.NET)
+
+    /// Selection agrees with sorting, on ordinary values across shapes and
+    /// sizes. Compares bit patterns, so a wrong sign of zero is a failure.
+    #[test]
+    #[cfg(all(feature = "std", feature = "rand"))]
+    fn test_order_statistics_match_sorted_reference() {
+        use ::rand::{RngExt, SeedableRng, rngs::StdRng};
+
+        fn shaped(shape: &str, n: usize) -> Vec<f64> {
+            match shape {
+                "scattered" => {
+                    let mut rng = StdRng::seed_from_u64(0x5EED);
+                    (0..n).map(|_| rng.random_range(-500.0..500.0)).collect()
+                }
+                "sorted" => (0..n).map(|i| i as f64 * 1.5).collect(),
+                "reversed" => (0..n).rev().map(|i| i as f64 * 1.5).collect(),
+                "organ_pipe" => (0..n).map(|i| if i < n / 2 { i } else { n - i } as f64).collect(),
+                "duplicates" => (0..n).map(|i| (i % 3) as f64).collect(),
+                "constant" => vec![4.25; n],
+                "negatives" => (0..n).map(|i| -((i * 37 % 100) as f64)).collect(),
+                // -0.0 and +0.0 compare equal under `<=` but not under
+                // `total_cmp`, so a fast path keyed on `<=` reports this as
+                // sorted and returns the wrong zero (statrs-dev/statrs#407).
+                "signed_zeros" => (0..n)
+                    .map(|i| match i % 4 {
+                        0 => -1.0,
+                        1 => 0.0,
+                        2 => -0.0,
+                        _ => 1.0,
+                    })
+                    .collect(),
+                other => panic!("unknown shape {other}"),
+            }
+        }
+
+        for n in [1usize, 2, 3, 4, 5, 8, 17, 101, 1000] {
+            for shape in [
+                "scattered", "sorted", "reversed", "organ_pipe", "duplicates", "constant",
+                "negatives", "signed_zeros",
+            ] {
+                let data = shaped(shape, n);
+                let mut sorted = data.clone();
+                sorted.sort_by(f64::total_cmp);
+
+                // every order statistic, 1-based
+                for order in 1..=n {
+                    let mut d = Data::new(data.clone());
+                    let got = d.order_statistic(order);
+                    // bits, not value: -0.0 == +0.0 would hide a wrong zero
+                    assert_eq!(
+                        got.to_bits(),
+                        sorted[order - 1].to_bits(),
+                        "{shape}/{n}: order_statistic({order}) = {got}, want {}",
+                        sorted[order - 1]
+                    );
+                }
+
+                // out of range on either side
+                let mut d = Data::new(data.clone());
+                assert!(d.order_statistic(0).is_nan(), "{shape}/{n}: order 0");
+                assert!(d.order_statistic(n + 1).is_nan(), "{shape}/{n}: order n+1");
+
+                // median, including the even case that averages two selections
+                let expected_median = if n % 2 == 1 {
+                    sorted[n / 2]
+                } else {
+                    (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
+                };
+                let mut d = Data::new(data.clone());
+                assert_eq!(
+                    OrderStatistics::median(&mut d),
+                    expected_median,
+                    "{shape}/{n}: median"
+                );
+
+                // the quantile endpoints, and that interior values stay in range
+                let mut d = Data::new(data.clone());
+                assert_eq!(d.quantile(0.0), sorted[0], "{shape}/{n}: quantile(0)");
+                assert_eq!(d.quantile(1.0), sorted[n - 1], "{shape}/{n}: quantile(1)");
+                for &tau in &[0.1, 0.25, 0.5, 0.75, 0.9] {
+                    let q = d.quantile(tau);
+                    assert!(
+                        q >= sorted[0] && q <= sorted[n - 1],
+                        "{shape}/{n}: quantile({tau}) = {q} outside [{}, {}]",
+                        sorted[0],
+                        sorted[n - 1]
+                    );
+                }
+            }
+        }
+    }
+
+    /// Selection does not depend on input order.
+    #[test]
+    #[cfg(all(feature = "std", feature = "rand"))]
+    fn test_order_statistic_is_permutation_invariant() {
+        use ::rand::{RngExt, SeedableRng, rngs::StdRng};
+
+        let mut rng = StdRng::seed_from_u64(0xA11CE);
+        let base: Vec<f64> = (0..64).map(|_| rng.random_range(-40.0..40.0)).collect();
+        let mut sorted = base.clone();
+        sorted.sort_by(f64::total_cmp);
+
+        // a few fixed permutations, including the ones that hit the fast paths
+        let mut rotated = base.clone();
+        rotated.rotate_left(23);
+        let mut ascending = base.clone();
+        ascending.sort_by(f64::total_cmp);
+        let mut descending = ascending.clone();
+        descending.reverse();
+
+        for variant in [base.clone(), rotated, ascending, descending] {
+            for order in 1..=variant.len() {
+                let mut d = Data::new(variant.clone());
+                assert_eq!(d.order_statistic(order), sorted[order - 1]);
+            }
+        }
+    }
+
+    /// The old hand-rolled Numerical Recipes quickselect walked off the end of
+    /// the array when the slice contained NaN (statrs-dev/statrs#163).
+    #[test]
+    fn test_order_statistics_with_nan_do_not_panic() {
+        // Arrays rather than `Vec`, so the test also builds under `no_std`.
+        let mut v: [f64; 1000] = core::array::from_fn(|i| (i as f64 * 0.7).sin());
+        for i in (0..1000).step_by(7) {
+            v[i] = f64::NAN;
+        }
+        let mut d = Data::new(v);
+        // the values themselves are unspecified once NaN is present; what is
+        // being pinned is that these terminate in bounds
+        let _ = d.quantile(0.5);
+        let _ = d.quantile(0.0);
+        let _ = d.quantile(1.0);
+        let _ = d.order_statistic(500);
+        let _ = OrderStatistics::median(&mut d);
+        let _ = d.interquartile_range();
+
+        // all-NaN, and NaN at the exact positions the old partition tripped on
+        let mut all_nan = Data::new([f64::NAN; 64]);
+        let _ = all_nan.quantile(0.5);
+        for pos in [0usize, 1, 31, 62, 63] {
+            let mut v = [0.0f64; 64];
+            v[pos] = f64::NAN;
+            let _ = Data::new(v).quantile(0.5);
+        }
+    }
 
     #[test]
     fn test_median_robust_on_infinities() {
