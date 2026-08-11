@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.1](https://github.com/statrs-dev/statrs/compare/v0.19.0...v0.19.1) - 2026-08-11
+
+### Added
+
+- let callers choose the binomial sampling algorithm
+
+### Fixed
+
+- Correct exact distribution boundaries
+- Beta::sf returning exactly 1.0 for tiny x
+- order the selection fast paths by total_cmp, not <=
+- replace hand-rolled quickselect with select_nth_unstable_by
+- address review on the BINV/BTPE sampler
+
+### Other
+
+- Alias f64 constants
+- Fix nightly f64 deprecation warnings
+- add a selection benchmark, and ordered fast paths it exposed
+- build the NaN order-statistic test under no_std
+- move binomial sampling into its own module
+- split the sampler's branch selection out of the RNG path
+- require std for the BTPE chi-square test
+- sample Binomial via BINV/BTPE instead of n Bernoulli trials
+- Bound the Newton iteration count and cover the quantile guards
+- Add safeguarded-Newton inverse_cdf for Chi and InverseGamma
+
 ## [0.19.0](https://github.com/statrs-dev/statrs/compare/v0.18.0...v0.19.0) - 2026-07-20
 
 ### Added
