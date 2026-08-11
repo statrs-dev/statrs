@@ -1,4 +1,7 @@
 use crate::distribution::ContinuousCDF;
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
 #[non_exhaustive]
@@ -27,7 +30,7 @@ pub fn anderson_darling<T: ContinuousCDF<f64, f64>>(
     if n == 0 {
         return Err(AndersonDarlingError::SampleSizeInvalid);
     }
-    let mut f_obs = f_obs.to_vec();
+    let mut f_obs = Vec::from(f_obs);
     f_obs.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
     let n_float = n as f64;

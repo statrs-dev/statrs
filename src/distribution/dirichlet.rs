@@ -2,7 +2,10 @@ use crate::distribution::Continuous;
 use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
+use alloc::{vec, vec::Vec};
 use nalgebra::{Dim, Dyn, OMatrix, OVector};
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Implements the
 /// [Dirichlet](https://en.wikipedia.org/wiki/Dirichlet_distribution)

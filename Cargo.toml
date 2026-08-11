@@ -32,11 +32,10 @@ required-features = ["rand", "std", "kde"]
 [features]
 default = ["std", "nalgebra", "rand"]
 std = ["approx/std", "num-traits/std", "nalgebra?/std", "rand?/std"]
-# at the moment, all nalgebra features needs std
-nalgebra = ["dep:nalgebra", "std"]
+nalgebra = ["dep:nalgebra", "nalgebra/alloc", "nalgebra/libm"]
 rand = ["dep:rand", "nalgebra?/rand-no-std", "rand?/std_rng"]
 # kd-tree backed density estimation (src/density), implemented in terms of nalgebra vectors
-kde = ["dep:kdtree", "nalgebra"]
+kde = ["dep:kdtree", "nalgebra", "std"]
 
 [dependencies]
 approx = { version = "0.5.0", default-features = false }

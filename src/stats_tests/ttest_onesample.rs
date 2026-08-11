@@ -3,6 +3,9 @@
 
 use crate::distribution::{ContinuousCDF, StudentsT};
 use crate::stats_tests::{Alternative, NaNPolicy};
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Represents the errors that can occur when computing the ttest_onesample function
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]

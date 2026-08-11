@@ -14,6 +14,7 @@
 
 pub mod kde;
 pub mod knn;
+use alloc::vec::Vec;
 use kdtree::{ErrorKind, KdTree, distance::squared_euclidean};
 use thiserror::Error;
 

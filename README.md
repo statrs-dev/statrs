@@ -38,6 +38,36 @@ statrs = "*" # replace * by the latest version of the crate.
 
 For examples, view [the docs](https://docs.rs/statrs/*/statrs/).
 
+### `no_std`
+
+Disable the default features to use `statrs` without `std`:
+
+```toml
+[dependencies]
+statrs = { version = "*", default-features = false }
+```
+
+No separate Cargo feature is required for allocation-backed APIs. To enable
+matrix-backed distributions without `std`, enable `nalgebra` directly:
+
+```toml
+[dependencies]
+statrs = { version = "*", default-features = false, features = ["nalgebra"] }
+```
+
+Heap-backed APIs use Rust's `alloc` crate. A `no_std` application that calls
+these APIs must provide and initialize a global allocator suitable for its
+target:
+
+```rust,ignore
+#[global_allocator]
+static ALLOCATOR: PlatformAllocator = PlatformAllocator::new(/* heap memory */);
+```
+
+The allocator type, heap memory, and initialization are platform-specific.
+`statrs` does not provide or select an allocator.
+When `std` is enabled, its global allocator is used and no setup is required.
+
 ### WebAssembly randomness
 
 On `wasm32-unknown-unknown`, sampling works with an explicitly seeded random

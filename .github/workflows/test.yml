@@ -81,6 +81,12 @@ jobs:
       - name: Check no_std with rand
         run: cargo check --target riscv32imac-unknown-none-elf --no-default-features --features rand --lib
 
+      - name: Check no_std with nalgebra
+        run: cargo check --target riscv32imac-unknown-none-elf --no-default-features --features nalgebra --lib
+
+      - name: Check no_std with nalgebra and rand
+        run: cargo check --target riscv32imac-unknown-none-elf --no-default-features --features nalgebra,rand --lib
+
   features:
     needs: [clippy, fmt]
     runs-on: ubuntu-latest
@@ -103,6 +109,16 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown, wasm32-wasip1
+      - name: Install Wasmtime
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+        with:
+          version: "46.0.1"
+
+      - name: Build no_std runtime verification
+        run: cargo build --manifest-path tests/no_std/Cargo.toml --target wasm32-unknown-unknown --locked
+
+      - name: Run no_std calculations
+        run: wasmtime run --invoke verify tests/no_std/target/wasm32-unknown-unknown/debug/statrs_no_std_runtime.wasm
 
       - name: Check WebAssembly without a host RNG
         run: cargo check --target wasm32-unknown-unknown --no-default-features --features std,nalgebra,rand --lib
