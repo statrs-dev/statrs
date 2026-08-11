@@ -598,6 +598,7 @@ mod tests {
     fn test_density_at_boundaries() {
         test_exact(0.5, 2.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
         test_exact(2.0, 0.5, f64::INFINITY, |dist| dist.ln_pdf(1.0));
+        test_relative(1.0, 2.0, 2.0_f64.ln(), |dist| dist.ln_pdf(0.0));
         test_exact(2.0, 3.0, f64::NEG_INFINITY, |dist| dist.ln_pdf(0.0));
         test_exact(2.0, 3.0, f64::NEG_INFINITY, |dist| dist.ln_pdf(1.0));
     }

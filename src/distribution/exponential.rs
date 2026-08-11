@@ -1,5 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
+use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -239,7 +240,7 @@ impl Median<f64> for Exp {
     ///
     /// where `λ` is the rate
     fn median(&self) -> f64 {
-        core::f64::consts::LN_2 / self.rate
+        f64_consts::LN_2 / self.rate
     }
 }
 
@@ -354,7 +355,7 @@ mod tests {
     fn test_median() {
         let median = |x: Exp| x.median();
         test_absolute(0.1, 6.931471805599453094172, 1e-15, median);
-        test_exact(1.0, core::f64::consts::LN_2, median);
+        test_exact(1.0, f64_consts::LN_2, median);
         test_exact(10.0, 0.06931471805599453094172, median);
     }
 
@@ -408,9 +409,9 @@ mod tests {
     #[test]
     fn test_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: Exp| x.ln_pdf(arg);
-        test_absolute(0.1, -core::f64::consts::LN_10, 1e-15, ln_pdf(0.0));
+        test_absolute(0.1, -f64_consts::LN_10, 1e-15, ln_pdf(0.0));
         test_exact(1.0, 0.0, ln_pdf(0.0));
-        test_exact(10.0, core::f64::consts::LN_10, ln_pdf(0.0));
+        test_exact(10.0, f64_consts::LN_10, ln_pdf(0.0));
         test_is_nan(f64::INFINITY, ln_pdf(0.0));
         test_absolute(0.1, -2.312585092994045684018, 1e-15, ln_pdf(0.1));
         test_exact(1.0, -0.1, ln_pdf(0.1));

@@ -1,5 +1,6 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::statistics::*;
+use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 use num_traits::{One, Zero};
@@ -309,7 +310,7 @@ impl Median<f64> for Geometric {
     /// ceil(-1 / log_2(1 - p))
     /// ```
     fn median(&self) -> f64 {
-        (-core::f64::consts::LN_2 / (1.0 - self.p).ln()).ceil()
+        (-f64_consts::LN_2 / (1.0 - self.p).ln()).ceil()
     }
 }
 
@@ -364,6 +365,16 @@ mod tests {
     fn test_create() {
         create_ok(0.3);
         create_ok(1.0);
+    }
+
+    #[test]
+    #[cfg(feature = "rand")]
+    fn test_sample_degenerate() {
+        use rand::{distr::Distribution as _, rngs::StdRng, SeedableRng};
+
+        let mut rng = StdRng::seed_from_u64(437);
+        let sample: u64 = create_ok(1.0).sample(&mut rng);
+        assert_eq!(sample, 1);
     }
 
     #[test]

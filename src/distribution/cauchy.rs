@@ -1,5 +1,6 @@
 use crate::distribution::{Continuous, ContinuousCDF};
 use crate::statistics::*;
+use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -116,7 +117,7 @@ impl core::fmt::Display for Cauchy {
 impl ::rand::distr::Distribution<f64> for Cauchy {
     fn sample<R: ::rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
         let x = ::rand::RngExt::random::<f64>(r);
-        self.location + self.scale * (core::f64::consts::PI * (x - 0.5)).tan()
+        self.location + self.scale * (f64_consts::PI * (x - 0.5)).tan()
     }
 }
 
@@ -132,7 +133,7 @@ impl ContinuousCDF<f64, f64> for Cauchy {
     ///
     /// where `x_0` is the location and `γ` is the scale
     fn cdf(&self, x: f64) -> f64 {
-        (1.0 / core::f64::consts::PI) * ((x - self.location) / self.scale).atan() + 0.5
+        (1.0 / f64_consts::PI) * ((x - self.location) / self.scale).atan() + 0.5
     }
 
     /// Calculates the survival function for the
@@ -148,7 +149,7 @@ impl ContinuousCDF<f64, f64> for Cauchy {
     /// note that this is identical to the cdf except for
     /// the negative argument to the arctan function
     fn sf(&self, x: f64) -> f64 {
-        (1.0 / core::f64::consts::PI) * ((self.location - x) / self.scale).atan() + 0.5
+        (1.0 / f64_consts::PI) * ((self.location - x) / self.scale).atan() + 0.5
     }
 
     /// Calculates the inverse cumulative distribution function for the
@@ -165,7 +166,7 @@ impl ContinuousCDF<f64, f64> for Cauchy {
         if !(0.0..=1.0).contains(&x) {
             panic!("x must be in [0, 1]");
         } else {
-            self.location + self.scale * (core::f64::consts::PI * (x - 0.5)).tan()
+            self.location + self.scale * (f64_consts::PI * (x - 0.5)).tan()
         }
     }
 }
@@ -209,7 +210,7 @@ impl Distribution<f64> for Cauchy {
     ///
     /// where `γ` is the scale
     fn entropy(&self) -> Option<f64> {
-        Some((4.0 * core::f64::consts::PI * self.scale).ln())
+        Some((4.0 * f64_consts::PI * self.scale).ln())
     }
 }
 
@@ -255,7 +256,7 @@ impl Continuous<f64, f64> for Cauchy {
     ///
     /// where `x_0` is the location and `γ` is the scale
     fn pdf(&self, x: f64) -> f64 {
-        1.0 / (core::f64::consts::PI
+        1.0 / (f64_consts::PI
             * self.scale
             * (1.0 + ((x - self.location) / self.scale) * ((x - self.location) / self.scale)))
     }
@@ -271,7 +272,7 @@ impl Continuous<f64, f64> for Cauchy {
     ///
     /// where `x_0` is the location and `γ` is the scale
     fn ln_pdf(&self, x: f64) -> f64 {
-        -(core::f64::consts::PI
+        -(f64_consts::PI
             * self.scale
             * (1.0 + ((x - self.location) / self.scale) * ((x - self.location) / self.scale)))
             .ln()
@@ -293,6 +294,15 @@ mod tests {
         create_ok(10.0, 11.0);
         create_ok(-5.0, 100.0);
         create_ok(0.0, f64::INFINITY);
+    }
+
+    #[test]
+    #[cfg(feature = "rand")]
+    fn test_sample() {
+        use rand::{distr::Distribution as _, rngs::StdRng, SeedableRng};
+
+        let mut rng = StdRng::seed_from_u64(437);
+        assert!(create_ok(0.0, 1.0).sample(&mut rng).is_finite());
     }
 
     #[test]
@@ -356,7 +366,7 @@ mod tests {
         test_exact(0.0, 0.1, 0.001272730452554141029739, pdf(5.0));
         test_absolute(0.0, 1.0, 0.01224268793014579505914, 1e-17, pdf(-5.0));
         test_exact(0.0, 1.0, 0.1591549430918953357689, pdf(-1.0));
-        test_exact(0.0, 1.0, core::f64::consts::FRAC_1_PI, pdf(0.0));
+        test_exact(0.0, 1.0, f64_consts::FRAC_1_PI, pdf(0.0));
         test_exact(0.0, 1.0, 0.1591549430918953357689, pdf(1.0));
         test_absolute(0.0, 1.0, 0.01224268793014579505914, 1e-17, pdf(5.0));
         test_exact(0.0, 10.0, 0.02546479089470325372302, pdf(-5.0));
