@@ -23,6 +23,9 @@ pub(super) fn accurate_ln_one_plus_dd(value: (f64, f64)) -> (f64, f64) {
             break;
         }
         sum = dd_add(sum, dd_div_f64(term, f64::from(2 * index + 1)));
+        if term.0.abs() <= f64::EPSILON * f64::EPSILON * sum.0.abs() {
+            break;
+        }
     }
     dd_mul((2.0, 0.0), sum)
 }
@@ -148,6 +151,9 @@ pub(super) fn accurate_ln(value: f64) -> (f64, f64) {
     for index in 1..=24 {
         term = dd_mul(term, ratio_squared);
         sum = dd_add(sum, dd_div_f64(term, f64::from(2 * index + 1)));
+        if term.0.abs() <= f64::EPSILON * f64::EPSILON * sum.0.abs() {
+            break;
+        }
     }
     let log_mantissa = dd_mul((2.0, 0.0), sum);
     let log_two = (core::f64::consts::LN_2, 2.3190468138462996e-17);
