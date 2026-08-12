@@ -71,6 +71,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "kdtree"
+version = "0.8.1"
+source = "git+https://github.com/mrhooray/kdtree-rs?rev=db9af2f8e987c4f1c21251998f032b89a8bd2d52#db9af2f8e987c4f1c21251998f032b89a8bd2d52"
+dependencies = [
+ "num-traits",
+ "thiserror",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.186"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -172,6 +181,7 @@ name = "statrs"
 version = "0.19.1"
 dependencies = [
  "approx",
+ "kdtree",
  "nalgebra",
  "num-traits",
  "thiserror",

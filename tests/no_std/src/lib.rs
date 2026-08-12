@@ -3,6 +3,7 @@
 extern crate alloc;
 
 use alloc::vec;
+use statrs::density::{kde::kde_pdf, knn::knn_pdf};
 use statrs::distribution::{Categorical, Continuous, Empirical, Multinomial, MultivariateNormal};
 use statrs::generate::log_spaced;
 use statrs::statistics::{Data, Distribution, MeanN, OrderStatistics, RankTieBreaker};
@@ -22,6 +23,10 @@ fn assert_close(actual: f64, expected: f64, tolerance: f64) {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn verify() {
+    let kde_samples = vec![[-1.0], [0.0], [1.0]];
+    assert!(kde_pdf(&[0.0], &kde_samples, Some(1.0)).unwrap() > 0.0);
+    assert!(knn_pdf(&[0.0], &kde_samples, Some(1.0)).unwrap() > 0.0);
+
     let categorical = Categorical::new(&[1.0, 2.0, 3.0]).unwrap();
     assert_close(categorical.mean().unwrap(), 4.0 / 3.0, 1e-12);
 
