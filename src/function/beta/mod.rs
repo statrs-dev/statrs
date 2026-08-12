@@ -2,6 +2,12 @@
 //! function
 //!
 //! This module sets the default precision more tightly than crate defaults for `DEFAULT_EPS`
+//!
+//! The implementation combines the incomplete-beta series, recurrences, and
+//! continued fraction in [DLMF 8.17](https://dlmf.nist.gov/8.17), the BGRAT
+//! expansion in [Algorithm 708](https://doi.org/10.1145/131766.131776), the
+//! large-parameter expansion in [DLMF 8.18](https://dlmf.nist.gov/8.18), and
+//! the small-argument log-gamma series in [DLMF 5.7.3](https://dlmf.nist.gov/5.7.E3).
 
 mod api;
 mod asymptotic;

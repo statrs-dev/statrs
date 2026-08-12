@@ -1,3 +1,10 @@
+// (C) Copyright John Maddock 2006.
+// (C) Copyright Matt Borland 2024.
+// SPDX-License-Identifier: MIT AND BSL-1.0
+// Use, modification and distribution are subject to the Boost Software
+// License, Version 1.0. (See accompanying file LICENSE-BOOST.md or copy at
+// https://www.boost.org/LICENSE_1_0.txt)
+
 use super::*;
 
 const ACCURATE_SMALL_B_MAX_RATIO: f64 = 1e-4;
