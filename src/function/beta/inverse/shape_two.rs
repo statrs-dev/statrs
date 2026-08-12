@@ -2,15 +2,20 @@
 
 use super::super::*;
 use adjacent::adjacent_result;
+use endpoint::lower_endpoint_result;
 use value::{fast_cdf_and_pdf, log_cdf};
 
 mod adjacent;
+mod endpoint;
 mod value;
 
 #[cfg(test)]
 use value::log_cdf_parts;
 
 pub(super) fn inverse_beta_shape_two(a: f64, b: f64, probability: f64) -> f64 {
+    if let Some(result) = lower_endpoint_result(a, b, probability) {
+        return result;
+    }
     let mut current = if b == 2.0 {
         ((probability.ln() - (a + 1.0).ln()) / a).exp()
     } else {
