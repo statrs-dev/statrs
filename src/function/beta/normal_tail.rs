@@ -170,6 +170,7 @@ mod tests {
                 f64::from_bits(0xbc8cd2b297d889bc),
                 0x3f0081598e5e54ed,
             ),
+            (0x4006af973ca608ed, 0.0, 0x3effc9d9ca2b4546),
         ];
         for (argument, error, expected) in cases {
             let actual = normal_tail((f64::from_bits(argument), error)).to_bits();
