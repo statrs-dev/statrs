@@ -752,6 +752,35 @@ fn test_inv_beta_reg_typical_against_500_digit_reference() {
 }
 
 #[test]
+fn test_inv_beta_reg_shape_two_specialization_boundary() {
+    let probability = 0.999_999_999_f64;
+    let probabilities = [
+        f64::from_bits(probability.to_bits() - 1),
+        probability,
+        f64::from_bits(probability.to_bits() + 1),
+    ];
+    let cases = [
+        (
+            2.0,
+            200.0,
+            [0x3fbcd0193e77fee6, 0x3fbcd01940aae67a, 0x3fbcd01942ddce12],
+        ),
+        (
+            200.0,
+            2.0,
+            [0x3fefffff883fcdff, 0x3fefffff883fce6e, 0x3fefffff883fcede],
+        ),
+    ];
+    for (a, b, expected) in cases {
+        let actual = probabilities.map(|p| inv_beta_reg(a, b, p));
+        assert!(actual.windows(2).all(|pair| pair[0] <= pair[1]));
+        for (value, reference) in actual.into_iter().zip(expected) {
+            assert!(value.to_bits().abs_diff(reference) <= 1);
+        }
+    }
+}
+
+#[test]
 fn test_beta_reg_tiny_b_against_500_digit_references() {
     let cases = [
         (

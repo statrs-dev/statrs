@@ -1,9 +1,14 @@
 mod initial;
+mod shape_two;
 mod solve;
 
 use super::*;
 use initial::*;
+use shape_two::*;
 use solve::*;
+
+// Near one, the reflected solver preserves upper-tail information needed to round to 1.0.
+const SHAPE_TWO_SPECIALIZATION_MAX: f64 = 0.999_999_999;
 
 /// Computes the inverse of the regularized incomplete beta function
 pub fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
@@ -26,6 +31,11 @@ pub fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
     }
     if a == 1.0 {
         return -((-probability).ln_1p() / b).exp_m1();
+    }
+    if (a == 2.0 && b.fract() == 0.0 || b == 2.0 && a.fract() == 0.0)
+        && probability <= SHAPE_TWO_SPECIALIZATION_MAX
+    {
+        return inverse_beta_shape_two(a, b, probability);
     }
 
     let log_beta = ln_beta_inverse_parts(a, b);
