@@ -129,6 +129,83 @@ fn real_shape_two_zero_cell_is_rounded_and_monotone() {
 }
 
 #[test]
+fn real_shape_two_zero_cell_matches_512_bit_reference() {
+    let cases = [
+        (1_u64, 0_u64),
+        (0x0c8b_4ec7_f919_73fe, 0_u64),
+        (0x0c8b_4ec7_f919_73ff, 1_u64),
+        (0x0cbe_b8a0_f83c_a27e, 1_u64),
+        (0x0cbe_b8a0_f83c_a27f, 2_u64),
+        (0x0cd5_558c_3a9b_e29f, 2_u64),
+        (0x0cd5_558c_3a9b_e2a0, 3_u64),
+    ];
+    let values = cases.map(|(probability, expected)| {
+        let actual = crate::function::beta::inv_beta_reg(2.0, 1e200, f64::from_bits(probability));
+        assert_eq!(actual.to_bits(), expected);
+        actual
+    });
+    assert!(values[0] <= values[1]);
+}
+
+#[test]
+fn real_shape_two_near_midpoint_matches_512_bit_reference() {
+    let shape = f64::from_bits(0x6570_0000_0000_0000);
+    let cases = [
+        (0x0480_0000_0000_0000, 1_u64),
+        (0x0adf_ffff_ffff_fff8, 0x0003_ffff_ffff_ffff),
+    ];
+    for (probability, expected) in cases {
+        let actual =
+            crate::function::beta::inv_beta_reg(2.0, shape, f64::from_bits(probability)).to_bits();
+        assert_eq!(actual, expected, "probability={probability:#018x}");
+    }
+}
+
+#[test]
+fn real_shape_two_first_normal_boundary_matches_500_bit_reference() {
+    let actual = crate::function::beta::inv_beta_reg(
+        2.0,
+        f64::from_bits(0x6040_0000_0000_0000),
+        f64::from_bits(0x00bf_ffff_ffff_fffe),
+    );
+    assert_eq!(actual.to_bits(), 0x000f_ffff_ffff_ffff);
+}
+
+#[test]
+fn real_shape_two_certified_midpoint_cases_match_1100_digit_references() {
+    let cases = [
+        (0x61a0_0000_0000_0000, 2, 1),
+        (0x6570_0000_0000_0000, 0x04c9_0000_0000_0000, 3),
+        (0x6570_0000_0000_0000, 0x04d8_8000_0000_0000, 4),
+        (0x6180_0000_0000_0000, 1, 1),
+        (0x6180_0000_0000_0000, 2, 2),
+        (0x5e36_a09e_667f_3bcd, 1, 0x001f_ffff_ffff_ffff),
+        (
+            0x7fe0_0000_0000_0000,
+            0x3fe3_0200_0530_5ea7,
+            0x0010_0000_0000_0000,
+        ),
+        (
+            0x7fef_ffff_ffff_ffff,
+            0x3fed_11ca_9b3a_ce79,
+            0x000f_ffff_ffff_ffff,
+        ),
+    ];
+    for (shape, probability, expected) in cases {
+        let actual = crate::function::beta::inv_beta_reg(
+            2.0,
+            f64::from_bits(shape),
+            f64::from_bits(probability),
+        );
+        assert_eq!(
+            actual.to_bits(),
+            expected,
+            "shape={shape:#018x} probability={probability:#018x}"
+        );
+    }
+}
+
+#[test]
 fn real_shape_two_subnormal_cells_match_550_digit_references() {
     let cases = [
         (0x3fdf_ffff_ffff_ffff, 0x1e6d_64d5_1e0d_b31c, 0x2_u64),
