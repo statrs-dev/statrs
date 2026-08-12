@@ -1299,6 +1299,22 @@ fn test_inv_beta_reg_extreme_probability_terminates() {
 }
 
 #[test]
+fn test_inv_beta_reg_unit_first_shape_subnormal_integer_second_shape() {
+    for second_shape in [2_u64, 3, 10, 1000] {
+        for probability_bits in 1_u64..=1024 {
+            let quotient = probability_bits / second_shape;
+            let remainder = probability_bits % second_shape;
+            let expected = quotient + u64::from(2 * remainder >= second_shape);
+            assert_eq!(
+                inv_beta_reg(1.0, second_shape as f64, f64::from_bits(probability_bits),).to_bits(),
+                expected,
+                "second_shape={second_shape} probability_bits={probability_bits:#018x}"
+            );
+        }
+    }
+}
+
+#[test]
 fn test_inv_beta_reg_small_shape_lower_tail() {
     let cases = [
         (1e-33, 0.0),
