@@ -68,3 +68,28 @@ fn shape_two_large_second_shape_does_not_overflow() {
         0x000c_1190_8513_0dd9
     );
 }
+
+#[test]
+fn real_shape_two_inputs_match_500_digit_references() {
+    let cases = [
+        (2.0, 5.5, 0.3, 0x3fc5_7cb4_a4fa_6544_u64),
+        (5.5, 2.0, 0.3, 0x3fe5_4170_6a98_75f7),
+        (2.0, 65.5, 0.3, 0x3f90_e2ac_2408_d260),
+        (65.5, 2.0, 0.3, 0x3fee_d6c0_af00_418b),
+        (2.0, 200.5, 0.3, 0x3f76_4d12_9f5f_2879),
+        (200.5, 2.0, 0.3, 0x3fef_9d2f_de46_a3e6),
+        (2.0, 200.5, 0.999_999_999, 0x3fbc_bed1_fc37_f6e0),
+        (200.5, 2.0, 0.999_999_999, 0x3fef_ffff_888c_10e7),
+        (2.0, 1_000_000.5, 1e-60, 0x387e_13b4_0c5d_6bc5),
+        (1_000_000.5, 2.0, 1e-60, 0x3fef_fed3_dd80_3e82),
+        (2.0, 1e308, 0.5, 0x000c_1190_8513_0dd9),
+        (1e308, 2.0, 0.5, 0x3ff0_0000_0000_0000),
+    ];
+    for (a, b, probability, expected) in cases {
+        assert_eq!(
+            crate::function::beta::inv_beta_reg(a, b, probability).to_bits(),
+            expected,
+            "a={a} b={b} probability={probability}"
+        );
+    }
+}
