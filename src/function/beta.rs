@@ -2519,6 +2519,47 @@ mod tests {
     }
 
     #[test]
+    fn test_beta_reg_accuracy_gaps_against_500_digit_references() {
+        let cases = [
+            (
+                0.8144818117006096,
+                1.250857626649459e-12,
+                0.9669920517519052,
+                0x3d94af09e6a6b751_u64,
+            ),
+            (
+                0.2623971057030866,
+                5.23256841817563e-12,
+                0.9924817752047999,
+                0x3dc7f760fcea90cd,
+            ),
+            (
+                25.32628846940565,
+                3.1028101710805442,
+                0.9276950604606229,
+                0x3fe69562e02877e6,
+            ),
+        ];
+        for (a, b, x, expected) in cases {
+            let actual = beta_reg(a, b, x).to_bits();
+            assert!(
+                actual.abs_diff(expected) <= 4,
+                "a={a:?}, b={b:?}, x={x:?}, actual={actual:#018x}, expected={expected:#018x}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_inv_beta_reg_typical_against_500_digit_reference() {
+        let actual = inv_beta_reg(2.0, 5.0, 0.3).to_bits();
+        let expected = 0x3fc745560dce9cd1_u64;
+        assert!(
+            actual.abs_diff(expected) <= 2,
+            "actual={actual:#018x}, expected={expected:#018x}"
+        );
+    }
+
+    #[test]
     fn test_beta_reg_tiny_x_large_b_against_reference() {
         let cases: [(f64, f64, f64, u64); 2] = [
             (100.0, 1e308, 1.01e-306, 0x3fe1b153914c2fe1_u64),
