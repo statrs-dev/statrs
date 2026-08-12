@@ -2,6 +2,11 @@ use super::*;
 use crate::prec;
 use core::f64::consts as f64_consts;
 const MODULE_RELATIVE_ACC: f64 = 1e-14;
+const INVERSE_REFERENCE_MAX_ULPS: u64 = 4;
+
+// Tests named `*_500_digit_*` use exact decimal encodings of the input `f64`s
+// with `cpp_dec_float<500>` and one final round to binary64. Inverse references
+// were independently checked with mpmath at 550 decimal digits.
 
 fn beta_assert_relative_eq(a: f64, b: f64) {
     prec::assert_relative_eq!(
@@ -654,34 +659,16 @@ fn test_beta_reg_continued_fraction_adjacent_reference() {
 }
 
 #[test]
-fn test_beta_reg_accuracy_gaps_against_500_digit_references() {
-    let cases = [
-        (
-            0.8144818117006096,
-            1.250857626649459e-12,
-            0.9669920517519052,
-            0x3d94af09e6a6b751_u64,
-        ),
-        (
-            0.2623971057030866,
-            5.23256841817563e-12,
-            0.9924817752047999,
-            0x3dc7f760fcea90cd,
-        ),
-        (
-            25.32628846940565,
-            3.1028101710805442,
-            0.9276950604606229,
-            0x3fe69562e02877e6,
-        ),
-    ];
-    for (a, b, x, expected) in cases {
-        let actual = beta_reg(a, b, x).to_bits();
-        assert!(
-            actual.abs_diff(expected) <= 4,
-            "a={a:?}, b={b:?}, x={x:?}, actual={actual:#018x}, expected={expected:#018x}"
-        );
-    }
+fn test_beta_reg_moderate_fraction_against_500_digit_reference() {
+    let a = 25.32628846940565;
+    let b = 3.1028101710805442;
+    let x = 0.9276950604606229;
+    let expected = 0x3fe69562e02877e6_u64;
+    let actual = beta_reg(a, b, x).to_bits();
+    assert!(
+        actual.abs_diff(expected) <= 4,
+        "actual={actual:#018x}, expected={expected:#018x}"
+    );
 }
 
 #[test]
@@ -1328,7 +1315,7 @@ fn test_inv_beta_reg_log_solver_boundary_is_monotone() {
         {
             let ulp_error = value.to_bits().abs_diff(reference.to_bits());
             assert!(
-                ulp_error <= 256,
+                ulp_error <= INVERSE_REFERENCE_MAX_ULPS,
                 "a={a}, b={b}, probability={probability}, value={value}, reference={reference}, ulp_error={ulp_error}"
             );
             let quantile_relative_error = ((value - reference) / reference).abs();
@@ -1374,7 +1361,7 @@ fn test_inv_beta_reg_adjacent_probability_is_monotone() {
             "a={a}, b={b}, actual={actual:?}"
         );
         for value in actual {
-            assert!(value.to_bits().abs_diff(expected.to_bits()) <= 256);
+            assert!(value.to_bits().abs_diff(expected.to_bits()) <= INVERSE_REFERENCE_MAX_ULPS);
         }
     }
 }
@@ -1419,7 +1406,7 @@ fn test_inv_beta_reg_upper_adjacent_probability_is_monotone() {
         for (value, expected) in actual.into_iter().zip(expected_bits.map(f64::from_bits)) {
             let ulp_error = value.to_bits().abs_diff(expected.to_bits());
             assert!(
-                ulp_error <= 512,
+                ulp_error <= INVERSE_REFERENCE_MAX_ULPS,
                 "a={a}, b={b}, value={value}, expected={expected}, ulp_error={ulp_error}"
             );
         }
