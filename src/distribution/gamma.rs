@@ -361,13 +361,10 @@ impl Continuous<f64, f64> for Gamma {
             0.0
         } else if self.shape == 1.0 {
             self.rate * (-self.rate * x).exp()
-        } else if self.shape > 160.0 {
-            self.ln_pdf(x).exp()
         } else if x.is_infinite() {
             0.0
         } else {
-            self.rate.powf(self.shape) * x.powf(self.shape - 1.0) * (-self.rate * x).exp()
-                / gamma::gamma(self.shape)
+            self.ln_pdf(x).exp()
         }
     }
 
@@ -392,10 +389,23 @@ impl Continuous<f64, f64> for Gamma {
             f64::NEG_INFINITY
         } else if self.shape == 1.0 {
             self.rate.ln() - self.rate * x
+        } else if x == 0.0 {
+            if self.shape < 1.0 {
+                f64::INFINITY
+            } else {
+                f64::NEG_INFINITY
+            }
         } else if x.is_infinite() {
             f64::NEG_INFINITY
         } else {
-            self.shape * self.rate.ln() + (self.shape - 1.0) * x.ln()
+            let ln_rate = self.rate.ln();
+            let ln_x = x.ln();
+            let ln_product = ln_rate + ln_x;
+            let virtual_ln_x = ln_product - ln_rate;
+            let ln_product_error = (ln_rate - (ln_product - virtual_ln_x)) + (ln_x - virtual_ln_x);
+            self.shape
+                .mul_add(ln_product, self.shape * ln_product_error)
+                - ln_x
                 - self.rate * x
                 - gamma::ln_gamma(self.shape)
         }
@@ -608,6 +618,12 @@ mod tests {
         // test_is_nan((10.0, f64::INFINITY), pdf(1.0)); // is this really the behavior we want?
         // TODO: test special
         // (10.0, f64::INFINITY, f64::INFINITY, 0.0, pdf(f64::INFINITY)),];
+    }
+
+    #[test]
+    fn test_pdf_with_underflowing_rate_power() {
+        let expected = 4.455666577035095e-7;
+        test_absolute(80.0, 1e-5, expected, expected * 2e-13, |dist| dist.pdf(8e6));
     }
 
     #[test]
