@@ -20,12 +20,14 @@ mod inverse;
 mod lanczos;
 mod log_beta;
 mod log_forward;
+mod normal_tail;
 mod prefactor;
 mod quantile;
 mod recurrence;
 mod scaled_gamma;
 mod series;
 mod small_gamma;
+mod temme;
 
 pub use api::{beta, beta_inc, beta_reg, checked_beta, checked_beta_inc};
 pub use forward::checked_beta_reg;
@@ -40,12 +42,14 @@ use fraction::*;
 use lanczos::*;
 use log_beta::*;
 use log_forward::*;
+use normal_tail::*;
 use prefactor::*;
 use quantile::*;
 use recurrence::*;
 use scaled_gamma::*;
 use series::*;
 use small_gamma::*;
+use temme::*;
 
 use crate::consts;
 use crate::function::{erf, gamma};
@@ -59,9 +63,9 @@ const MODULE_EPS: f64 = 1e-15;
 const STIRLING_MIN: f64 = 32.0;
 const SCALED_GAMMA_MIN_X: f64 = 64.0;
 const MAX_BETA_REG_ITERATIONS: u32 = 100_000;
-const ASYMPTOTIC_MIN_SUM: f64 = 1.2e8;
-const ASYMPTOTIC_MIN_SHAPE: f64 = 1.2e7;
-const ASYMPTOTIC_MAX_DEVIANCE: f64 = 1.5;
+const ASYMPTOTIC_MIN_SUM: f64 = 1e7;
+const ASYMPTOTIC_MIN_SHAPE: f64 = 1e6;
+const ASYMPTOTIC_MAX_DEVIANCE: f64 = 8.5;
 
 /// Represents the errors that can occur when computing the natural logarithm
 /// of the beta function or the regularized lower incomplete beta function.
