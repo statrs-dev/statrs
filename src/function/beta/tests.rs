@@ -1284,23 +1284,17 @@ fn test_checked_beta_reg_x_gt_1() {
 
 #[test]
 fn test_inv_beta_reg_extreme_probability_does_not_panic() {
-    let actual = inv_beta_reg(200.0, 2.0, 1e-165);
-    let expected = 0.14582246504394993;
-    let relative_error = ((actual - expected) / expected).abs();
-    assert!(
-        relative_error <= 5e-13,
-        "actual {actual}, expected {expected}"
+    assert_eq!(
+        inv_beta_reg(200.0, 2.0, 1e-165).to_bits(),
+        0x3fc2_aa4f_7f31_6421
     );
 }
 
 #[test]
 fn test_inv_beta_reg_extreme_probability_terminates() {
-    let actual = inv_beta_reg(200.0, 2.0, 1e-60);
-    let expected = 0.4897050363600545;
-    let relative_error = ((actual - expected) / expected).abs();
-    assert!(
-        relative_error <= 5e-13,
-        "actual {actual}, expected {expected}"
+    assert_eq!(
+        inv_beta_reg(200.0, 2.0, 1e-60).to_bits(),
+        0x3fdf_5753_caf6_9652
     );
 }
 
