@@ -108,3 +108,22 @@ fn real_shape_two_subnormal_quantiles_match_500_digit_references() {
     });
     assert!(values.windows(2).all(|pair| pair[0] <= pair[1]));
 }
+
+#[test]
+fn real_shape_two_zero_cell_is_rounded_and_monotone() {
+    let cases = [
+        (0x1668_7e92_154e_f7ac, 0_u64),
+        (0x1e6c_cb05_3660_8d61, 1),
+    ];
+    let values = cases.map(|(probability, expected)| {
+        let actual = crate::function::beta::inv_beta_reg(0.5, 2.0, f64::from_bits(probability));
+        assert_eq!(actual.to_bits(), expected);
+        actual
+    });
+    assert!(values[0] <= values[1]);
+
+    let tiny_shape = f64::from_bits(1);
+    for probability in [0.1, 0.5, 0.9, 0.999_999_999] {
+        assert_eq!(crate::function::beta::inv_beta_reg(tiny_shape, 2.0, probability), 0.0);
+    }
+}

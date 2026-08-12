@@ -1907,6 +1907,16 @@ fn test_inv_beta_reg_concentrated_unit_endpoint_is_monotone() {
 }
 
 #[test]
+fn test_inv_beta_reg_concentrated_endpoint_uses_exact_mean() {
+    let actual = inv_beta_reg(
+        f64::from_bits(0x44ea_7843_79d9_9db4),
+        f64::from_bits(0x4193_da32_9b63_3647),
+        0.5,
+    );
+    assert_eq!(actual.to_bits(), 0x3fef_ffff_ffff_ffff);
+}
+
+#[test]
 fn test_inv_beta_reg_extreme_tail_balanced_shapes() {
     let cases = [
         (f64::from_bits(1), 0.1384383837250825),
