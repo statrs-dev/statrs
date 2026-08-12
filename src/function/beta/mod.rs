@@ -65,7 +65,7 @@ const SCALED_GAMMA_MIN_X: f64 = 64.0;
 const MAX_BETA_REG_ITERATIONS: u32 = 100_000;
 const ASYMPTOTIC_MIN_SUM: f64 = 1e7;
 const ASYMPTOTIC_MIN_SHAPE: f64 = 1e6;
-const ASYMPTOTIC_MAX_DEVIANCE: f64 = 8.5;
+const ASYMPTOTIC_MAX_DEVIANCE: f64 = 9.0;
 
 /// Represents the errors that can occur when computing the natural logarithm
 /// of the beta function or the regularized lower incomplete beta function.
