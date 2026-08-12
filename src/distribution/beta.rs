@@ -129,6 +129,10 @@ impl ContinuousCDF<f64, f64> for Beta {
     /// Calculates the cumulative distribution function for the beta
     /// distribution at `x`.
     ///
+    /// # Panics
+    ///
+    /// If the numerical method does not converge.
+    ///
     /// # Formula
     ///
     /// ```text
@@ -150,6 +154,10 @@ impl ContinuousCDF<f64, f64> for Beta {
     }
 
     /// Calculates the survival function for the beta distribution at `x`.
+    ///
+    /// # Panics
+    ///
+    /// If the numerical method does not converge.
     ///
     /// # Formula
     ///
@@ -180,7 +188,7 @@ impl ContinuousCDF<f64, f64> for Beta {
     ///
     /// # Panics
     ///
-    /// If x is not in `[0, 1]`.
+    /// If x is not in `[0, 1]` or the numerical method does not converge.
     ///
     /// # Formula
     ///
@@ -204,6 +212,10 @@ impl ContinuousCDF<f64, f64> for Beta {
     /// # Returns an error instead of a panic
     ///
     /// If x is not in `[0, 1]`.
+    ///
+    /// # Panics
+    ///
+    /// If the numerical method does not converge.
     ///
     /// # Formula
     ///

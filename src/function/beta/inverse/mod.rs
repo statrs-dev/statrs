@@ -10,7 +10,12 @@ use solve::*;
 // Near one, the reflected solver preserves upper-tail information needed to round to 1.0.
 const SHAPE_TWO_SPECIALIZATION_MAX: f64 = 0.999_999_999;
 
-/// Computes the inverse of the regularized incomplete beta function
+/// Computes the inverse of the regularized incomplete beta function.
+///
+/// # Panics
+///
+/// Panics for arguments outside `a > 0`, `b > 0`, and `0 <= probability <= 1`
+/// in debug builds, or if the numerical method does not converge.
 pub fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
     debug_assert!((0.0..=1.0).contains(&probability) && a > 0.0 && b > 0.0);
 

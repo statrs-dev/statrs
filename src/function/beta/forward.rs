@@ -15,7 +15,8 @@ use super::*;
 ///
 /// # Errors
 ///
-/// if `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
+/// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, `x > 1.0`, or the numerical method
+/// does not converge.
 pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     if a <= 0.0 {
         return Err(BetaFuncError::ANotGreaterThanZero);
