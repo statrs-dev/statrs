@@ -1747,6 +1747,33 @@ fn test_inv_beta_reg_concentrated_gate_preserves_extreme_tail_rounding() {
 }
 
 #[test]
+fn test_inv_beta_reg_concentrated_unit_endpoint_is_monotone() {
+    for shape in [1e100, 1e200, 1e308] {
+        let mut previous = 0.0;
+        for probability in [
+            0.5,
+            0.9,
+            0.99,
+            1.0 - 1e-12,
+            f64::from_bits(1.0_f64.to_bits() - 1),
+        ] {
+            let actual = inv_beta_reg(shape, 2.0, probability);
+            assert!(actual >= previous);
+            assert_eq!(actual, 1.0);
+            previous = actual;
+        }
+        let lower = inv_beta_reg(shape, 2.0, f64::from_bits(1));
+        assert!(lower <= inv_beta_reg(shape, 2.0, 0.5));
+        let mut swapped_previous = 0.0;
+        for probability in [f64::from_bits(1), 0.1, 0.5, 0.9, 1.0 - 1e-12] {
+            let actual = inv_beta_reg(2.0, shape, probability);
+            assert!(actual >= swapped_previous && actual < 1.0);
+            swapped_previous = actual;
+        }
+    }
+}
+
+#[test]
 fn test_inv_beta_reg_extreme_tail_balanced_shapes() {
     let cases = [
         (f64::from_bits(1), 0.1384383837250825),

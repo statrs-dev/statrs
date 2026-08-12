@@ -29,6 +29,16 @@ fn beta_mean(a: f64, b: f64, mean: f64) -> (f64, f64) {
 
 pub(super) fn beta_concentrated_quantile(a: f64, b: f64, probability: f64) -> Option<f64> {
     let (mean, complement, _, root_sum) = beta_shape_statistics(a, b);
+    if mean == 1.0 && probability >= 0.5 {
+        let log_variance = b.ln() - 2.0 * a.ln();
+        let previous = f64::from_bits(1.0_f64.to_bits() - 1);
+        let half_spacing = 0.5 * (1.0 - previous);
+        let ratio = 2.0 * half_spacing.ln() - log_variance;
+        let log_bound = -ratio - (-ratio).exp().ln_1p();
+        if log_bound + 16.0 * core::f64::consts::LN_2 < probability.ln() {
+            return Some(1.0);
+        }
+    }
     let spacing = if mean == 0.0 {
         f64::from_bits(1)
     } else if mean == 1.0 {
