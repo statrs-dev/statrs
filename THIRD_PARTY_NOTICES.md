@@ -4,7 +4,7 @@
 
 Portions of `src/function/beta/{bgrat,forward,fraction,log_forward,recurrence,series}.rs` are adapted from Boost.Math 1.90.0, `include/boost/math/special_functions/beta.hpp`.
 
-Copyright John Maddock 2006.  
+Copyright John Maddock 2006.
 Copyright Matt Borland 2024.
 
 The Boost-derived portions are licensed under the Boost Software License 1.0; see `LICENSE-BOOST.md`. Statrs modifications are licensed under MIT, so these files are subject to both licenses.

@@ -29,8 +29,8 @@ fn beta_reg_symmetric_central(a: f64, b: f64, x: f64) -> Option<f64> {
         return None;
     }
 
-    // DLMF 8.18.8 gives the symmetric center. DLMF 5.11.13 supplies the
-    // gamma ratio in f(1/2 + t) = f(1/2) * (1 - 4t^2)^(a - 1).
+    // DLMF 8.17.1 and 5.5.5 give the symmetric-center integral; DLMF
+    // 5.11.13 supplies the asymptotic gamma ratio in its normalization.
     let inverse_a = 1.0 / a;
     let mut gamma_ratio: f64 = 869.0 / 4_194_304.0;
     for coefficient in [
