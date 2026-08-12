@@ -16,6 +16,8 @@ pub mod kde;
 pub mod knn;
 use alloc::vec::Vec;
 use kdtree::{ErrorKind, KdTree, distance::squared_euclidean};
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 use thiserror::Error;
 
 /// Errors that can occur when estimating a density from a sample.
@@ -79,6 +81,14 @@ impl_container!(
 );
 pub type NearestNeighbors = (Vec<f64>, f64);
 
+pub(crate) fn neighborhood_radius(neighbors: &[f64]) -> Option<f64> {
+    neighbors
+        .iter()
+        .copied()
+        .max_by(f64::total_cmp)
+        .map(f64::sqrt)
+}
+
 pub(crate) fn nearest_neighbors<S, X>(
     x: &X,
     samples: &S,
@@ -117,6 +127,11 @@ mod tests {
     use nalgebra::Vector3;
 
     use super::*;
+
+    #[test]
+    fn neighborhood_radius_uses_farthest_distance() {
+        assert_eq!(neighborhood_radius(&[4.0, 1.0, 9.0, 2.0]), Some(3.0));
+    }
 
     #[test]
     fn test_vec_container() {

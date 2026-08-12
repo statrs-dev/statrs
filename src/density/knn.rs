@@ -1,9 +1,11 @@
 use super::Container;
 use crate::{
-    density::{DensityError, nearest_neighbors},
+    density::{DensityError, nearest_neighbors, neighborhood_radius},
     function::gamma::gamma,
 };
 use core::f64::consts::PI;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Computes the `k`-nearest neighbor density estimate for a given point `x`
 /// using the samples provided.
@@ -30,7 +32,7 @@ where
     if neighbors.is_empty() {
         Err(DensityError::EmptyNeighborhood)
     } else {
-        let radius = neighbors.last().unwrap().sqrt();
+        let radius = neighborhood_radius(&neighbors).unwrap();
         let d = x.length() as f64;
         Ok((k / n_samples) * (gamma(d / 2. + 1.) / (PI.powf(d / 2.) * radius.powf(d))))
     }
