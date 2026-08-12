@@ -154,3 +154,15 @@ fn real_shape_two_subnormal_cells_match_550_digit_references() {
         );
     }
 }
+
+#[test]
+fn subnormal_first_shape_rounds_to_zero_above_specialization_gate() {
+    let probability = f64::from_bits(1.0_f64.to_bits() - 1);
+    for shape_bits in [2_u64, 3, 0x10, 0x100, 0x0010_0000_0000_0000] {
+        assert_eq!(
+            crate::function::beta::inv_beta_reg(f64::from_bits(shape_bits), 2.0, probability),
+            0.0,
+            "shape_bits={shape_bits:#018x}"
+        );
+    }
+}
