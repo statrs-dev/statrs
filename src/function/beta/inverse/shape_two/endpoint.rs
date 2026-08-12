@@ -34,32 +34,77 @@ fn midpoint_log_cdf(a: f64, lower_bits: u64) -> (f64, f64) {
     log_cdf_at_min_subnormal_multiple(a, multiple)
 }
 
+fn midpoint_order(a: f64, target: (f64, f64), lower_bits: u64) -> Result<core::cmp::Ordering, f64> {
+    let order = compare_logs(target, midpoint_log_cdf(a, lower_bits));
+    if order.is_eq() {
+        let even = if lower_bits & 1 == 0 {
+            lower_bits
+        } else {
+            lower_bits + 1
+        };
+        Err(f64::from_bits(even))
+    } else {
+        Ok(order)
+    }
+}
+
 pub(super) fn lower_endpoint_result(a: f64, b: f64, probability: f64, initial: f64) -> Option<f64> {
     if b != 2.0 || initial > f64::MIN_POSITIVE {
         return None;
     }
     let target = accurate_ln(probability);
     let last_subnormal = MIN_NORMAL_BITS - 1;
-    match compare_logs(target, midpoint_log_cdf(a, last_subnormal)) {
-        core::cmp::Ordering::Greater => return None,
-        core::cmp::Ordering::Equal => return Some(f64::MIN_POSITIVE),
-        core::cmp::Ordering::Less => {}
-    }
-    let mut lower = 0_u64;
-    let mut upper = last_subnormal;
+    let candidate = initial.to_bits().min(last_subnormal);
+    let (mut lower, mut upper) = match midpoint_order(a, target, candidate) {
+        Err(result) => return Some(result),
+        Ok(core::cmp::Ordering::Less) => {
+            let mut upper = candidate;
+            let mut step = 1_u64;
+            loop {
+                if upper == 0 {
+                    return Some(0.0);
+                }
+                let probe = upper.saturating_sub(step);
+                match midpoint_order(a, target, probe) {
+                    Err(result) => return Some(result),
+                    Ok(core::cmp::Ordering::Less) => {
+                        upper = probe;
+                        step = step.saturating_mul(2);
+                    }
+                    Ok(core::cmp::Ordering::Greater) => break (probe + 1, upper),
+                    Ok(core::cmp::Ordering::Equal) => unreachable!(),
+                }
+            }
+        }
+        Ok(core::cmp::Ordering::Greater) => {
+            let mut lower = candidate + 1;
+            let mut probe = candidate;
+            let mut step = 1_u64;
+            loop {
+                if probe == last_subnormal {
+                    return None;
+                }
+                probe = probe.saturating_add(step).min(last_subnormal);
+                match midpoint_order(a, target, probe) {
+                    Err(result) => return Some(result),
+                    Ok(core::cmp::Ordering::Less) => break (lower, probe),
+                    Ok(core::cmp::Ordering::Greater) => {
+                        lower = probe + 1;
+                        step = step.saturating_mul(2);
+                    }
+                    Ok(core::cmp::Ordering::Equal) => unreachable!(),
+                }
+            }
+        }
+        Ok(core::cmp::Ordering::Equal) => unreachable!(),
+    };
     while lower < upper {
         let midpoint = lower + (upper - lower) / 2;
-        match compare_logs(target, midpoint_log_cdf(a, midpoint)) {
-            core::cmp::Ordering::Less => upper = midpoint,
-            core::cmp::Ordering::Greater => lower = midpoint + 1,
-            core::cmp::Ordering::Equal => {
-                let even = if midpoint & 1 == 0 {
-                    midpoint
-                } else {
-                    midpoint + 1
-                };
-                return Some(f64::from_bits(even));
-            }
+        match midpoint_order(a, target, midpoint) {
+            Err(result) => return Some(result),
+            Ok(core::cmp::Ordering::Less) => upper = midpoint,
+            Ok(core::cmp::Ordering::Greater) => lower = midpoint + 1,
+            Ok(core::cmp::Ordering::Equal) => unreachable!(),
         }
     }
     Some(f64::from_bits(lower))
