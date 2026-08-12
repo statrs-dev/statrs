@@ -120,6 +120,9 @@ pub(super) fn dd_negative_expm1((value, error): (f64, f64)) -> f64 {
 }
 
 pub(super) fn accurate_ln(value: f64) -> (f64, f64) {
+    if value == 0.0 {
+        return (f64::NEG_INFINITY, 0.0);
+    }
     if value == 1.0 {
         return (0.0, 0.0);
     }
