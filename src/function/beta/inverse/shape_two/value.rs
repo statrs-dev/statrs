@@ -11,7 +11,7 @@ pub(super) fn log_cdf(a: f64, b: f64, x: f64) -> f64 {
             term *= -(b - k) / k * x * (k + 1.0) / (k + 2.0);
             sum += term;
             if term.abs() <= f64::EPSILON * sum.abs() {
-                return (b * (b + 1.0)).ln() + 2.0 * x.ln() + sum.ln();
+                return b.ln() + (b + 1.0).ln() + 2.0 * x.ln() + sum.ln();
             }
         }
         panic!("shape-two beta series did not converge for b={b}, x={x}")
@@ -32,10 +32,9 @@ pub(super) fn log_cdf_parts(a: f64, b: f64, x: f64) -> (f64, f64) {
     } else if b * x < 0.5 {
         let sum = series_sum_dd(b, x)
             .unwrap_or_else(|| panic!("shape-two beta series did not converge for b={b}, x={x}"));
-        let prefactor = dd_mul((b, 0.0), dd_add((b, 0.0), (1.0, 0.0)));
         dd_add(
             dd_add(
-                accurate_ln_dd(prefactor),
+                dd_add(accurate_ln_dd((b, 0.0)), accurate_ln_dd((b + 1.0, 0.0))),
                 dd_mul((2.0, 0.0), accurate_ln_dd((x, 0.0))),
             ),
             accurate_ln_dd(sum),
@@ -95,14 +94,11 @@ fn integer_power(value: f64, exponent: f64) -> Option<(f64, f64)> {
 
 pub(super) fn direct_cdf_and_pdf(a: f64, b: f64, x: f64) -> Option<((f64, f64), f64)> {
     if a == 2.0 && (b * x < 0.5 || (b == b.trunc() && b <= 64.0 && b * x <= 1.0)) {
-        let prefactor = dd_mul(
-            dd_mul((b, 0.0), dd_add((b, 0.0), (1.0, 0.0))),
-            dd_mul((x, 0.0), (x, 0.0)),
-        );
+        let prefactor = dd_mul(dd_mul((b, 0.0), (x, 0.0)), dd_mul((b + 1.0, 0.0), (x, 0.0)));
         let sum = series_sum_dd(b, x)
             .unwrap_or_else(|| panic!("shape-two beta series did not converge for b={b}, x={x}"));
         let cdf = dd_mul(prefactor, sum);
-        let pdf = b * (b + 1.0) * x * (1.0 - x).powf(b - 1.0);
+        let pdf = (b * x) * (b + 1.0) * (1.0 - x).powf(b - 1.0);
         if cdf.0 >= f64::MIN_POSITIVE && cdf.0 < 1.0 && pdf > 0.0 && pdf.is_finite() {
             return Some((cdf, pdf));
         }
@@ -159,8 +155,8 @@ fn series_sum(b: f64, x: f64) -> Option<f64> {
 
 pub(super) fn fast_cdf_and_pdf(a: f64, b: f64, x: f64) -> Option<(f64, f64)> {
     if a == 2.0 && (b * x < 0.5 || b <= 64.0 && b * x <= 1.0) {
-        let cdf = b * (b + 1.0) * x * x * series_sum(b, x)?;
-        let pdf = b * (b + 1.0) * x * (1.0 - x).powf(b - 1.0);
+        let cdf = (b * x) * ((b + 1.0) * x) * series_sum(b, x)?;
+        let pdf = (b * x) * (b + 1.0) * (1.0 - x).powf(b - 1.0);
         if (f64::MIN_POSITIVE..1.0).contains(&cdf) && pdf > 0.0 && pdf.is_finite() {
             return Some((cdf, pdf));
         }
