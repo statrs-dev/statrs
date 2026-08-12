@@ -127,3 +127,30 @@ fn real_shape_two_zero_cell_is_rounded_and_monotone() {
         );
     }
 }
+
+#[test]
+fn real_shape_two_subnormal_cells_match_550_digit_references() {
+    let cases = [
+        (0x3fdf_ffff_ffff_ffff, 0x1e6d_64d5_1e0d_b31c, 0x2_u64),
+        (0x3fdf_ffff_ffff_ffff, 0x1e87_9f3c_f0a9_fc5f, 0x10),
+        (0x3fdf_ffff_ffff_ffff, 0x1e91_1a46_0cc5_8ef7, 0x21),
+        (0x3fe0_0000_0000_0000, 0x1e72_f942_2c23_c47c, 0x2),
+        (0x3fe0_0000_0000_0000, 0x1e88_5f42_f152_1410, 0x10),
+        (0x3fe0_0000_0000_0000, 0x1e90_d663_a9ca_a39a, 0x20),
+        (0x3fe0_0000_0000_0001, 0x1e6d_64d5_1e0d_af1b, 0x2),
+        (0x3fe0_0000_0000_0001, 0x1e89_198c_8b83_0581, 0x11),
+        (0x3fe0_0000_0000_0001, 0x1e90_916b_2b5f_fe37, 0x1f),
+    ];
+    for (a, probability, expected) in cases {
+        assert_eq!(
+            crate::function::beta::inv_beta_reg(
+                f64::from_bits(a),
+                2.0,
+                f64::from_bits(probability),
+            )
+            .to_bits(),
+            expected,
+            "a={a:#018x} probability={probability:#018x}"
+        );
+    }
+}
