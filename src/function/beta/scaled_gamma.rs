@@ -1,3 +1,7 @@
+//! Scaled upper-gamma evaluations follow DLMF 8.9.2 and 8.11.2. The bounded
+//! continued-fraction recurrence is adapted from the existing `statrs` gamma
+//! implementation; the small-shape form is the cancellation-safe DLMF 8.7.3 series.
+
 use super::*;
 
 pub(super) fn upper_gamma_scaled_asymptotic(shape: f64, x: f64) -> Result<f64, BetaFuncError> {
