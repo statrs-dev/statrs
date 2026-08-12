@@ -13,14 +13,16 @@ mod value;
 use value::log_cdf_parts;
 
 pub(super) fn inverse_beta_shape_two(a: f64, b: f64, probability: f64) -> f64 {
-    if let Some(result) = lower_endpoint_result(a, b, probability) {
-        return result;
-    }
     let mut current = if b == 2.0 {
         ((probability.ln() - (a + 1.0).ln()) / a).exp()
     } else {
         (0.5 * (probability.ln() + core::f64::consts::LN_2 - b.ln() - (b + 1.0).ln())).exp()
     };
+    if current < f64::MIN_POSITIVE
+        && let Some(result) = lower_endpoint_result(a, b, probability)
+    {
+        return result;
+    }
     current = current.clamp(f64::from_bits(1), f64::from_bits(1.0_f64.to_bits() - 1));
     let mut lower = 0.0;
     let mut upper = 1.0;
