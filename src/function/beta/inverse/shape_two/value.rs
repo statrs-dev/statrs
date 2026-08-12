@@ -81,18 +81,25 @@ fn shape_two_ln_one_plus(value: (f64, f64)) -> (f64, f64) {
 }
 
 fn shape_two_ln(value: (f64, f64)) -> (f64, f64) {
-    let mut exponent = ((value.0.to_bits() >> 52) & 0x7ff) as i32 - 1023;
+    let mut scaled = value;
+    let mut exponent_adjustment = 0_i32;
+    if scaled.0 < f64::MIN_POSITIVE {
+        scaled.0 *= 18_014_398_509_481_984.0;
+        scaled.1 *= 18_014_398_509_481_984.0;
+        exponent_adjustment = -54;
+    }
+    let mut exponent = ((scaled.0.to_bits() >> 52) & 0x7ff) as i32 - 1023;
     let mut mantissa =
-        f64::from_bits((value.0.to_bits() & 0x000f_ffff_ffff_ffff) | (1023_u64 << 52));
+        f64::from_bits((scaled.0.to_bits() & 0x000f_ffff_ffff_ffff) | (1023_u64 << 52));
     if mantissa > core::f64::consts::SQRT_2 {
         mantissa *= 0.5;
         exponent += 1;
     }
     let scale = 2.0_f64.powi(exponent);
-    let mantissa = (mantissa, value.1 / scale);
+    let mantissa = (mantissa, scaled.1 / scale);
     dd_add(
         dd_mul(
-            (f64::from(exponent), 0.0),
+            (f64::from(exponent + exponent_adjustment), 0.0),
             (core::f64::consts::LN_2, 2.3190468138462996e-17),
         ),
         shape_two_ln_one_plus(dd_add(mantissa, (-1.0, 0.0))),
