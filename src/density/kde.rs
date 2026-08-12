@@ -1,7 +1,7 @@
 use kdtree::distance::squared_euclidean;
 
 use crate::{
-    density::{Container, DensityError, nearest_neighbors},
+    density::{Container, DensityError, nearest_neighbors, neighborhood_radius},
     function::kernel::{Gaussian, Kernel},
 };
 
@@ -30,7 +30,7 @@ where
     if neighbors.is_empty() {
         Err(DensityError::EmptyNeighborhood)
     } else {
-        let radius = neighbors.last().unwrap().sqrt(); // safe to unwrap here since `neighbors` is not empty
+        let radius = neighborhood_radius(&neighbors).unwrap();
         let d = x.length() as i32;
         Ok((1. / (n_samples * radius.powi(d)))
             * samples
