@@ -1118,7 +1118,36 @@ fn test_ln_beta_accurate_parts_reference() {
     }
     let gamma = ln_gamma_accurate_parts(0.1);
     assert_eq!(gamma.0.to_bits(), 0x4002058e35f3deee);
-    assert!((gamma.1 - f64::from_bits(0xbc97ad885b23066b)).abs() <= 5e-19);
+    assert!(
+        (gamma.1 - f64::from_bits(0xbc97ad885b23066b)).abs() <= 5e-19,
+        "gamma={gamma:?}"
+    );
+    let gamma_cases = [
+        (0.125, 0x400027c4cfd515b0, 0x3c91baac8949b315),
+        (0.03125, 0x400b968177c407c6, 0x3ca22ff84657c0bd),
+        (0.01, 0x401265de0d9b33c4, 0xbca5ae6a9ccd75b9),
+        (1e-4, 0x40226baa2b2b7f63, 0xbcc49a20e6676b4a),
+        (1e-8, 0x40326bb1bb9c8a88, 0xbcc0a09c9d154d84),
+        (1e-12, 0x403ba18a998ffefe, 0xbcc9835734ab358b),
+        (1e-16, 0x40426bb1bbb55516, 0xbcef9d9398a70762),
+        (f64::MIN_POSITIVE, 0x4086232bdd7abcd2, 0x3d1eef3fec1be37f),
+        (f64::from_bits(1), 0x40874385446d71c3, 0x3d28e569fa8ee781),
+    ];
+    for (x, expected_high, expected_low) in gamma_cases {
+        let expected_low_value = f64::from_bits(expected_low);
+        let recurrence = ln_gamma_accurate_parts(x);
+        assert_eq!(recurrence.0.to_bits(), expected_high, "x={x:?}");
+        assert!(
+            (recurrence.1 - expected_low_value).abs() <= 5e-19,
+            "x={x:?}, recurrence={recurrence:?}, expected_low={expected_low_value:?}"
+        );
+        let series = ln_gamma_small_accurate_parts(x);
+        assert_eq!(series.0.to_bits(), expected_high, "x={x:?}");
+        assert!(
+            series.1.to_bits().abs_diff(expected_low) <= 8,
+            "x={x:?}, series={series:?}, expected_low={expected_low_value:?}"
+        );
+    }
     let delta = ln_gamma_delta_parts(32.0, 0.1);
     assert_eq!(delta.0.to_bits(), 0x3fd6172044f9840c);
     assert!((delta.1 - f64::from_bits(0xbc7ed6f8e6ca2265)).abs() <= 5e-19);

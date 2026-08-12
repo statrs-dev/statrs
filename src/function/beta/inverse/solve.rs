@@ -90,7 +90,7 @@ pub(super) fn inverse_beta_log_tail(
     let mut lower_error = f64::NEG_INFINITY;
     let mut upper_error = -log_target - log_target_correction;
     let accurate_log_beta = if (0.01..10.0).contains(&a) && b < 1.0 {
-        Some(ln_beta_accurate_parts(a, b))
+        Some(ln_beta_inverse_accurate_parts(a, b))
     } else {
         None
     };

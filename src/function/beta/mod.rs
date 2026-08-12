@@ -17,6 +17,7 @@ mod quantile;
 mod recurrence;
 mod scaled_gamma;
 mod series;
+mod small_gamma;
 
 pub use api::{beta, beta_inc, beta_reg, checked_beta, checked_beta_inc};
 pub use forward::checked_beta_reg;
@@ -35,6 +36,7 @@ use quantile::*;
 use recurrence::*;
 use scaled_gamma::*;
 use series::*;
+use small_gamma::*;
 
 use crate::consts;
 use crate::function::{erf, gamma};

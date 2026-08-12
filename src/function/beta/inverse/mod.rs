@@ -28,7 +28,7 @@ pub fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
         return -((-probability).ln_1p() / b).exp_m1();
     }
 
-    let log_beta = ln_beta_stable_parts(a, b);
+    let log_beta = ln_beta_inverse_parts(a, b);
     let flip = inverse_beta_reflect(a, b, probability, log_beta);
     let (a, b, target) = if flip {
         (b, a, 1.0 - probability)
