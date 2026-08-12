@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 dlmalloc = { version = "0.2.14", features = ["global"] }
-statrs = { path = "../..", default-features = false, features = ["nalgebra"] }
+statrs = { path = "../..", default-features = false, features = ["kde"] }
 
 [profile.dev]
 panic = "abort"
