@@ -167,12 +167,9 @@ impl ContinuousCDF<f64, f64> for Beta {
         } else if self.shape_a == 1.0 && self.shape_b == 1.0 {
             1. - x
         } else if x < (self.shape_a + 1.0) / (self.shape_a + self.shape_b + 2.0) {
-            // Below the continued fraction split point of `beta_reg`,
-            // `beta_reg(b, a, 1 - x)` reduces to `1 - beta_reg(a, b, x)`;
-            // computing the complement here instead avoids `1.0 - x`
-            // rounding to 1.0 for tiny x (< ~1.1e-16), which would lose
-            // the lower tail entirely. See #432
-            1.0 - beta::beta_reg(self.shape_a, self.shape_b, x)
+            beta::checked_ln_beta_reg_complement(self.shape_a, self.shape_b, x)
+                .unwrap()
+                .exp()
         } else {
             beta::beta_reg(self.shape_b, self.shape_a, 1.0 - x)
         }
@@ -652,6 +649,18 @@ mod tests {
     }
 
     #[test]
+    fn test_cdf_large_symmetric_shapes() {
+        for shape in [1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8] {
+            let dist = Beta::new(shape, shape).unwrap();
+            let cdf = dist.cdf(0.5);
+            let sf = dist.sf(0.5);
+            assert_eq!(cdf, 0.5);
+            assert_eq!(sf, 0.5);
+            assert_eq!(cdf + sf, 1.0);
+        }
+    }
+
+    #[test]
     fn test_sf() {
         let sf = |arg: f64| move |x: Beta| x.sf(arg);
         let test = [
@@ -685,6 +694,17 @@ mod tests {
     }
 
     #[test]
+    fn test_sf_tiny_shape_preserves_representable_tail() {
+        let distribution = Beta::new(
+            f64::from_bits(0x00000000000007e8),
+            f64::from_bits(0x4040000000000000),
+        )
+        .unwrap();
+        let x = f64::from_bits(0x01556e1fc2f8f359);
+        assert_eq!(distribution.sf(x).to_bits(), 0x0000000000155101);
+    }
+
+    #[test]
     fn test_inverse_cdf() {
         // let inverse_cdf = |arg: f64| move |x: Beta| x.inverse_cdf(arg);
         let func = |arg: f64| move |x: Beta| x.inverse_cdf(x.cdf(arg));
@@ -703,6 +723,18 @@ mod tests {
         for ((a, b), x, expect) in test {
             test_relative(a, b, expect, func(x));
         }
+    }
+
+    #[test]
+    fn test_inverse_cdf_extreme_lower_tail() {
+        let dist = Beta::new(200.0, 2.0).unwrap();
+        let actual = dist.inverse_cdf(1e-170);
+        let expected = 0.13765877485659653;
+        let relative_error = ((actual - expected) / expected).abs();
+        assert!(
+            relative_error <= 5e-13,
+            "actual {actual}, expected {expected}"
+        );
     }
 
     #[test]
