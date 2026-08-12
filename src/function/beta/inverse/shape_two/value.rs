@@ -123,3 +123,56 @@ pub(super) fn direct_cdf_and_pdf(a: f64, b: f64, x: f64) -> Option<((f64, f64), 
     }
     None
 }
+
+fn integer_power_scalar(value: f64, exponent: f64) -> Option<f64> {
+    if exponent != exponent.trunc() || !(1.0..=(u64::MAX as f64)).contains(&exponent) {
+        return None;
+    }
+    let mut exponent = exponent as u64;
+    let mut factor = value;
+    let mut result = 1.0;
+    while exponent != 0 {
+        if exponent & 1 != 0 {
+            result *= factor;
+        }
+        exponent >>= 1;
+        if exponent != 0 {
+            factor *= factor;
+        }
+    }
+    (result >= f64::MIN_POSITIVE && result.is_finite()).then_some(result)
+}
+
+fn series_sum(b: f64, x: f64) -> Option<f64> {
+    let mut term = 0.5;
+    let mut sum = term;
+    for k in 1..64 {
+        let k = f64::from(k);
+        term *= -(b - k) / k * x * (k + 1.0) / (k + 2.0);
+        sum += term;
+        if term.abs() <= f64::EPSILON * sum.abs() {
+            return Some(sum);
+        }
+    }
+    None
+}
+
+pub(super) fn fast_cdf_and_pdf(a: f64, b: f64, x: f64) -> Option<(f64, f64)> {
+    if a == 2.0 && (b * x < 0.5 || b <= 64.0 && b * x <= 1.0) {
+        let cdf = b * (b + 1.0) * x * x * series_sum(b, x)?;
+        let pdf = b * (b + 1.0) * x * (1.0 - x).powf(b - 1.0);
+        if (f64::MIN_POSITIVE..1.0).contains(&cdf) && pdf > 0.0 && pdf.is_finite() {
+            return Some((cdf, pdf));
+        }
+    }
+    if b == 2.0 {
+        let power = integer_power_scalar(x, a)?;
+        let complement = 1.0 - x;
+        let cdf = power * (1.0 + a * complement);
+        let pdf = a * (a + 1.0) * power * complement / x;
+        if (f64::MIN_POSITIVE..1.0).contains(&cdf) && pdf > 0.0 && pdf.is_finite() {
+            return Some((cdf, pdf));
+        }
+    }
+    None
+}

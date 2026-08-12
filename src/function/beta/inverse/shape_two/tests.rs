@@ -1,6 +1,21 @@
 use super::*;
 
 #[test]
+fn shape_two_scalar_phase_preserves_accurate_rounding() {
+    let cases = [
+        (200.0, 2.0, 1e-165, 0x3fc2aa4f7f316421_u64),
+        (79.0, 2.0, 8.048559608467247e-58, 0x3fc6fca7645f9501_u64),
+        (2.0, 732.0, 6.925147302269184e-72, 0x37fba96fc46c76d6_u64),
+    ];
+    for (a, b, probability, expected) in cases {
+        assert_eq!(
+            inverse_beta_shape_two(a, b, probability).to_bits(),
+            expected
+        );
+    }
+}
+
+#[test]
 fn shape_two_log_values_match_references() {
     let cases: [(f64, f64, f64, f64); 3] = [
         (200.0_f64, 2.0, 0.48970503636005447, -138.15510557964274),
