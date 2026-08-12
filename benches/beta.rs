@@ -38,6 +38,13 @@ fn bench_inv_beta_reg(c: &mut Criterion) {
         ("nontermination_regression", 200.0, 2.0, 1e-60),
         ("panic_regression", 200.0, 2.0, 1e-165),
         ("tiny_quantile", 0.1, 500.0, 1e-30),
+        (
+            "subnormal_shape_two",
+            0.5,
+            2.0,
+            f64::from_bits(0x1e72_f942_2c23_c47c),
+        ),
+        ("subnormal_unit_shape", 1.0, 10.0, f64::from_bits(5)),
     ] {
         group.bench_with_input(
             BenchmarkId::new("quantile", name),
