@@ -103,8 +103,23 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
         };
     }
 
-    let log_power = beta_reg_log_power_parts(a, b, x);
-    let power = (log_power.0 + log_power.1).exp();
+    let lanczos_power = use_beta_reg_lanczos_power(transformed_a, transformed_b).then(|| {
+        let coordinates = if symm_transform {
+            (two_sum(1.0, -x), (x, 0.0))
+        } else {
+            ((x, 0.0), two_sum(1.0, -x))
+        };
+        beta_reg_lanczos_power(transformed_a, transformed_b, coordinates.0, coordinates.1)
+    });
+    let log_power = lanczos_power
+        .is_none()
+        .then(|| beta_reg_log_power_parts(a, b, x));
+    let power = lanczos_power
+        .map(|value| value.0 + value.1)
+        .unwrap_or_else(|| {
+            let value = log_power.unwrap();
+            (value.0 + value.1).exp()
+        });
     if power == 0.0 {
         return Ok(if symm_transform { 1.0 } else { 0.0 });
     }
@@ -119,7 +134,15 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     )?;
     let accurate_fraction =
         1.0 - transformed_x == 1.0 || use_exact_complement_continued_fraction(a, b, symm_transform);
-    let result = if accurate_fraction {
+    let result = if let Some(lanczos_power) = lanczos_power {
+        let tail = dd_div(lanczos_power, fraction);
+        if symm_transform {
+            dd_add((1.0, 0.0), (-tail.0, -tail.1)).0
+        } else {
+            tail.0 + tail.1
+        }
+    } else if accurate_fraction {
+        let log_power = log_power.unwrap();
         let log_fraction = accurate_ln_dd(fraction);
         let log_result = dd_add(log_power, (-log_fraction.0, -log_fraction.1));
         if symm_transform {

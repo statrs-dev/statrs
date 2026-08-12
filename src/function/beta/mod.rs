@@ -8,6 +8,7 @@
 //! expansion in [Algorithm 708](https://doi.org/10.1145/131766.131776), the
 //! large-parameter expansion in [DLMF 8.18](https://dlmf.nist.gov/8.18), and
 //! the small-argument log-gamma series in [DLMF 5.7.3](https://dlmf.nist.gov/5.7.E3).
+//! Its direct beta prefactor uses [Pugh's Lanczos approximation, Table 8.5](https://web.viu.ca/pughg/phdThesis/phdThesis.pdf).
 
 mod api;
 mod asymptotic;
@@ -16,6 +17,7 @@ mod dd;
 mod forward;
 mod fraction;
 mod inverse;
+mod lanczos;
 mod log_beta;
 mod log_forward;
 mod prefactor;
@@ -35,6 +37,7 @@ use asymptotic::*;
 use bgrat::*;
 use dd::*;
 use fraction::*;
+use lanczos::*;
 use log_beta::*;
 use log_forward::*;
 use prefactor::*;

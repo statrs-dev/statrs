@@ -742,6 +742,16 @@ fn test_beta_reg_moderate_fraction_against_500_digit_reference() {
 }
 
 #[test]
+fn test_beta_reg_typical_fraction_against_500_digit_reference() {
+    let actual = beta_reg(2.5, 3.5, 0.4).to_bits();
+    let expected = 0x3fdf297032b8f5ac_u64;
+    assert!(
+        actual.abs_diff(expected) <= 4,
+        "actual={actual:#018x}, expected={expected:#018x}"
+    );
+}
+
+#[test]
 fn test_inv_beta_reg_typical_against_500_digit_reference() {
     let actual = inv_beta_reg(2.0, 5.0, 0.3).to_bits();
     let expected = 0x3fc745560dce9cd1_u64;
