@@ -1148,6 +1148,7 @@ fn test_beta_reg_power_series_tiny_shape_is_locally_monotone() {
 
 #[test]
 fn test_accurate_ln_against_multiprecision_reference() {
+    assert_eq!(accurate_ln(0.0), (f64::NEG_INFINITY, 0.0));
     let cases = [
         (0x0000000000000001, 0xc0874385446d71c3, 0xbd28e569fa8ee781),
         (0x0010000000000000, 0xc086232bdd7abcd2, 0xbd1eef3fec1be37f),
