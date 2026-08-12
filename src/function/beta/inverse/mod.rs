@@ -40,6 +40,9 @@ pub fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
     if b == 1.0 {
         return probability.powf(1.0 / a);
     }
+    if a == 1.0 && b == 2.0 && probability <= f64::MIN_POSITIVE {
+        return f64::from_bits(probability.to_bits().div_ceil(2));
+    }
     if a == 1.0 {
         return -((-probability).ln_1p() / b).exp_m1();
     }
