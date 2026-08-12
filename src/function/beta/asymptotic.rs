@@ -18,7 +18,52 @@ pub(super) fn beta_log_ratio(a: f64, b: f64, x: f64) -> (f64, f64) {
     (residual, log_ratio)
 }
 
+fn beta_reg_symmetric_central(a: f64, b: f64, x: f64) -> Option<f64> {
+    if a != b || a < 100.0 {
+        return None;
+    }
+
+    let delta = x - 0.5;
+    let delta_squared = delta * delta;
+    if 4.0 * a * delta_squared > 0.5 {
+        return None;
+    }
+
+    // DLMF 8.18.8 gives the symmetric center. DLMF 5.11.13 supplies the
+    // gamma ratio in f(1/2 + t) = f(1/2) * (1 - 4t^2)^(a - 1).
+    let inverse_a = 1.0 / a;
+    let mut gamma_ratio: f64 = 869.0 / 4_194_304.0;
+    for coefficient in [
+        -399.0 / 262_144.0,
+        -21.0 / 32_768.0,
+        5.0 / 1_024.0,
+        1.0 / 128.0,
+        -1.0 / 8.0,
+        1.0,
+    ] {
+        gamma_ratio = gamma_ratio.mul_add(inverse_a, coefficient);
+    }
+    let central_density = 2.0 * (a / core::f64::consts::PI).sqrt() * gamma_ratio;
+
+    let mut term = delta;
+    let mut integral = term;
+    for index in 1..=32 {
+        let n = f64::from(index);
+        term *= -4.0 * (a - n) * delta_squared * (2.0 * n - 1.0) / (n * (2.0 * n + 1.0));
+        let previous = integral;
+        integral += term;
+        if integral == previous {
+            break;
+        }
+    }
+    Some(central_density.mul_add(integral, 0.5))
+}
+
 pub(super) fn beta_reg_asymptotic(a: f64, b: f64, x: f64) -> Option<f64> {
+    if let Some(result) = beta_reg_symmetric_central(a, b, x) {
+        return Some(result);
+    }
+
     let (mean, complement, _, root_sum) = beta_shape_statistics(a, b);
     if root_sum < ASYMPTOTIC_MIN_SUM.sqrt() {
         return None;

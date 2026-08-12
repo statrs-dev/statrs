@@ -227,6 +227,76 @@ fn test_beta_reg_large_parameters_against_reference() {
 }
 
 #[test]
+fn test_beta_reg_large_symmetric_adjacent_against_500_digit_references() {
+    // cpp_dec_float<500>, with each f64 input converted from its exact binary ratio.
+    let lower = f64::from_bits(0.5_f64.to_bits() - 1);
+    let upper = f64::from_bits(0.5_f64.to_bits() + 1);
+    let cases = [
+        (1e2, 0x3fdffffffffffff5_u64, 0x3fe000000000000b_u64),
+        (1e3, 0x3fdfffffffffffdc, 0x3fe0000000000024),
+        (1e4, 0x3fdfffffffffff8f, 0x3fe0000000000071),
+        (1e5, 0x3fdffffffffffe9b, 0x3fe0000000000165),
+        (1e6, 0x3fdffffffffffb98, 0x3fe0000000000468),
+        (1e7, 0x3fdffffffffff210, 0x3fe0000000000df0),
+        (1e8, 0x3fdfffffffffd3ec, 0x3fe0000000002c14),
+    ];
+    for (shape, lower_expected, upper_expected) in cases {
+        for (x, expected) in [(lower, lower_expected), (upper, upper_expected)] {
+            let actual = beta_reg(shape, shape, x).to_bits();
+            assert!(
+                actual.abs_diff(expected) <= 4,
+                "shape={shape:?}, x={x:?}, actual={actual:#018x}, expected={expected:#018x}"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_beta_reg_symmetric_central_boundary_against_500_digit_references() {
+    // mpmath at 550 digits using exact f64 ratios and the equivalent gamma/hyp2f1 identity.
+    let cases = [
+        (
+            100.0,
+            0x3fddbcbcf5c0139f_u64,
+            0x3fc44eca5b83b728_u64,
+            0x3fe121a1851ff630_u64,
+            0x3feaec4d691f1233_u64,
+        ),
+        (
+            100.125,
+            0x3fddbd198e18a036,
+            0x3fc44eca5f98d22f,
+            0x3fe1217338f3afe5,
+            0x3feaec4d6819cb74,
+        ),
+        (
+            1e6,
+            0x3fdffa3516f00033,
+            0x3fc44ed0bb7cb51c,
+            0x3fe002e57487ffe6,
+            0x3feaec4bd120d163,
+        ),
+        (
+            1e12,
+            0x3fdffffe845ffbe8,
+            0x3fc44ed0bb87ad45,
+            0x3fe00000bdd0020c,
+            0x3feaec4bd11e14af,
+        ),
+    ];
+    for (shape, lower_x, lower_expected, upper_x, upper_expected) in cases {
+        assert_eq!(beta_reg(shape, shape, 0.5), 0.5);
+        for (x, expected) in [(lower_x, lower_expected), (upper_x, upper_expected)] {
+            let actual = beta_reg(shape, shape, f64::from_bits(x)).to_bits();
+            assert!(
+                actual.abs_diff(expected) <= 4,
+                "shape={shape:?}, x={x:#018x}, actual={actual:#018x}, expected={expected:#018x}"
+            );
+        }
+    }
+}
+
+#[test]
 fn test_beta_reg_extreme_ratio_central_value_against_reference() {
     let cases: [(f64, f64, f64, f64); 2] = [
         (
