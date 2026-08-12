@@ -41,3 +41,30 @@ fn shape_two_subnormal_probabilities_are_monotone() {
         assert!(values[0] > 0.0);
     }
 }
+
+#[test]
+fn shape_two_adjacent_selection_uses_one_error_scale() {
+    let probability = f64::from_bits(0x3fb7_8ac0_9e9f_630f);
+    assert_eq!(
+        inverse_beta_shape_two(2.0, 65.0, probability).to_bits(),
+        0x3f7f_81f8_1f81_f820
+    );
+}
+
+#[test]
+fn shape_two_large_shape_rounds_at_unit_boundary() {
+    let shape = 18_446_744_073_709_551_616.0;
+    assert_eq!(inverse_beta_shape_two(shape, 2.0, 0.5), 1.0);
+    assert_eq!(
+        inverse_beta_shape_two(2.0, shape, 0.5).to_bits(),
+        0x3bfa_da82_5f97_62b2
+    );
+}
+
+#[test]
+fn shape_two_large_second_shape_does_not_overflow() {
+    assert_eq!(
+        crate::function::beta::inv_beta_reg(2.0, 1e308, 0.5).to_bits(),
+        0x000c_1190_8513_0dd9
+    );
+}
