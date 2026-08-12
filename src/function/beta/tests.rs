@@ -1702,6 +1702,51 @@ fn test_inv_beta_reg_concentrated_quantiles_round_correctly() {
 }
 
 #[test]
+fn test_inv_beta_reg_concentrated_extreme_ratios_round_correctly() {
+    let cases = [
+        (
+            0x6260d489122d216a,
+            0x40791cf3e3defb3a,
+            0x0a87f70771690bbe,
+            0x3ff0000000000000,
+        ),
+        (
+            0x6d8891e7fd8b2193,
+            0x6a40bb8ae6715d29,
+            0x245f1e03bdf9d74e,
+            0x3fefffffffffffff,
+        ),
+    ];
+    for (a, b, probability, expected) in cases {
+        assert_eq!(
+            inv_beta_reg(
+                f64::from_bits(a),
+                f64::from_bits(b),
+                f64::from_bits(probability),
+            )
+            .to_bits(),
+            expected,
+        );
+    }
+}
+
+#[test]
+fn test_inv_beta_reg_concentrated_gate_preserves_extreme_tail_rounding() {
+    let probability = f64::from_bits(1);
+    let cases = [
+        (0x43bbc16d674ec800, 0x3feffffffffffffd),
+        (0x43e158e460913d00, 0x3fefffffffffffff),
+    ];
+    for (a, expected) in cases {
+        assert_eq!(
+            inv_beta_reg(f64::from_bits(a), 2.0, probability).to_bits(),
+            expected,
+        );
+    }
+    assert_eq!(inv_beta_reg(1e308, 2.0, 0.5), 1.0);
+}
+
+#[test]
 fn test_inv_beta_reg_extreme_tail_balanced_shapes() {
     let cases = [
         (f64::from_bits(1), 0.1384383837250825),
