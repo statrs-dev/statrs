@@ -166,3 +166,15 @@ fn subnormal_first_shape_rounds_to_zero_above_specialization_gate() {
         );
     }
 }
+
+#[test]
+fn unit_first_shape_rounds_subnormal_quantiles_upward() {
+    for probability_bits in 1_u64..=1024 {
+        assert_eq!(
+            crate::function::beta::inv_beta_reg(1.0, 2.0, f64::from_bits(probability_bits),)
+                .to_bits(),
+            probability_bits.div_ceil(2),
+            "probability_bits={probability_bits:#018x}"
+        );
+    }
+}
