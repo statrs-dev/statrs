@@ -93,3 +93,18 @@ fn real_shape_two_inputs_match_500_digit_references() {
         );
     }
 }
+
+#[test]
+fn real_shape_two_subnormal_quantiles_match_500_digit_references() {
+    let cases = [
+        (0x2007_9905_9deb_7818, 0x000f_77d8_b988_842e),
+        (0x2007_9905_9deb_7819, 0x000f_77d8_b988_842f),
+        (0x2007_9905_9deb_781a, 0x000f_77d8_b988_8431),
+    ];
+    let values = cases.map(|(probability, expected)| {
+        let actual = crate::function::beta::inv_beta_reg(0.5, 2.0, f64::from_bits(probability));
+        assert_eq!(actual.to_bits(), expected);
+        actual
+    });
+    assert!(values.windows(2).all(|pair| pair[0] <= pair[1]));
+}
