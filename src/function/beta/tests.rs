@@ -227,6 +227,92 @@ fn test_beta_reg_large_parameters_against_reference() {
 }
 
 #[test]
+fn test_beta_reg_large_asymmetric_temme_focus_against_500_digit_references() {
+    let cases = [
+        (
+            100_000_000.0,
+            200_000_000.0,
+            0x3fd554e32dc84e59_u64,
+            0x3fc44ed0bc353f04_u64,
+        ),
+        (
+            12_000_000.0,
+            108_000_000.0,
+            0x3fb99926bbf81f29,
+            0x3fd9af470acc030a,
+        ),
+        (
+            40_000_000.0,
+            80_000_000.0,
+            0x3fd5555555555555,
+            0x3fe00012006e3f11,
+        ),
+        (
+            108_000_000.0,
+            12_000_000.0,
+            0x3fecccbe71189d7f,
+            0x3fd9ae504ae8a2e1,
+        ),
+    ];
+    for (a, b, x, expected) in cases {
+        let actual = beta_reg(a, b, f64::from_bits(x)).to_bits();
+        assert!(
+            actual.abs_diff(expected) <= 4,
+            "a={a:?}, b={b:?}, x={x:#018x}, actual={actual:#018x}, expected={expected:#018x}"
+        );
+    }
+}
+
+#[test]
+fn test_beta_reg_large_asymmetric_temme_grid_against_500_digit_references() {
+    let cases = [
+        (
+            100_000_000.0,
+            900_000_000.0,
+            0x3fb998fa6ff66eb1_u64,
+            0x3fc44ed0bb21a1af_u64,
+        ),
+        (
+            100_000_000.0,
+            900_000_000.0,
+            0x3fb999999999999a,
+            0x3fe00017846dc7c6,
+        ),
+        (
+            100_000_000.0,
+            900_000_000.0,
+            0x3fb99a38c33cc483,
+            0x3feaec4bd137a086,
+        ),
+        (
+            333_333_333.333_333_3,
+            666_666_666.666_666_7,
+            0x3fd55516ceef6eb5,
+            0x3fc44ed0bbb46ae2,
+        ),
+        (
+            333_333_333.333_333_3,
+            666_666_666.666_666_7,
+            0x3fd5555555555555,
+            0x3fe000063c68549a,
+        ),
+        (
+            333_333_333.333_333_3,
+            666_666_666.666_666_7,
+            0x3fd55593dbbb3bf5,
+            0x3feaec4bd112fd8f,
+        ),
+    ];
+    for (a, b, x, expected) in cases {
+        let actual = beta_reg(a, b, f64::from_bits(x)).to_bits();
+        assert!(
+            actual.abs_diff(expected) <= 4,
+            "a={a:?}, b={b:?}, x={x:#018x}, actual={actual:#018x}, expected={expected:#018x}"
+        );
+    }
+}
+
+#[test]
 fn test_beta_reg_large_symmetric_adjacent_against_500_digit_references() {
     // cpp_dec_float<500>, with each f64 input converted from its exact binary ratio.
     let lower = f64::from_bits(0.5_f64.to_bits() - 1);
