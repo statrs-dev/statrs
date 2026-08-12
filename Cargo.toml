@@ -29,6 +29,11 @@ name = "density"
 harness = false
 required-features = ["rand", "std", "kde"]
 
+[[bench]]
+name = "beta"
+harness = false
+required-features = ["std"]
+
 [features]
 default = ["std", "nalgebra", "rand"]
 std = ["approx/std", "num-traits/std", "nalgebra?/std", "rand?/std"]
