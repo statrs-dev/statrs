@@ -18,12 +18,22 @@ pub(super) fn beta_a_step_log_sum(a: f64, b: f64, x: f64, steps: usize) -> f64 {
     log_sum
 }
 
-pub(super) fn beta_a_step_log(a: f64, b: f64, x: f64, steps: usize, log_beta: (f64, f64)) -> f64 {
+pub(super) fn beta_a_step_log_parts(
+    a: f64,
+    b: f64,
+    x: f64,
+    steps: usize,
+    log_beta: (f64, f64),
+) -> (f64, f64) {
     let power = beta_reg_log_power_parts_accurate_with_log_beta(a, b, x, log_beta);
     let log_a = accurate_ln(a);
-    let result = dd_add(
+    dd_add(
         dd_add(power, (beta_a_step_log_sum(a, b, x, steps), 0.0)),
         (-log_a.0, -log_a.1),
-    );
+    )
+}
+
+pub(super) fn beta_a_step_log(a: f64, b: f64, x: f64, steps: usize, log_beta: (f64, f64)) -> f64 {
+    let result = beta_a_step_log_parts(a, b, x, steps, log_beta);
     result.0 + result.1
 }

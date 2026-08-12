@@ -1,7 +1,6 @@
 use super::*;
 
-/// Computes the natural logarithm
-/// of the beta function
+/// Computes the natural logarithm of the beta function
 /// where `a` is the first beta parameter
 /// and `b` is the second beta parameter
 /// and `a > 0`, `b > 0`.
@@ -164,6 +163,20 @@ pub(super) fn ln_gamma_delta_parts(base: f64, delta: f64) -> (f64, f64) {
     result = dd_add(result, (-delta, 0.0));
     result = dd_add(result, (stirling_correction(base + delta), 0.0));
     dd_add(result, (-stirling_correction(base), 0.0))
+}
+
+pub(super) fn ln_gamma_delta_accurate_parts(base: f64, delta: f64) -> (f64, f64) {
+    if base >= STIRLING_MIN {
+        return ln_gamma_delta_parts(base, delta);
+    }
+    let steps = (STIRLING_MIN - base).ceil() as usize;
+    let mut result = ln_gamma_delta_parts(base + steps as f64, delta);
+    for step in 0..steps {
+        let ratio = dd_div_f64((delta, 0.0), base + step as f64);
+        let logarithm = accurate_ln_one_plus_dd(ratio);
+        result = dd_add(result, (-logarithm.0, -logarithm.1));
+    }
+    result
 }
 
 pub(super) fn ln_beta_accurate_parts(a: f64, b: f64) -> (f64, f64) {
