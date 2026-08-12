@@ -45,6 +45,13 @@ fn bench_inv_beta_reg(c: &mut Criterion) {
             f64::from_bits(0x1e72_f942_2c23_c47c),
         ),
         ("subnormal_unit_shape", 1.0, 10.0, f64::from_bits(5)),
+        ("shape_two_large_median", 2.0, 1e308, 0.5),
+        (
+            "shape_two_zero_cell",
+            2.0,
+            1e200,
+            f64::from_bits(0x0c8b_4ec7_f919_73ff),
+        ),
     ] {
         group.bench_with_input(
             BenchmarkId::new("quantile", name),

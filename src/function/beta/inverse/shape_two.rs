@@ -1,4 +1,6 @@
 //! Shape-two identities follow from DLMF 8.17.7--8.17.8 and symmetry 8.17.4.
+//! The large-`b` endpoint path expands `I_x(2,b) = 1 - (1-x)^b(1+bx)` in
+//! `y = bx` and uses outward fixed-point intervals to certify rounding cells.
 
 use super::super::*;
 use adjacent::adjacent_result;
@@ -7,6 +9,9 @@ use value::{fast_cdf_and_pdf, log_cdf};
 
 mod adjacent;
 mod endpoint;
+mod endpoint_beta_two;
+mod endpoint_certified;
+mod endpoint_fixed;
 mod value;
 
 #[cfg(test)]
