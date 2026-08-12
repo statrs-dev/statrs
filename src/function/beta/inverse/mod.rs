@@ -32,9 +32,7 @@ pub fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
     if a == 1.0 {
         return -((-probability).ln_1p() / b).exp_m1();
     }
-    if (a == 2.0 && b.fract() == 0.0 || b == 2.0 && a.fract() == 0.0)
-        && probability <= SHAPE_TWO_SPECIALIZATION_MAX
-    {
+    if (a == 2.0 || b == 2.0) && probability <= SHAPE_TWO_SPECIALIZATION_MAX {
         return inverse_beta_shape_two(a, b, probability);
     }
 

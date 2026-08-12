@@ -4,7 +4,9 @@ use super::value::{direct_cdf_and_pdf, log_cdf_parts};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 enum ErrorScale {
-    Direct,
+    Series,
+    Tail,
+    Power,
     Log,
 }
 
@@ -23,11 +25,14 @@ struct Evaluation {
 
 fn evaluate(a: f64, b: f64, value: f64, probability: f64, log_target: (f64, f64)) -> Evaluation {
     let (error, pdf, scale) = if let Some((cdf, pdf)) = direct_cdf_and_pdf(a, b, value) {
-        (
-            dd_add(cdf, (-probability, 0.0)),
-            Some(pdf),
-            ErrorScale::Direct,
-        )
+        let scale = if b == 2.0 {
+            ErrorScale::Power
+        } else if value < 0.5 && b * value < 0.5 {
+            ErrorScale::Series
+        } else {
+            ErrorScale::Tail
+        };
+        (dd_add(cdf, (-probability, 0.0)), Some(pdf), scale)
     } else {
         (
             dd_add(log_cdf_parts(a, b, value), (-log_target.0, -log_target.1)),
@@ -114,7 +119,7 @@ pub(super) fn adjacent_result(a: f64, b: f64, probability: f64, mut current: f64
             endpoint.error / pdf
         } else {
             let log_pdf = if b == 2.0 {
-                (a - 1.0).mul_add(current.ln(), (a * (a + 1.0)).ln() + (-current).ln_1p())
+                (a - 1.0).mul_add(current.ln(), a.ln() + (a + 1.0).ln() + (-current).ln_1p())
             } else {
                 (b - 1.0).mul_add((-current).ln_1p(), b.ln() + (b + 1.0).ln() + current.ln())
             };

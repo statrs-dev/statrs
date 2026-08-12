@@ -66,7 +66,7 @@ pub(super) fn inverse_beta_shape_two(a: f64, b: f64, probability: f64) -> f64 {
             return adjacent_result(a, b, probability, current);
         }
         let log_pdf = if b == 2.0 {
-            (a - 1.0).mul_add(current.ln(), (a * (a + 1.0)).ln() + (-current).ln_1p())
+            (a - 1.0).mul_add(current.ln(), a.ln() + (a + 1.0).ln() + (-current).ln_1p())
         } else {
             (b - 1.0).mul_add((-current).ln_1p(), b.ln() + (b + 1.0).ln() + current.ln())
         };
