@@ -1,5 +1,11 @@
 use super::*;
 
+const ACCURATE_SMALL_B_MAX_RATIO: f64 = 1e-4;
+
+pub(super) fn use_beta_small_b_shifted_accurate(a: f64, b: f64, y: f64) -> bool {
+    (0.0..1.0).contains(&a) && b <= ACCURATE_SMALL_B_MAX_RATIO * a && y < 0.3
+}
+
 pub(super) fn beta_small_b_large_a_factor(
     a: f64,
     b: f64,

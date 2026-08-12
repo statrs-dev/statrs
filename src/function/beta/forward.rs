@@ -58,7 +58,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     {
         return Ok(result);
     }
-    if (0.0..1.0).contains(&a) && b <= f64::EPSILON.sqrt() * a && y < 0.3 {
+    if use_beta_small_b_shifted_accurate(a, b, y) {
         return beta_reg_small_b_shifted_accurate(a, b, x, y).map(|result| result.0);
     }
     if (1.0..10.0).contains(&a) && b < 1.0 && y < 0.3 {

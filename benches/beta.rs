@@ -6,7 +6,12 @@ fn bench_beta_reg(c: &mut Criterion) {
     let mut group = c.benchmark_group("beta_reg");
     for (name, a, b, x) in [
         ("typical", 2.0, 5.0, 0.3),
-        ("large_symmetric", 1e8, 1e8, 0.5),
+        (
+            "large_symmetric_adjacent",
+            1e8,
+            1e8,
+            f64::from_bits(0.5_f64.to_bits() + 1),
+        ),
         (
             "moderate_fraction",
             25.32628846940565,

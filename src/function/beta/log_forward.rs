@@ -90,7 +90,7 @@ pub(super) fn checked_ln_beta_reg_with_log_beta(
     {
         return Ok(result);
     }
-    if (0.0..1.0).contains(&a) && b <= f64::EPSILON.sqrt() * a && y < 0.3 {
+    if use_beta_small_b_shifted_accurate(a, b, y) {
         let result = beta_reg_small_b_shifted_accurate(a, b, x, y)?.1;
         return Ok(result.0 + result.1);
     }

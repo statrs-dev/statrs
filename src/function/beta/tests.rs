@@ -720,6 +720,27 @@ fn test_beta_reg_tiny_b_against_500_digit_references() {
 }
 
 #[test]
+fn test_beta_reg_tiny_b_boundary_against_500_digit_references() {
+    let cases = [
+        (
+            0.015778004354037867,
+            3.91414134306449e-9,
+            0.9138081692744422,
+            0x3e91430c6cd6e778_u64,
+        ),
+        (0.5, 5e-5, 0.95, 0x3f2c8c230a2377e9),
+        (0.1, 1e-5, 0.99999, 0x3f2bfe1c7f2d26f5),
+    ];
+    for (a, b, x, expected) in cases {
+        let actual = beta_reg(a, b, x).to_bits();
+        assert!(
+            actual.abs_diff(expected) <= 2,
+            "a={a:?}, b={b:?}, x={x:?}, actual={actual:#018x}, expected={expected:#018x}"
+        );
+    }
+}
+
+#[test]
 fn test_beta_reg_tiny_x_large_b_against_reference() {
     let cases: [(f64, f64, f64, u64); 2] = [
         (100.0, 1e308, 1.01e-306, 0x3fe1b153914c2fe1_u64),
@@ -1049,6 +1070,12 @@ fn test_inv_beta_reg_large_a_tiny_b_lower_tail() {
             3.187243980970482e-9,
             1e-7,
             0x3feffffff2a24e82,
+        ),
+        (
+            0.14934701587929067,
+            4.564473364066682e-9,
+            1e-7,
+            0x3fefffff95a64b04,
         ),
     ];
     for (a, b, probability, expected) in cases {
