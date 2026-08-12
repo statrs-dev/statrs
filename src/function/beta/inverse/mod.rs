@@ -23,6 +23,12 @@ pub fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
     if a == b && probability == 0.5 {
         return 0.5;
     }
+    if b == 2.0 && probability > SHAPE_TWO_SPECIALIZATION_MAX {
+        let initial = ((probability.ln() - (a + 1.0).ln()) / a).exp();
+        if let Some(quantile) = shape_two_lower_endpoint_result(a, b, probability, initial) {
+            return quantile;
+        }
+    }
     if let Some(quantile) = beta_concentrated_quantile(a, b, probability) {
         return quantile;
     }
