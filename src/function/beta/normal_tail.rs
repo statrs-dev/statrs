@@ -117,10 +117,8 @@ fn normal_tail_rational(argument: f64) -> f64 {
         )
     };
     let rational = constant + evaluate(offset, numerator) / evaluate(offset, denominator);
-    let high = (argument * 67_108_864.0).trunc() / 67_108_864.0;
-    let low = argument - high;
     let squared = argument * argument;
-    let squared_error = (high * high - squared) + 2.0 * high * low + low * low;
+    let squared_error = argument.mul_add(argument, -squared);
     0.5 * rational * (-squared).exp() * (-squared_error).exp() / argument
 }
 
