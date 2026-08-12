@@ -58,6 +58,15 @@ pub(super) fn lower_tail_initial_accurate(
     (dd_exp(logarithm), logarithm)
 }
 
+pub(super) fn lower_tail_initial_from_log_normalizer(
+    a: f64,
+    probability: f64,
+    log_normalizer: (f64, f64),
+) -> (f64, (f64, f64)) {
+    let logarithm = dd_div_f64(dd_add(accurate_ln(probability), log_normalizer), a);
+    (dd_exp(logarithm), logarithm)
+}
+
 pub(super) fn inverse_beta_initial(a: f64, b: f64, probability: f64, ln_beta: f64) -> (f64, f64) {
     if a > 1.0 && b > 1.0 && (probability >= 1e-4 || a.min(b) >= STIRLING_MIN) {
         let normal_tail = (-2.0 * probability.ln()).sqrt();

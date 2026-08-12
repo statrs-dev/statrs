@@ -10,6 +10,20 @@ use solve::*;
 // Near one, the reflected solver preserves upper-tail information needed to round to 1.0.
 const SHAPE_TWO_SPECIALIZATION_MAX: f64 = 0.999_999_999;
 
+fn small_first_shape_lower_tail(a: f64, b: f64, probability: f64) -> Option<f64> {
+    if probability > 0.5 || a > 0.125 || b < STIRLING_MIN {
+        return None;
+    }
+    let log_normalizer = ln_a_beta_small_first_shape_parts(a, b);
+    let current = lower_tail_initial_from_log_normalizer(a, probability, log_normalizer).0;
+    if current <= 0.0 || current >= 1.0 {
+        return None;
+    }
+    let first_correction = ((b - 1.0).abs() / (a + 1.0)) * current;
+    let remainder_ratio = (b - 2.0).abs() * current;
+    (first_correction <= f64::EPSILON / 32.0 && remainder_ratio <= 0.5).then_some(current)
+}
+
 /// Computes the inverse of the regularized incomplete beta function.
 ///
 /// # Panics
@@ -56,6 +70,9 @@ pub fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
     }
     if (a == 2.0 || b == 2.0) && probability <= SHAPE_TWO_SPECIALIZATION_MAX {
         return inverse_beta_shape_two(a, b, probability);
+    }
+    if let Some(quantile) = small_first_shape_lower_tail(a, b, probability) {
+        return quantile;
     }
 
     let log_beta = ln_beta_inverse_parts(a, b);
