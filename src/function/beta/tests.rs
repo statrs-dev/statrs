@@ -74,6 +74,12 @@ fn test_checked_ln_beta_reg_validates_inputs_and_boundaries() {
     assert_eq!(checked_ln_beta_reg(2.0, 3.0, 1.0), Ok(0.0));
     assert_eq!(checked_ln_beta_reg(2.0, 2.0, 0.5), Ok(-f64_consts::LN_2));
     assert_eq!(checked_ln_beta_reg(2.0, 1.0, 0.25), Ok(-2.772588722239781));
+    let actual = checked_ln_beta_reg(0.5, 1e-8, 0.95).unwrap();
+    let expected = f64::from_bits(0xc030f2f1c4aab2eb);
+    assert!(
+        actual.to_bits().abs_diff(expected.to_bits()) <= 1,
+        "actual={actual:e}, expected={expected:e}"
+    );
 }
 
 #[test]
@@ -95,9 +101,12 @@ fn test_checked_ln_beta_reg_complement_validates_inputs_and_boundaries() {
         checked_ln_beta_reg_complement(2.0, 3.0, 1.0),
         Ok(f64::NEG_INFINITY)
     );
-    let actual = checked_ln_beta_reg_complement(1e-10, 32.0, 0.5).unwrap();
-    let expected = f64::from_bits(0xc048010d8fff2083);
-    assert!(actual.to_bits().abs_diff(expected.to_bits()) <= 1);
+    let actual = checked_ln_beta_reg_complement(2.0, 3.0, 0.75).unwrap();
+    let expected = f64::from_bits(0xc007d781d2c2e78d);
+    assert!(
+        actual.to_bits().abs_diff(expected.to_bits()) <= 1,
+        "actual={actual:e}, expected={expected:e}"
+    );
 }
 
 #[test]
