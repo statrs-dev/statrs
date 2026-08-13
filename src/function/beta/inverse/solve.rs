@@ -54,7 +54,9 @@ pub(super) fn inverse_beta_log_value_parts(
     accurate_log_beta: Option<(f64, f64)>,
 ) -> Result<(f64, f64), BetaFuncError> {
     if (0.01..10.0).contains(&a) && b < 1.0 && 1.0 - x < 0.3 {
-        return beta_reg_small_b_shifted_log(a, b, x, 1.0 - x, accurate_log_beta.unwrap())
+        let accurate_log_beta =
+            accurate_log_beta.unwrap_or_else(|| ln_beta_inverse_accurate_parts(a, b));
+        return beta_reg_small_b_shifted_log(a, b, x, 1.0 - x, accurate_log_beta)
             .map(|value| (value, 0.0));
     }
     if (10.0..1e15).contains(&a)

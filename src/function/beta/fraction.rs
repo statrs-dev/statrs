@@ -55,7 +55,11 @@ pub(super) fn beta_continued_fraction_dd(
     let mut residual = dd_mul((a, 0.0), y);
     residual = dd_add(residual, dd_mul((-b, 0.0), x));
     residual = dd_add(residual, (1.0, 0.0));
+    let tiny = 16.0 * f64::MIN_POSITIVE;
     let mut fraction = dd_div_f64(dd_mul((a, 0.0), residual), a + 1.0);
+    if fraction.0 == 0.0 {
+        fraction = (tiny, 0.0);
+    }
     let mut c = fraction;
     let mut d = (0.0, 0.0);
 
@@ -76,8 +80,15 @@ pub(super) fn beta_continued_fraction_dd(
         let second = dd_div_f64(dd_mul((a + m, 0.0), inner), a + 2.0 * m + 1.0);
         let denominator_term = dd_add((m, 0.0), dd_add(first, second));
 
-        d = dd_div((1.0, 0.0), dd_add(denominator_term, dd_mul(numerator, d)));
+        let mut scaled_denominator = dd_add(denominator_term, dd_mul(numerator, d));
+        if scaled_denominator.0 == 0.0 {
+            scaled_denominator = (tiny, 0.0);
+        }
+        d = dd_div((1.0, 0.0), scaled_denominator);
         c = dd_add(denominator_term, dd_div(numerator, c));
+        if c.0 == 0.0 {
+            c = (tiny, 0.0);
+        }
         let delta = dd_mul(c, d);
         fraction = dd_mul(fraction, delta);
         let convergence = dd_add(delta, (-1.0, 0.0));
