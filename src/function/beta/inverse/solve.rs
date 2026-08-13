@@ -175,3 +175,6 @@ pub(super) fn inverse_beta_reflect(a: f64, b: f64, probability: f64, log_beta: (
         midpoint_log_probability < probability.ln()
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -124,3 +124,6 @@ pub(super) fn beta_fraction_for_transformed_tail(
         selected_beta_continued_fraction(transformed_a, transformed_b, transformed_x)
     }
 }
+
+#[cfg(test)]
+mod tests;
