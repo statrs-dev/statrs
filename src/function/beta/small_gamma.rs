@@ -35,18 +35,32 @@ const LN_GAMMA_ONE_PLUS_COEFFICIENTS: [(f64, f64); 31] = [
     (0.03125000000727597, 2.9882678459447273e-18),
 ];
 
-pub(super) fn ln_gamma_one_plus_series_parts(x: f64) -> (f64, f64) {
-    let mut polynomial = *LN_GAMMA_ONE_PLUS_COEFFICIENTS.last().unwrap();
-    for coefficient in LN_GAMMA_ONE_PLUS_COEFFICIENTS[..30].iter().rev() {
-        polynomial = dd_add(dd_mul(polynomial, (x, 0.0)), *coefficient);
+fn ln_gamma_one_plus_series_prefix_parts(x: f64, count: usize) -> (f64, f64) {
+    let coefficients = &LN_GAMMA_ONE_PLUS_COEFFICIENTS[..count];
+    let (mut high, mut low) = *coefficients.last().unwrap();
+    for coefficient in coefficients[..count - 1].iter().rev() {
+        let product = high * x;
+        let product_error = high.mul_add(x, -product) + low * x;
+        let (sum, sum_error) = two_sum(product, coefficient.0);
+        (high, low) = two_sum(sum, product_error + sum_error + coefficient.1);
     }
     dd_mul(
         (x, 0.0),
         dd_add(
             (-consts::EULER_MASCHERONI, 4.942915152430645e-18),
-            dd_mul((x, 0.0), polynomial),
+            dd_mul((x, 0.0), (high, low)),
         ),
     )
+}
+
+pub(super) fn ln_gamma_one_plus_series_parts(x: f64) -> (f64, f64) {
+    ln_gamma_one_plus_series_prefix_parts(x, LN_GAMMA_ONE_PLUS_COEFFICIENTS.len())
+}
+
+pub(super) fn ln_gamma_one_plus_inverse_parts(x: f64) -> (f64, f64) {
+    // DLMF 5.7.3. For 0 < x <= 1/8, the k=22 onward remainder is below
+    // zeta(22) * x^22 / (22 * (1-x)); after division by x it is below 5.7e-21.
+    ln_gamma_one_plus_series_prefix_parts(x, 20)
 }
 
 pub(super) fn ln_gamma_small_accurate_parts(x: f64) -> (f64, f64) {
@@ -61,4 +75,15 @@ pub(super) fn ln_gamma_one_plus_series(x: f64) -> f64 {
         polynomial = polynomial.mul_add(x, coefficient.0);
     }
     x * (-consts::EULER_MASCHERONI + x * polynomial)
+}
+
+#[test]
+fn inverse_prefix_tracks_the_full_series_on_its_domain() {
+    for index in 1..=4096 {
+        let x = 0.125 * f64::from(index) / 4096.0;
+        let full = ln_gamma_one_plus_series_parts(x);
+        let prefix = ln_gamma_one_plus_inverse_parts(x);
+        let difference = dd_add(full, (-prefix.0, -prefix.1));
+        assert!((difference.0 + difference.1).abs() < 7.1e-22);
+    }
 }

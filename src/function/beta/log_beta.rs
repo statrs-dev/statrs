@@ -171,7 +171,7 @@ pub(super) fn ln_beta_inverse_accurate_parts(a: f64, b: f64) -> (f64, f64) {
 }
 
 pub(super) fn ln_a_beta_small_first_shape_parts(a: f64, b: f64) -> (f64, f64) {
-    let gamma_one_plus = ln_gamma_one_plus_series_parts(a);
+    let gamma_one_plus = ln_gamma_one_plus_inverse_parts(a);
     let gamma_delta = ln_gamma_delta_parts(b, a);
     dd_add(gamma_one_plus, (-gamma_delta.0, -gamma_delta.1))
 }
