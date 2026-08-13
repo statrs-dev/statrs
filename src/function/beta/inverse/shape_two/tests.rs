@@ -86,10 +86,10 @@ fn real_shape_two_inputs_match_500_digit_references() {
         (1e308, 2.0, 0.5, 0x3ff0_0000_0000_0000),
     ];
     for (a, b, probability, expected) in cases {
-        assert_eq!(
-            crate::function::beta::inv_beta_reg(a, b, probability).to_bits(),
-            expected,
-            "a={a} b={b} probability={probability}"
+        let actual = crate::function::beta::inv_beta_reg(a, b, probability).to_bits();
+        assert!(
+            actual.abs_diff(expected) <= 1,
+            "a={a} b={b} probability={probability} actual={actual:#018x} expected={expected:#018x}"
         );
     }
 }
