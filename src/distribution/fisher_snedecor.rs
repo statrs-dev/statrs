@@ -380,14 +380,7 @@ impl Continuous<f64, f64> for FisherSnedecor {
     /// where `d1` is the first degree of freedom, `d2` is
     /// the second degree of freedom, and `β` is the beta function
     fn pdf(&self, x: f64) -> f64 {
-        if x.is_infinite() || x <= 0.0 {
-            0.0
-        } else {
-            ((self.freedom_1 * x).powf(self.freedom_1) * self.freedom_2.powf(self.freedom_2)
-                / (self.freedom_1 * x + self.freedom_2).powf(self.freedom_1 + self.freedom_2))
-            .sqrt()
-                / (x * beta::beta(self.freedom_1 / 2.0, self.freedom_2 / 2.0))
-        }
+        self.ln_pdf(x).exp()
     }
 
     /// Calculates the log probability density function for the fisher-snedecor
@@ -402,14 +395,22 @@ impl Continuous<f64, f64> for FisherSnedecor {
     /// # Formula
     ///
     /// ```text
-    /// ln(sqrt(((d1 * x) ^ d1 * d2 ^ d2) / (d1 * x + d2) ^ (d1 + d2)) / (x *
-    /// β(d1 / 2, d2 / 2)))
+    /// 0.5 * (d1 * ln(d1 * x) + d2 * ln(d2) - (d1 + d2) * ln(d1 * x + d2))
+    /// - ln(x) - ln(β(d1 / 2, d2 / 2))
     /// ```
     ///
     /// where `d1` is the first degree of freedom, `d2` is
     /// the second degree of freedom, and `β` is the beta function
     fn ln_pdf(&self, x: f64) -> f64 {
-        self.pdf(x).ln()
+        if x.is_infinite() || x <= 0.0 {
+            f64::NEG_INFINITY
+        } else {
+            0.5 * (self.freedom_1 * (self.freedom_1 * x).ln()
+                + self.freedom_2 * self.freedom_2.ln()
+                - (self.freedom_1 + self.freedom_2) * (self.freedom_1 * x + self.freedom_2).ln())
+                - x.ln()
+                - beta::ln_beta(self.freedom_1 / 2.0, self.freedom_2 / 2.0)
+        }
     }
 }
 
@@ -524,16 +525,33 @@ mod tests {
         test_absolute(10.0, 0.1, 0.0418440630400545297349, 1e-14, pdf(1.0));
         test_absolute(0.1, 1.0, 0.0396064560910663979961, 1e-16, pdf(1.0));
         test_absolute(1.0, 1.0, 0.1591549430918953357689, 1e-16, pdf(1.0));
-        test_absolute(10.0, 1.0, 0.230361989229138647108, 1e-16, pdf(1.0));
-        test_absolute(0.1, 0.1, 0.00221546909694001013517, 1e-18, pdf(10.0));
+        test_absolute(10.0, 1.0, 0.230361989229138647108, 1e-15, pdf(1.0));
+        test_absolute(0.1, 0.1, 0.00221546909694001013517, 1e-17, pdf(10.0));
         test_absolute(1.0, 0.1, 0.00369960370387922619592, 1e-17, pdf(10.0));
         test_absolute(10.0, 0.1, 0.00390179721174142927402, 1e-15, pdf(10.0));
         test_absolute(0.1, 1.0, 0.00319864073359931548273, 1e-17, pdf(10.0));
         test_absolute(1.0, 1.0, 0.009150765837179460915678, 1e-17, pdf(10.0));
-        test_absolute(10.0, 1.0, 0.0116493859171442148446, 1e-17, pdf(10.0));
+        test_absolute(10.0, 1.0, 0.0116493859171442148446, 1e-16, pdf(10.0));
         test_absolute(0.1, 10.0, 0.00305087016058573989694, 1e-15, pdf(10.0));
         test_absolute(1.0, 10.0, 0.00271897749113479577864, 1e-17, pdf(10.0));
         test_absolute(10.0, 10.0, 2.4289227234060500084E-4, 1e-18, pdf(10.0));
+    }
+
+    #[test]
+    fn test_pdf_large_freedom_no_overflow() {
+        // Evaluating ((d1 x)^d1 * d2^d2) / (d1 x + d2)^(d1 + d2) in value space
+        // overflows: F(80, 80).pdf(1) underflowed to 0.0 and F(100, 100).pdf(1)
+        // was NaN, so ln_pdf = pdf.ln() could not recover.
+        let pdf = |arg: f64| move |x: FisherSnedecor| x.pdf(arg);
+        let ln_pdf = |arg: f64| move |x: FisherSnedecor| x.ln_pdf(arg);
+        test_absolute(80.0, 80.0, 1.7785575754781575, 1e-12, pdf(1.0));
+        test_absolute(100.0, 100.0, 1.9897309346795113, 1e-12, pdf(1.0));
+        test_absolute(80.0, 80.0, 0.5758026849372868, 1e-12, ln_pdf(1.0));
+        test_absolute(100.0, 100.0, 0.6879994208911171, 1e-12, ln_pdf(1.0));
+
+        let d = create_ok(200.0, 200.0);
+        assert!(d.pdf(1.0).is_finite());
+        assert!(d.ln_pdf(1.0).is_finite());
     }
 
     #[test]
@@ -544,15 +562,15 @@ mod tests {
         test_absolute(10.0, 0.1, 0.0418440630400545297349f64.ln(), 1e-13, ln_pdf(1.0));
         test_absolute(0.1, 1.0, 0.0396064560910663979961f64.ln(), 1e-15, ln_pdf(1.0));
         test_absolute(1.0, 1.0, 0.1591549430918953357689f64.ln(), 1e-15, ln_pdf(1.0));
-        test_absolute(10.0, 1.0, 0.230361989229138647108f64.ln(), 1e-15, ln_pdf(1.0));
-        test_exact(0.1, 0.1, 0.00221546909694001013517f64.ln(), ln_pdf(10.0));
+        test_absolute(10.0, 1.0, 0.230361989229138647108f64.ln(), 1e-14, ln_pdf(1.0));
+        test_absolute(0.1, 0.1, 0.00221546909694001013517f64.ln(), 1e-15, ln_pdf(10.0));
         test_absolute(1.0, 0.1, 0.00369960370387922619592f64.ln(), 1e-15, ln_pdf(10.0));
         test_absolute(10.0, 0.1, 0.00390179721174142927402f64.ln(), 1e-13, ln_pdf(10.0));
         test_absolute(0.1, 1.0, 0.00319864073359931548273f64.ln(), 1e-15, ln_pdf(10.0));
         test_absolute(1.0, 1.0, 0.009150765837179460915678f64.ln(), 1e-15, ln_pdf(10.0));
-        test_exact(10.0, 1.0, 0.0116493859171442148446f64.ln(), ln_pdf(10.0));
+        test_absolute(10.0, 1.0, 0.0116493859171442148446f64.ln(), 1e-14, ln_pdf(10.0));
         test_absolute(0.1, 10.0, 0.00305087016058573989694f64.ln(), 1e-13, ln_pdf(10.0));
-        test_exact(1.0, 10.0, 0.00271897749113479577864f64.ln(), ln_pdf(10.0));
+        test_absolute(1.0, 10.0, 0.00271897749113479577864f64.ln(), 1e-14, ln_pdf(10.0));
         test_absolute(10.0, 10.0, 2.4289227234060500084E-4f64.ln(), 1e-14, ln_pdf(10.0));
     }
 
