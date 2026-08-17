@@ -542,12 +542,16 @@ mod tests {
         // Evaluating ((d1 x)^d1 * d2^d2) / (d1 x + d2)^(d1 + d2) in value space
         // overflows: F(80, 80).pdf(1) underflowed to 0.0 and F(100, 100).pdf(1)
         // was NaN, so ln_pdf = pdf.ln() could not recover.
+        //
+        // Expected values are mpmath at 80 decimal digits, rounded to binary64,
+        // not SciPy: SciPy computes this the same way we do, so it agrees with us
+        // rather than checking us.
         let pdf = |arg: f64| move |x: FisherSnedecor| x.pdf(arg);
         let ln_pdf = |arg: f64| move |x: FisherSnedecor| x.ln_pdf(arg);
-        test_absolute(80.0, 80.0, 1.7785575754781575, 1e-12, pdf(1.0));
-        test_absolute(100.0, 100.0, 1.9897309346795113, 1e-12, pdf(1.0));
-        test_absolute(80.0, 80.0, 0.5758026849372868, 1e-12, ln_pdf(1.0));
-        test_absolute(100.0, 100.0, 0.6879994208911171, 1e-12, ln_pdf(1.0));
+        test_absolute(80.0, 80.0, 1.7785575754781444, 1e-12, pdf(1.0));
+        test_absolute(100.0, 100.0, 1.9897309346794690, 1e-12, pdf(1.0));
+        test_absolute(80.0, 80.0, 0.5758026849372795, 1e-12, ln_pdf(1.0));
+        test_absolute(100.0, 100.0, 0.6879994208910958, 1e-12, ln_pdf(1.0));
 
         let d = create_ok(200.0, 200.0);
         assert!(d.pdf(1.0).is_finite());
