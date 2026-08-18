@@ -1,15 +1,10 @@
 //! Provides the [beta](https://en.wikipedia.org/wiki/Beta_function) and related
 //! function
-//!
-//! This module sets the default precision more tightly than crate defaults for `DEFAULT_EPS`
 
 use crate::function::gamma;
 use crate::prec;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
-
-/// sample case of module level precision
-const MODULE_EPS: f64 = 1e-15;
 
 /// Represents the errors that can occur when computing the natural logarithm
 /// of the beta function or the regularized lower incomplete beta function.
@@ -153,14 +148,10 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
         return Err(BetaFuncError::XOutOfRange);
     }
 
-    let bt = if x == 0.0 || crate::prec::ulps_eq!(x, 1.0, epsilon = MODULE_EPS) {
-        0.0
-    } else {
-        (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
-            + a * x.ln()
-            + b * (1.0 - x).ln())
-        .exp()
-    };
+    let bt = (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
+        + a * x.ln()
+        + b * (1.0 - x).ln())
+    .exp();
     let symm_transform = x >= (a + 1.0) / (a + b + 2.0);
     let eps = prec::F64_PREC;
     let fpmin = f64::MIN_POSITIVE / eps;
@@ -429,7 +420,14 @@ mod tests {
     use super::*;
     use crate::prec;
     use core::f64::consts as f64_consts;
+    const MODULE_EPS: f64 = 1e-15;
     const MODULE_RELATIVE_ACC: f64 = 1e-14;
+
+    /// `x` walked `n` steps toward `-inf` via `f64::next_down`, i.e. `n`
+    /// ULPs below `x`.
+    fn ulps_below(x: f64, n: u32) -> f64 {
+        (0..n).fold(x, |v, _| v.next_down())
+    }
 
     fn beta_assert_relative_eq(a: f64, b: f64) {
         prec::assert_relative_eq!(
@@ -603,6 +601,72 @@ mod tests {
     }
 
     #[test]
+    fn test_beta_reg_x_near_one_boundary() {
+        // I(x; a, b) -> 1 as x -> 1-, for any fixed a, b > 0. `x` can approach
+        // the boundary from one side only (x > 1 is out of range), so check
+        // that the sequence climbs monotonically to the limit as x nears it.
+        for &(a, b) in &[(0.5, 0.5), (2.5, 0.5), (0.5, 2.5), (2.5, 2.5)] {
+            let xs: [f64; 6] = [
+                1.0 - 1e-2,
+                1.0 - 1e-10,
+                1.0 - 1e-15,
+                ulps_below(1.0, 5), // a few ULPs below 1.0
+                1.0f64.next_down(), // 1 ULP below 1.0
+                1.0,
+            ];
+            let mut prev = 0.0;
+            for &x in &xs {
+                let p = beta_reg(a, b, x);
+                assert!((0.0..=1.0).contains(&p));
+                assert!(
+                    p >= prev,
+                    "beta_reg({a}, {b}, {x}) = {p} regressed below {prev}"
+                );
+                prev = p;
+            }
+            assert_eq!(prev, 1.0);
+        }
+    }
+
+    #[test]
+    fn test_beta_reg_symmetric_small_side_near_zero_boundary() {
+        // I_x(a, b) -> 1 as x -> 1- is `checked_beta_reg`'s `bt` short
+        // circuit boundary, but `beta_reg(a, b, x)` itself saturates to
+        // exactly 1.0 well before that (once 1.0 - x rounds away entirely),
+        // losing the resolution needed to prove the general formula isn't
+        // hiding a real discontinuity there. The reflection identity
+        // I_x(a, b) = 1 - I_{1-x}(b, a) sidesteps that: evaluating the
+        // right-hand side directly, at y = 1 - x -> 0+, is the small
+        // quantity outright rather than something reached by subtracting
+        // from 1.0, so it keeps resolving `y` across hundreds of decades
+        // (down to the smallest positive subnormal) instead of flattening
+        // out. That resolution is what lets this assert *strict* descent,
+        // the way the saturated `x -> 1-` direction in
+        // `test_beta_reg_x_near_one_boundary` cannot.
+        for &(a, b) in &[(0.5, 0.5), (2.5, 0.5), (0.5, 2.5), (2.5, 2.5)] {
+            // `y^a` is what ultimately underflows to exactly 0.0, so how far
+            // down `y` can go before hitting a genuine hardware floor
+            // depends on `a`; 1e-100 stays clear of that floor (~1e-124) for
+            // every `a` used here, keeping this a test of the general
+            // formula rather than of where doubles run out of exponent bits.
+            let ys: [f64; 6] = [1e-2, 1e-10, 1e-20, 1e-40, 1e-60, 1e-100];
+            let mut prev = f64::INFINITY;
+            for &y in &ys {
+                let q = beta_reg(b, a, y);
+                assert!(
+                    q > 0.0 && q < 1.0,
+                    "beta_reg({b}, {a}, {y}) = {q} out of (0, 1)"
+                );
+                assert!(
+                    q < prev,
+                    "beta_reg({b}, {a}, {y}) = {q} did not strictly descend below {prev}"
+                );
+                prev = q;
+            }
+        }
+    }
+
+    #[test]
     #[should_panic]
     fn test_beta_reg_a_lte_0() {
         beta_reg(0.0, 1.0, 1.0);
@@ -650,5 +714,23 @@ mod tests {
     fn test_error_is_sync_send() {
         fn assert_sync_send<T: Sync + Send>() {}
         assert_sync_send::<BetaFuncError>();
+    }
+
+    #[test]
+    fn test_beta_reg_x_near_one_boundary_small_b() {
+        // bt ~ (1 - x)^b, and (1 - x)^b -> 1 as b -> 0, so for small b this
+        // stays well clear of the x == 1.0 boundary even a handful of ULPs
+        // below it - regression guard for a since-fixed bug where a
+        // tolerance-based boundary check collapsed this to 1.0.
+        let (a, b) = (1.0, 0.001);
+        let mut x = 1.0f64;
+        for ulps_below in 1..=5u32 {
+            x = x.next_down();
+            let p = beta_reg(a, b, x);
+            assert!(
+                p < 1.0,
+                "beta_reg({a}, {b}, {ulps_below} ULPs below 1.0) = {p}, expected < 1.0"
+            );
+        }
     }
 }
