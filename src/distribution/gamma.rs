@@ -390,7 +390,9 @@ impl Continuous<f64, f64> for Gamma {
         } else if self.shape == 1.0 {
             self.rate.ln() - self.rate * x
         } else if x == 0.0 {
-            if self.shape < 1.0 {
+            if self.rate.is_infinite() {
+                f64::NAN
+            } else if self.shape < 1.0 {
                 f64::INFINITY
             } else {
                 f64::NEG_INFINITY
@@ -638,6 +640,22 @@ mod tests {
         test_exact(1.0 + 5e-10, 1.0, f64::NEG_INFINITY, |dist| dist.ln_pdf(0.0));
         test_exact(1.0 - 5e-10, 1.0, f64::INFINITY, |dist| dist.pdf(0.0));
         test_exact(1.0 - 5e-10, 1.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
+    }
+
+    #[test]
+    fn test_pdf_at_zero_with_infinite_shape() {
+        test_exact(f64::INFINITY, 1.0, 0.0, |dist| dist.pdf(0.0));
+        test_exact(f64::INFINITY, 1.0, f64::NEG_INFINITY, |dist| dist.ln_pdf(0.0));
+    }
+
+    #[test]
+    fn test_pdf_at_zero_with_infinite_rate() {
+        test_is_nan(0.5, f64::INFINITY, |dist| dist.pdf(0.0));
+        test_is_nan(0.5, f64::INFINITY, |dist| dist.ln_pdf(0.0));
+        test_is_nan(2.0, f64::INFINITY, |dist| dist.pdf(0.0));
+        test_is_nan(2.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
+        test_is_nan(1.0, f64::INFINITY, |dist| dist.pdf(0.0));
+        test_is_nan(1.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
     }
 
     #[test]
