@@ -11,21 +11,17 @@ use num_traits::Float as _;
 /// Single-pass accumulator for central moments via Welford's online algorithm.
 ///
 /// `ORDER` controls which moments are tracked:
-/// - `1` mean
-/// - `2` + variance
-/// - `3` + skewness
-/// - above does not presently implement further moments
-///
+/// - `1`: count + mean
+/// - `2`: `1` + variance
+/// - `3`: `2` + skewness
+/// - values above: not presently implemented
 /// Moments are accumulated for `x - offset`, where `offset` is the first value
 /// pushed. Central moments are invariant under that shift, and it is what makes
-/// the accumulator usable on data with a large offset: Welford's `mean +=
-/// delta / n` update cannot represent a small increment against a large running
-/// mean, so `1e12 + U(0, 1)` came out with `2.5e-4` relative error in the
-/// variance. Referring everything to the first observation keeps the magnitudes
-/// small and brings that to `5e-15` at no cost (statrs-dev/statrs#376).
+/// the accumulator usable on data with a large offset.
 pub struct OnlineMoments<const ORDER: usize> {
     pub count: u64,
-    /// The first value pushed; `m` holds the moments of `x - offset`.
+    // `m` holds the moments of `x - offset`. Welford's update can become
+    // insensitive reducing unscaled data. See statrs-dev/statrs#376.
     offset: f64,
     m: [f64; ORDER],
 }
@@ -147,11 +143,9 @@ impl<const ORDER: usize> OnlineMoments<ORDER> {
     /// Merges two accumulators as if all observations had been pushed into
     /// one, using the pairwise update of Chan, Golub & LeVeque (extended to
     /// the third moment by Pébay, 2008).
-    ///
-    /// Besides combining accumulators built in parallel, folding into several
-    /// accumulators and merging at the end is also slightly *better*
-    /// conditioned than one long Welford chain, since each chain's rounding
-    /// errors accumulate over fewer updates.
+    /// In addition to API after computing on parallel streams, merging
+    /// at the end is also slightly *better* conditioned than one long Welford
+    /// chain.
     ///
     /// ```
     /// use statrs::statistics::OnlineVariance;
@@ -160,6 +154,43 @@ impl<const ORDER: usize> OnlineMoments<ORDER> {
     /// let b = [3.0_f64, 4.0].iter().copied().fold(OnlineVariance::default(), OnlineVariance::push);
     /// let all = [1.0_f64, 2.0, 3.0, 4.0].iter().copied().fold(OnlineVariance::default(), OnlineVariance::push);
     /// assert_eq!(a.merge(b).variance(), all.variance());
+    /// ```
+    ///
+    /// # Precision
+    /// Consider breaking apart large streams and merging for precision.
+    /// Recursively merging in a binary tree accumulates roughly O(log N)
+    /// rounding error against O(N) for a single chain, the same effect as
+    /// pairwise vs. naive summation.
+    ///
+    /// ```
+    /// use statrs::statistics::{OnlineVariance, Accumulate};
+    /// use approx::assert_relative_eq;
+    ///
+    /// // Repeating a block leaves its variance unchanged, so this stream has
+    /// // an exactly known variance to check against: mean 5.0, M2 = 32 per
+    /// // block.
+    /// let block = [2.0_f64, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
+    /// let blocks = 1 << 16;
+    /// let exact_variance = (32.0 * blocks as f64) / (8.0 * blocks as f64 - 1.0);
+    ///
+    /// let chained: OnlineVariance = (0..blocks)
+    ///     .flat_map(|_| block.iter().copied())
+    ///     .fold(Default::default(), Accumulate::push);
+    ///
+    /// let stream = |count| {
+    ///     (0..count)
+    ///         .flat_map(|_| block.iter().copied())
+    ///         .fold(OnlineVariance::default(), OnlineVariance::push)
+    /// };
+    /// let per_stream = blocks / 4;
+    /// let merged = stream(per_stream)
+    ///     .merge(stream(per_stream))
+    ///     .merge(stream(per_stream).merge(stream(per_stream)));
+    ///
+    /// let chained_err = (chained.variance().unwrap() - exact_variance).abs();
+    /// let merged_err = (merged.variance().unwrap() - exact_variance).abs();
+    /// assert!(merged_err < chained_err);
+    /// assert_relative_eq!(merged.variance().unwrap(), exact_variance, max_relative = 1e-13);
     /// ```
     pub fn merge(self, other: Self) -> Self {
         if other.count == 0 {
@@ -215,6 +246,10 @@ impl<const ORDER: usize> crate::statistics::Accumulate for OnlineMoments<ORDER> 
     /// let s = [1.0_f64, 2.0, 3.0].iter().copied()
     ///     .fold(OnlineVariance::default(), OnlineVariance::push);
     /// ```
+    ///
+    /// # Precision
+    /// Sensitive to data ordering, especially with regard to scale of initial item.
+    /// If consuming very large streams, see [`merge`](OnlineMoments::merge)
     fn push(mut self, x: f64) -> Self {
         if self.count == 0 {
             self.offset = x;
