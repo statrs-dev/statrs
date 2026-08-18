@@ -15,6 +15,7 @@ use num_traits::Float as _;
 /// - `2`: `1` + variance
 /// - `3`: `2` + skewness
 /// - values above: not presently implemented
+///
 /// Moments are accumulated for `x - offset`, where `offset` is the first value
 /// pushed. Central moments are invariant under that shift, and it is what makes
 /// the accumulator usable on data with a large offset.
