@@ -115,7 +115,7 @@ jobs:
           version: "46.0.1"
 
       - name: Build no_std runtime verification
-        run: cargo build --manifest-path tests/no_std/Cargo.toml --target wasm32-unknown-unknown --locked
+        run: cargo build --manifest-path tests/no_std/Cargo.toml --target wasm32-unknown-unknown
 
       - name: Run no_std calculations
         run: wasmtime run --invoke verify tests/no_std/target/wasm32-unknown-unknown/debug/statrs_no_std_runtime.wasm
