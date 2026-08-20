@@ -240,10 +240,6 @@ impl ContinuousCDF<f64, f64> for Triangular {
         let a = self.min;
         let b = self.max;
         let c = self.mode;
-        if !(0.0..=1.0).contains(&p) {
-            panic!("x must be in [0, 1]");
-        }
-
         if p < (c - a) / (b - a) {
             a + ((c - a) * (b - a) * p).sqrt()
         } else {

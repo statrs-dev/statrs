@@ -185,9 +185,6 @@ impl ContinuousCDF<f64, f64> for Gamma {
     }
 
     fn inverse_cdf(&self, p: f64) -> f64 {
-        if !(0.0..=1.0).contains(&p) {
-            panic!("default inverse_cdf implementation should be provided probability on [0,1]")
-        }
         if p == 0.0 {
             return self.min();
         };

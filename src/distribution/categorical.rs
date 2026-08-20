@@ -1,4 +1,4 @@
-use crate::distribution::{Discrete, DiscreteCDF};
+use crate::distribution::{Discrete, DiscreteCDF, InverseCdfError};
 use crate::statistics::*;
 use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
@@ -181,10 +181,6 @@ impl DiscreteCDF<u64, f64> for Categorical {
     /// categorical
     /// distribution at `x`
     ///
-    /// # Panics
-    ///
-    /// If `x <= 0.0` or `x >= 1.0`
-    ///
     /// # Formula
     ///
     /// ```text
@@ -195,11 +191,18 @@ impl DiscreteCDF<u64, f64> for Categorical {
     /// and `f(x)` is defined as `p_x + f(x - 1)` and `f(0) = p_0` where
     /// `p_x` is the `x`th probability mass
     fn inverse_cdf(&self, x: f64) -> u64 {
-        if x >= 1.0 || x <= 0.0 {
-            panic!("x must be in [0, 1]")
-        }
-
         self.locate(x)
+    }
+
+    /// Calculates the inverse cumulative distribution function for the
+    /// categorical distribution at `x`, returning an error instead of
+    /// panicking if `x <= 0.0` or `x >= 1.0`.
+    fn try_inverse_cdf(&self, x: f64) -> Result<u64, InverseCdfError> {
+        if x >= 1.0 || x <= 0.0 {
+            Err(InverseCdfError::ArgumentOutOfRange)
+        } else {
+            Ok(self.inverse_cdf(x))
+        }
     }
 }
 
@@ -517,17 +520,21 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
-    fn test_inverse_cdf_input_low() {
+    fn test_try_inverse_cdf_input_low() {
         let dist = create_ok(&[4.0, 2.5, 2.5, 1.0]);
-        dist.inverse_cdf(0.0);
+        assert_eq!(
+            dist.try_inverse_cdf(0.0),
+            Err(InverseCdfError::ArgumentOutOfRange)
+        );
     }
 
     #[test]
-    #[should_panic]
-    fn test_inverse_cdf_input_high() {
+    fn test_try_inverse_cdf_input_high() {
         let dist = create_ok(&[4.0, 2.5, 2.5, 1.0]);
-        dist.inverse_cdf(1.0);
+        assert_eq!(
+            dist.try_inverse_cdf(1.0),
+            Err(InverseCdfError::ArgumentOutOfRange)
+        );
     }
 
     #[test]

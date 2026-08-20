@@ -224,7 +224,11 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
     #[doc(alias = "quantile function")]
     #[doc(alias = "quantile")]
     fn try_inverse_cdf(&self, p: T) -> Result<K, InverseCdfError> {
-        Ok(self.inverse_cdf(p))
+        if !(T::zero()..=T::one()).contains(&p) {
+            Err(InverseCdfError::ArgumentOutOfRange)
+        } else {
+            Ok(self.inverse_cdf(p))
+        }
     }
 }
 
@@ -265,15 +269,13 @@ pub trait DiscreteCDF<K: Sized + Num + Ord + Clone + NumAssignOps, T: Float>:
     /// Due to issues with rounding and floating-point accuracy the default implementation may be ill-behaved
     /// Specialized inverse cdfs should be used whenever possible.
     ///
-    /// # Panics
-    /// this default impl panics if provided `p` not on interval [0.0, 1.0]
+    /// Does not check that `p` lies on `[0.0, 1.0]`; use [`try_inverse_cdf`](DiscreteCDF::try_inverse_cdf)
+    /// if `p` is not already known to be valid.
     fn inverse_cdf(&self, p: T) -> K {
         if p <= self.cdf(self.min()) {
             return self.min();
         } else if p == T::one() {
             return self.max();
-        } else if !(T::zero()..=T::one()).contains(&p) {
-            panic!("p must be on [0, 1]")
         }
 
         let two = K::one() + K::one();
@@ -284,6 +286,17 @@ pub trait DiscreteCDF<K: Sized + Num + Ord + Clone + NumAssignOps, T: Float>:
         }
 
         internal::integral_bisection_search(|p| self.cdf(p.clone()), p, lb, ub).unwrap()
+    }
+
+    /// Due to issues with rounding and floating-point accuracy the default
+    /// implementation may be ill-behaved.
+    /// Specialized inverse cdfs should be used whenever possible.
+    fn try_inverse_cdf(&self, p: T) -> Result<K, InverseCdfError> {
+        if !(T::zero()..=T::one()).contains(&p) {
+            Err(InverseCdfError::ArgumentOutOfRange)
+        } else {
+            Ok(self.inverse_cdf(p))
+        }
     }
 }
 

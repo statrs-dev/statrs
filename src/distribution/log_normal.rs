@@ -181,10 +181,6 @@ impl ContinuousCDF<f64, f64> for LogNormal {
     /// Calculates the inverse cumulative distribution function for the
     /// log-normal distribution at `p`
     ///
-    /// # Panics
-    ///
-    /// If `p < 0.0` or `p > 1.0`
-    ///
     /// # Formula
     ///
     /// ```text
@@ -198,10 +194,8 @@ impl ContinuousCDF<f64, f64> for LogNormal {
             0.0
         } else if p < 1.0 {
             (self.location - (self.scale * f64_consts::SQRT_2 * erf::erfc_inv(2.0 * p))).exp()
-        } else if p == 1.0 {
-            f64::INFINITY
         } else {
-            panic!("p must be within [0.0, 1.0]");
+            f64::INFINITY
         }
     }
 }

@@ -184,7 +184,6 @@ impl DiscreteCDF<u64, f64> for Geometric {
     ///
     /// # Panics
     ///
-    /// Panics if `x` is not in `[0, 1]`.
     /// Panics if the result would exceed `u64::MAX` (p is too small for the given x).
     /// Panics if intermediate f64 computation overflows (p is pathologically small).
     fn inverse_cdf(&self, x: f64) -> u64 {
@@ -194,9 +193,6 @@ impl DiscreteCDF<u64, f64> for Geometric {
         if x == <f64>::one() {
             // iCDF(1) = +∞; saturate to supremum of u64 domain
             return self.max();
-        }
-        if !(<f64>::zero()..=<f64>::one()).contains(&x) {
-            panic!("x must be in [0, 1]");
         }
         if self.p == 1.0 {
             // degenerate distribution: all mass at k=1
@@ -421,6 +417,7 @@ impl Discrete<u64, f64> for Geometric {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
+    use crate::distribution::InverseCdfError;
     use crate::prec;
 
     crate::distribution::internal::testing_boiler!(p: f64; Geometric; GeometricError);
@@ -748,10 +745,11 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
-    fn test_inverse_cdf_panic() {
-        let invcdf = |arg: f64| move |x: Geometric| x.inverse_cdf(arg);
-        test_exact(1., 1, invcdf(2.));
+    fn test_try_inverse_cdf_out_of_range() {
+        assert_eq!(
+            create_ok(0.5).try_inverse_cdf(2.),
+            Err(InverseCdfError::ArgumentOutOfRange)
+        );
     }
 
     #[test]
