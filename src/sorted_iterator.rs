@@ -31,9 +31,9 @@ impl Iterator for Sorted {
     type Item = f64;
 
     fn next(&mut self) -> Option<Self::Item> {
-        ///TODO potential algorithm:
-        ///use bloom filter to test for untraveled indices, I'm not sure how to implement traversal
-        ///yet
+        //TODO potential algorithm:
+        //use bloom filter to test for untraveled indices, I'm not sure how to implement traversal
+        //yet
         self.sorted_iter.next()
     }
 }
