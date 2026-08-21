@@ -213,11 +213,25 @@ pub fn ks_onesample<T>(
 where
     T: ContinuousCDF<f64, f64>,
 {
-    let sorted_iter = match nan_policy {
-        NaNPolicy::Propogate => return Ok((f64::NAN, f64::NAN)),
-        NaNPolicy::Emit => return Err(KSTestError::SampleContainsNaN),
-        NaNPolicy::Error => data.into_sorted_iter().filter(|x| !x.is_nan()),
+    fn keep_all(_x: &f64) -> bool {
+        true
+    }
+    fn keep_non_nan(x: &f64) -> bool {
+        !x.is_nan()
+    }
+    let mut temp_sorted_iter = data.into_sorted_iter();
+    let filter_pred = match nan_policy {
+        NaNPolicy::Propogate if temp_sorted_iter.any(f64::is_nan) => {
+            return Ok((f64::NAN, f64::NAN));
+        }
+        NaNPolicy::Error if temp_sorted_iter.any(f64::is_nan) => {
+            return Err(KSTestError::SampleContainsNaN);
+        }
+        NaNPolicy::Emit => keep_non_nan,
+        _ => keep_all,
     };
+    let sorted_iter = data.into_sorted_iter().filter(filter_pred);
+    println!("{}", sorted_iter.clone().any(|x| x.is_nan()));
 
     let n = sorted_iter.clone().count() as f64;
     if (n as usize) < 1 {
