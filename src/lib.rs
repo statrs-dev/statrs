@@ -65,5 +65,6 @@ pub mod euclid;
 pub mod function;
 pub mod generate;
 pub mod prec;
+pub mod sorted_iterator;
 pub mod statistics;
 pub mod stats_tests;

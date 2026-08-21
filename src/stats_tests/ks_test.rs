@@ -11,6 +11,7 @@ use num_traits::clamp;
 use crate::distribution::ContinuousCDF;
 
 use crate::function::factorial;
+use crate::sorted_iterator::IntoSortedIterator;
 
 use super::NaNPolicy;
 
@@ -204,7 +205,7 @@ fn onesample_marsaglia_et_al_twosided_pvalue(d: f64, n: f64) -> Result<f64, KSTe
 /// .unwrap();
 /// ```
 pub fn ks_onesample<T>(
-    mut data: Vec<f64>,
+    data: impl IntoSortedIterator,
     distribution: &T,
     method: KSOneSampleAlternativeMethod,
     nan_policy: NaNPolicy,
@@ -212,34 +213,34 @@ pub fn ks_onesample<T>(
 where
     T: ContinuousCDF<f64, f64>,
 {
-    let has_nans = data.iter().any(|x| x.is_nan());
-    if has_nans {
-        match nan_policy {
-            NaNPolicy::Propogate => {
-                return Ok((f64::NAN, f64::NAN));
-            }
-            NaNPolicy::Error => {
-                return Err(KSTestError::SampleContainsNaN);
-            }
-            NaNPolicy::Emit => {
-                data = data.into_iter().filter(|x| !x.is_nan()).collect::<Vec<_>>();
-            }
-        }
+    fn keep_all(_x: &f64) -> bool {
+        true
     }
+    fn keep_non_nan(x: &f64) -> bool {
+        !x.is_nan()
+    }
+    let mut temp_sorted_iter = data.into_sorted_iter();
+    let filter_pred = match nan_policy {
+        NaNPolicy::Propogate if temp_sorted_iter.any(f64::is_nan) => {
+            return Ok((f64::NAN, f64::NAN));
+        }
+        NaNPolicy::Error if temp_sorted_iter.any(f64::is_nan) => {
+            return Err(KSTestError::SampleContainsNaN);
+        }
+        NaNPolicy::Emit => keep_non_nan,
+        _ => keep_all,
+    };
+    let sorted_iter = data.into_sorted_iter().filter(filter_pred);
+    println!("{}", sorted_iter.clone().any(|x| x.is_nan()));
 
-    let n = data.len() as f64;
+    let n = sorted_iter.clone().count() as f64;
     if (n as usize) < 1 {
         return Err(KSTestError::SampleTooSmall);
     }
 
-    data.sort_by(|a, b| {
-        a.partial_cmp(b)
-            .expect("nans should be filtered out by this point so it should always work")
-    });
-
-    let theoretical_cdf = data
-        .iter()
-        .map(|x| distribution.cdf(*x))
+    let theoretical_cdf = sorted_iter
+        .clone()
+        .map(|x| distribution.cdf(x))
         .collect::<Vec<f64>>();
 
     let d_minus: f64 = zip(&theoretical_cdf, 1..=n as usize)
@@ -263,9 +264,19 @@ where
         }
         #[cfg(feature = "nalgebra")]
         KSOneSampleAlternativeMethod::TwoSidedExact => {
-            let mut duplicate_check = data.clone(); // should be for small n so not a big deal
-            duplicate_check.dedup(); // data should already be sorted above
-            if duplicate_check.len() < n as usize {
+            use std::collections::HashSet;
+
+            let mut seen_items = HashSet::new();
+
+            //hashing based on bits might have some
+            //unforeseen collisions, but as this is just for
+            //feasibility testing, I'm keeping it for now
+            let dedup_n: usize = sorted_iter
+                .clone()
+                .filter(|&e| seen_items.insert(e.to_bits()))
+                .count();
+
+            if dedup_n < n as usize {
                 return Err(KSTestError::ExactAndTies);
             }
             let statistic = d_plus.max(d_minus);
