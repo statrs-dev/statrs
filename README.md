@@ -1,7 +1,7 @@
 # statrs
 
 ![tests][actions-test-badge]
-[![MIT licensed][license-badge]](./LICENSE.md)
+[![MIT and BSL-1.0 licensed][license-badge]](./THIRD_PARTY_NOTICES.md)
 [![Crate][crates-badge]][crates-url]
 [![docs.rs][docsrs-badge]][docs-url]
 [![codecov-statrs][codecov-badge]][codecov-url]
@@ -10,7 +10,7 @@
 [actions-test-badge]: https://github.com/statrs-dev/statrs/actions/workflows/test.yml/badge.svg
 [crates-badge]: https://img.shields.io/crates/v/statrs.svg
 [crates-url]: https://crates.io/crates/statrs
-[license-badge]: https://img.shields.io/badge/license-MIT-blue.svg
+[license-badge]: https://img.shields.io/badge/license-MIT%20AND%20BSL--1.0-blue.svg
 [docsrs-badge]: https://img.shields.io/docsrs/statrs
 [docs-url]: https://docs.rs/statrs/*/statrs
 [codecov-badge]: https://codecov.io/gh/statrs-dev/statrs/graph/badge.svg?token=XtMSMYXvIf

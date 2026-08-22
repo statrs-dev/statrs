@@ -1,0 +1,122 @@
+mod initial;
+mod shape_two;
+mod solve;
+
+use super::*;
+use initial::*;
+use shape_two::*;
+use solve::*;
+
+// Near one, the reflected solver preserves upper-tail information needed to round to 1.0.
+const SHAPE_TWO_SPECIALIZATION_MAX: f64 = 0.999_999_999;
+
+fn small_first_shape_lower_tail(a: f64, b: f64, probability: f64) -> Option<f64> {
+    if probability > 0.5 || a > 0.125 || b < STIRLING_MIN {
+        return None;
+    }
+    let log_normalizer = ln_a_beta_small_first_shape_parts(a, b);
+    let current = lower_tail_initial_from_log_normalizer(a, probability, log_normalizer).0;
+    if current <= 0.0 || current >= 1.0 {
+        return None;
+    }
+    let first_correction = ((b - 1.0).abs() / (a + 1.0)) * current;
+    let remainder_ratio = (b - 2.0).abs() * current;
+    (first_correction <= f64::EPSILON / 32.0 && remainder_ratio <= 0.5).then_some(current)
+}
+
+/// Computes the inverse of the regularized incomplete beta function.
+///
+/// # Panics
+///
+/// Panics for arguments outside `a > 0`, `b > 0`, and `0 <= probability <= 1`
+/// in debug builds, or if the numerical method does not converge.
+pub fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
+    debug_assert!((0.0..=1.0).contains(&probability) && a > 0.0 && b > 0.0);
+
+    if probability == 0.0 {
+        return 0.0;
+    }
+    if probability == 1.0 {
+        return 1.0;
+    }
+    if a == b && probability == 0.5 {
+        return 0.5;
+    }
+    if b == 2.0 && probability > SHAPE_TWO_SPECIALIZATION_MAX {
+        let initial = ((probability.ln() - (a + 1.0).ln()) / a).exp();
+        if let Some(quantile) = shape_two_lower_endpoint_result(a, b, probability, initial) {
+            return quantile;
+        }
+    }
+    if let Some(quantile) = beta_concentrated_quantile(a, b, probability) {
+        return quantile;
+    }
+    if b == 1.0 {
+        return probability.powf(1.0 / a);
+    }
+    if a == 1.0
+        && probability <= f64::MIN_POSITIVE
+        && b == b.trunc()
+        && b <= 9_007_199_254_740_992.0
+    {
+        let probability_bits = probability.to_bits();
+        let divisor = b as u64;
+        let quotient = probability_bits / divisor;
+        let remainder = probability_bits % divisor;
+        return f64::from_bits(quotient + u64::from(2 * remainder >= divisor));
+    }
+    if a == 1.0 {
+        return -((-probability).ln_1p() / b).exp_m1();
+    }
+    if (a == 2.0 || b == 2.0) && probability <= SHAPE_TWO_SPECIALIZATION_MAX {
+        return inverse_beta_shape_two(a, b, probability);
+    }
+    if let Some(quantile) = small_first_shape_lower_tail(a, b, probability) {
+        return quantile;
+    }
+
+    let log_beta = ln_beta_inverse_parts(a, b);
+    let flip = inverse_beta_reflect(a, b, probability, log_beta);
+    let (a, b, target) = if flip {
+        (b, a, 1.0 - probability)
+    } else {
+        (a, b, probability)
+    };
+    let ln_beta = log_beta.0 + log_beta.1;
+    let (mut current, mut log_initial) = inverse_beta_initial(a, b, target, ln_beta);
+    let smaller = a.min(b);
+    let larger = a.max(b);
+    if log_initial.is_finite()
+        && larger >= STIRLING_MIN
+        && (smaller < STIRLING_MIN || smaller <= 0.25 * larger)
+    {
+        let accurate_initial = lower_tail_initial_accurate(a, target, log_beta);
+        if accurate_initial.0 > 0.0 && accurate_initial.0 < 1.0 {
+            current = accurate_initial.0;
+            log_initial = accurate_initial.1.0 + accurate_initial.1.1;
+            let first_correction = ((b - 1.0).abs() / (a + 1.0)) * current;
+            let remainder_ratio = (b - 2.0).abs() * current;
+            if first_correction <= f64::EPSILON / 32.0 && remainder_ratio <= 0.5 {
+                return if flip { 1.0 - current } else { current };
+            }
+        }
+    }
+    let min_subnormal = f64::from_bits(1);
+    if current == 0.0 && log_initial < min_subnormal.ln() - core::f64::consts::LN_2 {
+        return if flip { 1.0 } else { 0.0 };
+    }
+    let first_correction = ((b - 1.0).abs() / (a + 1.0)) * current;
+    let remainder_ratio = (b - 2.0).abs() * current;
+    if first_correction <= f64::EPSILON / 32.0 && remainder_ratio <= 0.5 {
+        return if flip { 1.0 - current } else { current };
+    }
+    if current < f64::MIN_POSITIVE {
+        let relative_correction = b * current / (a + 1.0);
+        let relative_half_ulp = 0.5 * (min_subnormal / current);
+        if relative_correction < 0.25 * relative_half_ulp {
+            return if flip { 1.0 - current } else { current };
+        }
+    }
+    let result = inverse_beta_log_tail(a, b, target, current, log_beta, ln_beta);
+    if flip { 1.0 - result } else { result }
+}

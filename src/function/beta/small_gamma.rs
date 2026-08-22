@@ -1,0 +1,89 @@
+use super::*;
+
+// DLMF 5.7.3: https://dlmf.nist.gov/5.7.E3
+const LN_GAMMA_ONE_PLUS_COEFFICIENTS: [(f64, f64); 31] = [
+    (0.8224670334241132, 1.520336175199238e-17),
+    (-0.40068563438653143, 2.250747042487504e-18),
+    (0.27058080842778455, 1.1871280107138412e-17),
+    (-0.20738555102867398, -4.099767328621813e-18),
+    (0.1695571769974082, 2.2393851330167238e-18),
+    (-0.14404989676884612, -9.623140085232555e-18),
+    (0.12550966952474304, -2.5214685384672305e-18),
+    (-0.11133426586956469, -4.643990572582924e-18),
+    (0.10009945751278181, 2.6102404859583283e-18),
+    (-0.09095401714582904, -8.306705457691885e-19),
+    (0.083353840546109, 2.963832603652642e-19),
+    (-0.0769325164113522, 3.2900356019181198e-18),
+    (0.07143294629536133, 6.278806024191499e-18),
+    (-0.06666870588242047, -3.2295860759966306e-18),
+    (0.06250095514121304, 2.551099464019315e-18),
+    (-0.058823978658684585, 2.6912901341966357e-18),
+    (0.055555767627403614, -3.0261864849830964e-18),
+    (-0.05263167937961666, -2.523843702471215e-18),
+    (0.05000004769810169, 2.7894418264458796e-19),
+    (-0.047619070330142226, -2.4796342684293355e-18),
+    (0.04545455629320467, 4.382931774550076e-19),
+    (-0.04347826605304026, 1.8462229880395943e-18),
+    (0.04166666915034121, 2.308174687248266e-18),
+    (-0.04000000119214014, -3.145690613937729e-18),
+    (0.03846153903467518, 3.3927204223959168e-18),
+    (-0.037037037312989324, -1.7709932414949877e-18),
+    (0.035714285847333355, 3.3772026865595416e-18),
+    (-0.034482758684919304, 3.2599869270595477e-18),
+    (0.03333333336437758, -2.2936827368961794e-18),
+    (-0.03225806453115042, 1.9360221160020273e-18),
+    (0.03125000000727597, 2.9882678459447273e-18),
+];
+
+fn ln_gamma_one_plus_series_prefix_parts(x: f64, count: usize) -> (f64, f64) {
+    let coefficients = &LN_GAMMA_ONE_PLUS_COEFFICIENTS[..count];
+    let (mut high, mut low) = *coefficients.last().unwrap();
+    for coefficient in coefficients[..count - 1].iter().rev() {
+        let product = high * x;
+        let product_error = high.mul_add(x, -product) + low * x;
+        let (sum, sum_error) = two_sum(product, coefficient.0);
+        (high, low) = two_sum(sum, product_error + sum_error + coefficient.1);
+    }
+    dd_mul(
+        (x, 0.0),
+        dd_add(
+            (-consts::EULER_MASCHERONI, 4.942915152430645e-18),
+            dd_mul((x, 0.0), (high, low)),
+        ),
+    )
+}
+
+pub(super) fn ln_gamma_one_plus_series_parts(x: f64) -> (f64, f64) {
+    ln_gamma_one_plus_series_prefix_parts(x, LN_GAMMA_ONE_PLUS_COEFFICIENTS.len())
+}
+
+pub(super) fn ln_gamma_one_plus_inverse_parts(x: f64) -> (f64, f64) {
+    // DLMF 5.7.3. For 0 < x <= 1/8, the k=22 onward remainder is below
+    // zeta(22) * x^22 / (22 * (1-x)); after division by x it is below 5.7e-21.
+    ln_gamma_one_plus_series_prefix_parts(x, 20)
+}
+
+pub(super) fn ln_gamma_small_accurate_parts(x: f64) -> (f64, f64) {
+    let gamma_one_plus = ln_gamma_one_plus_series_parts(x);
+    let logarithm = accurate_ln(x);
+    dd_add(gamma_one_plus, (-logarithm.0, -logarithm.1))
+}
+
+pub(super) fn ln_gamma_one_plus_series(x: f64) -> f64 {
+    let mut polynomial = LN_GAMMA_ONE_PLUS_COEFFICIENTS.last().unwrap().0;
+    for coefficient in LN_GAMMA_ONE_PLUS_COEFFICIENTS[..30].iter().rev() {
+        polynomial = polynomial.mul_add(x, coefficient.0);
+    }
+    x * (-consts::EULER_MASCHERONI + x * polynomial)
+}
+
+#[test]
+fn inverse_prefix_tracks_the_full_series_on_its_domain() {
+    for index in 1..=4096 {
+        let x = 0.125 * f64::from(index) / 4096.0;
+        let full = ln_gamma_one_plus_series_parts(x);
+        let prefix = ln_gamma_one_plus_inverse_parts(x);
+        let difference = dd_add(full, (-prefix.0, -prefix.1));
+        assert!((difference.0 + difference.1).abs() < 7.1e-22);
+    }
+}

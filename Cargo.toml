@@ -3,14 +3,22 @@ name = "statrs"
 version = "0.19.1"
 authors = ["Michael Ma"]
 description = "Statistical computing library for Rust"
-license = "MIT"
+license = "MIT AND BSL-1.0"
 keywords = ["probability", "statistics", "stats", "distribution", "math"]
 categories = ["science"]
 homepage = "https://github.com/statrs-dev/statrs"
 repository = "https://github.com/statrs-dev/statrs"
 edition = "2024"
 
-include = ["CHANGELOG.md", "LICENSE.md", "src/", "tests/"]
+include = [
+    "CHANGELOG.md",
+    "LICENSE.md",
+    "LICENSE-BOOST.md",
+    "THIRD_PARTY_NOTICES.md",
+    "src/",
+    "tests/",
+    "benches/",
+]
 
 # When changing MSRV: Also update the README
 rust-version = "1.89.0"
@@ -28,6 +36,11 @@ required-features = ["rand", "std"]
 name = "density"
 harness = false
 required-features = ["rand", "std", "kde"]
+
+[[bench]]
+name = "beta"
+harness = false
+required-features = ["std"]
 
 [features]
 default = ["std", "nalgebra", "rand"]
