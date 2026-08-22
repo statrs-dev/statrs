@@ -629,6 +629,42 @@ mod tests {
     }
 
     #[test]
+    fn test_pdf_ln_pdf_near_unit_rate_x_product() {
+        // `rate` and `x` differ by many orders of magnitude while their product
+        // stays near 1.0. Computing `ln(rate) + ln(x)` directly, even with a
+        // two-sum compensation, loses accuracy here because each term is
+        // individually huge and they nearly cancel. Reference values are from
+        // mpmath at 60 digits of precision.
+        let cases = [
+            (
+                10.0,
+                9124.13416510371,
+                0.00020282465462814574,
+                0.0058375360020384311786,
+                1.0058546076178841054,
+            ),
+            (
+                10.0,
+                147313129.0117983,
+                3.6626428448745405e-9,
+                -0.086400524503597070522,
+                0.91722678583654005927,
+            ),
+            (
+                10.0,
+                218565082552.56137,
+                1.0763838473319353e-12,
+                0.04968343200871080629,
+                1.0509383502679062755,
+            ),
+        ];
+        for (shape, rate, x, expected_ln_pdf, expected_pdf) in cases {
+            test_absolute(shape, rate, expected_ln_pdf, 1.5e-14, |dist| dist.ln_pdf(x));
+            test_absolute(shape, rate, expected_pdf, 1.5e-14, |dist| dist.pdf(x));
+        }
+    }
+
+    #[test]
     fn test_pdf_at_zero() {
         test_relative(1.0, 0.1, 0.1, |x| x.pdf(0.0));
         test_relative(1.0, 0.1, 0.1f64.ln(), |x| x.ln_pdf(0.0));
