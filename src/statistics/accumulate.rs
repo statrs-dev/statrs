@@ -160,8 +160,13 @@ impl<MS: OnlineMoments> Accumulate<MS> {
     /// Sensitive to data ordering, especially with regard to scale of initial item.
     /// If consuming very large streams, see [`merge`][Accumulate::merge]
     pub fn push(mut self, x: f64) -> Self {
+        if self.count == 0 {
+            self.offset = x;
+        }
         self.count += 1;
         let n = self.count as f64;
+        // work relative to the first observation; see the type-level docs
+        let x = x - self.offset;
 
         // Welford / Pebay (2008) central moment update. Update order: M3
         // before M2 before mean; each step uses the previous observation's
