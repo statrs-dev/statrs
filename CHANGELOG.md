@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.2](https://github.com/statrs-dev/statrs/compare/v0.19.1...v0.19.2) - 2026-08-22
+
+### Added
+
+- Support alloc-backed APIs in no_std ([#403](https://github.com/statrs-dev/statrs/pull/403))
+
+### Fixed
+
+- restore full precision to erf's interval constants
+- Update kdtree and KDE radius
+- accumulate central moments relative to the first observation
+- compute FisherSnedecor pdf in log space for large freedoms
+- Unblock release-plz
+- make Geometric cdf(1)/inverse_cdf(p) exact and portable
+- correct Geometric::inverse_cdf against its definition
+- compute Hypergeometric pmf in log space for large populations
+
+### Other
+
+- *(doc)* clippy
+- *(online)* guidance/suggestion for `merge`
+- build the OnlineMoments offset tests under no_std
+- Source large-freedom pdf fixtures from mpmath instead of SciPy
+- *(deps)* bump actions/checkout from 4 to 7
+- drop overexplanation implementation
+
 ## [0.19.1](https://github.com/statrs-dev/statrs/compare/v0.19.0...v0.19.1) - 2026-08-11
 
 ### Added
