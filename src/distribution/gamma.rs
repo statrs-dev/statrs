@@ -400,19 +400,14 @@ impl Continuous<f64, f64> for Gamma {
         } else if x.is_infinite() {
             f64::NEG_INFINITY
         } else {
-            let ln_rate = self.rate.ln();
-            let ln_x = x.ln();
-            let ln_product = ln_rate + ln_x;
-            let virtual_ln_x = ln_product - ln_rate;
-            let ln_product_error = (ln_rate - (ln_product - virtual_ln_x)) + (ln_x - virtual_ln_x);
-            self.shape
-                .mul_add(ln_product, self.shape * ln_product_error)
-                - ln_x
-                - self.rate * x
-                - gamma::ln_gamma(self.shape)
+            let (m1, e1) = prec::frexp(self.rate);
+            let (m2, e2) = prec::frexp(x);
+            let ln_product = (m1 * m2).ln() + (e1 + e2) as f64 * core::f64::consts::LN_2;
+            self.shape * ln_product - x.ln() - self.rate * x - gamma::ln_gamma(self.shape)
         }
     }
 }
+
 /// Samples from a gamma distribution with a shape of `shape` and a
 /// rate of `rate` using `rng` as the source of randomness. Implementation from:
 ///
