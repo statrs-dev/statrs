@@ -361,13 +361,10 @@ impl Continuous<f64, f64> for Gamma {
             0.0
         } else if self.shape == 1.0 {
             self.rate * (-self.rate * x).exp()
-        } else if self.shape > 160.0 {
-            self.ln_pdf(x).exp()
         } else if x.is_infinite() {
             0.0
         } else {
-            self.rate.powf(self.shape) * x.powf(self.shape - 1.0) * (-self.rate * x).exp()
-                / gamma::gamma(self.shape)
+            self.ln_pdf(x).exp()
         }
     }
 
@@ -392,15 +389,25 @@ impl Continuous<f64, f64> for Gamma {
             f64::NEG_INFINITY
         } else if self.shape == 1.0 {
             self.rate.ln() - self.rate * x
+        } else if x == 0.0 {
+            if self.rate.is_infinite() {
+                f64::NAN
+            } else if self.shape < 1.0 {
+                f64::INFINITY
+            } else {
+                f64::NEG_INFINITY
+            }
         } else if x.is_infinite() {
             f64::NEG_INFINITY
         } else {
-            self.shape * self.rate.ln() + (self.shape - 1.0) * x.ln()
-                - self.rate * x
-                - gamma::ln_gamma(self.shape)
+            let (m1, e1) = prec::frexp(self.rate);
+            let (m2, e2) = prec::frexp(x);
+            let ln_product = (m1 * m2).ln() + (e1 + e2) as f64 * core::f64::consts::LN_2;
+            self.shape * ln_product - x.ln() - self.rate * x - gamma::ln_gamma(self.shape)
         }
     }
 }
+
 /// Samples from a gamma distribution with a shape of `shape` and a
 /// rate of `rate` using `rng` as the source of randomness. Implementation from:
 ///
@@ -611,6 +618,48 @@ mod tests {
     }
 
     #[test]
+    fn test_pdf_with_underflowing_rate_power() {
+        let expected = 4.455666577035095e-7;
+        test_absolute(80.0, 1e-5, expected, expected * 2e-13, |dist| dist.pdf(8e6));
+    }
+
+    #[test]
+    fn test_pdf_ln_pdf_near_unit_rate_x_product() {
+        // `rate` and `x` differ by many orders of magnitude while their product
+        // stays near 1.0. Computing `ln(rate) + ln(x)` directly, even with a
+        // two-sum compensation, loses accuracy here because each term is
+        // individually huge and they nearly cancel. Reference values are from
+        // mpmath at 60 digits of precision.
+        let cases = [
+            (
+                10.0,
+                9124.13416510371,
+                0.00020282465462814574,
+                0.0058375360020384311786,
+                1.0058546076178841054,
+            ),
+            (
+                10.0,
+                147313129.0117983,
+                3.6626428448745405e-9,
+                -0.086400524503597070522,
+                0.91722678583654005927,
+            ),
+            (
+                10.0,
+                218565082552.56137,
+                1.0763838473319353e-12,
+                0.04968343200871080629,
+                1.0509383502679062755,
+            ),
+        ];
+        for (shape, rate, x, expected_ln_pdf, expected_pdf) in cases {
+            test_absolute(shape, rate, expected_ln_pdf, 1.5e-14, |dist| dist.ln_pdf(x));
+            test_absolute(shape, rate, expected_pdf, 1.5e-14, |dist| dist.pdf(x));
+        }
+    }
+
+    #[test]
     fn test_pdf_at_zero() {
         test_relative(1.0, 0.1, 0.1, |x| x.pdf(0.0));
         test_relative(1.0, 0.1, 0.1f64.ln(), |x| x.ln_pdf(0.0));
@@ -622,6 +671,22 @@ mod tests {
         test_exact(1.0 + 5e-10, 1.0, f64::NEG_INFINITY, |dist| dist.ln_pdf(0.0));
         test_exact(1.0 - 5e-10, 1.0, f64::INFINITY, |dist| dist.pdf(0.0));
         test_exact(1.0 - 5e-10, 1.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
+    }
+
+    #[test]
+    fn test_pdf_at_zero_with_infinite_shape() {
+        test_exact(f64::INFINITY, 1.0, 0.0, |dist| dist.pdf(0.0));
+        test_exact(f64::INFINITY, 1.0, f64::NEG_INFINITY, |dist| dist.ln_pdf(0.0));
+    }
+
+    #[test]
+    fn test_pdf_at_zero_with_infinite_rate() {
+        test_is_nan(0.5, f64::INFINITY, |dist| dist.pdf(0.0));
+        test_is_nan(0.5, f64::INFINITY, |dist| dist.ln_pdf(0.0));
+        test_is_nan(2.0, f64::INFINITY, |dist| dist.pdf(0.0));
+        test_is_nan(2.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
+        test_is_nan(1.0, f64::INFINITY, |dist| dist.pdf(0.0));
+        test_is_nan(1.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
     }
 
     #[test]
