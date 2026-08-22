@@ -16,7 +16,8 @@
 //!    with the input, e.g., when comparing probability densities or statistical moments
 //!
 //! 3. ULPs (Units in Last Place) checks (`ulps_eq!`) - Use for comparing values that
-//!    should be close in terms of floating-point representation
+//!    should be different due only to rounding effects, not algorithmic ones. This can
+//!    include cases where FMA use depends on compilation parameters. Usually test-only.
 //!
 //! Each check type has both a non-asserting version (e.g., `abs_diff_eq!`) and an
 //! asserting version (e.g., `assert_abs_diff_eq!`).
@@ -144,7 +145,7 @@ mod macros {
     );
     redefine_two_opt_approx_macro!(
         ulps_eq,
-        { epsilon: crate::prec::DEFAULT_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
+        { epsilon: 0.0, max_ulps: crate::prec::DEFAULT_ULPS }
     );
 
     pub(crate) use abs_diff_eq;
@@ -162,7 +163,7 @@ mod macros {
     );
     redefine_two_opt_approx_macro!(
         assert_ulps_eq,
-        { epsilon: crate::prec::DEFAULT_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
+        { epsilon: 0.0, max_ulps: crate::prec::DEFAULT_ULPS }
     );
 
     pub(crate) use assert_abs_diff_eq;
