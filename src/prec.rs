@@ -81,6 +81,26 @@ pub(crate) fn convergence(x: &mut f64, x_new: f64) -> bool {
     res
 }
 
+/// Decomposes `x` into a mantissa in `[0.5, 1)` and an exponent such that
+/// `x == mantissa * 2^exponent`, avoiding overflow when multiplying two
+/// widely-scaled values together before taking their logarithm.
+pub(crate) fn frexp(x: f64) -> (f64, i32) {
+    let bits = x.to_bits();
+    let sign = bits & 0x8000_0000_0000_0000;
+    let exponent = ((bits >> 52) & 0x7ff) as i32;
+    let mantissa_bits = bits & 0x000f_ffff_ffff_ffff;
+    if exponent == 0 {
+        if mantissa_bits == 0 {
+            return (x, 0);
+        }
+        // subnormal: rescale by 2^54 to bring it into the normal range first
+        let (m, e) = frexp(x * f64::from_bits(0x4350000000000000));
+        return (m, e - 54);
+    }
+    let m = f64::from_bits(sign | (1022u64 << 52) | mantissa_bits);
+    (m, exponent - 1022)
+}
+
 macro_rules! redefine_one_opt_approx_macro {
     (
         $approx_macro:ident,
