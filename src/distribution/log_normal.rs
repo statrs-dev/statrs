@@ -335,8 +335,21 @@ impl Continuous<f64, f64> for LogNormal {
         if x <= 0.0 || x.is_infinite() {
             0.0
         } else {
-            let d = (x.ln() - self.location) / self.scale;
-            (-0.5 * d * d).exp() / (x * consts::SQRT_2PI * self.scale)
+            let ln_x = x.ln();
+            let d = (ln_x - self.location) / self.scale;
+            let exponent = -0.5 * d * d;
+            let num = exponent.exp();
+            if num.is_normal() {
+                num / (x * consts::SQRT_2PI * self.scale)
+            } else {
+                // `num` underflows to zero, or to a subnormal holding only a few
+                // significant bits, long before the density itself does. Divide in
+                // log space instead and exponentiate once. This is `ln_pdf`'s
+                // formula with `ln(x * σ)` split into `ln(x) + ln(σ)`, because
+                // `(x * self.scale).ln()` is `-inf` once `x * σ` underflows, which
+                // would make `pdf` return `inf` where it should return zero.
+                (exponent - consts::LN_SQRT_2PI - ln_x - self.scale.ln()).exp()
+            }
         }
     }
 
@@ -365,6 +378,7 @@ impl Continuous<f64, f64> for LogNormal {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
+    use crate::prec;
 
     testing_boiler!(location: f64, scale: f64; LogNormal; LogNormalError);
 
@@ -610,6 +624,69 @@ mod tests {
     fn test_neg_pdf() {
         let pdf = |arg: f64| move |x: LogNormal| x.pdf(arg);
         test_exact(0.0, 1.0, 0.0, pdf(0.0));
+    }
+
+    #[test]
+    fn test_pdf_left_tail() {
+        // Expected values are exact arithmetic at 80 decimal digits, rounded to
+        // binary64, from pdf(x) = exp(-((ln x - mu)/sigma)^2 / 2) / (x * sigma * sqrt(2 pi)).
+        // Not SciPy: SciPy computes this the same way we do, so it agrees with us
+        // rather than checking us.
+        // Each density is an ordinary (non-subnormal) f64, far above the
+        // underflow threshold of the distribution itself.
+        let cases = [
+            (0.0, 15.0, 1e-252, 3.04796856373058623e-75),
+            (0.0, 10.0, 2.24e-168, 4.60596725315129703e-158),
+            (0.0, 5.0, 1.38e-87, 2.07338102578635509e-262),
+        ];
+
+        let mut bad = alloc::vec::Vec::new();
+        for (location, scale, x, expected) in cases {
+            let d = create_ok(location, scale);
+            let got = d.pdf(x);
+            let rel = ((got - expected) / expected).abs();
+            if !prec::relative_eq!(got, expected, epsilon = 0.0, max_relative = 1e-12) {
+                bad.push(alloc::format!(
+                    "LogNormal({location}, {scale}).pdf({x:e}): got {got:e}, expected {expected:e}, rel err {rel:e}"
+                ));
+            }
+        }
+        assert!(bad.is_empty(), "{}", bad.join("\n"));
+    }
+
+    #[test]
+    fn test_pdf_right_tail() {
+        // The same expression covers the right tail. Expected values are exact
+        // arithmetic at 60 decimal digits, rounded to binary64, not SciPy.
+        // These are all reachable without exp(-d^2/2)
+        // underflowing, so they pin the density down where it always worked.
+        let cases = [
+            (0.0, 1.0, 1e5, 6.5856159926167960017e-35),
+            (0.0, 5.0, 1e30, 2.8537004754025084595e-73),
+            (0.0, 15.0, 1e100, 1.8041024017455373079e-153),
+        ];
+
+        for (location, scale, x, expected) in cases {
+            let got = create_ok(location, scale).pdf(x);
+            prec::assert_relative_eq!(got, expected, epsilon = 0.0, max_relative = 1e-13);
+        }
+
+        // further out the density itself underflows, and must stay exactly
+        // zero rather than becoming a NaN or a spurious subnormal
+        let pdf = |arg: f64| move |x: LogNormal| x.pdf(arg);
+        test_exact(0.0, 15.0, 0.0, pdf(1e250));
+        test_exact(0.0, 15.0, 0.0, pdf(1e300));
+        test_exact(2.5, 10.0, 0.0, pdf(1e200));
+    }
+
+    #[test]
+    fn test_pdf_boundaries() {
+        // x = 0.0 is covered by test_neg_pdf
+        let pdf = |arg: f64| move |x: LogNormal| x.pdf(arg);
+        test_exact(0.0, 1.0, 0.0, pdf(-1.0));
+        test_exact(0.0, 1.0, 0.0, pdf(f64::NEG_INFINITY));
+        test_exact(0.0, 1.0, 0.0, pdf(f64::INFINITY));
+        test_is_nan(0.0, 1.0, pdf(f64::NAN));
     }
 
     #[test]
