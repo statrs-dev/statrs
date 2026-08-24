@@ -640,18 +640,15 @@ mod tests {
             (0.0, 5.0, 1.38e-87, 2.07338102578635509e-262),
         ];
 
-        let mut bad = alloc::vec::Vec::new();
         for (location, scale, x, expected) in cases {
             let d = create_ok(location, scale);
             let got = d.pdf(x);
             let rel = ((got - expected) / expected).abs();
-            if !prec::relative_eq!(got, expected, epsilon = 0.0, max_relative = 1e-12) {
-                bad.push(alloc::format!(
-                    "LogNormal({location}, {scale}).pdf({x:e}): got {got:e}, expected {expected:e}, rel err {rel:e}"
-                ));
-            }
+            assert!(
+                prec::relative_eq!(got, expected, epsilon = 0.0, max_relative = 1e-12),
+                "LogNormal({location}, {scale}).pdf({x:e}): got {got:e}, expected {expected:e}, rel err {rel:e}"
+            );
         }
-        assert!(bad.is_empty(), "{}", bad.join("\n"));
     }
 
     #[test]
