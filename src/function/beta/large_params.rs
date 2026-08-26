@@ -3,6 +3,12 @@ use crate::consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum LogPrefactor {
+    Value((f64, f64)),
+    Underflow,
+}
+
 pub(super) fn log_ratio(a: f64, b: f64, x: f64) -> (f64, (f64, f64)) {
     let complement = two_sum(1.0, -x);
     let left = multiply((x, 0.0), (b, 0.0));
@@ -39,7 +45,7 @@ fn stirling_correction(value: f64) -> f64 {
     inverse * series
 }
 
-pub(super) fn log_prefactor(a: f64, b: f64, x: f64) -> Option<(f64, f64)> {
+pub(super) fn log_prefactor(a: f64, b: f64, x: f64) -> Option<LogPrefactor> {
     if !(a.min(b) >= 10.0 && a.is_finite() && b.is_finite() && x > 0.0 && x < 1.0) {
         return None;
     }
@@ -54,16 +60,67 @@ pub(super) fn log_prefactor(a: f64, b: f64, x: f64) -> Option<(f64, f64)> {
         - stirling_correction(a)
         - stirling_correction(b)
         + stirling_correction(a + b);
-    Some(add((central, 0.0), log_ratio(a, b, x).1))
+    let ratio = log_ratio(a, b, x).1;
+    if ratio.0.is_finite() && ratio.1.is_finite() {
+        let value = add((central, 0.0), ratio);
+        let logarithm = value.0 + value.1;
+        return if logarithm == f64::NEG_INFINITY {
+            Some(LogPrefactor::Underflow)
+        } else if logarithm.is_finite() {
+            Some(LogPrefactor::Value(value))
+        } else {
+            None
+        };
+    }
+    let mean = scaled_a / scaled_sum;
+    let complement = scaled_b / scaled_sum;
+    let scaled_ratio =
+        scaled_a * (x.ln() - mean.ln()) + scaled_b * ((-x).ln_1p() - complement.ln());
+    let logarithm = scale * scaled_ratio + central;
+    if logarithm == f64::NEG_INFINITY {
+        Some(LogPrefactor::Underflow)
+    } else if logarithm.is_finite() {
+        Some(LogPrefactor::Value((logarithm, 0.0)))
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::function::gamma;
 
     #[test]
     fn log_prefactor_rejects_boundaries() {
         assert_eq!(log_prefactor(10.0, 20.0, 0.0), None);
         assert_eq!(log_prefactor(10.0, 20.0, 1.0), None);
+    }
+
+    #[test]
+    fn log_prefactor_matches_direct_formula() {
+        let (a, b, x) = (12.0, 15.0, 0.4);
+        let LogPrefactor::Value(parts) = log_prefactor(a, b, x).unwrap() else {
+            panic!("expected a finite prefactor");
+        };
+        let actual = parts.0 + parts.1;
+        let direct = gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
+            + a * x.ln()
+            + b * (-x).ln_1p();
+        assert!((actual - direct).abs() <= 1e-13);
+        assert!(
+            actual
+                .to_bits()
+                .abs_diff((-0.08970040659028639_f64).to_bits())
+                <= 8
+        );
+    }
+
+    #[test]
+    fn log_prefactor_reports_extreme_tail_underflow() {
+        assert_eq!(
+            log_prefactor(1e308, 1e308, f64::from_bits(1)),
+            Some(LogPrefactor::Underflow)
+        );
     }
 }
