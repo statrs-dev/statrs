@@ -109,7 +109,8 @@ pub fn checked_beta(a: f64, b: f64) -> Result<f64, BetaFuncError> {
 ///
 /// # Panics
 ///
-/// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
+/// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, `x > 1.0`, or the numerical method
+/// does not converge.
 pub fn beta_inc(a: f64, b: f64, x: f64) -> f64 {
     checked_beta_inc(a, b, x).unwrap()
 }
@@ -121,7 +122,8 @@ pub fn beta_inc(a: f64, b: f64, x: f64) -> f64 {
 ///
 /// # Errors
 ///
-/// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
+/// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, `x > 1.0`, or the numerical method
+/// does not converge.
 pub fn checked_beta_inc(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     checked_beta_reg(a, b, x).and_then(|x| checked_beta(a, b).map(|y| x * y))
 }
@@ -134,9 +136,22 @@ pub fn checked_beta_inc(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
 ///
 /// # Panics
 ///
-/// if `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
+/// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, `x > 1.0`, or the numerical method
+/// does not converge.
 pub fn beta_reg(a: f64, b: f64, x: f64) -> f64 {
     checked_beta_reg(a, b, x).unwrap()
+}
+
+fn beta_reg_use_complement(a: f64, b: f64, x: f64) -> bool {
+    let denominator = a + b + 2.0;
+    if denominator.is_finite() {
+        return x >= (a + 1.0) / denominator;
+    }
+    let scale = a.max(b);
+    let inverse_scale = 1.0 / scale;
+    let scaled_a = a / scale;
+    let scaled_b = b / scale;
+    x >= (scaled_a + inverse_scale) / (scaled_a + scaled_b + 2.0 * inverse_scale)
 }
 
 fn beta_reg_symmetric_central(a: f64, b: f64, x: f64) -> Option<f64> {
@@ -186,7 +201,8 @@ fn beta_reg_symmetric_central(a: f64, b: f64, x: f64) -> Option<f64> {
 ///
 /// # Errors
 ///
-/// if `a <= 0.0`, `b <= 0.0`, `x < 0.0`, or `x > 1.0`
+/// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, `x > 1.0`, or the numerical method
+/// does not converge.
 pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     if a <= 0.0 {
         return Err(BetaFuncError::ANotGreaterThanZero);
@@ -208,17 +224,22 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
         return Ok(result);
     }
 
+    let symm_transform = beta_reg_use_complement(a, b, x);
     let bt = if x == 0.0 || crate::prec::ulps_eq!(x, 1.0, epsilon = MODULE_EPS) {
         0.0
-    } else if let Some(logarithm) = large_params::log_prefactor(a, b, x) {
-        double_double::exp(logarithm)
     } else {
-        (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
-            + a * x.ln()
-            + b * (1.0 - x).ln())
-        .exp()
+        match large_params::log_prefactor(a, b, x) {
+            Some(large_params::LogPrefactor::Value(logarithm)) => double_double::exp(logarithm),
+            Some(large_params::LogPrefactor::Underflow) => 0.0,
+            None => (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
+                + a * x.ln()
+                + b * (1.0 - x).ln())
+            .exp(),
+        }
     };
-    let symm_transform = x >= (a + 1.0) / (a + b + 2.0);
+    if bt == 0.0 {
+        return Ok(if symm_transform { 1.0 } else { 0.0 });
+    }
     let eps = prec::F64_PREC;
     let fpmin = f64::MIN_POSITIVE / eps;
 
@@ -666,6 +687,12 @@ mod tests {
     fn test_beta_reg_large_shape_boundaries() {
         assert_eq!(beta_reg(1e8, 2e8, 0.0), 0.0);
         assert_eq!(beta_reg(1e8, 2e8, 1.0), 1.0);
+    }
+
+    #[test]
+    fn test_beta_reg_extreme_shapes_and_smallest_x() {
+        let x = f64::from_bits(1);
+        assert_eq!(checked_beta_reg(1e308, 1e308, x), Ok(0.0));
     }
 
     #[test]

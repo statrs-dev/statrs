@@ -1,6 +1,8 @@
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
+const LOG_HALF_SMALLEST_SUBNORMAL: f64 = -745.133_219_101_941_2;
+
 pub(super) fn two_sum(left: f64, right: f64) -> (f64, f64) {
     let sum = left + right;
     let virtual_right = sum - left;
@@ -43,7 +45,7 @@ pub(super) fn divide(numerator: (f64, f64), denominator: (f64, f64)) -> (f64, f6
 
 pub(super) fn exp((value, error): (f64, f64)) -> f64 {
     let combined = value + error;
-    if combined < f64::from_bits(1).ln() - core::f64::consts::LN_2 {
+    if combined < LOG_HALF_SMALLEST_SUBNORMAL {
         return 0.0;
     }
     let exponential = value.exp();
@@ -136,5 +138,15 @@ mod tests {
         assert_eq!(accurate_ln(f64::INFINITY), (f64::INFINITY, 0.0));
         assert!(accurate_ln(f64::NAN).0.is_nan());
         assert_eq!(accurate_ln_one_plus((-1.0, 0.0)), (f64::NEG_INFINITY, 0.0));
+    }
+
+    #[test]
+    fn exp_handles_underflow_and_error_terms() {
+        assert_eq!(exp((LOG_HALF_SMALLEST_SUBNORMAL - 1.0, 0.0)), 0.0);
+        assert_eq!(exp((-746.0, 2.0)), (-744.0_f64).exp());
+        assert_eq!(
+            exp((1.0, f64::EPSILON / 2.0)),
+            f64::from_bits(0x4005_bf0a_8b14_576a)
+        );
     }
 }
