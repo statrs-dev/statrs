@@ -40,7 +40,7 @@ fn stirling_correction(value: f64) -> f64 {
 }
 
 pub(super) fn log_prefactor(a: f64, b: f64, x: f64) -> Option<(f64, f64)> {
-    if a.min(b) < 10.0 || !a.is_finite() || !b.is_finite() {
+    if !(a.min(b) >= 10.0 && a.is_finite() && b.is_finite() && x > 0.0 && x < 1.0) {
         return None;
     }
     let scale = a.max(b);
@@ -55,4 +55,15 @@ pub(super) fn log_prefactor(a: f64, b: f64, x: f64) -> Option<(f64, f64)> {
         - stirling_correction(b)
         + stirling_correction(a + b);
     Some(add((central, 0.0), log_ratio(a, b, x).1))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn log_prefactor_rejects_boundaries() {
+        assert_eq!(log_prefactor(10.0, 20.0, 0.0), None);
+        assert_eq!(log_prefactor(10.0, 20.0, 1.0), None);
+    }
 }
