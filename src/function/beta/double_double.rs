@@ -55,6 +55,9 @@ pub(super) fn exp((value, error): (f64, f64)) -> f64 {
 }
 
 fn accurate_ln(value: f64) -> (f64, f64) {
+    if value <= 0.0 || !value.is_finite() {
+        return (value.ln(), 0.0);
+    }
     if value == 1.0 {
         return (0.0, 0.0);
     }
@@ -92,6 +95,9 @@ fn accurate_ln(value: f64) -> (f64, f64) {
 
 fn accurate_ln_dd(value: (f64, f64)) -> (f64, f64) {
     let logarithm = accurate_ln(value.0);
+    if value.0 <= 0.0 || !value.0.is_finite() {
+        return logarithm;
+    }
     add(logarithm, ((value.1 / value.0).ln_1p(), 0.0))
 }
 
@@ -117,4 +123,18 @@ pub(super) fn accurate_ln_one_plus(value: (f64, f64)) -> (f64, f64) {
         }
     }
     multiply((2.0, 0.0), sum)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn accurate_ln_handles_non_positive_and_non_finite_values() {
+        assert_eq!(accurate_ln(0.0), (f64::NEG_INFINITY, 0.0));
+        assert!(accurate_ln(-1.0).0.is_nan());
+        assert_eq!(accurate_ln(f64::INFINITY), (f64::INFINITY, 0.0));
+        assert!(accurate_ln(f64::NAN).0.is_nan());
+        assert_eq!(accurate_ln_one_plus((-1.0, 0.0)), (f64::NEG_INFINITY, 0.0));
+    }
 }

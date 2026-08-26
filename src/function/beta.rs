@@ -663,6 +663,12 @@ mod tests {
     }
 
     #[test]
+    fn test_beta_reg_large_shape_boundaries() {
+        assert_eq!(beta_reg(1e8, 2e8, 0.0), 0.0);
+        assert_eq!(beta_reg(1e8, 2e8, 1.0), 1.0);
+    }
+
+    #[test]
     fn test_beta_reg_large_symmetric_adjacent_to_center() {
         let lower = f64::from_bits(0.5_f64.to_bits() - 1);
         let upper = f64::from_bits(0.5_f64.to_bits() + 1);
