@@ -1,5 +1,5 @@
-use super::double_double::{accurate_ln_one_plus, add, divide, multiply, two_sum};
 use crate::consts;
+use crate::function::double_double::{accurate_ln_one_plus, add, divide, multiply, two_sum};
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 

@@ -3,11 +3,10 @@
 //!
 //! This module sets the default precision more tightly than crate defaults for `DEFAULT_EPS`
 
-mod double_double;
 mod large_params;
 mod temme;
 
-use crate::function::gamma;
+use crate::function::{double_double, gamma};
 use crate::prec;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
@@ -293,6 +292,14 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
 
     if x == 0.0 || x == 1.0 {
         return Ok(x);
+    }
+
+    if b == 1.0 && a + b == a {
+        return Ok((a * x.ln()).exp());
+    }
+
+    if a == 1.0 && a + b == b {
+        return Ok(-(b * (-x).ln_1p()).exp_m1());
     }
 
     let log_prefactor = match large_params::log_prefactor(a, b, x) {
@@ -704,6 +711,16 @@ mod tests {
     fn test_beta_reg_large_shape_boundaries() {
         assert_eq!(beta_reg(1e8, 2e8, 0.0), 0.0);
         assert_eq!(beta_reg(1e8, 2e8, 1.0), 1.0);
+    }
+
+    #[test]
+    fn test_beta_reg_extreme_shape_one() {
+        assert_eq!(checked_beta_reg(1e308, 1.0, 0.0), Ok(0.0));
+        assert_eq!(checked_beta_reg(1e308, 1.0, 0.5), Ok(0.0));
+        assert_eq!(checked_beta_reg(1e308, 1.0, 1.0), Ok(1.0));
+        assert_eq!(checked_beta_reg(1.0, 1e308, 0.0), Ok(0.0));
+        assert_eq!(checked_beta_reg(1.0, 1e308, 0.5), Ok(1.0));
+        assert_eq!(checked_beta_reg(1.0, 1e308, 1.0), Ok(1.0));
     }
 
     #[test]

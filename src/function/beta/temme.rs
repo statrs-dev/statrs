@@ -1,6 +1,6 @@
-use super::double_double::{add, divide, exp, multiply, two_sum};
 use super::large_params::log_ratio;
 use crate::consts;
+use crate::function::double_double::{add, divide, exp, multiply, two_sum};
 use crate::function::erf;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
