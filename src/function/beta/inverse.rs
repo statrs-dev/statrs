@@ -1,5 +1,5 @@
 use super::{
-    BetaFuncError, beta_continued_fraction, checked_beta_reg,
+    BetaFuncError, beta_continued_fraction, beta_reg_use_complement, checked_beta_reg,
     large_params::{self, LogPrefactor},
     ln_beta,
 };
@@ -24,8 +24,7 @@ fn log_regularized_beta(a: f64, b: f64, x: f64, log_beta: f64) -> Result<f64, Be
         return Ok(0.0);
     }
 
-    let symmetry_split = (a + 1.0) / (a + b + 2.0);
-    if x >= symmetry_split {
+    if beta_reg_use_complement(a, b, x) {
         return checked_beta_reg(a, b, x).map(f64::ln);
     }
 
@@ -104,19 +103,18 @@ fn inverse_log_beta(a: f64, b: f64) -> f64 {
     ln_beta(a, b)
 }
 
-fn solve_lower_tail(a: f64, b: f64, probability: f64) -> f64 {
+fn solve_lower_tail(a: f64, b: f64, probability: f64) -> Result<f64, BetaFuncError> {
     let log_probability = probability.ln();
     let log_beta = inverse_log_beta(a, b);
     let smallest = f64::from_bits(1);
     let smallest_log = smallest.ln();
-    let smallest_log_cdf = log_regularized_beta(a, b, smallest, log_beta)
-        .unwrap_or_else(|error| panic!("inv_beta_reg evaluation failed: {error}"));
+    let smallest_log_cdf = log_regularized_beta(a, b, smallest, log_beta)?;
 
     if smallest_log_cdf > log_probability {
-        return 0.0;
+        return Ok(0.0);
     }
     if smallest_log_cdf == log_probability {
-        return smallest;
+        return Ok(smallest);
     }
 
     let mut lower = Point {
@@ -137,8 +135,7 @@ fn solve_lower_tail(a: f64, b: f64, probability: f64) -> f64 {
 
     for _ in 0..MAX_ITERATIONS {
         let x = log_x.exp();
-        let log_cdf = log_regularized_beta(a, b, x, log_beta)
-            .unwrap_or_else(|error| panic!("inv_beta_reg evaluation failed: {error}"));
+        let log_cdf = log_regularized_beta(a, b, x, log_beta)?;
         let current = Point { log_x, x, log_cdf };
 
         if log_cdf < log_probability {
@@ -146,18 +143,17 @@ fn solve_lower_tail(a: f64, b: f64, probability: f64) -> f64 {
         } else if log_cdf > log_probability {
             upper = current;
         } else {
-            return x;
+            return Ok(x);
         }
 
         if upper.x.to_bits() - lower.x.to_bits() <= 8 {
-            return closest_representable(a, b, log_beta, lower, upper, log_probability)
-                .unwrap_or_else(|error| panic!("inv_beta_reg evaluation failed: {error}"));
+            return closest_representable(a, b, log_beta, lower, upper, log_probability);
         }
         let log_tolerance = 32.0 * f64::EPSILON * log_probability.abs().max(1.0);
         if (lower.log_cdf - log_probability).abs() <= log_tolerance
             && (upper.log_cdf - log_probability).abs() <= log_tolerance
         {
-            return closer_point(lower, upper, log_probability);
+            return Ok(closer_point(lower, upper, log_probability));
         }
 
         let log_density = (a - 1.0) * log_x + (b - 1.0) * (-x).ln_1p() - log_beta;
@@ -176,13 +172,10 @@ fn solve_lower_tail(a: f64, b: f64, probability: f64) -> f64 {
         log_x = next;
     }
 
-    panic!(
-        "inv_beta_reg did not converge for a={a}, b={b}, probability={probability}, lower={:?}, upper={:?}, lower_log_cdf={:?}, upper_log_cdf={:?}",
-        lower.x, upper.x, lower.log_cdf, upper.log_cdf
-    )
+    Err(BetaFuncError::ConvergenceFailed)
 }
 
-pub(super) fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
+pub(super) fn try_inv_beta_reg(a: f64, b: f64, probability: f64) -> Result<f64, BetaFuncError> {
     assert!(a.is_finite() && a > 0.0, "a must be finite and positive");
     assert!(b.is_finite() && b > 0.0, "b must be finite and positive");
     assert!(
@@ -191,17 +184,22 @@ pub(super) fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
     );
 
     if probability == 0.0 {
-        return 0.0;
+        return Ok(0.0);
     }
     if probability == 1.0 {
-        return 1.0;
+        return Ok(1.0);
     }
     if probability == 0.5 && a == b {
-        return 0.5;
+        return Ok(0.5);
     }
     if probability <= 0.5 {
         return solve_lower_tail(a, b, probability);
     }
 
-    1.0 - solve_lower_tail(b, a, 1.0 - probability)
+    solve_lower_tail(b, a, 1.0 - probability).map(|value| 1.0 - value)
+}
+
+pub(super) fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
+    try_inv_beta_reg(a, b, probability)
+        .unwrap_or_else(|error| panic!("inv_beta_reg failed: {error}"))
 }

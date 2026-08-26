@@ -336,7 +336,15 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     Ok(beta_reg_from_fraction(log_prefactor, fraction, a))
 }
 
-/// Computes the inverse of the regularized incomplete beta function
+pub(crate) fn try_inv_beta_reg(a: f64, b: f64, probability: f64) -> Result<f64, BetaFuncError> {
+    inverse::try_inv_beta_reg(a, b, probability)
+}
+
+/// Computes the inverse of the regularized incomplete beta function.
+///
+/// # Panics
+///
+/// If the parameters are invalid or the numerical method does not converge.
 pub fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
     inverse::inv_beta_reg(a, b, probability)
 }
@@ -909,6 +917,11 @@ mod tests {
     fn test_inv_beta_reg_extreme_probability_terminates() {
         let actual = inv_beta_reg(200.0, 2.0, 1e-60).to_bits();
         assert!(actual.abs_diff(0x3fdf_5753_caf6_9652) <= 1);
+    }
+
+    #[test]
+    fn test_inv_beta_reg_extreme_shape_ratio() {
+        assert_eq!(inv_beta_reg(1e20, 10.0, 0.3), 1.0);
     }
 
     #[test]
