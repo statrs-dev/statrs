@@ -13,6 +13,7 @@ use crate::prec;
 use num_traits::Float as _;
 
 /// sample case of module level precision
+#[cfg(test)]
 const MODULE_EPS: f64 = 1e-15;
 
 /// Represents the errors that can occur when computing the natural logarithm
@@ -225,7 +226,7 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     }
 
     let symm_transform = beta_reg_use_complement(a, b, x);
-    let bt = if x == 0.0 || crate::prec::ulps_eq!(x, 1.0, epsilon = MODULE_EPS) {
+    let bt = if x == 0.0 || x == 1.0 {
         0.0
     } else {
         match large_params::log_prefactor(a, b, x) {
@@ -687,6 +688,17 @@ mod tests {
     fn test_beta_reg_large_shape_boundaries() {
         assert_eq!(beta_reg(1e8, 2e8, 0.0), 0.0);
         assert_eq!(beta_reg(1e8, 2e8, 1.0), 1.0);
+    }
+
+    #[test]
+    fn test_beta_reg_next_down_from_one_is_not_a_boundary() {
+        let x = f64::from_bits(1.0_f64.to_bits() - 1);
+        let expected = 0.30744526594453764_f64;
+        let actual = beta_reg(1.0, 0.01, x);
+        assert!(
+            actual.to_bits().abs_diff(expected.to_bits()) <= 16,
+            "actual={actual:?}, expected={expected:?}"
+        );
     }
 
     #[test]
