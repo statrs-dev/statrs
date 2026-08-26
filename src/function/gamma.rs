@@ -2,7 +2,6 @@
 //! related functions
 
 use crate::consts;
-use crate::prec;
 use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
@@ -294,13 +293,6 @@ pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     let big = 4503599627370496.0;
     let big_inv = 2.22044604925031308085e-16;
 
-    if prec::ulps_eq!(a, 0.0, epsilon = 0.0) {
-        return Ok(1.0);
-    }
-    if prec::ulps_eq!(x, 0.0, epsilon = 0.0) {
-        return Ok(0.0);
-    }
-
     let ax = a * x.ln() - x - ln_gamma(a);
     if ax < -709.78271289338399 {
         if a < x {
@@ -446,6 +438,12 @@ mod tests {
     use crate::prec;
 
     use core::f64::consts;
+
+    /// `x` walked `n` steps toward `+inf` via `f64::next_up`, i.e. `n` ULPs
+    /// above `x`.
+    fn ulps_above(x: f64, n: u32) -> f64 {
+        (0..n).fold(x, |v, _| v.next_up())
+    }
 
     #[test]
     fn test_gamma() {
@@ -781,6 +779,96 @@ mod tests {
         assert_eq!(gamma_lr(1000.0, 10000.0), 1.0);
         assert_eq!(gamma_lr(1e+50, 1e+48), 0.0);
         assert_eq!(gamma_lr(1e+50, 1e+52), 1.0);
+    }
+
+    #[test]
+    fn test_gamma_lr_a_near_zero_boundary() {
+        // P(a, x) -> 1 as a -> 0+, for any fixed x > 0. `a` can approach the
+        // boundary from one side only (a > 0 is required), so check that the
+        // sequence climbs monotonically to the limit as a shrinks toward it.
+        let x = 1.0;
+        // `a` values small enough that P(a, x) is already within a few ULPs
+        // of 1.0, but far from the boundary the `a == 0.0` short circuit
+        // guards; then the literal near-zero region the short circuit
+        // covers, where the series expansion below underflows to exactly
+        // 1.0 on its own. Values much smaller than 1e-10 pick up several
+        // ULPs of noise from cancellation in the series/exp evaluation, so
+        // they're intentionally left out of the monotonicity check below.
+        let as_: [f64; 4] = [
+            1e-2,
+            1e-10,
+            ulps_above(0.0, 5), // a few ULPs above 0.0
+            0.0f64.next_up(),   // smallest positive subnormal, 1 ULP above 0.0
+        ];
+        let mut prev = 0.0;
+        for &a in &as_ {
+            let p = gamma_lr(a, x);
+            assert!(p <= 1.0, "gamma_lr({a}, {x}) = {p} exceeds 1.0");
+            assert!(p >= prev, "gamma_lr({a}, {x}) = {p} regressed below {prev}");
+            prev = p;
+        }
+        assert_eq!(prev, 1.0);
+    }
+
+    #[test]
+    fn test_gamma_ur_a_near_zero_boundary() {
+        // Q(a, x) = 1 - P(a, x) is the complement gamma_lr's `a == 0.0` short
+        // circuit collapses to exactly 0.0 for. Unlike `1.0 - gamma_lr(a, x)`,
+        // `gamma_ur` doesn't route through a subtraction from 1.0 here (its
+        // own `x < 1.0 || x <= a` short circuit doesn't fire for x = 1 and
+        // a < 1), so it keeps ~15 significant digits of `a`-dependent
+        // resolution across roughly 300 decades - via `ln_gamma`, which never
+        // saturates - instead of losing everything the moment P(a, x) rounds
+        // to 1.0 (which happens once a is only a few multiples of
+        // `f64::EPSILON`). That resolution is what lets this assert *strict*
+        // descent: if the short circuit were hiding a real discontinuity in
+        // the general formula, collapsing this sequence to ties, this test
+        // would catch it in a way the saturated `gamma_lr` value cannot.
+        let x = 1.0;
+        let as_: [f64; 8] = [1e-2, 1e-10, 1e-50, 1e-100, 1e-150, 1e-200, 1e-250, 1e-300];
+        let mut prev = f64::INFINITY;
+        for &a in &as_ {
+            let q = gamma_ur(a, x);
+            assert!(q > 0.0 && q < 1.0, "gamma_ur({a}, {x}) = {q} out of (0, 1)");
+            assert!(q < prev, "gamma_ur({a}, {x}) = {q} did not strictly descend below {prev}");
+            prev = q;
+        }
+        // Below `a`'s double-precision underflow threshold (~1e-308 here),
+        // Q(a, x) genuinely can't be distinguished from 0.0 - that's a real
+        // hardware floor, not a collapse the short circuit is responsible
+        // for, so the tail is checked for exact equality instead of descent.
+        for a in [ulps_above(0.0, 5), 0.0f64.next_up()] {
+            assert_eq!(gamma_ur(a, x), 0.0);
+        }
+    }
+
+    #[test]
+    fn test_gamma_lr_x_near_zero_boundary() {
+        // P(a, x) -> 0 as x -> 0+, for any fixed a > 0. `x` can approach the
+        // boundary from one side only (x > 0 is required). Unlike the `a`
+        // direction, P(a, x) is itself the small quantity here (it isn't
+        // reached by subtracting from 1.0), so - for a = 1, where
+        // P(1, x) = 1 - exp(-x) ~ x - it keeps ~15 significant digits of
+        // `x`-dependent resolution across roughly 300 decades, letting this
+        // assert *strict* descent the way `gamma_lr`'s own saturated `a == 0`
+        // direction can't: if the short circuit were hiding a real
+        // discontinuity in the general formula, this would catch it.
+        let a = 1.0;
+        let xs: [f64; 8] = [1e-2, 1e-10, 1e-50, 1e-100, 1e-150, 1e-200, 1e-250, 1e-300];
+        let mut prev = f64::INFINITY;
+        for &x in &xs {
+            let p = gamma_lr(a, x);
+            assert!(p > 0.0 && p < 1.0, "gamma_lr({a}, {x}) = {p} out of (0, 1)");
+            assert!(p < prev, "gamma_lr({a}, {x}) = {p} did not strictly descend below {prev}");
+            prev = p;
+        }
+        // Below `x`'s double-precision underflow threshold (~1e-308 here),
+        // P(a, x) genuinely can't be distinguished from 0.0 - that's a real
+        // hardware floor, not a collapse the short circuit is responsible
+        // for, so the tail is checked for exact equality instead of descent.
+        for x in [ulps_above(0.0, 5), 0.0f64.next_up()] {
+            assert_eq!(gamma_lr(a, x), 0.0);
+        }
     }
 
     #[test]
@@ -1366,5 +1454,22 @@ mod tests {
     fn test_error_is_sync_send() {
         fn assert_sync_send<T: Sync + Send>() {}
         assert_sync_send::<GammaFuncError>();
+    }
+
+    #[test]
+    fn test_gamma_lr_x_near_zero_boundary_small_a() {
+        // P(a, x) ~ x^a / (a * Gamma(a)) for small x, and x^a -> 1 as a -> 0,
+        // so for small a this stays well clear of the x == 0.0 boundary even
+        // a handful of ULPs above it - regression guard for a since-fixed
+        // bug where a tolerance-based boundary check collapsed this to 0.0.
+        let a = 0.001;
+        for bits in 1..=5u64 {
+            let x = f64::from_bits(bits);
+            let p = gamma_lr(a, x);
+            assert!(
+                p > 0.0,
+                "gamma_lr({a}, {bits} ULPs above 0.0) = {p}, expected > 0.0"
+            );
+        }
     }
 }

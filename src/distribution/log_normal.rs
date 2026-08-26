@@ -336,7 +336,20 @@ impl Continuous<f64, f64> for LogNormal {
             0.0
         } else {
             let d = (x.ln() - self.location) / self.scale;
-            (-0.5 * d * d).exp() / (x * consts::SQRT_2PI * self.scale)
+            let numer = (-0.5 * d * d).exp();
+            // grouped so that a subnormal `x` is rounded once instead of twice
+            let denom = x * (consts::SQRT_2PI * self.scale);
+            if numer.is_normal() && denom.is_normal() {
+                numer / denom
+            } else {
+                // Either end of the quotient has left the range where dividing is
+                // accurate: `numer` underflows to zero, or to a subnormal holding
+                // only a few significant bits, long before the density itself does,
+                // and `denom` overflows to infinity or underflows for extreme `x`.
+                // Both collapse the quotient to zero where the density is still a
+                // representable f64, so divide in log space and exponentiate once.
+                self.ln_pdf(x).exp()
+            }
         }
     }
 
@@ -354,8 +367,20 @@ impl Continuous<f64, f64> for LogNormal {
         if x <= 0.0 || x.is_infinite() {
             f64::NEG_INFINITY
         } else {
-            let d = (x.ln() - self.location) / self.scale;
-            (-0.5 * d * d) - consts::LN_SQRT_2PI - (x * self.scale).ln()
+            let ln_x = x.ln();
+            let d = (ln_x - self.location) / self.scale;
+            let x_scale = x * self.scale;
+            // `x * σ` overflows to infinity or underflows to zero at the extremes
+            // of the support, and `ln` then hands back `±inf`, so `ln(xσ)` is split
+            // into `ln(x) + ln(σ)` there. Everywhere else the product keeps its
+            // full precision and is the more accurate of the two, because it only
+            // rounds once and `ln(x)` and `ln(σ)` can be much larger than the sum.
+            let ln_x_scale = if x_scale.is_normal() {
+                x_scale.ln()
+            } else {
+                ln_x + self.scale.ln()
+            };
+            (-0.5 * d * d) - consts::LN_SQRT_2PI - ln_x_scale
         }
     }
 }
@@ -365,6 +390,7 @@ impl Continuous<f64, f64> for LogNormal {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
+    use crate::prec;
 
     testing_boiler!(location: f64, scale: f64; LogNormal; LogNormalError);
 
@@ -579,7 +605,7 @@ mod tests {
         test_absolute(-0.1, 1.5, 0.90492497850024368541682348133921492204585092983646, 1e-15, pdf(0.1));
         test_absolute(-0.1, 1.5, 0.49191985207660942803818797602364034466489243416574, 1e-16, pdf(0.5));
         test_exact(-0.1, 1.5, 0.33133347214343229148978298237579567194870525187207, pdf(0.8));
-        test_exact(-0.1, 2.5, 1.0824698632626565182080576574958317806389057196768, pdf(0.1));
+        test_absolute(-0.1, 2.5, 1.0824698632626565182080576574958317806389057196768, 1e-15, pdf(0.1));
         test_absolute(-0.1, 2.5, 0.31029619474753883558901295436486123689563749784867, 1e-16, pdf(0.5));
         test_absolute(-0.1, 2.5, 0.19922929916156673799861939824205622734205083805245, 1e-16, pdf(0.8));
 
@@ -594,7 +620,7 @@ mod tests {
         test_absolute(1.5, 1.5, 0.17185785323404088913982425377565512294017306418953, 1e-16, pdf(0.8));
         test_absolute(1.5, 2.5, 0.50186885259059181992025035649158160252576845315332, 1e-15, pdf(0.1));
         test_absolute(1.5, 2.5, 0.21721369314437986034957451699565540205404697589349, 1e-16, pdf(0.5));
-        test_exact(1.5, 2.5, 0.15729636000661278918949298391170443742675565300598, pdf(0.8));
+        test_absolute(1.5, 2.5, 0.15729636000661278918949298391170443742675565300598, 1e-16, pdf(0.8));
         test_exact(2.5, 0.1, 5.6836826548848916385760779034504046896805825555997e-500, pdf(0.1));
         test_absolute(2.5, 0.1, 3.1225608678589488061206338085285607881363155340377e-221, 1e-233, pdf(0.5));
         test_absolute(2.5, 0.1, 4.6994713794671660918554320071312374073172560048297e-161, 1e-173, pdf(0.8));
@@ -610,6 +636,148 @@ mod tests {
     fn test_neg_pdf() {
         let pdf = |arg: f64| move |x: LogNormal| x.pdf(arg);
         test_exact(0.0, 1.0, 0.0, pdf(0.0));
+    }
+
+    #[test]
+    fn test_pdf_left_tail() {
+        // Expected values are exact arithmetic at 80 decimal digits, rounded to
+        // binary64, from pdf(x) = exp(-((ln x - mu)/sigma)^2 / 2) / (x * sigma * sqrt(2 pi)).
+        // Not SciPy: SciPy computes this the same way we do, so it agrees with us
+        // rather than checking us.
+        // Each density is an ordinary (non-subnormal) f64, far above the
+        // underflow threshold of the distribution itself.
+        let cases = [
+            (0.0, 15.0, 1e-252, 3.04796856373058623e-75),
+            (0.0, 10.0, 2.24e-168, 4.60596725315129703e-158),
+            (0.0, 5.0, 1.38e-87, 2.07338102578635509e-262),
+        ];
+
+        for (location, scale, x, expected) in cases {
+            let d = create_ok(location, scale);
+            let got = d.pdf(x);
+            let rel = ((got - expected) / expected).abs();
+            assert!(
+                prec::relative_eq!(got, expected, epsilon = 0.0, max_relative = 1e-12),
+                "LogNormal({location}, {scale}).pdf({x:e}): got {got:e}, expected {expected:e}, rel err {rel:e}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_pdf_right_tail() {
+        // The same expression covers the right tail. Expected values are exact
+        // arithmetic at 60 decimal digits, rounded to binary64, not SciPy.
+        // These are all reachable without exp(-d^2/2)
+        // underflowing, so they pin the density down where it always worked.
+        let cases = [
+            (0.0, 1.0, 1e5, 6.5856159926167960017e-35),
+            (0.0, 5.0, 1e30, 2.8537004754025084595e-73),
+            (0.0, 15.0, 1e100, 1.8041024017455373079e-153),
+        ];
+
+        for (location, scale, x, expected) in cases {
+            let got = create_ok(location, scale).pdf(x);
+            prec::assert_relative_eq!(got, expected, epsilon = 0.0, max_relative = 1e-13);
+        }
+
+        // further out the density itself underflows, and must stay exactly
+        // zero rather than becoming a NaN or a spurious subnormal
+        let pdf = |arg: f64| move |x: LogNormal| x.pdf(arg);
+        test_exact(0.0, 15.0, 0.0, pdf(1e250));
+        test_exact(0.0, 15.0, 0.0, pdf(1e300));
+        test_exact(2.5, 10.0, 0.0, pdf(1e200));
+        // exp(-d^2/2) underflows and x * sigma * sqrt(2 pi) overflows at the same
+        // time here, which a naive inf / inf would turn into a NaN
+        test_exact(0.0, 1.0, 0.0, pdf(f64::MAX));
+    }
+
+    #[test]
+    fn test_pdf_boundaries() {
+        // x = 0.0 is covered by test_neg_pdf
+        let pdf = |arg: f64| move |x: LogNormal| x.pdf(arg);
+        test_exact(0.0, 1.0, 0.0, pdf(-1.0));
+        test_exact(0.0, 1.0, 0.0, pdf(f64::NEG_INFINITY));
+        test_exact(0.0, 1.0, 0.0, pdf(f64::INFINITY));
+        test_is_nan(0.0, 1.0, pdf(f64::NAN));
+        // an infinite scale is accepted by ::new, and spreads the density to zero
+        test_exact(0.0, f64::INFINITY, 0.0, pdf(1.0));
+    }
+
+    #[test]
+    fn test_pdf_denominator_overflow() {
+        // x * sigma * sqrt(2 pi) overflows to infinity for x near f64::MAX, which
+        // collapses the quotient to zero even though exp(-d^2/2) is an ordinary
+        // float and the density is still representable. Expected values are exact
+        // arithmetic at 150 decimal digits on the binary64 inputs, rounded to
+        // binary64, from pdf(x) = exp(-((ln x - mu)/sigma)^2 / 2) / (x * sigma * sqrt(2 pi)).
+        // The density is subnormal, so 1e-12 is far tighter than the 1.0 that the
+        // plain quotient is off by, and still loose enough for the log-space path,
+        // whose absolute error is a few ulp of |ln_pdf| ~ 710.
+        let got = create_ok(709.0, 1.0).pdf(f64::MAX);
+        prec::assert_relative_eq!(got, 1.6336594696904199462e-309,
+            epsilon = 0.0, max_relative = 1e-12);
+    }
+
+    #[test]
+    fn test_pdf_denominator_underflow() {
+        // The mirror image: x * sigma * sqrt(2 pi) is subnormal for x near
+        // f64::MIN_POSITIVE, so the quotient divides by a denominator that holds
+        // only a handful of significant bits. Dividing directly is off by 2.8e-4
+        // here. Expected value is exact arithmetic at 150 decimal digits on the
+        // binary64 inputs. 1e-10 leaves room for the log-space path, which sums
+        // terms of size |ln x| ~ 737, and for a platform `ln` or `exp` that is an
+        // ulp or two off; the plain quotient misses by 2.8e-4 either way.
+        let got = create_ok(-747.0, 0.5).pdf(1e-320);
+        prec::assert_relative_eq!(got, 1.0375087109168858740e230,
+            epsilon = 0.0, max_relative = 1e-10);
+    }
+
+    #[test]
+    fn test_pdf_guard_boundaries() {
+        // Straddles both switches between the quotient and the log-space path, so
+        // the density stays continuous across them. For location 0 and scale 1 the
+        // numerator leaves the normal range just below x = 4.5e-17; for location
+        // 709 and scale 1 the denominator overflows just above x = 7.17e307.
+        // Expected values are exact arithmetic at 150 decimal digits on the
+        // binary64 inputs, rounded to binary64.
+        let cases = [
+            (0.0, 1.0, 5e-17, 9.4703106003006510660e-291),     // quotient
+            (0.0, 1.0, 4e-17, 2.6606766015573320120e-294),     // log space
+            (709.0, 1.0, 7e307, 5.6262704857806850227e-309),   // quotient
+            (709.0, 1.0, 7.3e307, 5.4267255927382909466e-309), // log space
+        ];
+
+        for (location, scale, x, expected) in cases {
+            let got = create_ok(location, scale).pdf(x);
+            prec::assert_relative_eq!(got, expected, epsilon = 0.0, max_relative = 1e-12);
+        }
+    }
+
+    #[test]
+    fn test_ln_pdf_extreme_x() {
+        // x * sigma underflows to zero for subnormal x and overflows to infinity
+        // for x near f64::MAX, and ln of either flips the sign of the result: the
+        // first and last of these used to come back as +inf and -inf. The middle
+        // one keeps x * sigma subnormal but nonzero, and has to stay put. Expected
+        // values are exact arithmetic at 150 decimal digits on the binary64
+        // inputs, rounded to binary64, from
+        // ln_pdf(x) = -((ln x - mu)/sigma)^2 / 2 - ln(sqrt(2 pi)) - ln x - ln sigma.
+        let cases = [
+            (0.0, 0.25, 5e-324, -4432783.2580307411557),
+            (0.0, 1.0, 1e-320, -270721.28315714487534),
+            (0.0, 1e10, f64::MAX, -733.72750235652912883),
+        ];
+
+        for (location, scale, x, expected) in cases {
+            let got = create_ok(location, scale).ln_pdf(x);
+            prec::assert_relative_eq!(got, expected, epsilon = 0.0, max_relative = 1e-14);
+        }
+
+        // an infinite scale is accepted by ::new; x * sigma is then infinite for
+        // every x, and the log density is -inf rather than +inf
+        let ln_pdf = |arg: f64| move |x: LogNormal| x.ln_pdf(arg);
+        test_exact(0.0, f64::INFINITY, f64::NEG_INFINITY, ln_pdf(1.0));
+        test_is_nan(0.0, 1.0, ln_pdf(f64::NAN));
     }
 
     #[test]
