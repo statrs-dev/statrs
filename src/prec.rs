@@ -101,6 +101,19 @@ pub(crate) fn frexp(x: f64) -> (f64, i32) {
     (m, exponent - 1022)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::frexp;
+
+    #[test]
+    fn frexp_decomposes_zero_and_subnormal_values() {
+        assert_eq!(frexp(0.0), (0.0, 0));
+        assert_eq!(frexp(-0.0), (-0.0, 0));
+        assert_eq!(frexp(f64::from_bits(1)), (0.5, -1073));
+        assert_eq!(frexp(f64::from_bits(1).copysign(-1.0)), (-0.5, -1073));
+    }
+}
+
 macro_rules! redefine_one_opt_approx_macro {
     (
         $approx_macro:ident,
