@@ -183,7 +183,7 @@ impl ContinuousCDF<f64, f64> for Beta {
     ///
     /// # Panics
     ///
-    /// If x is not in `[0, 1]`.
+    /// If x is not in `[0, 1]` or the numerical method does not converge.
     ///
     /// # Formula
     ///

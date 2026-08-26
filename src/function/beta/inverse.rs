@@ -188,12 +188,15 @@ fn solve_lower_tail(a: f64, b: f64, probability: f64) -> Result<f64, BetaFuncErr
 }
 
 pub(super) fn try_inv_beta_reg(a: f64, b: f64, probability: f64) -> Result<f64, BetaFuncError> {
-    assert!(a.is_finite() && a > 0.0, "a must be finite and positive");
-    assert!(b.is_finite() && b > 0.0, "b must be finite and positive");
-    assert!(
-        probability.is_finite() && (0.0..=1.0).contains(&probability),
-        "probability must be finite and in [0, 1]"
-    );
+    if !a.is_finite() || a <= 0.0 {
+        return Err(BetaFuncError::ANotGreaterThanZero);
+    }
+    if !b.is_finite() || b <= 0.0 {
+        return Err(BetaFuncError::BNotGreaterThanZero);
+    }
+    if !probability.is_finite() || !(0.0..=1.0).contains(&probability) {
+        return Err(BetaFuncError::XOutOfRange);
+    }
 
     if probability == 0.0 {
         return Ok(0.0);

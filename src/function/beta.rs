@@ -925,6 +925,22 @@ mod tests {
     }
 
     #[test]
+    fn test_try_inv_beta_reg_rejects_invalid_arguments() {
+        assert_eq!(
+            try_inv_beta_reg(0.0, 1.0, 0.5),
+            Err(BetaFuncError::ANotGreaterThanZero)
+        );
+        assert_eq!(
+            try_inv_beta_reg(1.0, f64::INFINITY, 0.5),
+            Err(BetaFuncError::BNotGreaterThanZero)
+        );
+        assert_eq!(
+            try_inv_beta_reg(1.0, 1.0, f64::NAN),
+            Err(BetaFuncError::XOutOfRange)
+        );
+    }
+
+    #[test]
     fn test_inv_beta_reg_small_shape_lower_tail_is_monotone() {
         let cases = [
             (1e-33, 0.0),
