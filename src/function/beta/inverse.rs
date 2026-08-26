@@ -47,6 +47,12 @@ fn closer_point(lower: Point, upper: Point, log_probability: f64) -> f64 {
     }
 }
 
+fn representable_midpoint(lower: f64, upper: f64) -> Option<f64> {
+    let lower_bits = lower.to_bits();
+    let distance = upper.to_bits() - lower_bits;
+    (distance > 1).then(|| f64::from_bits(lower_bits + distance / 2))
+}
+
 fn closest_representable(
     a: f64,
     b: f64,
@@ -132,9 +138,10 @@ fn solve_lower_tail(a: f64, b: f64, probability: f64) -> Result<f64, BetaFuncErr
     if log_x == lower.log_x || log_x == upper.log_x {
         log_x = lower.log_x + 0.5 * (upper.log_x - lower.log_x);
     }
+    let mut x = log_x.exp();
 
     for _ in 0..MAX_ITERATIONS {
-        let x = log_x.exp();
+        let log_x = x.ln();
         let log_cdf = log_regularized_beta(a, b, x, log_beta)?;
         let current = Point { log_x, x, log_cdf };
 
@@ -160,16 +167,21 @@ fn solve_lower_tail(a: f64, b: f64, probability: f64) -> Result<f64, BetaFuncErr
         let slope = (log_x + log_density - log_cdf).exp();
         let newton = log_x - (log_cdf - log_probability) / slope;
         let midpoint = lower.log_x + 0.5 * (upper.log_x - lower.log_x);
-        let mut next = if newton.is_finite() && newton > lower.log_x && newton < upper.log_x {
+        let next = if newton.is_finite() && newton > lower.log_x && newton < upper.log_x {
             newton
         } else {
             midpoint
         };
 
-        if next.exp() == x {
-            next = midpoint;
-        }
-        log_x = next;
+        let next_x = next.exp();
+        x = if next_x <= lower.x || next_x >= upper.x {
+            let Some(value) = representable_midpoint(lower.x, upper.x) else {
+                return closest_representable(a, b, log_beta, lower, upper, log_probability);
+            };
+            value
+        } else {
+            next_x
+        };
     }
 
     Err(BetaFuncError::ConvergenceFailed)

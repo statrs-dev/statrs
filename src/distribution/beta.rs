@@ -722,8 +722,16 @@ mod tests {
     }
 
     #[test]
-    fn test_try_inverse_cdf_reports_convergence_failure() {
+    fn test_try_inverse_cdf_deep_tail() {
         let distribution = Beta::new(10.0, 1e10).unwrap();
+        let actual = distribution.try_inverse_cdf(0.3).unwrap();
+        let expected = 8.132928235539348e-10_f64;
+        assert!(actual.to_bits().abs_diff(expected.to_bits()) <= 8);
+    }
+
+    #[test]
+    fn test_try_inverse_cdf_reports_unrepresentable_quantile() {
+        let distribution = Beta::new(1e308, 1e308).unwrap();
         assert_eq!(
             distribution.try_inverse_cdf(0.3),
             Err(InverseCdfError::ConvergenceFailed)
