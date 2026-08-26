@@ -1010,7 +1010,7 @@ mod tests {
                 let quantile = inv_beta_reg(a, b, probability);
                 if quantile > 0.0 && quantile < 1.0 {
                     let recovered = beta_reg(a, b, quantile);
-                    let tolerance = 5e-11 * probability.max(1.0 - probability);
+                    let tolerance = 5e-11 * probability.min(1.0 - probability);
                     assert!(
                         (recovered - probability).abs() <= tolerance,
                         "a={a:?}, b={b:?}, probability={probability:?}, quantile={quantile:?}, recovered={recovered:?}"
