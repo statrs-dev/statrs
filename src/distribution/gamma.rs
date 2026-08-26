@@ -399,11 +399,15 @@ impl Continuous<f64, f64> for Gamma {
             }
         } else if x.is_infinite() {
             f64::NEG_INFINITY
+        } else if self.rate.is_infinite() {
+            f64::NAN
         } else {
             let (m1, e1) = prec::frexp(self.rate);
             let (m2, e2) = prec::frexp(x);
             let ln_product = (m1 * m2).ln() + (e1 + e2) as f64 * core::f64::consts::LN_2;
-            self.shape * ln_product - x.ln() - self.rate * x - gamma::ln_gamma(self.shape)
+            (self.shape - 1.0) * ln_product + self.rate.ln()
+                - self.rate * x
+                - gamma::ln_gamma(self.shape)
         }
     }
 }
@@ -687,6 +691,12 @@ mod tests {
         test_is_nan(2.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
         test_is_nan(1.0, f64::INFINITY, |dist| dist.pdf(0.0));
         test_is_nan(1.0, f64::INFINITY, |dist| dist.ln_pdf(0.0));
+    }
+
+    #[test]
+    fn test_pdf_with_infinite_rate() {
+        test_is_nan(2.0, f64::INFINITY, |dist| dist.pdf(1.0));
+        test_is_nan(2.0, f64::INFINITY, |dist| dist.ln_pdf(1.0));
     }
 
     #[test]
