@@ -1,4 +1,4 @@
-use crate::distribution::{Discrete, DiscreteCDF};
+use crate::distribution::{Discrete, DiscreteCDF, DiscreteInverseCdfError};
 use crate::statistics::*;
 use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
@@ -187,36 +187,62 @@ impl DiscreteCDF<u64, f64> for Geometric {
     /// Panics if the result would exceed `u64::MAX` (p is too small for the given x).
     /// Panics if intermediate f64 computation overflows (p is pathologically small).
     fn inverse_cdf(&self, x: f64) -> u64 {
+        match self.inverse_cdf_core(x) {
+            Ok(k) => k,
+            Err(DiscreteInverseCdfError::NotRepresentable(k)) if !k.is_finite() => panic!(
+                "inverse_cdf: intermediate value overflowed f64; p ({}) is too small",
+                self.p
+            ),
+            Err(DiscreteInverseCdfError::NotRepresentable(_)) => panic!(
+                "inverse_cdf: result exceeds u64::MAX; p ({}) is too small for x ({x})",
+                self.p
+            ),
+            Err(DiscreteInverseCdfError::ArgumentOutOfRange) => {
+                unreachable!("inverse_cdf_core does not validate the domain of x")
+            }
+        }
+    }
+
+    /// Calculates the inverse cumulative distribution function for the
+    /// geometric distribution at `x`, returning an error instead of panicking
+    /// if `x` is not in `[0, 1]` (including NaN), or if the exact quantile
+    /// is not representable as a `u64`.
+    fn try_inverse_cdf(&self, x: f64) -> Result<u64, DiscreteInverseCdfError<f64>> {
+        if !(0.0..=1.0).contains(&x) {
+            return Err(DiscreteInverseCdfError::ArgumentOutOfRange);
+        }
+        self.inverse_cdf_core(x)
+    }
+}
+
+impl Geometric {
+    /// Shared, domain-unchecked core for `inverse_cdf`/`try_inverse_cdf`.
+    /// Assumes `x` is in `[0, 1]`; the caller is responsible for validating that.
+    fn inverse_cdf_core(&self, x: f64) -> Result<u64, DiscreteInverseCdfError<f64>> {
         if x == <f64>::zero() {
-            return self.min();
+            return Ok(self.min());
         }
         if x == <f64>::one() {
             // iCDF(1) = +∞; saturate to supremum of u64 domain
-            return self.max();
+            return Ok(self.max());
         }
         if self.p == 1.0 {
             // degenerate distribution: all mass at k=1
-            return self.min();
+            return Ok(self.min());
         }
         // cdf(1) = p exactly, so every probability in (0, p] maps to the mode.
         // Handle this before the closed form so platform-dependent ln1p/expm1
         // noise in cdf cannot push the answer to 2 (observed on Windows MSVC).
         if x <= self.p {
-            return self.min();
+            return Ok(self.min());
         }
         let k = (-x).ln_1p() / (-self.p).ln_1p();
         if !k.is_finite() {
-            panic!(
-                "inverse_cdf: intermediate value overflowed f64; p ({}) is too small",
-                self.p
-            );
+            return Err(DiscreteInverseCdfError::NotRepresentable(k));
         }
         let k = k.ceil();
         if k >= u64::MAX as f64 {
-            panic!(
-                "inverse_cdf: result exceeds u64::MAX; p ({}) is too small for x ({})",
-                self.p, x
-            );
+            return Err(DiscreteInverseCdfError::NotRepresentable(k));
         }
 
         // `ln1p(-x) / ln1p(-p)` is only approximately integral at the step
@@ -229,13 +255,13 @@ impl DiscreteCDF<u64, f64> for Geometric {
         // Ordinary rounding puts the closed form within one step, so this is
         // the path essentially always taken: two or three cdf evaluations.
         if is_answer(candidate) {
-            return candidate;
+            return Ok(candidate);
         }
         if candidate > self.min() && is_answer(candidate - 1) {
-            return candidate - 1;
+            return Ok(candidate - 1);
         }
         if candidate < u64::MAX && is_answer(candidate + 1) {
-            return candidate + 1;
+            return Ok(candidate + 1);
         }
 
         // Once x is within a few ulp of 1, `1 - x` has lost significant bits and
@@ -262,7 +288,7 @@ impl DiscreteCDF<u64, f64> for Geometric {
                 lo = mid + 1;
             }
         }
-        lo
+        Ok(lo)
     }
 }
 
@@ -417,7 +443,7 @@ impl Discrete<u64, f64> for Geometric {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
-    use crate::distribution::InverseCdfError;
+    use crate::distribution::DiscreteInverseCdfError;
     use crate::prec;
 
     crate::distribution::internal::testing_boiler!(p: f64; Geometric; GeometricError);
@@ -748,8 +774,34 @@ mod tests {
     fn test_try_inverse_cdf_out_of_range() {
         assert_eq!(
             create_ok(0.5).try_inverse_cdf(2.),
-            Err(InverseCdfError::ArgumentOutOfRange)
+            Err(DiscreteInverseCdfError::ArgumentOutOfRange)
         );
+    }
+
+    #[test]
+    fn test_try_inverse_cdf_nan_does_not_panic() {
+        assert_eq!(
+            create_ok(0.5).try_inverse_cdf(f64::NAN),
+            Err(DiscreteInverseCdfError::ArgumentOutOfRange)
+        );
+    }
+
+    #[test]
+    fn test_try_inverse_cdf_intermediate_overflow_not_representable() {
+        let distribution = Geometric::new(f64::from_bits(1)).unwrap();
+        assert!(matches!(
+            distribution.try_inverse_cdf(0.5),
+            Err(DiscreteInverseCdfError::NotRepresentable(k)) if !k.is_finite()
+        ));
+    }
+
+    #[test]
+    fn test_try_inverse_cdf_result_overflow_not_representable() {
+        let distribution = Geometric::new(1e-20).unwrap();
+        assert!(matches!(
+            distribution.try_inverse_cdf(0.5),
+            Err(DiscreteInverseCdfError::NotRepresentable(k)) if k.is_finite()
+        ));
     }
 
     #[test]

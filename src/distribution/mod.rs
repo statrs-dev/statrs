@@ -115,6 +115,39 @@ impl core::fmt::Display for InverseCdfError {
 
 impl core::error::Error for InverseCdfError {}
 
+/// Represents the errors that can occur when computing [`DiscreteCDF::try_inverse_cdf`].
+///
+/// Unlike [`InverseCdfError`], a discrete quantile can fail for a second reason
+/// beyond an out-of-range argument: the exact answer may not be representable in
+/// the distribution's variate type `K` (for example a `u64`), because it is NaN,
+/// non-finite, or a finite value outside `K`'s range. `NotRepresentable` carries
+/// that underlying value for diagnostics.
+#[derive(Copy, Clone, PartialEq, Debug)]
+#[non_exhaustive]
+pub enum DiscreteInverseCdfError<T> {
+    /// The argument `p` is outside the closed interval `[0, 1]`, or is NaN.
+    ArgumentOutOfRange,
+    /// The exact quantile is not representable in the distribution's variate
+    /// type. Carries the floating-point value that could not be converted.
+    NotRepresentable(T),
+}
+
+impl<T: core::fmt::Display> core::fmt::Display for DiscreteInverseCdfError<T> {
+    #[cfg_attr(coverage_nightly, coverage(off))]
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        match self {
+            DiscreteInverseCdfError::ArgumentOutOfRange => {
+                write!(f, "argument is outside [0, 1]")
+            }
+            DiscreteInverseCdfError::NotRepresentable(v) => {
+                write!(f, "quantile ({v}) is not representable in the variate type")
+            }
+        }
+    }
+}
+
+impl<T: core::fmt::Debug + core::fmt::Display> core::error::Error for DiscreteInverseCdfError<T> {}
+
 /// The `ContinuousCDF` trait is used to specify an interface for univariate
 /// distributions for which cdf float arguments are sensible.
 pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
@@ -291,9 +324,9 @@ pub trait DiscreteCDF<K: Sized + Num + Ord + Clone + NumAssignOps, T: Float>:
     /// Due to issues with rounding and floating-point accuracy the default
     /// implementation may be ill-behaved.
     /// Specialized inverse cdfs should be used whenever possible.
-    fn try_inverse_cdf(&self, p: T) -> Result<K, InverseCdfError> {
+    fn try_inverse_cdf(&self, p: T) -> Result<K, DiscreteInverseCdfError<T>> {
         if !(T::zero()..=T::one()).contains(&p) {
-            Err(InverseCdfError::ArgumentOutOfRange)
+            Err(DiscreteInverseCdfError::ArgumentOutOfRange)
         } else {
             Ok(self.inverse_cdf(p))
         }
