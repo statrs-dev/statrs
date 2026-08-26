@@ -258,7 +258,7 @@ impl Median<f64> for Empirical {
         // ascending order, so accumulating counts gives order statistics.
         let n = self.sum;
         let lower_rank = (n - 1) / 2;
-        let need_two = n % 2 == 0;
+        let need_two = n.is_multiple_of(2);
 
         let mut seen = 0;
         let mut lower = None;
