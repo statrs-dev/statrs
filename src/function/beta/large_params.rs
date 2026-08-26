@@ -1,0 +1,58 @@
+use super::double_double::{accurate_ln_one_plus, add, divide, multiply, two_sum};
+use crate::consts;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
+
+pub(super) fn log_ratio(a: f64, b: f64, x: f64) -> (f64, (f64, f64)) {
+    let complement = two_sum(1.0, -x);
+    let left = multiply((x, 0.0), (b, 0.0));
+    let right = multiply(complement, (a, 0.0));
+    let residual = add(left, (-right.0, -right.1));
+    let left_ratio = divide(residual, (a, 0.0));
+    let right_ratio = divide((-residual.0, -residual.1), (b, 0.0));
+    let left_log = add(
+        accurate_ln_one_plus(left_ratio),
+        (-left_ratio.0, -left_ratio.1),
+    );
+    let right_log = add(
+        accurate_ln_one_plus(right_ratio),
+        (-right_ratio.0, -right_ratio.1),
+    );
+    let value = add(multiply((a, 0.0), left_log), multiply((b, 0.0), right_log));
+    (residual.0 + residual.1, value)
+}
+
+fn stirling_correction(value: f64) -> f64 {
+    let inverse = 1.0 / value;
+    let inverse_squared = inverse * inverse;
+    let mut series: f64 = 7.0 / 1_092.0;
+    for coefficient in [
+        -691.0 / 360_360.0,
+        1.0 / 1_188.0,
+        -1.0 / 1_680.0,
+        1.0 / 1_260.0,
+        -1.0 / 360.0,
+        1.0 / 12.0,
+    ] {
+        series = series.mul_add(inverse_squared, coefficient);
+    }
+    inverse * series
+}
+
+pub(super) fn log_prefactor(a: f64, b: f64, x: f64) -> Option<(f64, f64)> {
+    if a.min(b) < 10.0 || !a.is_finite() || !b.is_finite() {
+        return None;
+    }
+    let scale = a.max(b);
+    let scaled_a = a / scale;
+    let scaled_b = b / scale;
+    let scaled_sum = scaled_a + scaled_b;
+    let central = 0.5
+        * (scale.ln() + scaled_a.ln() + scaled_b.ln()
+            - scaled_sum.ln()
+            - 2.0 * consts::LN_SQRT_2PI)
+        - stirling_correction(a)
+        - stirling_correction(b)
+        + stirling_correction(a + b);
+    Some(add((central, 0.0), log_ratio(a, b, x).1))
+}
