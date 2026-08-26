@@ -194,66 +194,9 @@ fn beta_reg_symmetric_central(a: f64, b: f64, x: f64) -> Option<f64> {
     Some(central_density.mul_add(integral, 0.5))
 }
 
-/// Computes the regularized lower incomplete beta function
-/// `I_x(a,b) = 1/Beta(a,b) * int(t^(a-1)*(1-t)^(b-1), t=0..x)`
-/// `a > 0`, `b > 0`, `1 >= x >= 0` where `a` is the first beta parameter,
-/// `b` is the second beta parameter, and `x` is the upper limit of the
-/// integral.
-///
-/// # Errors
-///
-/// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, `x > 1.0`, or the numerical method
-/// does not converge.
-pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
-    if a <= 0.0 {
-        return Err(BetaFuncError::ANotGreaterThanZero);
-    }
-
-    if b <= 0.0 {
-        return Err(BetaFuncError::BNotGreaterThanZero);
-    }
-
-    if !(0.0..=1.0).contains(&x) {
-        return Err(BetaFuncError::XOutOfRange);
-    }
-
-    if let Some(result) = beta_reg_symmetric_central(a, b, x) {
-        return Ok(result);
-    }
-
-    if let Some(result) = temme::beta_reg_temme(a, b, x) {
-        return Ok(result);
-    }
-
-    let symm_transform = beta_reg_use_complement(a, b, x);
-    let bt = if x == 0.0 || x == 1.0 {
-        0.0
-    } else {
-        match large_params::log_prefactor(a, b, x) {
-            Some(large_params::LogPrefactor::Value(logarithm)) => double_double::exp(logarithm),
-            Some(large_params::LogPrefactor::Underflow) => 0.0,
-            None => (gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
-                + a * x.ln()
-                + b * (1.0 - x).ln())
-            .exp(),
-        }
-    };
-    if bt == 0.0 {
-        return Ok(if symm_transform { 1.0 } else { 0.0 });
-    }
+fn beta_continued_fraction(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     let eps = prec::F64_PREC;
     let fpmin = f64::MIN_POSITIVE / eps;
-
-    let mut a = a;
-    let mut b = b;
-    let mut x = x;
-    if symm_transform {
-        let swap = a;
-        x = 1.0 - x;
-        a = b;
-        b = swap;
-    }
-
     let qab = a + b;
     let qap = a + 1.0;
     let qam = a - 1.0;
@@ -291,25 +234,98 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
         }
 
         c = 1.0 + aa / c;
-
         if c.abs() < fpmin {
             c = fpmin;
         }
 
         d = 1.0 / d;
-        let del = d * c;
-        h *= del;
+        let delta = d * c;
+        h *= delta;
 
-        if (del - 1.0).abs() <= eps {
-            return if symm_transform {
-                Ok(1.0 - bt * h / a)
-            } else {
-                Ok(bt * h / a)
-            };
+        if (delta - 1.0).abs() <= eps {
+            return Ok(h);
         }
     }
 
     Err(BetaFuncError::ConvergenceFailed)
+}
+
+fn beta_reg_from_fraction(log_prefactor: (f64, f64), fraction: f64, a: f64) -> f64 {
+    let quotient = fraction / a;
+    let log_quotient = if quotient.is_finite() && quotient > 0.0 {
+        quotient.ln()
+    } else {
+        fraction.ln() - a.ln()
+    };
+    double_double::exp(double_double::add(log_prefactor, (log_quotient, 0.0)))
+}
+
+/// Computes the regularized lower incomplete beta function
+/// `I_x(a,b) = 1/Beta(a,b) * int(t^(a-1)*(1-t)^(b-1), t=0..x)`
+/// `a > 0`, `b > 0`, `1 >= x >= 0` where `a` is the first beta parameter,
+/// `b` is the second beta parameter, and `x` is the upper limit of the
+/// integral.
+///
+/// # Errors
+///
+/// If `a <= 0.0`, `b <= 0.0`, `x < 0.0`, `x > 1.0`, or the numerical method
+/// does not converge.
+pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
+    if a <= 0.0 {
+        return Err(BetaFuncError::ANotGreaterThanZero);
+    }
+
+    if b <= 0.0 {
+        return Err(BetaFuncError::BNotGreaterThanZero);
+    }
+
+    if !(0.0..=1.0).contains(&x) {
+        return Err(BetaFuncError::XOutOfRange);
+    }
+
+    if let Some(result) = beta_reg_symmetric_central(a, b, x) {
+        return Ok(result);
+    }
+
+    if let Some(result) = temme::beta_reg_temme(a, b, x) {
+        return Ok(result);
+    }
+
+    if x == 0.0 || x == 1.0 {
+        return Ok(x);
+    }
+
+    let log_prefactor = match large_params::log_prefactor(a, b, x) {
+        Some(large_params::LogPrefactor::Value(logarithm)) => logarithm,
+        Some(large_params::LogPrefactor::Underflow) => {
+            return Ok(if beta_reg_use_complement(a, b, x) {
+                1.0
+            } else {
+                0.0
+            });
+        }
+        None => (
+            gamma::ln_gamma(a + b) - gamma::ln_gamma(a) - gamma::ln_gamma(b)
+                + a * x.ln()
+                + b * (-x).ln_1p(),
+            0.0,
+        ),
+    };
+
+    if !beta_reg_use_complement(a, b, x) {
+        let fraction = beta_continued_fraction(a, b, x)?;
+        return Ok(beta_reg_from_fraction(log_prefactor, fraction, a));
+    }
+
+    let complement_fraction = beta_continued_fraction(b, a, 1.0 - x)?;
+    let complement = beta_reg_from_fraction(log_prefactor, complement_fraction, b);
+    let result = 1.0 - complement;
+    if result > f64::EPSILON.sqrt() && result.is_finite() {
+        return Ok(result);
+    }
+
+    let fraction = beta_continued_fraction(a, b, x)?;
+    Ok(beta_reg_from_fraction(log_prefactor, fraction, a))
 }
 
 /// Computes the inverse of the regularized incomplete beta function
@@ -699,6 +715,22 @@ mod tests {
             actual.to_bits().abs_diff(expected.to_bits()) <= 16,
             "actual={actual:?}, expected={expected:?}"
         );
+    }
+
+    #[test]
+    fn test_beta_reg_preserves_extreme_asymmetric_lower_tail() {
+        let a = 1e8;
+        let x = (a + 1.0) / (a + 2.0);
+        for (b, expected) in [
+            (1e-300, 2.193839407155793e-301),
+            (1e-320, f64::from_bits(0x1bc)),
+        ] {
+            let actual = beta_reg(a, b, x);
+            assert!(
+                ((actual - expected) / expected).abs() <= 1e-8,
+                "b={b:?}, actual={actual:?}, expected={expected:?}"
+            );
+        }
     }
 
     #[test]
