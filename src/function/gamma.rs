@@ -3,7 +3,6 @@
 
 use crate::consts;
 use crate::function::evaluate;
-use crate::prec;
 use crate::prec::{dekker_product_err, two_diff};
 use core::f64;
 use core::f64::consts as f64_consts;
