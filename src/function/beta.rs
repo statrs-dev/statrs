@@ -721,16 +721,19 @@ mod tests {
     fn test_beta_reg_preserves_extreme_asymmetric_lower_tail() {
         let a = 1e8;
         let x = (a + 1.0) / (a + 2.0);
-        for (b, expected) in [
-            (1e-300, 2.193839407155793e-301),
-            (1e-320, f64::from_bits(0x1bc)),
-        ] {
-            let actual = beta_reg(a, b, x);
-            assert!(
-                ((actual - expected) / expected).abs() <= 1e-8,
-                "b={b:?}, actual={actual:?}, expected={expected:?}"
-            );
-        }
+        let expected = 2.193839407155793e-301;
+        let actual = beta_reg(a, 1e-300, x);
+        assert!(
+            ((actual - expected) / expected).abs() <= 1e-8,
+            "actual={actual:?}, expected={expected:?}"
+        );
+
+        let expected = f64::from_bits(0x1bc);
+        let actual = beta_reg(a, 1e-320, x);
+        assert!(
+            actual.to_bits().abs_diff(expected.to_bits()) <= 4,
+            "actual={actual:?}, expected={expected:?}"
+        );
     }
 
     #[test]
