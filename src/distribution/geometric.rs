@@ -184,11 +184,15 @@ impl DiscreteCDF<u64, f64> for Geometric {
     ///
     /// # Panics
     ///
-    /// Panics if the result would exceed `u64::MAX` (p is too small for the given x).
-    /// Panics if intermediate f64 computation overflows (p is pathologically small).
+    /// Panics if `x` is not in `[0, 1]` (including NaN), if the result would
+    /// exceed `u64::MAX` (p is too small for the given x), or if intermediate
+    /// f64 computation overflows (p is pathologically small).
     fn inverse_cdf(&self, x: f64) -> u64 {
-        match self.inverse_cdf_core(x) {
+        match self.try_inverse_cdf(x) {
             Ok(k) => k,
+            Err(DiscreteInverseCdfError::ArgumentOutOfRange) => {
+                panic!("inverse_cdf: x must be in [0, 1], was {x}")
+            }
             Err(DiscreteInverseCdfError::NotRepresentable(k)) if !k.is_finite() => panic!(
                 "inverse_cdf: intermediate value overflowed f64; p ({}) is too small",
                 self.p
@@ -197,9 +201,6 @@ impl DiscreteCDF<u64, f64> for Geometric {
                 "inverse_cdf: result exceeds u64::MAX; p ({}) is too small for x ({x})",
                 self.p
             ),
-            Err(DiscreteInverseCdfError::ArgumentOutOfRange) => {
-                unreachable!("inverse_cdf_core does not validate the domain of x")
-            }
         }
     }
 
@@ -211,14 +212,6 @@ impl DiscreteCDF<u64, f64> for Geometric {
         if !(0.0..=1.0).contains(&x) {
             return Err(DiscreteInverseCdfError::ArgumentOutOfRange);
         }
-        self.inverse_cdf_core(x)
-    }
-}
-
-impl Geometric {
-    /// Shared, domain-unchecked core for `inverse_cdf`/`try_inverse_cdf`.
-    /// Assumes `x` is in `[0, 1]`; the caller is responsible for validating that.
-    fn inverse_cdf_core(&self, x: f64) -> Result<u64, DiscreteInverseCdfError<f64>> {
         if x == <f64>::zero() {
             return Ok(self.min());
         }
