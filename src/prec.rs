@@ -16,7 +16,8 @@
 //!    with the input, e.g., when comparing probability densities or statistical moments
 //!
 //! 3. ULPs (Units in Last Place) checks (`ulps_eq!`) - Use for comparing values that
-//!    should be close in terms of floating-point representation
+//!    should be different due only to rounding effects, not algorithmic ones. This can
+//!    include cases where FMA use depends on compilation parameters. Usually test-only.
 //!
 //! Each check type has both a non-asserting version (e.g., `abs_diff_eq!`) and an
 //! asserting version (e.g., `assert_abs_diff_eq!`).
@@ -79,6 +80,39 @@ pub(crate) fn convergence(x: &mut f64, x_new: f64) -> bool {
     let res = relative_eq!(*x, x_new);
     *x = x_new;
     res
+}
+
+/// Decomposes `x` into a mantissa in `[0.5, 1)` and an exponent such that
+/// `x == mantissa * 2^exponent`, avoiding overflow when multiplying two
+/// widely-scaled values together before taking their logarithm.
+pub(crate) fn frexp(x: f64) -> (f64, i32) {
+    let bits = x.to_bits();
+    let sign = bits & 0x8000_0000_0000_0000;
+    let exponent = ((bits >> 52) & 0x7ff) as i32;
+    let mantissa_bits = bits & 0x000f_ffff_ffff_ffff;
+    if exponent == 0 {
+        if mantissa_bits == 0 {
+            return (x, 0);
+        }
+        // subnormal: rescale by 2^54 to bring it into the normal range first
+        let (m, e) = frexp(x * f64::from_bits(0x4350000000000000));
+        return (m, e - 54);
+    }
+    let m = f64::from_bits(sign | (1022u64 << 52) | mantissa_bits);
+    (m, exponent - 1022)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::frexp;
+
+    #[test]
+    fn frexp_decomposes_zero_and_subnormal_values() {
+        assert_eq!(frexp(0.0), (0.0, 0));
+        assert_eq!(frexp(-0.0), (-0.0, 0));
+        assert_eq!(frexp(f64::from_bits(1)), (0.5, -1073));
+        assert_eq!(frexp(f64::from_bits(1).copysign(-1.0)), (-0.5, -1073));
+    }
 }
 
 macro_rules! redefine_one_opt_approx_macro {
@@ -144,7 +178,7 @@ mod macros {
     );
     redefine_two_opt_approx_macro!(
         ulps_eq,
-        { epsilon: crate::prec::DEFAULT_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
+        { epsilon: 0.0, max_ulps: crate::prec::DEFAULT_ULPS }
     );
 
     pub(crate) use abs_diff_eq;
@@ -162,7 +196,7 @@ mod macros {
     );
     redefine_two_opt_approx_macro!(
         assert_ulps_eq,
-        { epsilon: crate::prec::DEFAULT_EPS, max_ulps: crate::prec::DEFAULT_ULPS }
+        { epsilon: 0.0, max_ulps: crate::prec::DEFAULT_ULPS }
     );
 
     pub(crate) use assert_abs_diff_eq;

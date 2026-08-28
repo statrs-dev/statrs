@@ -652,6 +652,15 @@ mod tests {
     }
 
     #[test]
+    fn test_large_symmetric_center() {
+        for shape in [1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8] {
+            let distribution = Beta::new(shape, shape).unwrap();
+            assert_eq!(distribution.cdf(0.5), 0.5);
+            assert_eq!(distribution.sf(0.5), 0.5);
+        }
+    }
+
+    #[test]
     fn test_sf() {
         let sf = |arg: f64| move |x: Beta| x.sf(arg);
         let test = [
