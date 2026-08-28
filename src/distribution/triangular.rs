@@ -388,12 +388,24 @@ impl Continuous<f64, f64> for Triangular {
     ///     0
     /// }
     /// ```
+    ///
+    /// When `mode == min` the second branch is degenerate and reduces to `0 / 0`;
+    /// the density at that single point is the height of the triangle,
+    /// `2 / (max - min)`.
     fn pdf(&self, x: f64) -> f64 {
         let a = self.min;
         let b = self.max;
         let c = self.mode;
         if a <= x && x <= c {
-            2.0 * (x - a) / ((b - a) * (c - a))
+            if c == a {
+                // The only `x` reaching this branch is `x == min == mode`, where the
+                // rising edge is degenerate and the expression below is 0 / 0. The
+                // density there is the height of the triangle, matching the value the
+                // falling edge already returns for the mirrored `mode == max` case.
+                2.0 / (b - a)
+            } else {
+                2.0 * (x - a) / ((b - a) * (c - a))
+            }
         } else if c < x && x <= b {
             2.0 * (b - x) / ((b - a) * (b - c))
         } else {
@@ -547,6 +559,12 @@ mod tests {
         test_exact(-5.0, -3.0, -4.0, 0.5, pdf(-4.5));
         test_exact(-5.0, -3.0, -4.0, 1.0, pdf(-4.0));
         test_exact(-5.0, -3.0, -4.0, 0.5, pdf(-3.5));
+        // mode == min: the rising edge is degenerate at x == min, the density there
+        // is the height of the triangle
+        test_exact(0.0, 1.0, 0.0, 2.0, pdf(0.0));
+        test_exact(-2.0, 5.0, -2.0, 2.0 / 7.0, pdf(-2.0));
+        // mirrored case, mode == max
+        test_exact(0.0, 1.0, 1.0, 2.0, pdf(1.0));
     }
 
     #[test]
@@ -567,6 +585,8 @@ mod tests {
         test_exact(-5.0, -3.0, -4.0, 0.5f64.ln(), ln_pdf(-4.5));
         test_exact(-5.0, -3.0, -4.0, 0.0, ln_pdf(-4.0));
         test_exact(-5.0, -3.0, -4.0, 0.5f64.ln(), ln_pdf(-3.5));
+        test_exact(0.0, 1.0, 0.0, 2f64.ln(), ln_pdf(0.0));
+        test_exact(-2.0, 5.0, -2.0, (2.0f64 / 7.0).ln(), ln_pdf(-2.0));
     }
 
     #[test]
@@ -640,5 +660,7 @@ mod tests {
     fn test_continuous() {
         density_util::check_continuous_distribution(&create_ok(-5.0, 5.0, 0.0), -5.0, 5.0);
         density_util::check_continuous_distribution(&create_ok(-15.0, -2.0, -3.0), -15.0, -2.0);
+        density_util::check_continuous_distribution(&create_ok(-5.0, 5.0, -5.0), -5.0, 5.0);
+        density_util::check_continuous_distribution(&create_ok(-5.0, 5.0, 5.0), -5.0, 5.0);
     }
 }
