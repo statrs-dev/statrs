@@ -388,10 +388,6 @@ impl Continuous<f64, f64> for Triangular {
     ///     0
     /// }
     /// ```
-    ///
-    /// When `mode == min` the second branch is degenerate and reduces to `0 / 0`;
-    /// the density at that single point is the height of the triangle,
-    /// `2 / (max - min)`.
     fn pdf(&self, x: f64) -> f64 {
         let a = self.min;
         let b = self.max;
