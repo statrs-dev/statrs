@@ -16,4 +16,7 @@ where
             false => Err(SortError::NotSorted),
         }
     }
+    pub fn iter(&self) -> std::slice::Iter<'a, T> {
+        self.sorted.iter()
+    }
 }
