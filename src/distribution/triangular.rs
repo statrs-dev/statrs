@@ -398,10 +398,6 @@ impl Continuous<f64, f64> for Triangular {
         let c = self.mode;
         if a <= x && x <= c {
             if c == a {
-                // The only `x` reaching this branch is `x == min == mode`, where the
-                // rising edge is degenerate and the expression below is 0 / 0. The
-                // density there is the height of the triangle, matching the value the
-                // falling edge already returns for the mirrored `mode == max` case.
                 2.0 / (b - a)
             } else {
                 2.0 * (x - a) / ((b - a) * (c - a))
@@ -559,12 +555,15 @@ mod tests {
         test_exact(-5.0, -3.0, -4.0, 0.5, pdf(-4.5));
         test_exact(-5.0, -3.0, -4.0, 1.0, pdf(-4.0));
         test_exact(-5.0, -3.0, -4.0, 0.5, pdf(-3.5));
-        // mode == min: the rising edge is degenerate at x == min, the density there
-        // is the height of the triangle
+    }
+
+    #[test]
+    fn test_pdf_mode_at_an_endpoint() {
+        let pdf = |arg: f64| move |x: Triangular| x.pdf(arg);
         test_exact(0.0, 1.0, 0.0, 2.0, pdf(0.0));
         test_exact(-2.0, 5.0, -2.0, 2.0 / 7.0, pdf(-2.0));
-        // mirrored case, mode == max
         test_exact(0.0, 1.0, 1.0, 2.0, pdf(1.0));
+        test_exact(-2.0, 5.0, 5.0, 2.0 / 7.0, pdf(5.0));
     }
 
     #[test]
@@ -585,8 +584,14 @@ mod tests {
         test_exact(-5.0, -3.0, -4.0, 0.5f64.ln(), ln_pdf(-4.5));
         test_exact(-5.0, -3.0, -4.0, 0.0, ln_pdf(-4.0));
         test_exact(-5.0, -3.0, -4.0, 0.5f64.ln(), ln_pdf(-3.5));
+    }
+
+    #[test]
+    fn test_ln_pdf_mode_at_an_endpoint() {
+        let ln_pdf = |arg: f64| move |x: Triangular| x.ln_pdf(arg);
         test_exact(0.0, 1.0, 0.0, 2f64.ln(), ln_pdf(0.0));
         test_exact(-2.0, 5.0, -2.0, (2.0f64 / 7.0).ln(), ln_pdf(-2.0));
+        test_exact(0.0, 1.0, 1.0, 2f64.ln(), ln_pdf(1.0));
     }
 
     #[test]
