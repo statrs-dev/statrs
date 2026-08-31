@@ -233,6 +233,56 @@ impl Min<f64> for Empirical {
     }
 }
 
+/// Panics if number of samples is zero
+impl Median<f64> for Empirical {
+    /// Returns the sample median of the observed data.
+    ///
+    /// # Remarks
+    ///
+    /// For an odd number of observations this is the middle order statistic. For
+    /// an even number it is the mean of the two middle ones, which is the usual
+    /// convention (and the one NumPy and R's `median` use by default), chosen
+    /// because it is the only value equidistant from both. Note the result then
+    /// need not be a value that was actually observed.
+    ///
+    /// Repeated observations count with their multiplicity, so the median of
+    /// `[1, 1, 1, 2]` is `1`, not `1.5`.
+    fn median(&self) -> f64 {
+        assert!(
+            !self.data.is_empty(),
+            "Cannot compute the median of zero samples"
+        );
+
+        // The lower middle observation is at 0-based rank (n - 1) / 2; for even
+        // n the upper one follows it. Walking the BTreeMap visits keys in
+        // ascending order, so accumulating counts gives order statistics.
+        let n = self.sum;
+        let lower_rank = (n - 1) / 2;
+        let need_two = n.is_multiple_of(2);
+
+        let mut seen = 0;
+        let mut lower = None;
+        for (key, &count) in self.data.iter() {
+            seen += count;
+            if lower.is_none() && seen > lower_rank {
+                if !need_two {
+                    return key.get();
+                }
+                lower = Some(key.get());
+                // The next rank up may live in this same key when it has
+                // multiplicity, in which case both middles are equal.
+                if seen > lower_rank + 1 {
+                    return key.get();
+                }
+            } else if let Some(lo) = lower {
+                return 0.5 * (lo + key.get());
+            }
+        }
+
+        unreachable!("the median rank is always within a non-empty data set")
+    }
+}
+
 impl Distribution<f64> for Empirical {
     fn mean(&self) -> Option<f64> {
         if self.data.is_empty() {
@@ -278,6 +328,115 @@ impl ContinuousCDF<f64, f64> for Empirical {
 mod tests {
     use super::*;
     use crate::prec;
+
+    /// Reference implementation: sort and take the middle, or average the two
+    /// middles. Deliberately the naive O(n log n) version, so it shares no logic
+    /// with the BTreeMap walk it checks.
+    fn median_by_sorting(data: &[f64]) -> f64 {
+        let mut v = data.to_vec();
+        v.sort_by(|a, b| a.total_cmp(b));
+        let n = v.len();
+        if n % 2 == 1 {
+            v[n / 2]
+        } else {
+            0.5 * (v[n / 2 - 1] + v[n / 2])
+        }
+    }
+
+    #[test]
+    fn test_median() {
+        // odd count -> the middle observation
+        let e: Empirical = [3.0, 1.0, 2.0].into_iter().collect();
+        assert_eq!(e.median(), 2.0);
+
+        // even count -> mean of the two middles, which was never observed
+        let e: Empirical = [1.0, 2.0, 3.0, 4.0].into_iter().collect();
+        assert_eq!(e.median(), 2.5);
+
+        // multiplicity counts: the two middles are both 1.0 here
+        let e: Empirical = [1.0, 1.0, 1.0, 2.0].into_iter().collect();
+        assert_eq!(e.median(), 1.0);
+
+        // a single repeated value
+        let e: Empirical = [7.0; 5].into_iter().collect();
+        assert_eq!(e.median(), 7.0);
+
+        // one observation
+        let e: Empirical = [42.0].into_iter().collect();
+        assert_eq!(e.median(), 42.0);
+
+        // two observations straddle
+        let e: Empirical = [1.0, 4.0].into_iter().collect();
+        assert_eq!(e.median(), 2.5);
+
+        // negatives and duplicates together
+        let e: Empirical = [-5.0, -1.0, -1.0, 0.0, 3.0].into_iter().collect();
+        assert_eq!(e.median(), -1.0);
+    }
+
+    /// Agreement with the sorting reference across many shapes of data,
+    /// including heavy duplication, which is where the multiplicity handling in
+    /// the BTreeMap walk could go wrong.
+    #[test]
+    fn test_median_matches_sorting_reference() {
+        let cases: &[&[f64]] = &[
+            &[1.0],
+            &[1.0, 2.0],
+            &[2.0, 1.0],
+            &[1.0, 2.0, 3.0],
+            &[1.0, 1.0, 2.0, 2.0],
+            &[1.0, 1.0, 1.0, 2.0, 2.0],
+            &[1.0, 2.0, 2.0, 2.0, 3.0],
+            &[5.0, 5.0, 5.0, 5.0],
+            &[1.0, 1.0, 1.0, 1.0, 9.0],
+            &[9.0, 1.0, 1.0, 1.0, 1.0],
+            &[-3.0, -2.0, -1.0, 0.0, 1.0, 2.0],
+            &[0.0, 0.0, 0.0, 1.0],
+            &[0.0, 1.0, 1.0, 1.0],
+            &[1e300, -1e300],
+            &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0],
+        ];
+        for case in cases {
+            let e: Empirical = case.iter().copied().collect();
+            let want = median_by_sorting(case);
+            let got = e.median();
+            assert_eq!(got, want, "median of {case:?} was {got}, expected {want}");
+        }
+
+        // Longer runs built deterministically, with the modulus chosen to force
+        // many repeats.
+        for len in 1..40usize {
+            for modulus in [1u64, 2, 3, 7] {
+                let data: Vec<f64> = (0..len as u64)
+                    .map(|i| ((i * 37 + 11) % modulus.max(1)) as f64)
+                    .collect();
+                let e: Empirical = data.iter().copied().collect();
+                assert_eq!(
+                    e.median(),
+                    median_by_sorting(&data),
+                    "len {len}, modulus {modulus}, data {data:?}"
+                );
+            }
+        }
+    }
+
+    /// The median must fall between the extremes, and coincide with them when
+    /// the data is constant.
+    #[test]
+    fn test_median_within_bounds() {
+        let e: Empirical = [1.0, 5.0, 2.0, 9.0, 3.0].into_iter().collect();
+        assert!(e.median() >= e.min() && e.median() <= e.max());
+
+        let e: Empirical = [4.0; 3].into_iter().collect();
+        assert_eq!(e.median(), e.min());
+        assert_eq!(e.median(), e.max());
+    }
+
+    #[test]
+    #[should_panic(expected = "Cannot compute the median of zero samples")]
+    fn test_median_of_empty_panics() {
+        Empirical::new().unwrap().median();
+    }
 
     #[test]
     fn test_add_nan() {

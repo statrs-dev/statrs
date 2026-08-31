@@ -320,6 +320,30 @@ impl Distribution<f64> for Beta {
     }
 }
 
+impl Median<f64> for Beta {
+    /// Returns the median of the beta distribution.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// I^-1(0.5; α, β)
+    /// ```
+    ///
+    /// the inverse of the regularized incomplete beta function at `0.5`.
+    ///
+    /// # Remarks
+    ///
+    /// The beta median has no closed form except in special cases, so this is
+    /// computed by inverting the cdf -- here via
+    /// [`inv_beta_reg`](crate::function::beta::inv_beta_reg), a root-find rather
+    /// than the `O(1)` arithmetic that the closed-form `median` impls elsewhere
+    /// in the crate use. Accurate to a few ulp; see the tests, which check
+    /// `cdf(median()) == 0.5`.
+    fn median(&self) -> f64 {
+        self.inverse_cdf(0.5)
+    }
+}
+
 impl Mode<Option<f64>> for Beta {
     /// Returns the mode of the Beta distribution. Returns `None` if `α <= 1`
     /// or `β <= 1`.
