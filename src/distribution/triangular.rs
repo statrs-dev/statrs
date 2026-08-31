@@ -393,7 +393,11 @@ impl Continuous<f64, f64> for Triangular {
         let b = self.max;
         let c = self.mode;
         if a <= x && x <= c {
-            2.0 * (x - a) / ((b - a) * (c - a))
+            if c == a {
+                2.0 / (b - a)
+            } else {
+                2.0 * (x - a) / ((b - a) * (c - a))
+            }
         } else if c < x && x <= b {
             2.0 * (b - x) / ((b - a) * (b - c))
         } else {
@@ -550,6 +554,15 @@ mod tests {
     }
 
     #[test]
+    fn test_pdf_mode_at_an_endpoint() {
+        let pdf = |arg: f64| move |x: Triangular| x.pdf(arg);
+        test_exact(0.0, 1.0, 0.0, 2.0, pdf(0.0));
+        test_exact(-2.0, 5.0, -2.0, 2.0 / 7.0, pdf(-2.0));
+        test_exact(0.0, 1.0, 1.0, 2.0, pdf(1.0));
+        test_exact(-2.0, 5.0, 5.0, 2.0 / 7.0, pdf(5.0));
+    }
+
+    #[test]
     fn test_ln_pdf() {
         let ln_pdf = |arg: f64| move |x: Triangular| x.ln_pdf(arg);
         test_exact(0.0, 1.0, 0.5, f64::NEG_INFINITY, ln_pdf(-1.0));
@@ -567,6 +580,14 @@ mod tests {
         test_exact(-5.0, -3.0, -4.0, 0.5f64.ln(), ln_pdf(-4.5));
         test_exact(-5.0, -3.0, -4.0, 0.0, ln_pdf(-4.0));
         test_exact(-5.0, -3.0, -4.0, 0.5f64.ln(), ln_pdf(-3.5));
+    }
+
+    #[test]
+    fn test_ln_pdf_mode_at_an_endpoint() {
+        let ln_pdf = |arg: f64| move |x: Triangular| x.ln_pdf(arg);
+        test_exact(0.0, 1.0, 0.0, 2f64.ln(), ln_pdf(0.0));
+        test_exact(-2.0, 5.0, -2.0, (2.0f64 / 7.0).ln(), ln_pdf(-2.0));
+        test_exact(0.0, 1.0, 1.0, 2f64.ln(), ln_pdf(1.0));
     }
 
     #[test]
@@ -640,5 +661,7 @@ mod tests {
     fn test_continuous() {
         density_util::check_continuous_distribution(&create_ok(-5.0, 5.0, 0.0), -5.0, 5.0);
         density_util::check_continuous_distribution(&create_ok(-15.0, -2.0, -3.0), -15.0, -2.0);
+        density_util::check_continuous_distribution(&create_ok(-5.0, 5.0, -5.0), -5.0, 5.0);
+        density_util::check_continuous_distribution(&create_ok(-5.0, 5.0, 5.0), -5.0, 5.0);
     }
 }
