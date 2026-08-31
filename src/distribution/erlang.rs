@@ -1,4 +1,4 @@
-use crate::distribution::{Continuous, ContinuousCDF, Gamma, GammaError};
+use crate::distribution::{Continuous, ContinuousCDF, Gamma, GammaError, InverseCdfError};
 use crate::statistics::*;
 
 /// Implements the [Erlang](https://en.wikipedia.org/wiki/Erlang_distribution)
@@ -136,6 +136,10 @@ impl ContinuousCDF<f64, f64> for Erlang {
     /// incomplete gamma function
     fn inverse_cdf(&self, p: f64) -> f64 {
         self.g.inverse_cdf(p)
+    }
+
+    fn try_inverse_cdf(&self, p: f64) -> Result<f64, InverseCdfError> {
+        self.g.try_inverse_cdf(p)
     }
 }
 

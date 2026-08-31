@@ -174,14 +174,7 @@ impl ContinuousCDF<f64, f64> for InverseGamma {
 
     /// Calculates the inverse cumulative distribution function for the inverse
     /// gamma distribution at `p`, i.e. the `p`-quantile.
-    ///
-    /// # Panics
-    ///
-    /// If `p` is not in `[0, 1]`.
     fn inverse_cdf(&self, p: f64) -> f64 {
-        if !(0.0..=1.0).contains(&p) {
-            panic!("p must be in [0, 1]")
-        }
         if p == 0.0 {
             return self.min();
         }
@@ -370,6 +363,7 @@ impl Continuous<f64, f64> for InverseGamma {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
+    use crate::distribution::InverseCdfError;
     use crate::prec;
     use core::f64::consts as f64_consts;
 
@@ -587,14 +581,18 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "p must be in [0, 1]")]
-    fn test_inverse_cdf_p_above_one() {
-        create_ok(1.0, 1.0).inverse_cdf(1.0 + f64::EPSILON);
+    fn test_try_inverse_cdf_p_above_one() {
+        assert_eq!(
+            create_ok(1.0, 1.0).try_inverse_cdf(1.0 + f64::EPSILON),
+            Err(InverseCdfError::ArgumentOutOfRange)
+        );
     }
 
     #[test]
-    #[should_panic(expected = "p must be in [0, 1]")]
-    fn test_inverse_cdf_p_below_zero() {
-        create_ok(1.0, 1.0).inverse_cdf(-1e-300);
+    fn test_try_inverse_cdf_p_below_zero() {
+        assert_eq!(
+            create_ok(1.0, 1.0).try_inverse_cdf(-1e-300),
+            Err(InverseCdfError::ArgumentOutOfRange)
+        );
     }
 }
