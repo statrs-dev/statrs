@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.2](https://github.com/statrs-dev/statrs/compare/v0.19.1...v0.19.2) - 2026-08-31
+
+### Added
+
+- Support alloc-backed APIs in no_std ([#403](https://github.com/statrs-dev/statrs/pull/403))
+
+### Fixed
+
+- Triangular::pdf returns NaN when mode equals min
+- Finish large beta edge handling
+- Preserve asymmetric beta tails
+- Preserve beta values near one
+- Handle extreme beta tails
+- Handle beta log boundaries
+- Stabilize large beta CDF
+- ensure special cases evaluate only for exact inputs
+- ULPs comparisons should only regard ULPs in prec module
+- guard LogNormal::pdf on both ends and fix ln_pdf for extreme x
+- keep the left tail of LogNormal::pdf
+- Preserve gamma PDF accuracy
+- use frexp for evaluating ln(a*b)
+- preserve NaN for Gamma pdf(0) when rate is infinite
+- Stabilize gamma PDF evaluation
+- restore full precision to erf's interval constants
+- Update kdtree and KDE radius
+- accumulate central moments relative to the first observation
+- compute FisherSnedecor pdf in log space for large freedoms
+- Unblock release-plz
+- make Geometric cdf(1)/inverse_cdf(p) exact and portable
+- correct Geometric::inverse_cdf against its definition
+- compute Hypergeometric pmf in log space for large populations
+
+### Other
+
+- Cut the doc note too
+- Drop the explanatory comments and split out the endpoint tests
+- Allow beta tail rounding
+- update prec ULPs docs for clarity around use case
+- Assert directly in test_pdf_left_tail instead of collecting failures
+- Cover frexp edge cases
+- *(gamma)* small suite for rate*x near 1 cases
+- *(doc)* clippy
+- *(online)* guidance/suggestion for `merge`
+- build the OnlineMoments offset tests under no_std
+- Source large-freedom pdf fixtures from mpmath instead of SciPy
+- *(deps)* bump actions/checkout from 4 to 7
+- drop overexplanation implementation
+
 ## [0.19.1](https://github.com/statrs-dev/statrs/compare/v0.19.0...v0.19.1) - 2026-08-11
 
 ### Added
