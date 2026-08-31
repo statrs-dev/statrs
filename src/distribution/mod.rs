@@ -102,6 +102,9 @@ mod ziggurat_tables;
 pub enum InverseCdfError {
     /// The argument `p` is outside the closed interval `[0, 1]`.
     ArgumentOutOfRange,
+
+    /// The numerical method did not converge.
+    ConvergenceFailed,
 }
 
 impl core::fmt::Display for InverseCdfError {
@@ -109,6 +112,7 @@ impl core::fmt::Display for InverseCdfError {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             InverseCdfError::ArgumentOutOfRange => write!(f, "argument is outside [0, 1]"),
+            InverseCdfError::ConvergenceFailed => write!(f, "computation did not converge"),
         }
     }
 }

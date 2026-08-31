@@ -3,6 +3,7 @@
 //!
 //! This module sets the default precision more tightly than crate defaults for `DEFAULT_EPS`
 
+mod inverse;
 mod large_params;
 mod temme;
 
@@ -335,193 +336,18 @@ pub fn checked_beta_reg(a: f64, b: f64, x: f64) -> Result<f64, BetaFuncError> {
     Ok(beta_reg_from_fraction(log_prefactor, fraction, a))
 }
 
-/// Computes the inverse of the regularized incomplete beta function
-// This code is based on the implementation in the ["special"][1] crate,
-// which in turn is based on a [C implementation][2] by John Burkardt. The
-// original algorithm was published in Applied Statistics and is known as
-// [Algorithm AS 64][3] and [Algorithm AS 109][4].
-//
-// [1]: https://docs.rs/special/0.8.1/
-// [2]: http://people.sc.fsu.edu/~jburkardt/c_src/asa109/asa109.html
-// [3]: http://www.jstor.org/stable/2346798
-// [4]: http://www.jstor.org/stable/2346887
-//
-// > Copyright 2014–2019 The special Developers
-// >
-// > Permission is hereby granted, free of charge, to any person obtaining a copy of
-// > this software and associated documentation files (the "Software"), to deal in
-// > the Software without restriction, including without limitation the rights to
-// > use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// > the Software, and to permit persons to whom the Software is furnished to do so,
-// > subject to the following conditions:
-// >
-// > The above copyright notice and this permission notice shall be included in all
-// > copies or substantial portions of the Software.
-// >
-// > THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// > IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// > FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// > COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// > IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// > CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-pub fn inv_beta_reg(mut a: f64, mut b: f64, mut x: f64) -> f64 {
-    // Algorithm AS 64
-    // http://www.jstor.org/stable/2346798
-    //
-    // An approximation x₀ to x if found from (cf. Scheffé and Tukey, 1944)
-    //
-    // 1 + x₀   4p + 2q - 2
-    // ------ = -----------
-    // 1 - x₀      χ²(α)
-    //
-    // where χ²(α) is the upper α point of the χ² distribution with 2q
-    // degrees of freedom and is obtained from Wilson and Hilferty's
-    // approximation (cf. Wilson and Hilferty, 1931)
-    //
-    // χ²(α) = 2q (1 - 1 / (9q) + y(α) sqrt(1 / (9q)))^3,
-    //
-    // y(α) being Hastings' approximation (cf. Hastings, 1955) for the upper
-    // α point of the standard normal distribution. If χ²(α) < 0, then
-    //
-    // x₀ = 1 - ((1 - α)q B(p, q))^(1 / q).
-    //
-    // Again if (4p + 2q - 2) / χ²(α) does not exceed 1, x₀ is obtained from
-    //
-    // x₀ = (αp B(p, q))^(1 / p).
-    //
-    // The final solution is obtained by the Newton–Raphson method from the
-    // relation
-    //
-    //                    f(x[i - 1])
-    // x[i] = x[i - 1] - ------------
-    //                   f'(x[i - 1])
-    //
-    // where
-    //
-    // f(x) = I(x, p, q) - α.
-    let ln_beta = ln_beta(a, b);
-
-    // Remark AS R83
-    // http://www.jstor.org/stable/2347779
-    const SAE: i32 = -30;
-    const FPU: f64 = 1e-30; // 10^SAE
-
-    debug_assert!((0.0..=1.0).contains(&x) && a > 0.0 && b > 0.0);
-
-    if x == 0.0 {
-        return 0.0;
-    }
-    if x == 1.0 {
-        return 1.0;
-    }
-
-    let mut p;
-    let mut q;
-
-    let flip = 0.5 < x;
-    if flip {
-        p = a;
-        a = b;
-        b = p;
-        x = 1.0 - x;
-    }
-
-    p = (-(x * x).ln()).sqrt();
-    q = p - (2.30753 + 0.27061 * p) / (1.0 + (0.99229 + 0.04481 * p) * p);
-
-    if 1.0 < a && 1.0 < b {
-        // Remark AS R19 and Algorithm AS 109
-        // http://www.jstor.org/stable/2346887
-        //
-        // For a and b > 1, the approximation given by Carter (1947), which
-        // improves the Fisher–Cochran formula, is generally better. For
-        // other values of a and b en empirical investigation has shown that
-        // the approximation given in AS 64 is adequate.
-        let r = (q * q - 3.0) / 6.0;
-        let s = 1.0 / (2.0 * a - 1.0);
-        let t = 1.0 / (2.0 * b - 1.0);
-        let h = 2.0 / (s + t);
-        let w = q * (h + r).sqrt() / h - (t - s) * (r + 5.0 / 6.0 - 2.0 / (3.0 * h));
-        p = a / (a + b * (2.0 * w).exp());
-    } else {
-        let mut t = 1.0 / (9.0 * b);
-        t = 2.0 * b * (1.0 - t + q * t.sqrt()).powf(3.0);
-        if t <= 0.0 {
-            p = 1.0 - ((((1.0 - x) * b).ln() + ln_beta) / b).exp();
-        } else {
-            t = 2.0 * (2.0 * a + b - 1.0) / t;
-            if t <= 1.0 {
-                p = (((x * a).ln() + ln_beta) / a).exp();
-            } else {
-                p = 1.0 - 2.0 / (t + 1.0);
-            }
-        }
-    }
-
-    p = p.clamp(0.0001, 0.9999);
-
-    // Remark AS R83
-    // http://www.jstor.org/stable/2347779
-    let e = (-5.0 / a / a - 1.0 / x.powf(0.2) - 13.0) as i32;
-    let acu = if e > SAE { f64::powi(10.0, e) } else { FPU };
-
-    let mut pnext;
-    let mut qprev = 0.0;
-    let mut sq = 1.0;
-    let mut prev = 1.0;
-
-    'outer: loop {
-        // Remark AS R19 and Algorithm AS 109
-        // http://www.jstor.org/stable/2346887
-        q = beta_reg(a, b, p);
-        q = (q - x) * (ln_beta + (1.0 - a) * p.ln() + (1.0 - b) * (1.0 - p).ln()).exp();
-
-        // Remark AS R83
-        // http://www.jstor.org/stable/2347779
-        if q * qprev <= 0.0 {
-            prev = if sq > FPU { sq } else { FPU };
-        }
-
-        // Remark AS R19 and Algorithm AS 109
-        // http://www.jstor.org/stable/2346887
-        let mut g = 1.0;
-        loop {
-            loop {
-                let adj = g * q;
-                sq = adj * adj;
-
-                if sq < prev {
-                    pnext = p - adj;
-                    if (0.0..=1.0).contains(&pnext) {
-                        break;
-                    }
-                }
-                g /= 3.0;
-            }
-
-            if prev <= acu || q * q <= acu {
-                p = pnext;
-                break 'outer;
-            }
-
-            if pnext != 0.0 && pnext != 1.0 {
-                break;
-            }
-
-            g /= 3.0;
-        }
-
-        if pnext == p {
-            break;
-        }
-
-        p = pnext;
-        qprev = q;
-    }
-
-    if flip { 1.0 - p } else { p }
+pub(crate) fn try_inv_beta_reg(a: f64, b: f64, probability: f64) -> Result<f64, BetaFuncError> {
+    inverse::try_inv_beta_reg(a, b, probability)
 }
 
+/// Computes the inverse of the regularized incomplete beta function.
+///
+/// # Panics
+///
+/// If the parameters are invalid or the numerical method does not converge.
+pub fn inv_beta_reg(a: f64, b: f64, probability: f64) -> f64 {
+    inverse::inv_beta_reg(a, b, probability)
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1079,6 +905,121 @@ mod tests {
     #[test]
     fn test_checked_beta_reg_x_gt_1() {
         assert!(checked_beta_reg(1.0, 1.0, 2.0).is_err());
+    }
+
+    #[test]
+    fn test_inv_beta_reg_extreme_probability_does_not_panic() {
+        let actual = inv_beta_reg(200.0, 2.0, 1e-165).to_bits();
+        assert!(actual.abs_diff(0x3fc2_aa4f_7f31_6421) <= 1);
+    }
+
+    #[test]
+    fn test_inv_beta_reg_extreme_probability_terminates() {
+        let actual = inv_beta_reg(200.0, 2.0, 1e-60).to_bits();
+        assert!(actual.abs_diff(0x3fdf_5753_caf6_9652) <= 1);
+    }
+
+    #[test]
+    fn test_inv_beta_reg_extreme_shape_ratio() {
+        assert_eq!(inv_beta_reg(1e20, 10.0, 0.3), 1.0);
+    }
+
+    #[test]
+    fn test_try_inv_beta_reg_rejects_invalid_arguments() {
+        assert_eq!(
+            try_inv_beta_reg(0.0, 1.0, 0.5),
+            Err(BetaFuncError::ANotGreaterThanZero)
+        );
+        assert_eq!(
+            try_inv_beta_reg(1.0, f64::INFINITY, 0.5),
+            Err(BetaFuncError::BNotGreaterThanZero)
+        );
+        assert_eq!(
+            try_inv_beta_reg(1.0, 1.0, f64::NAN),
+            Err(BetaFuncError::XOutOfRange)
+        );
+    }
+
+    #[test]
+    fn test_inv_beta_reg_small_shape_lower_tail_is_monotone() {
+        let cases = [
+            (1e-33, 0.0),
+            (1e-32, f64::from_bits(2)),
+            (1e-31, 1.215703604971242e-313),
+            (1e-30, 1.2157036049544172e-303),
+            (1e-20, 1.2157036049544e-203),
+            (1e-10, 1.2157036049543856e-103),
+            (1e-4, 1.2157036049543764e-43),
+            (1e-2, 1.215703604954373e-23),
+        ];
+        let mut previous = 0.0;
+
+        for (probability, expected) in cases {
+            let actual = inv_beta_reg(0.1, 500.0, probability);
+            if expected == 0.0 {
+                assert_eq!(actual, expected);
+                continue;
+            }
+            if expected < f64::MIN_POSITIVE {
+                assert!(actual.to_bits().abs_diff(expected.to_bits()) <= 1);
+                previous = actual;
+                continue;
+            }
+            let relative_error = ((actual - expected) / expected).abs();
+            assert!(
+                relative_error <= 5e-12,
+                "probability={probability:?}, actual={actual:?}, expected={expected:?}, relative_error={relative_error:?}"
+            );
+            assert!(actual > previous);
+            previous = actual;
+        }
+    }
+
+    #[test]
+    fn test_inv_beta_reg_regular_shape_lower_tail() {
+        let cases = [
+            (1e-300, 7.053456158585983e-153),
+            (1e-40, 7.053456158585983e-23),
+            (1e-30, 7.053456158585999e-18),
+            (1e-20, 7.053456158916007e-13),
+        ];
+
+        for (probability, expected) in cases {
+            let actual = inv_beta_reg(2.0, 200.0, probability);
+            let relative_error = ((actual - expected) / expected).abs();
+            assert!(
+                relative_error <= 5e-12,
+                "probability={probability:?}, actual={actual:?}, expected={expected:?}, relative_error={relative_error:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_inv_beta_reg_is_monotone_and_round_trips() {
+        let probabilities = [1e-12, 1e-6, 0.01, 0.25, 0.5, 0.75, 0.99, 1.0 - 1e-6];
+        for (a, b) in [
+            (0.1, 0.1),
+            (0.1, 500.0),
+            (2.0, 200.0),
+            (200.0, 2.0),
+            (100.0, 200.0),
+            (1e8, 2e8),
+        ] {
+            let mut previous = 0.0;
+            for probability in probabilities {
+                let quantile = inv_beta_reg(a, b, probability);
+                if quantile > 0.0 && quantile < 1.0 {
+                    let recovered = beta_reg(a, b, quantile);
+                    let tolerance = 5e-11 * probability.min(1.0 - probability);
+                    assert!(
+                        (recovered - probability).abs() <= tolerance,
+                        "a={a:?}, b={b:?}, probability={probability:?}, quantile={quantile:?}, recovered={recovered:?}"
+                    );
+                }
+                assert!(quantile >= previous);
+                previous = quantile;
+            }
+        }
     }
 
     #[test]
