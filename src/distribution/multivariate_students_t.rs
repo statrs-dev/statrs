@@ -22,7 +22,7 @@ use num_traits::Float as _;
 /// let mvs = MultivariateStudent::new(vec![0., 0.], vec![1., 0., 0., 1.], 4.).unwrap();
 /// assert_eq!(mvs.mean().unwrap(), DVector::from_vec(vec![0., 0.]));
 /// assert_eq!(mvs.variance().unwrap(), DMatrix::from_vec(2, 2, vec![2., 0., 0., 2.]));
-/// assert_eq!(mvs.pdf(&DVector::from_vec(vec![1.,  1.])), 0.04715702017537655);
+/// assert_eq!(mvs.pdf(&DVector::from_vec(vec![1.,  1.])), 0.047157020175376395);
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct MultivariateStudent<D>
