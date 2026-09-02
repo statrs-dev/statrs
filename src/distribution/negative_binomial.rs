@@ -311,6 +311,10 @@ impl Discrete<u64, f64> for NegativeBinomial {
     ///
     /// where Γ(x) is the Gamma function.
     fn ln_pmf(&self, x: u64) -> f64 {
+        if self.p == 1.0 {
+            // (1 - p)^x is 1 at x = 0, but ln(1 - p) is -inf, so the product below is NaN
+            return if x == 0 { 0.0 } else { f64::NEG_INFINITY };
+        }
         let k = x as f64;
         gamma::ln_gamma(self.r + k) - gamma::ln_gamma(self.r) - gamma::ln_gamma(k + 1.0)
             + (self.r * self.p.ln())
@@ -400,15 +404,15 @@ mod tests {
         test_absolute(3.0, 0.3, 0.027, 1e-15, pmf(0));
         test_exact(0.3, 1.0, 0.0, pmf(1));
         test_exact(0.3, 1.0, 0.0, pmf(3));
-        test_is_nan(0.3, 1.0, pmf(0));
+        test_exact(0.3, 1.0, 1.0, pmf(0));
         test_exact(0.3, 1.0, 0.0, pmf(1));
         test_exact(0.3, 1.0, 0.0, pmf(10));
-        test_is_nan(1.0, 1.0, pmf(0));
+        test_exact(1.0, 1.0, 1.0, pmf(0));
         test_exact(1.0, 1.0, 0.0, pmf(1));
-        test_is_nan(3.0, 1.0, pmf(0));
+        test_exact(3.0, 1.0, 1.0, pmf(0));
         test_exact(3.0, 1.0, 0.0, pmf(1));
         test_exact(3.0, 1.0, 0.0, pmf(3));
-        test_is_nan(10.0, 1.0, pmf(0));
+        test_exact(10.0, 1.0, 1.0, pmf(0));
         test_exact(10.0, 1.0, 0.0, pmf(1));
         test_exact(10.0, 1.0, 0.0, pmf(10));
     }
@@ -429,15 +433,15 @@ mod tests {
         test_absolute(3.0, 0.3, -3.611918413, 1e-08, ln_pmf(0));
         test_exact(0.3, 1.0, f64::NEG_INFINITY, ln_pmf(1));
         test_exact(0.3, 1.0, f64::NEG_INFINITY, ln_pmf(3));
-        test_is_nan(0.3, 1.0, ln_pmf(0));
+        test_exact(0.3, 1.0, 0.0, ln_pmf(0));
         test_exact(0.3, 1.0, f64::NEG_INFINITY, ln_pmf(1));
         test_exact(0.3, 1.0, f64::NEG_INFINITY, ln_pmf(10));
-        test_is_nan(1.0, 1.0, ln_pmf(0));
+        test_exact(1.0, 1.0, 0.0, ln_pmf(0));
         test_exact(1.0, 1.0, f64::NEG_INFINITY, ln_pmf(1));
-        test_is_nan(3.0, 1.0, ln_pmf(0));
+        test_exact(3.0, 1.0, 0.0, ln_pmf(0));
         test_exact(3.0, 1.0, f64::NEG_INFINITY, ln_pmf(1));
         test_exact(3.0, 1.0, f64::NEG_INFINITY, ln_pmf(3));
-        test_is_nan(10.0, 1.0, ln_pmf(0));
+        test_exact(10.0, 1.0, 0.0, ln_pmf(0));
         test_exact(10.0, 1.0, f64::NEG_INFINITY, ln_pmf(1));
         test_exact(10.0, 1.0, f64::NEG_INFINITY, ln_pmf(10));
     }
