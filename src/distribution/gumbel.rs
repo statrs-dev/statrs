@@ -118,7 +118,7 @@ impl core::fmt::Display for Gumbel {
 impl ::rand::distr::Distribution<f64> for Gumbel {
     fn sample<R: rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
         let x = ::rand::RngExt::random::<f64>(r);
-        self.location - self.scale * ((-x).ln()).ln()
+        self.location - self.scale * (-(x.ln())).ln()
     }
 }
 
@@ -557,5 +557,24 @@ mod tests {
         test_exact(-2.0, f64::INFINITY, 0.0_f64.ln(), ln_pdf(0.0));
         test_exact(-2.0, f64::INFINITY, 0.0_f64.ln(), ln_pdf(1.0));
         test_exact(-2.0, f64::INFINITY, 0.0_f64.ln(), ln_pdf(5.0));
+    }
+
+    #[test]
+    #[cfg(all(feature = "rand", feature = "std"))]
+    fn test_sample() {
+        use crate::prec;
+        use rand::{distr::Distribution, rngs::StdRng, SeedableRng};
+
+        let dist = Gumbel::new(0.0, 1.0).unwrap();
+        let mut rng = StdRng::seed_from_u64(1600);
+        let n_samples = 10_000;
+        let tol = 0.1;
+
+        let samples: Vec<f64> = dist.sample_iter(&mut rng).take(n_samples).collect();
+        let sample_mean = samples.iter().sum::<f64>() / n_samples as f64;
+        let sample_variance = samples.iter().map(|&x| (x - sample_mean).powi(2)).sum::<f64>() / n_samples as f64;
+
+        prec::assert_abs_diff_eq!(sample_mean, dist.mean().unwrap(), epsilon = tol);
+        prec::assert_abs_diff_eq!(sample_variance, dist.variance().unwrap(), epsilon = tol);
     }
 }
