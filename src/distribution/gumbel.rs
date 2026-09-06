@@ -118,7 +118,7 @@ impl core::fmt::Display for Gumbel {
 impl ::rand::distr::Distribution<f64> for Gumbel {
     fn sample<R: rand::Rng + ?Sized>(&self, r: &mut R) -> f64 {
         let x = ::rand::RngExt::random::<f64>(r);
-        self.location - self.scale * ((-x).ln()).ln()
+        self.location - self.scale * (-x.ln()).ln()
     }
 }
 
@@ -354,6 +354,19 @@ mod tests {
         create_ok(10.0, 11.0);
         create_ok(-5.0, 100.0);
         create_ok(0.0, f64::INFINITY);
+    }
+
+    #[test]
+    #[cfg(feature = "rand")]
+    fn test_sample() {
+        use rand::{distr::Distribution as _, rngs::StdRng, SeedableRng};
+
+        let mut rng = StdRng::seed_from_u64(437);
+        let n = create_ok(0.0, 1.0);
+        for _ in 0..20 {
+            let s = n.sample(&mut rng);
+            assert!(s.is_finite(), "sample was {s}");
+        }
     }
 
     #[test]
