@@ -312,11 +312,7 @@ impl Discrete<u64, f64> for NegativeBinomial {
     /// where Γ(x) is the Gamma function.
     fn ln_pmf(&self, x: u64) -> f64 {
         if self.p == 1.0 {
-            if x == 0 {
-                0.0
-            } else {
-                f64::NEG_INFINITY
-            }
+            if x == 0 { 0.0 } else { f64::NEG_INFINITY }
         } else {
             let k = x as f64;
             gamma::ln_gamma(self.r + k) - gamma::ln_gamma(self.r) - gamma::ln_gamma(k + 1.0)
