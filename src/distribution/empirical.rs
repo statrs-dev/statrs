@@ -243,7 +243,8 @@ impl Distribution<f64> for Empirical {
     }
 
     fn variance(&self) -> Option<f64> {
-        if self.data.is_empty() {
+        // The `n - 1` denominator is zero for a single sample, so the sample variance is undefined.
+        if self.sum < 2 {
             None
         } else {
             Some(self.var / (self.sum as f64 - 1.))
@@ -344,6 +345,12 @@ mod tests {
 
         let dist = Empirical::from_iter(vec![]);
         assert!(dist.variance().is_none());
+
+        // A single sample has no `n - 1` denominator; the sample variance is undefined.
+        let one = Empirical::from_iter(vec![4.0]);
+        assert!(one.variance().is_none());
+        assert!(one.std_dev().is_none());
+        test_var_for_samples(2.0, vec![1.0, 3.0]);
 
         test_var_for_samples(0.0, vec![4.0; 100]);
         test_var_for_samples(0.0, vec![-0.2; 100]);
