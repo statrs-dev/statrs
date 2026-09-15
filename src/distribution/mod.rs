@@ -196,6 +196,13 @@ pub trait ContinuousCDF<K: Float, T: Float>: Min<K> + Max<K> {
         if p == T::one() {
             return self.max();
         };
+        // Outside [0, 1] (NaN included) the doubling searches below never
+        // reach `p`, since `cdf`/`sf` are bounded to [0, 1] and doubling a
+        // bound past the point where it saturates just repeats forever.
+        // Bail out to NaN rather than hang.
+        if !(p > T::zero() && p < T::one()) {
+            return K::nan();
+        }
         let two = K::one() + K::one();
 
         // Bracket the root, preferring the distribution's own domain bounds and
@@ -307,7 +314,13 @@ pub trait DiscreteCDF<K: Sized + Num + Ord + Clone + NumAssignOps, T: Float>:
     fn inverse_cdf(&self, p: T) -> K {
         if p <= self.cdf(self.min()) {
             return self.min();
-        } else if p == T::one() {
+        } else if p.is_nan() || p >= T::one() {
+            // p == 1, p > 1, or NaN: none of these ever satisfy `cdf(ub) < p`
+            // once `cdf` saturates to 1, so the doubling search below would
+            // otherwise double `ub` past `K::MAX`, panicking on overflow or
+            // wrapping to a value it can never escape. There's no NaN in `K`
+            // to signal "undefined" the way the continuous default can, so
+            // saturate to the top of the support instead of hanging.
             return self.max();
         }
 

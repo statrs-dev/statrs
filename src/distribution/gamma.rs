@@ -191,6 +191,12 @@ impl ContinuousCDF<f64, f64> for Gamma {
         if p == 1.0 {
             return self.max();
         };
+        // Outside [0, 1] (NaN included), `cdf` saturates before ever
+        // reaching `p`, so the doubling searches below would double `low`/
+        // `high` toward ±infinity forever rather than bracket anything.
+        if !(0.0..1.0).contains(&p) {
+            return f64::NAN;
+        }
 
         // Bracket the quantile so that `cdf(low) <= p <= cdf(high)`.
         let mut high = 2.0;
@@ -713,6 +719,17 @@ mod tests {
                 let q = g.inverse_cdf(p);
                 assert!(q.is_finite() && q >= 0.0, "Gamma({shape}, 1).inverse_cdf({p}) = {q}");
             }
+        }
+    }
+
+    #[test]
+    fn test_inverse_cdf_out_of_range_is_nan() {
+        // Regression: p outside [0, 1] (NaN included) used to double the
+        // bracket forever instead of terminating, since `cdf` saturates and
+        // never satisfies the loop's exit condition.
+        let g = create_ok(2.0, 1.0);
+        for p in [f64::NAN, -1e-16, 1.0 + f64::EPSILON, 2.0] {
+            assert!(g.inverse_cdf(p).is_nan(), "Gamma(2, 1).inverse_cdf({p})");
         }
     }
 
