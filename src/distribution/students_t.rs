@@ -220,7 +220,6 @@ impl ContinuousCDF<f64, f64> for StudentsT {
     /// Student's T-distribution at `x`
     fn inverse_cdf(&self, x: f64) -> f64 {
         // first calculate inverse_cdf for normal Student's T
-        assert!((0.0..=1.0).contains(&x));
         let x1 = if x >= 0.5 { 1.0 - x } else { x };
         let a = 0.5 * self.freedom;
         let b = 0.5;

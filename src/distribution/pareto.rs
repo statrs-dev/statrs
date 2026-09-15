@@ -181,11 +181,7 @@ impl ContinuousCDF<f64, f64> for Pareto {
     ///
     /// where `x_m` is the scale and `α` is the shape
     fn inverse_cdf(&self, p: f64) -> f64 {
-        if !(0.0..=1.0).contains(&p) {
-            panic!("x must be in [0, 1]");
-        } else {
-            self.scale * (1.0 - p).powf(-1.0 / self.shape)
-        }
+        self.scale * (1.0 - p).powf(-1.0 / self.shape)
     }
 }
 

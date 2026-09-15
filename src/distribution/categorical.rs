@@ -1,4 +1,4 @@
-use crate::distribution::{Discrete, DiscreteCDF};
+use crate::distribution::{Discrete, DiscreteCDF, DiscreteInverseCdfError};
 use crate::statistics::*;
 use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
@@ -181,10 +181,6 @@ impl DiscreteCDF<u64, f64> for Categorical {
     /// categorical
     /// distribution at `x`
     ///
-    /// # Panics
-    ///
-    /// If `x <= 0.0` or `x >= 1.0`
-    ///
     /// # Formula
     ///
     /// ```text
@@ -195,11 +191,22 @@ impl DiscreteCDF<u64, f64> for Categorical {
     /// and `f(x)` is defined as `p_x + f(x - 1)` and `f(0) = p_0` where
     /// `p_x` is the `x`th probability mass
     fn inverse_cdf(&self, x: f64) -> u64 {
-        if x >= 1.0 || x <= 0.0 {
-            panic!("x must be in [0, 1]")
-        }
-
         self.locate(x)
+    }
+
+    /// Calculates the inverse cumulative distribution function for the
+    /// categorical distribution at `x`, returning an error instead of
+    /// panicking if `x` is not in the open interval `(0.0, 1.0)`, including
+    /// when `x` is NaN.
+    fn try_inverse_cdf(&self, x: f64) -> Result<u64, DiscreteInverseCdfError<f64>> {
+        // Written as a conjunction of `>`/`<`, not `x >= 1.0 || x <= 0.0`, so
+        // that NaN (which compares false against everything) is rejected
+        // rather than falling through to `locate`, which panics on NaN.
+        if x > 0.0 && x < 1.0 {
+            Ok(self.inverse_cdf(x))
+        } else {
+            Err(DiscreteInverseCdfError::ArgumentOutOfRange)
+        }
     }
 }
 
@@ -517,17 +524,30 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
-    fn test_inverse_cdf_input_low() {
+    fn test_try_inverse_cdf_input_low() {
         let dist = create_ok(&[4.0, 2.5, 2.5, 1.0]);
-        dist.inverse_cdf(0.0);
+        assert_eq!(
+            dist.try_inverse_cdf(0.0),
+            Err(DiscreteInverseCdfError::ArgumentOutOfRange)
+        );
     }
 
     #[test]
-    #[should_panic]
-    fn test_inverse_cdf_input_high() {
+    fn test_try_inverse_cdf_input_high() {
         let dist = create_ok(&[4.0, 2.5, 2.5, 1.0]);
-        dist.inverse_cdf(1.0);
+        assert_eq!(
+            dist.try_inverse_cdf(1.0),
+            Err(DiscreteInverseCdfError::ArgumentOutOfRange)
+        );
+    }
+
+    #[test]
+    fn test_try_inverse_cdf_nan_does_not_panic() {
+        let dist = create_ok(&[4.0, 2.5, 2.5, 1.0]);
+        assert_eq!(
+            dist.try_inverse_cdf(f64::NAN),
+            Err(DiscreteInverseCdfError::ArgumentOutOfRange)
+        );
     }
 
     #[test]

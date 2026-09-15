@@ -166,10 +166,6 @@ impl ContinuousCDF<f64, f64> for Levy {
     /// Calculates the inverse cumulative distribution function for the
     /// normal distribution at `x`.
     ///
-    /// # Panics
-    ///
-    /// If `x < 0.0` or `x > 1.0`
-    ///
     /// # Formula
     ///
     /// ```text
@@ -179,11 +175,7 @@ impl ContinuousCDF<f64, f64> for Levy {
     /// where `μ` is the mean, `σ` is the standard deviation and `erfc_inv` is
     /// the inverse of the complementary error function
     fn inverse_cdf(&self, x: f64) -> f64 {
-        if !(0.0..=1.0).contains(&x) {
-            panic!("x must be in [0, 1]");
-        } else {
-            self.mu + 0.5 * self.c / (erfc_inv(x).powf(2.0))
-        }
+        self.mu + 0.5 * self.c / (erfc_inv(x).powf(2.0))
     }
 }
 

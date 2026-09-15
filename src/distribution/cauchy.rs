@@ -163,11 +163,7 @@ impl ContinuousCDF<f64, f64> for Cauchy {
     ///
     /// where `x_0` is the location and `γ` is the scale
     fn inverse_cdf(&self, x: f64) -> f64 {
-        if !(0.0..=1.0).contains(&x) {
-            panic!("x must be in [0, 1]");
-        } else {
-            self.location + self.scale * (f64_consts::PI * (x - 0.5)).tan()
-        }
+        self.location + self.scale * (f64_consts::PI * (x - 0.5)).tan()
     }
 }
 

@@ -181,10 +181,6 @@ impl ContinuousCDF<f64, f64> for LogNormal {
     /// Calculates the inverse cumulative distribution function for the
     /// log-normal distribution at `p`
     ///
-    /// # Panics
-    ///
-    /// If `p < 0.0` or `p > 1.0`
-    ///
     /// # Formula
     ///
     /// ```text
@@ -201,7 +197,7 @@ impl ContinuousCDF<f64, f64> for LogNormal {
         } else if p == 1.0 {
             f64::INFINITY
         } else {
-            panic!("p must be within [0.0, 1.0]");
+            f64::NAN
         }
     }
 }
@@ -826,6 +822,17 @@ mod tests {
     #[test]
     fn test_inverse_cdf() {
         cdf_tests(true)
+    }
+
+    #[test]
+    fn test_inverse_cdf_out_of_range_is_nan() {
+        // Regression: p > 1 used to fall into the same else branch as p == 1
+        // and return +infinity; only an exact 1.0 should do that.
+        let create = || create_ok(0.0, 1.0);
+        for p in [f64::NAN, 1.0 + f64::EPSILON, 2.0] {
+            assert!(create().inverse_cdf(p).is_nan(), "LogNormal.inverse_cdf({p})");
+        }
+        assert_eq!(create().inverse_cdf(1.0), f64::INFINITY);
     }
 
     // we can reuse the (input, output) pairs from the CDF unit test
