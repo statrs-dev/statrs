@@ -1,5 +1,6 @@
 use std::{
     cmp::Ordering,
+    marker,
     ops::{Deref, Index},
     slice::SliceIndex,
 };
@@ -79,8 +80,8 @@ impl<'a, T> AsRef<[T]> for SortedCollection<'a, T> {
     }
 }
 
-#[derive(Debug)]
-enum SortMarker {
+#[derive(Debug, PartialEq)]
+pub enum SortMarker {
     NotSorted,
     Sorted,
 }
@@ -95,6 +96,9 @@ where
     pub fn sort(&mut self) {
         self.1.sort();
         self.0 = SortMarker::Sorted;
+    }
+    pub fn is_sorted(&self) -> bool {
+        self.0 == SortMarker::Sorted
     }
 }
 
@@ -133,5 +137,48 @@ where
 
     fn index(&self, index: I) -> &Self::Output {
         self.1.index(index)
+    }
+}
+
+/// Represents a slice of a SortedVec
+/// Stores a reference to a slice and a reference to its corresponding `SortedVec`'s `SortMaker`.
+pub struct SortedSlice<'a, T>(&'a SortMarker, &'a [T]);
+
+impl<'a, T> SortedSlice<'a, T> {
+    /// Creates a SortedSlice with the provided SortMarker  without checking whether the slice is
+    /// adheres to it.
+    pub fn sorted_from_unchecked(marker: &'a SortMarker, vals: &'a [T]) -> Self {
+        Self(marker, vals)
+    }
+    pub fn len(&self) -> usize {
+        self.1.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.1.is_empty()
+    }
+    pub fn is_sorted(&self) -> bool {
+        *self.0 == SortMarker::Sorted
+    }
+}
+
+impl<'a, T, I> Index<I> for SortedSlice<'a, T>
+where
+    T: Ord,
+    I: SliceIndex<[T]>,
+{
+    type Output = <I as SliceIndex<[T]>>::Output;
+
+    fn index(&self, index: I) -> &Self::Output {
+        self.1.index(index)
+    }
+}
+impl<'a, T> Deref for SortedSlice<'a, T>
+where
+    T: Ord,
+{
+    type Target = [T];
+
+    fn deref(&self) -> &Self::Target {
+        self.1
     }
 }
