@@ -1,6 +1,5 @@
 use std::{
     cmp::Ordering,
-    marker,
     ops::{Deref, Index},
     slice::SliceIndex,
 };
