@@ -87,6 +87,9 @@ jobs:
       - name: Check no_std with nalgebra and rand
         run: cargo check --target riscv32imac-unknown-none-elf --no-default-features --features nalgebra,rand --lib
 
+      - name: Check no_std with KDE
+        run: cargo check --target riscv32imac-unknown-none-elf --no-default-features --features kde --lib
+
   features:
     needs: [clippy, fmt]
     runs-on: ubuntu-latest

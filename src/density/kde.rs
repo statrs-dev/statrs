@@ -1,4 +1,6 @@
 use kdtree::distance::squared_euclidean;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 use crate::{
     density::{Container, DensityError, nearest_neighbors, neighborhood_radius},

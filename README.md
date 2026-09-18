@@ -55,6 +55,13 @@ matrix-backed distributions without `std`, enable `nalgebra` directly:
 statrs = { version = "*", default-features = false, features = ["nalgebra"] }
 ```
 
+To enable kernel density estimation without `std`, enable `kde`:
+
+```toml
+[dependencies]
+statrs = { version = "*", default-features = false, features = ["kde"] }
+```
+
 Heap-backed APIs use Rust's `alloc` crate. A `no_std` application that calls
 these APIs must provide and initialize a global allocator suitable for its
 target:

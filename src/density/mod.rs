@@ -16,6 +16,8 @@ pub mod kde;
 pub mod knn;
 use alloc::vec::Vec;
 use kdtree::{ErrorKind, KdTree, distance::squared_euclidean};
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 use thiserror::Error;
 
 /// Errors that can occur when estimating a density from a sample.
