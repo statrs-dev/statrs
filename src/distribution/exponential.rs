@@ -5,7 +5,7 @@ use core::f64::consts as f64_consts;
 use num_traits::Float as _;
 
 /// Implements the
-/// [Exp](https://en.wikipedia.org/wiki/Exp_distribution)
+/// [Exp](https://wikipedia.org/wiki/Exponential_distribution)
 /// distribution and is a special case of the
 /// [Gamma](https://en.wikipedia.org/wiki/Gamma_distribution) distribution
 /// (referenced [here](./struct.Gamma.html))
