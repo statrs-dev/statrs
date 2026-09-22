@@ -1,8 +1,10 @@
 use std::{
+    cmp::Ordering,
     ops::{Deref, Index},
     slice::SliceIndex,
 };
 
+#[derive(Debug)]
 pub enum SortError {
     NotSorted,
 }
@@ -18,16 +20,17 @@ impl<'a, T> SortedSlice<'a, T> {
     }
 }
 
-impl<'a, T> TryInto<SortedSlice<'a, T>> for &'a [T]
-where
-    T: Ord,
-{
+impl<'a> TryInto<SortedSlice<'a, f64>> for &'a [f64] {
     type Error = SortError;
 
-    fn try_into(self) -> Result<SortedSlice<'a, T>, Self::Error> {
-        match self.is_sorted() {
-            true => Ok(SortedSlice(self)),
-            false => Err(SortError::NotSorted),
+    fn try_into(self) -> Result<SortedSlice<'a, f64>, Self::Error> {
+        match (
+            self.is_sorted_by(|a, b| a.total_cmp(b) != Ordering::Greater),
+            self.is_empty(),
+        ) {
+            (_, true) => Ok(SortedSlice(self)),
+            (true, false) => Ok(SortedSlice(self)),
+            (false, false) => Err(SortError::NotSorted),
         }
     }
 }
