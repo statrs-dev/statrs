@@ -194,10 +194,10 @@ fn onesample_marsaglia_et_al_twosided_pvalue(d: f64, n: f64) -> Result<f64, KSTe
 /// use statrs::distribution::Normal;
 /// use statrs::stats_tests::NaNPolicy;
 ///
-/// let data: Vec<f64> = (-150..=150).map(|i| i as f64 * 0.01).collect();
-///
+/// let mut data: Vec<f64> = (-150..=150).map(|i| i as f64 * 0.01).collect();
+/// data.sort_by(|a,b| a.total_cmp(b));
 /// let (statistic, pvalue) = ks_onesample(
-///     data.clone(),
+///     data.as_slice().try_into().unwrap(),
 ///     &Normal::default(),
 ///     KSOneSampleAlternativeMethod::TwoSidedAsymptotic,
 ///     NaNPolicy::Error,
@@ -499,13 +499,17 @@ mod tests {
 
     #[test]
     fn test_ks_onesample_against_scipy() {
-        let data = Vec::from([
+        let mut data = Vec::from([
             0.7, 0.8, 1.1, 2.0, 3.9, 4.2, 4.3, 4.9, 5.1, 5.2, 5.3, 5.5, 5.7, 5.8, 6.0,
         ]);
         let mean = data.iter().mean();
 
+        data.sort_by(|a, b| a.total_cmp(b));
+
         let (statistic, pvalue) = ks_onesample(
-            data.clone(),
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Exp::new(1.0 / mean).unwrap(),
             KSOneSampleAlternativeMethod::Less,
             NaNPolicy::Error,
@@ -517,7 +521,9 @@ mod tests {
         prec::assert_abs_diff_eq!(pvalue, 0.01768990758651141, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_onesample(
-            data.clone(),
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Exp::new(1.0 / mean).unwrap(),
             KSOneSampleAlternativeMethod::Greater,
             NaNPolicy::Error,
@@ -528,7 +534,9 @@ mod tests {
         prec::assert_abs_diff_eq!(pvalue, 0.18683781649758202, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_onesample(
-            data.clone(),
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Exp::new(1.0 / mean).unwrap(),
             KSOneSampleAlternativeMethod::TwoSidedAsymptotic,
             NaNPolicy::Error,
@@ -539,7 +547,9 @@ mod tests {
         prec::assert_abs_diff_eq!(pvalue, 0.047499850721610656, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_onesample(
-            data.clone(),
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Exp::new(1.0 / mean).unwrap(),
             KSOneSampleAlternativeMethod::TwoSidedApproximate,
             NaNPolicy::Error,
@@ -550,7 +560,9 @@ mod tests {
         prec::assert_abs_diff_eq!(pvalue, 0.03537981517302282, epsilon = 1e-9);
 
         let (statistic, pvalue) = ks_onesample(
-            data.clone(),
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Exp::new(1.0 / mean).unwrap(),
             KSOneSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
@@ -562,10 +574,13 @@ mod tests {
     }
     #[test]
     fn test_ks_onesample_against_r() {
-        let data: Vec<f64> = (-150..=150).map(|i| i as f64 * 0.01).collect();
+        let mut data: Vec<f64> = (-150..=150).map(|i| i as f64 * 0.01).collect();
 
+        data.sort_by(|a, b| a.total_cmp(b));
         let (statistic, pvalue) = ks_onesample(
-            data.clone(),
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Normal::default(),
             KSOneSampleAlternativeMethod::Less,
             NaNPolicy::Error,
@@ -576,7 +591,9 @@ mod tests {
         prec::assert_abs_diff_eq!(pvalue, 0.06508, epsilon = 1e-3);
 
         let (statistic, pvalue) = ks_onesample(
-            data.clone(),
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Normal::default(),
             KSOneSampleAlternativeMethod::TwoSidedAsymptotic,
             NaNPolicy::Error,
@@ -599,9 +616,13 @@ mod tests {
         // prec::assert_abs_diff_eq!(pvalue, 0.1301, epsilon = 1e-3);
 
         // ensure that the ks test can handle non trivial small sizes
-        let data_small_enough: Vec<f64> = (0..140).map(|i| i as f64 * 0.01).collect();
+        let mut data_small_enough: Vec<f64> = (0..140).map(|i| i as f64 * 0.01).collect();
+        data_small_enough.sort_by(|a, b| a.total_cmp(b));
         let (statistic, pvalue) = ks_onesample(
-            data_small_enough,
+            data_small_enough
+                .as_slice()
+                .try_into()
+                .expect("`data_small_enough should've been sorted by now"),
             &Uniform::default(),
             KSOneSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
@@ -611,7 +632,9 @@ mod tests {
         prec::assert_abs_diff_eq!(pvalue, 1.311e-10, epsilon = 1e-12);
 
         let (statistic, pvalue) = ks_onesample(
-            data.clone(),
+            data.as_slice()
+                .try_into()
+                .expect("`data should've been sorted by now"),
             &Uniform::default(),
             KSOneSampleAlternativeMethod::TwoSidedAsymptotic,
             NaNPolicy::Error,
@@ -633,18 +656,24 @@ mod tests {
     }
     #[test]
     fn test_ks_onesample_bad_data_data_too_small() {
-        let data: Vec<f64> = Vec::new();
+        let mut data: Vec<f64> = Vec::new();
+        data.sort_by(|a, b| a.total_cmp(b));
         let result = ks_onesample(
-            data,
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Normal::default(),
             KSOneSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
         );
         assert_eq!(result, Err(KSTestError::SampleTooSmall));
 
-        let data: Vec<f64> = Vec::from([f64::NAN, f64::NAN]);
+        let mut data: Vec<f64> = Vec::from([f64::NAN, f64::NAN]);
+        data.sort_by(|a, b| a.total_cmp(b));
         let result = ks_onesample(
-            data,
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Normal::default(),
             KSOneSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Emit,
@@ -653,9 +682,12 @@ mod tests {
     }
     #[test]
     fn test_ks_onesample_bad_data_exact_too_large() {
-        let data: Vec<f64> = (-150..=150).map(|i| i as f64 * 0.01).collect();
+        let mut data: Vec<f64> = (-150..=150).map(|i| i as f64 * 0.01).collect();
+        data.sort_by(|a, b| a.total_cmp(b));
         let result = ks_onesample(
-            data,
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Normal::default(),
             KSOneSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
@@ -666,8 +698,11 @@ mod tests {
     fn test_ks_onesample_bad_data_exact_with_ties() {
         let mut data: Vec<f64> = (-10..=10).map(|i| i as f64 * 0.01).collect();
         data[0] = data[1];
+        data.sort_by(|a, b| a.total_cmp(b));
         let result = ks_onesample(
-            data,
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Normal::default(),
             KSOneSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
@@ -676,7 +711,7 @@ mod tests {
     }
     #[test]
     fn test_ks_onesample_nan_in_data_w_emit() {
-        let data = Vec::from([
+        let mut data = Vec::from([
             0.7,
             0.8,
             1.1,
@@ -696,8 +731,11 @@ mod tests {
         ]);
         let mean = data.iter().filter(|x| !x.is_nan()).mean();
 
+        data.sort_by(|a, b| a.total_cmp(b));
         let (statistic, pvalue) = ks_onesample(
-            data.clone(),
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Exp::new(1.0 / mean).unwrap(),
             KSOneSampleAlternativeMethod::Less,
             NaNPolicy::Emit,
@@ -712,8 +750,11 @@ mod tests {
     fn test_ks_onesample_nan_in_data_w_propogate() {
         let mut data: Vec<f64> = (-10..=10).map(|i| i as f64 * 0.01).collect();
         data[0] = f64::NAN;
+        data.sort_by(|a, b| a.total_cmp(b));
         let (statistic, pvalue) = ks_onesample(
-            data,
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Normal::default(),
             KSOneSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Propogate,
@@ -726,8 +767,11 @@ mod tests {
     fn test_ks_onesample_nan_in_data_w_error() {
         let mut data: Vec<f64> = (-10..=10).map(|i| i as f64 * 0.01).collect();
         data[0] = f64::NAN;
+        data.sort_by(|a, b| a.total_cmp(b));
         let result = ks_onesample(
-            data,
+            data.as_slice()
+                .try_into()
+                .expect("`data` should've been sorted by now"),
             &Normal::default(),
             KSOneSampleAlternativeMethod::TwoSidedExact,
             NaNPolicy::Error,
