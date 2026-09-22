@@ -11,6 +11,7 @@ use num_traits::clamp;
 use crate::distribution::ContinuousCDF;
 
 use crate::function::factorial;
+use crate::sorted_slice::SortedSlice;
 
 use super::NaNPolicy;
 
@@ -204,7 +205,7 @@ fn onesample_marsaglia_et_al_twosided_pvalue(d: f64, n: f64) -> Result<f64, KSTe
 /// .unwrap();
 /// ```
 pub fn ks_onesample<T>(
-    mut data: Vec<f64>,
+    data: SortedSlice<f64>,
     distribution: &T,
     method: KSOneSampleAlternativeMethod,
     nan_policy: NaNPolicy,
@@ -213,29 +214,21 @@ where
     T: ContinuousCDF<f64, f64>,
 {
     let has_nans = data.iter().any(|x| x.is_nan());
-    if has_nans {
-        match nan_policy {
-            NaNPolicy::Propogate => {
-                return Ok((f64::NAN, f64::NAN));
-            }
-            NaNPolicy::Error => {
-                return Err(KSTestError::SampleContainsNaN);
-            }
-            NaNPolicy::Emit => {
-                data = data.into_iter().filter(|x| !x.is_nan()).collect::<Vec<_>>();
-            }
-        }
-    }
+    let data: Vec<f64> = match (has_nans, nan_policy) {
+        (true, NaNPolicy::Propogate) => return Ok((f64::NAN, f64::NAN)),
+        (true, NaNPolicy::Error) => return Err(KSTestError::SampleContainsNaN),
+        (true, NaNPolicy::Emit) => data
+            .into_iter()
+            .filter(|x| !x.is_nan())
+            .copied()
+            .collect::<Vec<f64>>(),
+        (false, _) => data.into_iter().copied().collect(),
+    };
 
     let n = data.len() as f64;
     if (n as usize) < 1 {
         return Err(KSTestError::SampleTooSmall);
     }
-
-    data.sort_by(|a, b| {
-        a.partial_cmp(b)
-            .expect("nans should be filtered out by this point so it should always work")
-    });
 
     let theoretical_cdf = data
         .iter()
