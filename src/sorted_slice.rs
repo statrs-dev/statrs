@@ -9,6 +9,15 @@ pub enum SortError {
 
 pub struct SortedSlice<'a, T>(&'a [T]);
 
+impl<'a, T> SortedSlice<'a, T> {
+    pub fn iter(&self) -> std::slice::Iter<'_, T> {
+        self.0.iter()
+    }
+    pub fn into_iter(self) -> std::slice::Iter<'a, T> {
+        self.0.into_iter()
+    }
+}
+
 impl<'a, T> TryInto<SortedSlice<'a, T>> for &'a [T]
 where
     T: Ord,
