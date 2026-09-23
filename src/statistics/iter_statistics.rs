@@ -53,12 +53,11 @@ where
     }
 
     fn mean(self) -> f64 {
-        self.into_iter()
-            .fold(OnlineMoments::<2>::default(), |acc, x| {
-                acc.push(*x.borrow())
-            })
-            .mean()
-            .unwrap_or(f64::NAN)
+        let (OnlineMean(mean),) = self
+            .into_iter()
+            .fold(Accumulate::default(), |acc, x| acc.push(*x.borrow()))
+            .get();
+        mean.unwrap_or(f64::NAN)
     }
 
     fn geometric_mean(self) -> f64 {
@@ -87,12 +86,11 @@ where
     }
 
     fn variance(self) -> f64 {
-        self.into_iter()
-            .fold(OnlineMoments::<2>::default(), |acc, x| {
-                acc.push(*x.borrow())
-            })
-            .variance()
-            .unwrap_or(f64::NAN)
+        let (OnlineVariance(variance),) = self
+            .into_iter()
+            .fold(Accumulate::default(), |acc, x| acc.push(*x.borrow()))
+            .get();
+        variance.unwrap_or(f64::NAN)
     }
 
     fn std_dev(self) -> f64 {
@@ -100,12 +98,11 @@ where
     }
 
     fn population_variance(self) -> f64 {
-        self.into_iter()
-            .fold(OnlineMoments::<2>::default(), |acc, x| {
-                acc.push(*x.borrow())
-            })
-            .population_variance()
-            .unwrap_or(f64::NAN)
+        let (OnlinePopulationVariance(population_variance),) = self
+            .into_iter()
+            .fold(Accumulate::default(), |acc, x| acc.push(*x.borrow()))
+            .get();
+        population_variance.unwrap_or(f64::NAN)
     }
 
     fn population_std_dev(self) -> f64 {
