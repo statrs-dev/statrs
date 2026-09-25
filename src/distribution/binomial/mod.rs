@@ -216,14 +216,16 @@ impl Distribution<f64> for Binomial {
     /// (1 / 2) * ln (2 * π * e * n * p * (1 - p))
     /// ```
     fn entropy(&self) -> Option<f64> {
-        let entr = if self.p == 0.0 || self.p == 1.0 {
-            0.0
-        } else {
-            (0..self.n + 1).fold(0.0, |acc, x| {
-                let p = self.pmf(x);
-                if p == 0.0 { acc } else { acc - p * p.ln() }
-            })
-        };
+        if self.p == 0.0 || self.p == 1.0 {
+            return Some(0.0);
+        }
+        // self.n + 1 overflows when n == u64::MAX, which would otherwise wrap
+        // to an empty range and silently produce a wrong (zero) entropy.
+        let upper = self.n.checked_add(1)?;
+        let entr = (0..upper).fold(0.0, |acc, x| {
+            let p = self.pmf(x);
+            if p == 0.0 { acc } else { acc - p * p.ln() }
+        });
         Some(entr)
     }
 
@@ -467,6 +469,12 @@ mod tests {
 
         let large_dist = create_ok(p, 1000);
         assert!(large_dist.entropy().unwrap().is_finite());
+    }
+
+    #[test]
+    fn test_entropy_at_max_n_does_not_overflow() {
+        let dist = create_ok(0.5, u64::MAX);
+        assert_eq!(dist.entropy(), None);
     }
 
     #[test]
