@@ -167,9 +167,6 @@ impl ContinuousCDF<f64, f64> for Laplace {
     ///
     /// where `μ` is the location, `b` is the scale
     fn inverse_cdf(&self, p: f64) -> f64 {
-        if p <= 0. || 1. <= p {
-            panic!("p must be in [0, 1]");
-        };
         if p <= 0.5 {
             self.location + self.scale * (2. * p).ln()
         } else {
