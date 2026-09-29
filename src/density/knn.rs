@@ -4,6 +4,8 @@ use crate::{
     function::gamma::gamma,
 };
 use core::f64::consts::PI;
+#[cfg(not(feature = "std"))]
+use num_traits::Float as _;
 
 /// Computes the `k`-nearest neighbor density estimate for a given point `x`
 /// using the samples provided.
