@@ -2,283 +2,162 @@
 //!
 //! Unlike [`crate::statistics::Statistics`], which consumes its input once
 //! per method call, these types accumulate observations one at a time via
-//! [`OnlineMoments::push`] and can be read from repeatedly, or composed with
+//! [`Accumulate::push`] and can be read from repeatedly, or composed with
 //! [`Accumulate`] to share a single fold pass across several statistics.
 
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
-/// Single-pass accumulator for central moments via Welford's online algorithm.
+use crate::statistics::Accumulate;
+
+/// Statistics that can be accumulated with [`Accumulate`].
+pub trait OnlineMoment {
+    /// `ORDER` controls which moments are tracked:
+    /// - `1`: count + mean
+    /// - `2`: `1` + variance
+    /// - `3`: `2` + skewness
+    /// - values above: not presently implemented
+    const ORDER: usize;
+    // This method is not meant to be called from user, so we can
+    // have less type restrictions. In theory, we can even restrict
+    // MS only to the tuple types that include Self.
+    /// Convert an [`Accumulate`] to this stat. In most cases, you
+    /// are not meant to use this method. Use [`Accumulate::get`]
+    /// instead.
+    fn from_acc<MS: OnlineMoments>(acc: &Accumulate<MS>) -> Self;
+}
+/// A collection of [`OnlineMoment`]s.
 ///
-/// `ORDER` controls which moments are tracked:
-/// - `1`: count + mean
-/// - `2`: `1` + variance
-/// - `3`: `2` + skewness
-/// - values above: not presently implemented
+/// This trait is implemented for up to 8-tuple of [`OnlineMoment`]s.
+pub trait OnlineMoments: Sized {
+    // This will always be compiled into constants.
+    // In the future, this can be directly an associated const.
+    /// The maximal order of collected [`OnlineMoment`]s.
+    fn order() -> usize;
+    /// Convert an [`Accumulate`] to the stats. In most cases, you
+    /// are not meant to use this method. Use [`Accumulate::get`]
+    /// instead.
+    fn from_acc(acc: &Accumulate<Self>) -> Self;
+}
+macro_rules! impl_online_moments_for_tuple {
+    ($($M: ident),+) => {
+        impl<$($M: OnlineMoment),+> OnlineMoments for ($($M),+,) {
+            fn order() -> usize {
+                let mut val = 0;
+                $(
+                    val = ::core::cmp::max(val, <$M as OnlineMoment>::ORDER);
+                )+
+                val
+            }
+
+            fn from_acc(acc: &Accumulate<Self>) -> Self {
+                ($(<$M as OnlineMoment>::from_acc(acc)),+,)
+            }
+        }
+    };
+}
+impl_online_moments_for_tuple!(M1);
+impl_online_moments_for_tuple!(M1, M2);
+impl_online_moments_for_tuple!(M1, M2, M3);
+impl_online_moments_for_tuple!(M1, M2, M3, M4);
+impl_online_moments_for_tuple!(M1, M2, M3, M4, M5);
+impl_online_moments_for_tuple!(M1, M2, M3, M4, M5, M6);
+impl_online_moments_for_tuple!(M1, M2, M3, M4, M5, M6, M7);
+impl_online_moments_for_tuple!(M1, M2, M3, M4, M5, M6, M7, M8);
+
+/// Contains the mean, or `None` if no observations have been pushed.
 ///
-/// Moments are accumulated for `x - offset`, where `offset` is the first value
-/// pushed. Central moments are invariant under that shift, and it is what makes
-/// the accumulator usable on data with a large offset.
-pub struct OnlineMoments<const ORDER: usize> {
-    pub count: u64,
-    // `m` holds the moments of `x - offset`. Welford's update can become
-    // insensitive reducing unscaled data. See statrs-dev/statrs#376.
-    offset: f64,
-    m: [f64; ORDER],
-}
-
-impl<const ORDER: usize> Default for OnlineMoments<ORDER> {
-    fn default() -> Self {
-        Self {
-            count: 0,
-            offset: 0.0,
-            m: [0.0; ORDER],
+/// Can be used with [`Accumulate`].
+pub struct OnlineMean(pub Option<f64>);
+impl OnlineMoment for OnlineMean {
+    const ORDER: usize = 1;
+    fn from_acc<MS: OnlineMoments>(acc: &Accumulate<MS>) -> Self {
+        if acc.count == 0 {
+            Self(None)
+        } else {
+            Self(Some(acc.m[0]))
         }
     }
 }
 
-impl OnlineMoments<2> {
-    /// Returns the mean, or `None` if no observations have been pushed.
-    pub fn mean(&self) -> Option<f64> {
-        if self.count == 0 {
-            None
+/// Contains the sample variance (normalised by `n - 1`), or `None` if
+/// fewer than two observations have been pushed.
+///
+/// Can be used with [`Accumulate`].
+pub struct OnlineVariance(pub Option<f64>);
+impl OnlineMoment for OnlineVariance {
+    const ORDER: usize = 2;
+    fn from_acc<MS: OnlineMoments>(acc: &Accumulate<MS>) -> Self {
+        if acc.count < 2 {
+            Self(None)
         } else {
-            Some(self.offset + self.m[0])
+            Self(Some(acc.m[1] / (acc.count - 1) as f64))
         }
-    }
-
-    /// Returns the sample variance (normalised by `n - 1`), or `None` if
-    /// fewer than two observations have been pushed.
-    pub fn variance(&self) -> Option<f64> {
-        if self.count < 2 {
-            None
-        } else {
-            Some(self.m[1] / (self.count - 1) as f64)
-        }
-    }
-
-    /// Returns the sample standard deviation, or `None` if fewer than two
-    /// observations have been pushed.
-    pub fn std_dev(&self) -> Option<f64> {
-        self.variance().map(f64::sqrt)
-    }
-
-    /// Returns the population variance (normalised by `n`), or `None` if no
-    /// observations have been pushed.
-    pub fn population_variance(&self) -> Option<f64> {
-        if self.count == 0 {
-            None
-        } else {
-            Some(self.m[1] / self.count as f64)
-        }
-    }
-
-    /// Returns the population standard deviation, or `None` if no
-    /// observations have been pushed.
-    pub fn population_std_dev(&self) -> Option<f64> {
-        self.population_variance().map(f64::sqrt)
     }
 }
 
-impl OnlineMoments<3> {
-    /// Returns the mean, or `None` if no observations have been pushed.
-    pub fn mean(&self) -> Option<f64> {
-        if self.count == 0 {
-            None
+/// Contains the sample standard deviation, or `None` if fewer than two
+/// observations have been pushed.
+///
+/// Can be used with [`Accumulate`].
+pub struct OnlineStdDev(pub Option<f64>);
+impl OnlineMoment for OnlineStdDev {
+    const ORDER: usize = OnlineVariance::ORDER;
+    fn from_acc<MS: OnlineMoments>(acc: &Accumulate<MS>) -> Self {
+        let OnlineVariance(variance) = OnlineVariance::from_acc(acc);
+        Self(variance.map(f64::sqrt))
+    }
+}
+
+/// Contains the population variance (normalised by `n`), or `None` if no
+/// observations have been pushed.
+///
+/// Can be used with [`Accumulate`].
+pub struct OnlinePopulationVariance(pub Option<f64>);
+impl OnlineMoment for OnlinePopulationVariance {
+    const ORDER: usize = 2;
+    fn from_acc<MS: OnlineMoments>(acc: &Accumulate<MS>) -> Self {
+        if acc.count == 0 {
+            Self(None)
         } else {
-            Some(self.offset + self.m[0])
+            Self(Some(acc.m[1] / acc.count as f64))
         }
     }
+}
 
-    /// Returns the sample variance (normalised by `n - 1`), or `None` if
-    /// fewer than two observations have been pushed.
-    pub fn variance(&self) -> Option<f64> {
-        if self.count < 2 {
-            None
-        } else {
-            Some(self.m[1] / (self.count - 1) as f64)
+/// Contains the population standard deviation, or `None` if no
+/// observations have been pushed.
+///
+/// Can be used with [`Accumulate`].
+pub struct OnlinePopulationStdDev(pub Option<f64>);
+impl OnlineMoment for OnlinePopulationStdDev {
+    const ORDER: usize = OnlinePopulationVariance::ORDER;
+    fn from_acc<MS: OnlineMoments>(acc: &Accumulate<MS>) -> Self {
+        let OnlinePopulationVariance(population_variance) = OnlinePopulationVariance::from_acc(acc);
+        Self(population_variance.map(f64::sqrt))
+    }
+}
+
+/// Contains the skewness, or `None` if fewer than two observations have
+/// been pushed.
+///
+/// Can be used with [`Accumulate`].
+pub struct OnlineSkewness(pub Option<f64>);
+impl OnlineMoment for OnlineSkewness {
+    const ORDER: usize = 3;
+    fn from_acc<MS: OnlineMoments>(acc: &Accumulate<MS>) -> Self {
+        if acc.count < 2 {
+            return Self(None);
         }
-    }
-
-    /// Returns the sample standard deviation, or `None` if fewer than two
-    /// observations have been pushed.
-    pub fn std_dev(&self) -> Option<f64> {
-        self.variance().map(f64::sqrt)
-    }
-
-    /// Returns the population variance (normalised by `n`), or `None` if no
-    /// observations have been pushed.
-    pub fn population_variance(&self) -> Option<f64> {
-        if self.count == 0 {
-            None
-        } else {
-            Some(self.m[1] / self.count as f64)
-        }
-    }
-
-    /// Returns the population standard deviation, or `None` if no
-    /// observations have been pushed.
-    pub fn population_std_dev(&self) -> Option<f64> {
-        self.population_variance().map(f64::sqrt)
-    }
-
-    /// Returns the skewness, or `None` if fewer than two observations have
-    /// been pushed.
-    pub fn skewness(&self) -> Option<f64> {
-        if self.count < 2 {
-            return None;
-        }
-        let n = self.count as f64;
-        let m2_mean = self.m[1] / n;
-        let m3_mean = self.m[2] / n;
+        let n = acc.count as f64;
+        let m2_mean = acc.m[1] / n;
+        let m3_mean = acc.m[2] / n;
         let denom = m2_mean.powf(1.5);
         if denom == 0.0 {
-            Some(0.0)
+            Self(Some(0.0))
         } else {
-            Some(m3_mean / denom)
+            Self(Some(m3_mean / denom))
         }
-    }
-}
-
-impl<const ORDER: usize> OnlineMoments<ORDER> {
-    /// Merges two accumulators as if all observations had been pushed into
-    /// one, using the pairwise update of Chan, Golub & LeVeque (extended to
-    /// the third moment by Pébay, 2008).
-    /// In addition to API after computing on parallel streams, merging
-    /// at the end is also slightly *better* conditioned than one long Welford
-    /// chain.
-    ///
-    /// ```
-    /// use statrs::statistics::OnlineVariance;
-    /// use statrs::statistics::Accumulate;
-    /// let a = [1.0_f64, 2.0].iter().copied().fold(OnlineVariance::default(), OnlineVariance::push);
-    /// let b = [3.0_f64, 4.0].iter().copied().fold(OnlineVariance::default(), OnlineVariance::push);
-    /// let all = [1.0_f64, 2.0, 3.0, 4.0].iter().copied().fold(OnlineVariance::default(), OnlineVariance::push);
-    /// assert_eq!(a.merge(b).variance(), all.variance());
-    /// ```
-    ///
-    /// # Precision
-    /// Consider breaking apart large streams and merging for precision.
-    /// Recursively merging in a binary tree accumulates roughly O(log N)
-    /// rounding error against O(N) for a single chain, the same effect as
-    /// pairwise vs. naive summation.
-    ///
-    /// ```
-    /// use statrs::statistics::{OnlineVariance, Accumulate};
-    /// use approx::assert_relative_eq;
-    ///
-    /// // Repeating a block leaves its variance unchanged, so this stream has
-    /// // an exactly known variance to check against: mean 5.0, M2 = 32 per
-    /// // block.
-    /// let block = [2.0_f64, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
-    /// let blocks = 1 << 16;
-    /// let exact_variance = (32.0 * blocks as f64) / (8.0 * blocks as f64 - 1.0);
-    ///
-    /// let chained: OnlineVariance = (0..blocks)
-    ///     .flat_map(|_| block.iter().copied())
-    ///     .fold(Default::default(), Accumulate::push);
-    ///
-    /// let stream = |count| {
-    ///     (0..count)
-    ///         .flat_map(|_| block.iter().copied())
-    ///         .fold(OnlineVariance::default(), OnlineVariance::push)
-    /// };
-    /// let per_stream = blocks / 4;
-    /// let merged = stream(per_stream)
-    ///     .merge(stream(per_stream))
-    ///     .merge(stream(per_stream).merge(stream(per_stream)));
-    ///
-    /// let chained_err = (chained.variance().unwrap() - exact_variance).abs();
-    /// let merged_err = (merged.variance().unwrap() - exact_variance).abs();
-    /// assert!(merged_err < chained_err);
-    /// assert_relative_eq!(merged.variance().unwrap(), exact_variance, max_relative = 1e-13);
-    /// ```
-    pub fn merge(self, other: Self) -> Self {
-        if other.count == 0 {
-            return self;
-        }
-        if self.count == 0 {
-            return other;
-        }
-        let na = self.count as f64;
-        let nb = other.count as f64;
-        let n = na + nb;
-        // The two accumulators generally have different offsets, so re-express
-        // `other`'s mean in `self`'s frame. Grouping the two differences
-        // separately keeps this accurate when the offsets are close, which is
-        // the common case (both are data values).
-        let delta = (other.offset - self.offset) + (other.m[0] - self.m[0]);
-
-        let mut m = [0.0; ORDER];
-        m[0] = self.m[0] + delta * nb / n;
-        if let (Some(&m2a), Some(&m2b)) = (self.m.get(1), other.m.get(1)) {
-            if let (Some(&m3a), Some(&m3b)) = (self.m.get(2), other.m.get(2)) {
-                m[2] = m3a
-                    + m3b
-                    + delta * delta * delta * na * nb * (na - nb) / (n * n)
-                    + 3.0 * delta * (na * m2b - nb * m2a) / n;
-            }
-            m[1] = m2a + m2b + delta * delta * na * nb / n;
-        }
-
-        Self {
-            count: self.count + other.count,
-            offset: self.offset,
-            m,
-        }
-    }
-}
-
-/// Single-pass mean accumulator (alias of [`OnlineMoments<2>`]).
-pub type OnlineMean = OnlineMoments<2>;
-
-/// Single-pass mean and variance accumulator (alias of [`OnlineMoments<2>`]).
-pub type OnlineVariance = OnlineMoments<2>;
-
-/// Single-pass mean, variance, and skewness accumulator (alias of [`OnlineMoments<3>`]).
-pub type OnlineSkewness = OnlineMoments<3>;
-
-impl<const ORDER: usize> crate::statistics::Accumulate for OnlineMoments<ORDER> {
-    /// Folds one observation into the moments.
-    ///
-    /// ```
-    /// use statrs::statistics::OnlineVariance;
-    /// use statrs::statistics::Accumulate;
-    /// let s = [1.0_f64, 2.0, 3.0].iter().copied()
-    ///     .fold(OnlineVariance::default(), OnlineVariance::push);
-    /// ```
-    ///
-    /// # Precision
-    /// Sensitive to data ordering, especially with regard to scale of initial item.
-    /// If consuming very large streams, see [`merge`](OnlineMoments::merge)
-    fn push(mut self, x: f64) -> Self {
-        if self.count == 0 {
-            self.offset = x;
-        }
-        self.count += 1;
-        let n = self.count as f64;
-        // work relative to the first observation; see the type-level docs
-        let x = x - self.offset;
-
-        // Welford / Pebay (2008) central moment update. Update order: M3
-        // before M2 before mean; each step uses the previous observation's
-        // lower-order accumulators.
-        let delta = x - self.m[0];
-        let delta_n = delta / n;
-        let new_mean = self.m[0] + delta_n;
-        let delta2 = x - new_mean;
-
-        if let Some(&old_m2) = self.m.get(1) {
-            if let Some(inc) = self.m.get(2).map(|_| {
-                delta * (delta_n * delta_n) * (n - 1.0) * (n - 2.0) - 3.0 * delta_n * old_m2
-            }) {
-                self.m[2] += inc;
-            }
-            self.m[1] += delta * delta2;
-        }
-
-        self.m[0] = new_mean;
-        self
     }
 }
 
@@ -289,13 +168,20 @@ mod tests {
 
     #[test]
     fn single_element() {
-        let s = OnlineMoments::<2>::default().push(5.0);
-        assert_eq!(s.count, 1);
-        assert_eq!(s.mean(), Some(5.0));
-        assert_eq!(s.variance(), None);
-        assert_eq!(s.std_dev(), None);
-        assert_eq!(s.population_variance(), Some(0.0));
-        assert_eq!(s.population_std_dev(), Some(0.0));
+        let acc = Accumulate::default().push(5.0);
+        let (
+            OnlineMean(mean),
+            OnlineVariance(variance),
+            OnlineStdDev(std_dev),
+            OnlinePopulationVariance(population_variance),
+            OnlinePopulationStdDev(population_std_dev),
+        ) = acc.get();
+        assert_eq!(acc.count, 1);
+        assert_eq!(mean, Some(5.0));
+        assert_eq!(variance, None);
+        assert_eq!(std_dev, None);
+        assert_eq!(population_variance, Some(0.0));
+        assert_eq!(population_std_dev, Some(0.0));
     }
 
     #[test]
@@ -303,90 +189,33 @@ mod tests {
         // [2,4,4,4,5,5,7,9]: mean=5.0, M2=32, sample variance=32/7,
         // population variance=32/8=4.0
         let data = [2.0_f64, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
-        let s = data
+        let (
+            OnlineMean(mean),
+            OnlineVariance(variance),
+            OnlineStdDev(std_dev),
+            OnlinePopulationVariance(population_variance),
+            OnlinePopulationStdDev(population_std_dev),
+        ) = data
             .iter()
             .copied()
-            .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-        prec::assert_abs_diff_eq!(s.mean().unwrap(), 5.0);
-        prec::assert_abs_diff_eq!(s.variance().unwrap(), 32.0 / 7.0);
-        prec::assert_abs_diff_eq!(s.std_dev().unwrap(), (32.0_f64 / 7.0).sqrt());
-        prec::assert_abs_diff_eq!(s.population_variance().unwrap(), 4.0);
-        prec::assert_abs_diff_eq!(s.population_std_dev().unwrap(), 2.0);
-    }
-
-    /// Welford's `mean += delta / n` cannot represent a small increment against
-    /// a large running mean, so `1e12 + U(0, 1)` used to come out with `2.5e-4`
-    /// relative error in the variance (statrs-dev/statrs#376). Accumulating
-    /// relative to the first observation keeps the magnitudes small.
-    ///
-    /// The offsets and the step are powers of two and the values need only 51
-    /// bits, so every sample is exactly representable at every offset and the
-    /// reference variance is exact - otherwise quantisation at `2^40` would
-    /// swamp what is being measured.
-    #[test]
-    fn variance_is_accurate_for_data_with_a_large_offset() {
-        const STEP: f64 = 1.0 / 1024.0; // 2^-10
-        const PERIOD: usize = 1024;
-        const REPEATS: usize = 100;
-        let n = (PERIOD * REPEATS) as f64;
-        // population variance of {0, STEP, ..., 1023 * STEP}
-        let pop = ((PERIOD * PERIOD - 1) as f64 / 12.0) * STEP * STEP;
-        let expected_variance = pop * n / (n - 1.0);
-        let expected_mean_offset = (PERIOD - 1) as f64 / 2.0 * STEP;
-
-        for exp in [0i32, 10, 20, 30, 40] {
-            let offset = f64::powi(2.0, exp);
-            // Folded straight off the iterator rather than collected, so the
-            // test also builds under `no_std`, where there is no `Vec`.
-            let s = (0..PERIOD * REPEATS)
-                .map(|i| offset + (i % PERIOD) as f64 * STEP)
-                .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-            prec::assert_relative_eq!(
-                s.variance().unwrap(),
-                expected_variance,
-                epsilon = 0.0,
-                max_relative = 1e-13
-            );
-            prec::assert_relative_eq!(
-                s.mean().unwrap(),
-                offset + expected_mean_offset,
-                epsilon = 0.0,
-                // the accumulated error lives in the shifted mean, so it is
-                // largest relative to the total when the offset is small
-                max_relative = 1e-14
-            );
-        }
-    }
-
-    /// The shift is per-accumulator, so `merge` has to reconcile two different
-    /// offsets; check it still matches a single chain on offset data.
-    #[test]
-    fn merge_reconciles_different_offsets() {
-        // Closures returning fresh iterators, so the same data can be folded
-        // three ways without collecting it (there is no `Vec` under `no_std`).
-        let a = || (0..500).map(|i| 1e12 + i as f64 * 1e-3);
-        let b = || (0..500).map(|i| 1e12 + 5.0 + i as f64 * 1e-3);
-        let ma = a().fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-        let mb = b().fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-        let mw = a()
-            .chain(b())
-            .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-        prec::assert_relative_eq!(
-            ma.merge(mb).variance().unwrap(),
-            mw.variance().unwrap(),
-            epsilon = 0.0,
-            max_relative = 1e-12
-        );
+            .fold(Accumulate::default(), Accumulate::push)
+            .get();
+        prec::assert_abs_diff_eq!(mean.unwrap(), 5.0);
+        prec::assert_abs_diff_eq!(variance.unwrap(), 32.0 / 7.0);
+        prec::assert_abs_diff_eq!(std_dev.unwrap(), (32.0_f64 / 7.0).sqrt());
+        prec::assert_abs_diff_eq!(population_variance.unwrap(), 4.0);
+        prec::assert_abs_diff_eq!(population_std_dev.unwrap(), 2.0);
     }
 
     #[test]
     fn nan_propagates() {
-        let s = [1.0_f64, f64::NAN]
+        let (OnlineMean(mean), OnlineVariance(variance)) = [1.0_f64, f64::NAN]
             .iter()
             .copied()
-            .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-        assert!(s.mean().unwrap().is_nan());
-        assert!(s.variance().unwrap().is_nan());
+            .fold(Accumulate::default(), Accumulate::push)
+            .get();
+        assert!(mean.unwrap().is_nan());
+        assert!(variance.unwrap().is_nan());
     }
 
     #[test]
@@ -394,79 +223,35 @@ mod tests {
         // [2,4,4,4,5,5,7,9]: skewness = (M3/n) / (M2/n)^1.5
         // M2 = 32, M3 = 42, n = 8 => (42/8) / (32/8)^1.5 = 5.25 / 8.0 = 0.65625
         let data = [2.0_f64, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
-        let s = data
+        let (OnlineSkewness(skewness),) = data
             .iter()
             .copied()
-            .fold(OnlineMoments::<3>::default(), OnlineMoments::push);
-        prec::assert_abs_diff_eq!(s.skewness().unwrap(), 0.65625);
-    }
-
-    #[test]
-    fn merge_matches_single_accumulator() {
-        let data = [3.0_f64, -1.0, 4.0, 1.0, -5.0, 9.0, 2.0, 6.0, -3.0];
-        for split in 0..=data.len() {
-            let (lo, hi) = data.split_at(split);
-            let a = lo
-                .iter()
-                .copied()
-                .fold(OnlineMoments::<3>::default(), OnlineMoments::push);
-            let b = hi
-                .iter()
-                .copied()
-                .fold(OnlineMoments::<3>::default(), OnlineMoments::push);
-            let merged = a.merge(b);
-            let whole = data
-                .iter()
-                .copied()
-                .fold(OnlineMoments::<3>::default(), OnlineMoments::push);
-            assert_eq!(merged.count, whole.count);
-            prec::assert_relative_eq!(
-                merged.mean().unwrap(),
-                whole.mean().unwrap(),
-                max_relative = 1e-14
-            );
-            prec::assert_relative_eq!(
-                merged.variance().unwrap(),
-                whole.variance().unwrap(),
-                max_relative = 1e-13
-            );
-            prec::assert_relative_eq!(
-                merged.skewness().unwrap(),
-                whole.skewness().unwrap(),
-                max_relative = 1e-12
-            );
-        }
-    }
-
-    #[test]
-    fn merge_with_empty_is_identity() {
-        let a = [1.0_f64, 2.0, 3.0]
-            .iter()
-            .copied()
-            .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-        let empty = OnlineMoments::<2>::default();
-        assert_eq!(a.merge(empty).variance(), Some(1.0));
-        let a = [1.0_f64, 2.0, 3.0]
-            .iter()
-            .copied()
-            .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-        let empty = OnlineMoments::<2>::default();
-        assert_eq!(empty.merge(a).variance(), Some(1.0));
+            .fold(Accumulate::default(), Accumulate::push)
+            .get();
+        prec::assert_abs_diff_eq!(skewness.unwrap(), 0.65625);
     }
 
     #[test]
     fn order_3_mean_and_variance_match_order_2() {
+        fn get_order<MS: OnlineMoments>(_acc: &Accumulate<MS>) -> usize {
+            MS::order()
+        }
+
         let data = [2.0_f64, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
-        let s2 = data
+        let acc2 = data
             .iter()
             .copied()
-            .fold(OnlineMoments::<2>::default(), OnlineMoments::push);
-        let s3 = data
+            .fold(Accumulate::default(), Accumulate::push);
+        assert_eq!(get_order(&acc2), 2);
+        let (OnlineMean(s2_mean), OnlineVariance(s2_variance)) = acc2.get();
+        let acc3 = data
             .iter()
             .copied()
-            .fold(OnlineMoments::<3>::default(), OnlineMoments::push);
-        prec::assert_abs_diff_eq!(s2.mean().unwrap(), s3.mean().unwrap());
-        prec::assert_abs_diff_eq!(s2.variance().unwrap(), s3.variance().unwrap());
+            .fold(Accumulate::default(), Accumulate::push);
+        assert_eq!(get_order(&acc3), 3);
+        let (OnlineMean(s3_mean), OnlineVariance(s3_variance), OnlineSkewness(_)) = acc3.get();
+        prec::assert_abs_diff_eq!(s2_mean.unwrap(), s3_mean.unwrap());
+        prec::assert_abs_diff_eq!(s2_variance.unwrap(), s3_variance.unwrap());
     }
 }
 
@@ -477,32 +262,36 @@ mod accumulate_tests {
 
     #[test]
     fn online_moments_impl_accumulate() {
-        let s: OnlineMoments<2> = [1.0_f64, 2.0, 3.0]
+        let (OnlineMean(mean),) = [1.0_f64, 2.0, 3.0]
             .iter()
             .copied()
-            .fold(Default::default(), Accumulate::push);
-        assert_eq!(s.mean(), Some(2.0));
+            .fold(Accumulate::default(), Accumulate::push)
+            .get();
+        assert_eq!(mean, Some(2.0));
     }
 
     #[test]
     fn tuple_composition_matches_separate_folds() {
         let data = [3.0_f64, -1.0, 4.0, 1.0, -5.0, 9.0];
 
-        let (skew, var): (OnlineSkewness, OnlineVariance) = data
+        let (OnlineSkewness(skewness), OnlineVariance(variance)) = data
             .iter()
             .copied()
-            .fold(Default::default(), Accumulate::push);
+            .fold(Accumulate::default(), Accumulate::push)
+            .get();
 
-        let skew_alone = data
+        let (OnlineSkewness(skewness_alone),) = data
             .iter()
             .copied()
-            .fold(OnlineSkewness::default(), OnlineSkewness::push);
-        let var_alone = data
+            .fold(Accumulate::default(), Accumulate::push)
+            .get();
+        let (OnlineVariance(variance_alone),) = data
             .iter()
             .copied()
-            .fold(OnlineVariance::default(), OnlineVariance::push);
+            .fold(Accumulate::default(), Accumulate::push)
+            .get();
 
-        assert_eq!(skew.skewness(), skew_alone.skewness());
-        assert_eq!(var.variance(), var_alone.variance());
+        assert_eq!(skewness, skewness_alone);
+        assert_eq!(variance, variance_alone);
     }
 }
