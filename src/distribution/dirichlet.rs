@@ -21,7 +21,7 @@ use num_traits::Float as _;
 ///
 /// let n = Dirichlet::new(vec![1.0, 2.0, 3.0]).unwrap();
 /// assert_eq!(n.mean().unwrap(), DVector::from_vec(vec![1.0 / 6.0, 1.0 / 3.0, 0.5]));
-/// assert_eq!(n.pdf(&DVector::from_vec(vec![0.33333, 0.33333, 0.33333])), 2.222155556222205);
+/// assert_eq!(n.pdf(&DVector::from_vec(vec![0.33333, 0.33333, 0.33333])), 2.2221555562222193);
 /// ```
 #[derive(Clone, PartialEq, Debug)]
 pub struct Dirichlet<D>
