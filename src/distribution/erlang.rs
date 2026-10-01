@@ -139,6 +139,25 @@ impl ContinuousCDF<f64, f64> for Erlang {
     }
 }
 
+impl Median<f64> for Erlang {
+    /// Returns the median of the erlang distribution.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// CDF^-1(0.5)
+    /// ```
+    ///
+    /// # Remarks
+    ///
+    /// Delegates to [`Gamma::median`](crate::distribution::Gamma::median), of
+    /// which the Erlang is the integer-shape case. No closed form exists, so
+    /// that is a numerical search rather than `O(1)`.
+    fn median(&self) -> f64 {
+        self.g.median()
+    }
+}
+
 impl Min<f64> for Erlang {
     /// Returns the minimum value in the domain of the
     /// erlang distribution representable by a double precision

@@ -3,7 +3,7 @@ use crate::function::gamma;
 use crate::prec;
 use crate::statistics::*;
 use alloc::{vec, vec::Vec};
-use nalgebra::{Dim, Dyn, OMatrix, OVector};
+use nalgebra::{Const, Dim, Dyn, OMatrix, OVector};
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -217,6 +217,83 @@ where
     }
 }
 
+impl<D> Min<OVector<f64, D>> for Dirichlet<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
+{
+    /// Returns the componentwise infimum over the support of the Dirichlet
+    /// distribution, the zero vector.
+    ///
+    /// # Remarks
+    ///
+    /// This matches [`Beta::min`](crate::distribution::Beta::min), of which the
+    /// Dirichlet is the multivariate generalization: each coordinate is
+    /// supported on `(0, 1)`, so zero is an infimum rather than an attained
+    /// value. See [`Self::max`] for why the vector itself is not in the support.
+    fn min(&self) -> OVector<f64, D> {
+        OMatrix::repeat_generic(self.alpha.shape_generic().0, Const::<1>, 0.0)
+    }
+}
+
+impl<D> Max<OVector<f64, D>> for Dirichlet<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
+{
+    /// Returns the componentwise supremum over the support of the Dirichlet
+    /// distribution, one in every coordinate.
+    ///
+    /// # Remarks
+    ///
+    /// As with [`Self::min`], these are bounds on each coordinate separately and
+    /// are approached but not attained. The returned vector is not in the
+    /// support for `k > 1`: a Dirichlet sample lies on the unit simplex and so
+    /// sums to one, whereas this vector sums to `k`. It is the corner of the
+    /// smallest axis-aligned box containing the simplex.
+    fn max(&self) -> OVector<f64, D> {
+        OMatrix::repeat_generic(self.alpha.shape_generic().0, Const::<1>, 1.0)
+    }
+}
+
+impl<D> Mode<Option<OVector<f64, D>>> for Dirichlet<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
+{
+    /// Returns the mode of the dirichlet distribution, or `None` if any
+    /// `α_i <= 1`.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// (α_i - 1) / (α_0 - K)
+    /// ```
+    ///
+    /// for the `i`th element, where `α_0` is the sum of all concentration
+    /// parameters and `K` is their count.
+    ///
+    /// # Remarks
+    ///
+    /// The restriction to `α_i > 1` mirrors
+    /// [`Beta::mode`](crate::distribution::Beta::mode), of which this is the
+    /// generalization: at `K == 2` the formula is `(α - 1) / (α + β - 2)`. Below
+    /// that threshold the density is unbounded at the corresponding face of the
+    /// simplex, so no interior maximizer exists.
+    ///
+    /// Unlike [`Self::min`] and [`Self::max`], the mode *is* a point of the
+    /// support: its coordinates sum to `(α_0 - K) / (α_0 - K) = 1`. The
+    /// denominator is positive whenever the guard passes, since
+    /// `α_0 - K = Σ(α_i - 1)`.
+    fn mode(&self) -> Option<OVector<f64, D>> {
+        if self.alpha.iter().any(|&a| a <= 1.0) {
+            return None;
+        }
+        let sum = self.alpha_sum() - self.alpha.len() as f64;
+        Some(self.alpha.map(|a| (a - 1.0) / sum))
+    }
+}
+
 impl<D> MeanN<OVector<f64, D>> for Dirichlet<D>
 where
     D: Dim,
@@ -284,13 +361,20 @@ where
     /// with given `x`'s corresponding to the concentration parameters for this
     /// distribution
     ///
+    /// # Remarks
+    ///
+    /// Returns `0.0` for any `x` outside the support: an element not in
+    /// `(0, 1)`, or elements that do not sum to `1` within a tolerance of
+    /// `1e-4`. This matches every other distribution in the crate, including
+    /// [`Multinomial`](crate::distribution::Multinomial), whose `pmf` likewise
+    /// returns zero rather than failing when the coordinates do not sum
+    /// correctly.
+    ///
     /// # Panics
     ///
-    /// If any element in `x` is not in `(0, 1)`, the elements in `x` do not
-    /// sum to
-    /// `1` with a tolerance of `1e-4`,  or if `x` is not the same length as
-    /// the vector of
-    /// concentration parameters for this distribution
+    /// If `x` is not the same length as the vector of concentration parameters
+    /// for this distribution. Unlike an out-of-support value, that is a
+    /// dimension error with no meaningful density to return.
     ///
     /// # Formula
     ///
@@ -318,12 +402,17 @@ where
     /// with given `x`'s corresponding to the concentration parameters for this
     /// distribution
     ///
+    /// # Remarks
+    ///
+    /// Returns `f64::NEG_INFINITY` for any `x` outside the support, namely an
+    /// element outside `(0, 1)`[^*] or elements that do not add to `1f64` within
+    /// `1e-4`.
+    ///
+    /// [^*]: inspected by checking each element of `x` with `(f64::MIN_POSITIVE..1.0).contains(&x_i)`, so a subnormal `x_i` is treated as off the simplex
+    ///
     /// # Panics
     ///
-    /// If `x` is not the same length as concentration parameter, `alpha`
-    /// If any element in `x` is not in `(0, 1)`[^*]
-    /// [^*]: inspected by checking each element of `x` with `(f64::MIN_POSITIVE..1.0).contains(&x_i)`
-    /// If elements in `x` do not add to `1f64` within `1e-4`
+    /// If `x` is not the same length as the concentration parameters, `alpha`.
     ///
     /// # Formula
     ///
@@ -347,25 +436,23 @@ where
             panic!("Arguments must have correct dimensions.");
         }
 
+        // Off the simplex the density is zero. Classify before evaluating, so
+        // that an out-of-range x_i cannot reach `ln` and produce a misleading
+        // finite total.
+        if x.iter().any(|x_i| !(f64::MIN_POSITIVE..1.0).contains(x_i))
+            || !prec::abs_diff_eq!(x.sum(), 1.0, epsilon = 1e-4)
+        {
+            return f64::NEG_INFINITY;
+        }
+
         let mut term = 0.0;
-        let mut sum_x = 0.0;
         let mut sum_alpha = 0.0;
 
         for (&x_i, &alpha_i) in x.iter().zip(self.alpha.iter()) {
-            assert!(
-                (f64::MIN_POSITIVE..1.0).contains(&x_i),
-                "Arguments must be in (0, 1)"
-            );
-
             term += (alpha_i - 1.0) * x_i.ln() - gamma::ln_gamma(alpha_i);
-            sum_x += x_i;
             sum_alpha += alpha_i;
         }
 
-        assert!(
-            prec::abs_diff_eq!(sum_x, 1.0, epsilon = 1e-4),
-            "Arguments must sum up to 1"
-        );
         term + gamma::ln_gamma(sum_alpha)
     }
 }
@@ -441,6 +528,115 @@ mod tests {
         test_almost(vector![1., 2.], 1., 1e-15, |dd| {
             dd.sample(&mut rand::rngs::StdRng::seed_from_u64(0)).sum()
         });
+    }
+
+    #[test]
+    fn test_mode() {
+        // (α_i - 1) / (α_0 - K): here α_0 = 6, K = 3, so each is 1/3.
+        let d = try_create(dvector![2.0, 2.0, 2.0]);
+        prec::assert_relative_eq!(d.mode().unwrap(), dvector![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0], epsilon = 1e-15);
+
+        // α_0 = 9, K = 3, denominator 6.
+        let d = try_create(dvector![2.0, 3.0, 4.0]);
+        prec::assert_relative_eq!(
+            d.mode().unwrap(),
+            dvector![1.0 / 6.0, 1.0 / 3.0, 0.5],
+            epsilon = 1e-15
+        );
+
+        // Unbounded density at a face -> no interior mode, as for Beta.
+        assert!(try_create(dvector![1.0, 2.0, 3.0]).mode().is_none());
+        assert!(try_create(dvector![0.5, 2.0]).mode().is_none());
+        assert!(try_create(dvector![2.0, 1.0]).mode().is_none());
+    }
+
+    /// The mode is a genuine support point, unlike the componentwise bounds, and
+    /// it agrees with `Beta` at `K == 2`.
+    #[test]
+    fn test_mode_is_in_support_and_generalizes_beta() {
+        let d = try_create(dvector![2.0, 3.0, 4.0]);
+        let m = d.mode().unwrap();
+        prec::assert_relative_eq!(m.sum(), 1.0, epsilon = 1e-15);
+        assert!(d.pdf(&m) > 0.0);
+
+        let beta = crate::distribution::Beta::new(3.0, 5.0).unwrap();
+        let d2 = try_create(vector![3.0, 5.0]);
+        prec::assert_relative_eq!(d2.mode().unwrap()[0], beta.mode().unwrap(), epsilon = 1e-15);
+    }
+
+    /// Reference-free check of the formula: the returned point must actually
+    /// maximize the density. Perturbing mass from one coordinate to another
+    /// keeps the point on the simplex, so the density must not increase.
+    #[test]
+    fn test_mode_maximizes_the_density() {
+        for alpha in [
+            dvector![2.0, 3.0, 4.0],
+            dvector![5.0, 5.0, 5.0],
+            dvector![1.5, 9.0, 2.5, 4.0],
+        ] {
+            let d = try_create(alpha);
+            let m = d.mode().unwrap();
+            let at_mode = d.pdf(&m);
+
+            for i in 0..m.len() {
+                for j in 0..m.len() {
+                    if i == j {
+                        continue;
+                    }
+                    for eps in [1e-4, 1e-3, 1e-2, 0.05] {
+                        if m[j] <= eps {
+                            continue;
+                        }
+                        let mut q = m.clone();
+                        q[i] += eps;
+                        q[j] -= eps;
+                        assert!(
+                            d.pdf(&q) <= at_mode,
+                            "pdf at perturbed point exceeded the claimed mode"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_min_max() {
+        let d = try_create(dvector![1.0, 2.0, 3.0]);
+        assert_eq!(d.min(), dvector![0.0, 0.0, 0.0]);
+        assert_eq!(d.max(), dvector![1.0, 1.0, 1.0]);
+
+        let d = try_create(vector![0.5, 0.5]);
+        assert_eq!(d.min(), vector![0.0, 0.0]);
+        assert_eq!(d.max(), vector![1.0, 1.0]);
+    }
+
+    /// As with `Multinomial` (statrs-dev/statrs#276), the bounds are per
+    /// coordinate: they contain the simplex without lying on it, and they are
+    /// open rather than attained. That is the `Beta` behaviour generalized.
+    #[test]
+    fn test_min_max_bound_the_support_componentwise() {
+        let d = try_create(dvector![2.0, 2.0, 2.0]);
+
+        // Every coordinate of a support point lies strictly between the bounds.
+        let interior = dvector![0.25, 0.25, 0.5];
+        assert!(d.pdf(&interior) > 0.0, "premise: interior point is in support");
+        for i in 0..3 {
+            assert!(d.min()[i] < interior[i] && interior[i] < d.max()[i]);
+        }
+
+        // But the bound vectors are not support points: a Dirichlet sample sums
+        // to one, whereas these sum to 0 and to k. The density is zero at both.
+        prec::assert_relative_eq!(interior.sum(), 1.0, epsilon = 1e-15);
+        assert_eq!(d.min().sum(), 0.0);
+        assert_eq!(d.max().sum(), 3.0);
+        assert_eq!(d.pdf(&d.min()), 0.0, "the zero vector is off the simplex");
+        assert_eq!(d.pdf(&d.max()), 0.0, "the ones vector sums to k, not 1");
+
+        // Matches the univariate case it generalizes.
+        let beta = crate::distribution::Beta::new(2.0, 2.0).unwrap();
+        assert_eq!(beta.min(), d.min()[0]);
+        assert_eq!(beta.max(), d.max()[0]);
     }
 
     #[test]
@@ -566,18 +762,30 @@ mod tests {
         n.pdf(&dvector![0.5]);
     }
 
+    /// Off the simplex the density is zero rather than a panic. These four
+    /// cases previously asserted `#[should_panic]`; see the note in the PR
+    /// description accompanying statrs-dev/statrs#276.
     #[test]
-    #[should_panic]
-    fn test_pdf_bad_input_range() {
+    fn test_pdf_out_of_support_is_zero() {
         let n = try_create(vector![0.1, 0.3, 0.5, 0.8]);
-        n.pdf(&vector![1.5, 0.0, 0.0, 0.0]);
+        // an element outside (0, 1)
+        assert_eq!(n.pdf(&vector![1.5, 0.0, 0.0, 0.0]), 0.0);
+        assert_eq!(n.pdf(&vector![-0.5, 0.5, 0.5, 0.5]), 0.0);
+        // elements that do not sum to 1
+        assert_eq!(n.pdf(&vector![0.5, 0.25, 0.8, 0.9]), 0.0);
+        assert_eq!(n.pdf(&vector![0.1, 0.1, 0.1, 0.1]), 0.0);
+        // the in-support case still evaluates
+        assert!(n.pdf(&vector![0.25, 0.25, 0.25, 0.25]) > 0.0);
     }
 
     #[test]
-    #[should_panic]
-    fn test_pdf_bad_input_sum() {
+    fn test_ln_pdf_out_of_support_is_neg_infinity() {
         let n = try_create(vector![0.1, 0.3, 0.5, 0.8]);
-        n.pdf(&vector![0.5, 0.25, 0.8, 0.9]);
+        assert_eq!(n.ln_pdf(&vector![1.5, 0.0, 0.0, 0.0]), f64::NEG_INFINITY);
+        assert_eq!(n.ln_pdf(&vector![0.5, 0.25, 0.8, 0.9]), f64::NEG_INFINITY);
+        // consistent with pdf, which is its exponential
+        assert_eq!(n.pdf(&vector![0.5, 0.25, 0.8, 0.9]), 0.0);
+        assert!(n.ln_pdf(&vector![0.25, 0.25, 0.25, 0.25]).is_finite());
     }
 
     #[test]
@@ -585,20 +793,6 @@ mod tests {
     fn test_ln_pdf_bad_input_length() {
         let n = try_create(dvector![0.1, 0.3, 0.5, 0.8]);
         n.ln_pdf(&dvector![0.5]);
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_ln_pdf_bad_input_range() {
-        let n = try_create(vector![0.1, 0.3, 0.5, 0.8]);
-        n.ln_pdf(&vector![1.5, 0.0, 0.0, 0.0]);
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_ln_pdf_bad_input_sum() {
-        let n = try_create(vector![0.1, 0.3, 0.5, 0.8]);
-        n.ln_pdf(&vector![0.5, 0.25, 0.8, 0.9]);
     }
 
     #[test]

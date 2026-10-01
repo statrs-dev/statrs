@@ -300,6 +300,27 @@ impl Distribution<f64> for Chi {
     }
 }
 
+impl Median<f64> for Chi {
+    /// Returns the median of the chi distribution.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// CDF^-1(0.5)
+    /// ```
+    ///
+    /// # Remarks
+    ///
+    /// No closed form exists, so this inverts the cdf by numerical search and
+    /// therefore costs many cdf evaluations rather than `O(1)`. Note this is
+    /// more accurate than the approximation
+    /// [`ChiSquared::median`](crate::distribution::ChiSquared::median) uses,
+    /// despite the two being related by a square root.
+    fn median(&self) -> f64 {
+        self.inverse_cdf(0.5)
+    }
+}
+
 impl Mode<Option<f64>> for Chi {
     /// Returns the mode for the chi distribution
     ///

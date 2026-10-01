@@ -2,7 +2,7 @@ use crate::distribution::Discrete;
 use crate::function::factorial;
 use crate::statistics::*;
 use alloc::vec::Vec;
-use nalgebra::{Dim, Dyn, OMatrix, OVector};
+use nalgebra::{Const, Dim, Dyn, OMatrix, OVector};
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -267,6 +267,56 @@ where
     res
 }
 
+impl<D> Min<OVector<u64, D>> for Multinomial<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
+{
+    /// Returns the componentwise minimum over the support of the multinomial
+    /// distribution, the zero vector.
+    ///
+    /// # Remarks
+    ///
+    /// This is a bound on each coordinate taken separately, which is the only
+    /// reading of a "minimum" that a partial order admits. Unlike the
+    /// univariate case, the bound and the distribution's support interact: a
+    /// multinomial outcome must sum to `n`, so the zero vector is in the
+    /// support only for `n == 0`. Compare [`Self::max`], where the
+    /// corresponding vector is never in the support for `n > 0`.
+    fn min(&self) -> OVector<u64, D> {
+        OMatrix::repeat_generic(self.p.shape_generic().0, Const::<1>, 0)
+    }
+}
+
+impl<D> Max<OVector<u64, D>> for Multinomial<D>
+where
+    D: Dim,
+    nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>,
+{
+    /// Returns the componentwise maximum over the support of the multinomial
+    /// distribution, `n` in every coordinate.
+    ///
+    /// # Formula
+    ///
+    /// ```text
+    /// n for i in 1...k
+    /// ```
+    ///
+    /// where `n` is the number of trials and `k` is the total number of
+    /// probabilities. Each bound is attained: coordinate `i` equals `n` on the
+    /// outcome where every trial lands in category `i`.
+    ///
+    /// # Remarks
+    ///
+    /// The bounds are attained separately, not together. The returned vector is
+    /// itself in the support only when `k == 1`, since a multinomial outcome
+    /// must sum to `n` while this vector sums to `k * n`. It is the corner of
+    /// the smallest axis-aligned box containing the support, not an outcome.
+    fn max(&self) -> OVector<u64, D> {
+        OMatrix::repeat_generic(self.p.shape_generic().0, Const::<1>, self.n)
+    }
+}
+
 impl<D> MeanN<OVector<f64, D>> for Multinomial<D>
 where
     D: Dim,
@@ -412,7 +462,7 @@ where
 mod tests {
     use crate::{
         distribution::{Discrete, Multinomial, MultinomialError},
-        statistics::{MeanN, VarianceN},
+        statistics::{MeanN, Max, Min, VarianceN},
         prec,
     };
     use nalgebra::{dmatrix, dvector, vector, DimMin, Dyn, OVector};
@@ -479,6 +529,38 @@ mod tests {
             bad_create_case(vector![1.0, f64::NAN], 4),
             MultinomialError::ProbabilityInvalid,
         );
+    }
+
+    #[test]
+    fn test_min_max() {
+        let d = try_create(vector![0.3, 0.7], 5);
+        assert_eq!(d.min(), vector![0u64, 0]);
+        assert_eq!(d.max(), vector![5u64, 5]);
+
+        let d = try_create(dvector![0.1, 0.3, 0.6], 10);
+        assert_eq!(d.min(), dvector![0u64, 0, 0]);
+        assert_eq!(d.max(), dvector![10u64, 10, 10]);
+    }
+
+    /// The componentwise bounds are attained one coordinate at a time, but the
+    /// vectors they form are not themselves outcomes -- they do not sum to `n`.
+    /// This is the ambiguity called out in statrs-dev/statrs#276, so pin the
+    /// behaviour the docs claim rather than only asserting the values.
+    #[test]
+    fn test_min_max_are_componentwise_not_outcomes() {
+        let d = try_create(vector![0.3, 0.7], 5);
+        assert_eq!(d.pmf(&d.min()), 0.0, "min() sums to 0, not n");
+        assert_eq!(d.pmf(&d.max()), 0.0, "max() sums to k*n, not n");
+
+        // Each individual bound is attained, though: all five trials in one
+        // category is a genuine outcome of probability p_i^n.
+        prec::assert_relative_eq!(d.pmf(&vector![5u64, 0]), 0.3f64.powi(5), epsilon = 1e-15);
+        prec::assert_relative_eq!(d.pmf(&vector![0u64, 5]), 0.7f64.powi(5), epsilon = 1e-15);
+
+        // n == 0 is the sole case where the bounds coincide and are an outcome.
+        let degenerate = try_create(vector![0.3, 0.7], 0);
+        assert_eq!(degenerate.min(), degenerate.max());
+        assert_eq!(degenerate.pmf(&degenerate.min()), 1.0);
     }
 
     #[test]
