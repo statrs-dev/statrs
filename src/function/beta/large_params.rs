@@ -28,7 +28,7 @@ pub(super) fn log_ratio(a: f64, b: f64, x: f64) -> (f64, (f64, f64)) {
     (residual.0 + residual.1, value)
 }
 
-fn stirling_correction(value: f64) -> f64 {
+pub(super) fn stirling_correction(value: f64) -> f64 {
     let inverse = 1.0 / value;
     let inverse_squared = inverse * inverse;
     let mut series: f64 = 7.0 / 1_092.0;

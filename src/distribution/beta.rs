@@ -183,7 +183,7 @@ impl ContinuousCDF<f64, f64> for Beta {
     ///
     /// # Panics
     ///
-    /// If x is not in `[0, 1]`.
+    /// If x is not in `[0, 1]` or the numerical method does not converge.
     ///
     /// # Formula
     ///
@@ -206,7 +206,7 @@ impl ContinuousCDF<f64, f64> for Beta {
     ///
     /// # Returns an error instead of a panic
     ///
-    /// If x is not in `[0, 1]`.
+    /// If x is not in `[0, 1]` or the numerical method does not converge.
     ///
     /// # Formula
     ///
@@ -220,7 +220,8 @@ impl ContinuousCDF<f64, f64> for Beta {
         if !(0.0..=1.0).contains(&x) {
             Err(InverseCdfError::ArgumentOutOfRange)
         } else {
-            Ok(beta::inv_beta_reg(self.shape_a, self.shape_b, x))
+            beta::try_inv_beta_reg(self.shape_a, self.shape_b, x)
+                .map_err(|_| InverseCdfError::ConvergenceFailed)
         }
     }
 }
@@ -712,6 +713,29 @@ mod tests {
         for ((a, b), x, expect) in test {
             test_relative(a, b, expect, func(x));
         }
+    }
+
+    #[test]
+    fn test_try_inverse_cdf_extreme_shape_ratio() {
+        let distribution = Beta::new(1e20, 10.0).unwrap();
+        assert_eq!(distribution.try_inverse_cdf(0.3), Ok(1.0));
+    }
+
+    #[test]
+    fn test_try_inverse_cdf_deep_tail() {
+        let distribution = Beta::new(10.0, 1e10).unwrap();
+        let actual = distribution.try_inverse_cdf(0.3).unwrap();
+        let expected = 8.132928235539348e-10_f64;
+        assert!(actual.to_bits().abs_diff(expected.to_bits()) <= 8);
+    }
+
+    #[test]
+    fn test_try_inverse_cdf_reports_unrepresentable_quantile() {
+        let distribution = Beta::new(1e308, 1e308).unwrap();
+        assert_eq!(
+            distribution.try_inverse_cdf(0.3),
+            Err(InverseCdfError::ConvergenceFailed)
+        );
     }
 
     #[test]
