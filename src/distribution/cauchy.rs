@@ -133,7 +133,13 @@ impl ContinuousCDF<f64, f64> for Cauchy {
     ///
     /// where `x_0` is the location and `γ` is the scale
     fn cdf(&self, x: f64) -> f64 {
-        (1.0 / f64_consts::PI) * ((x - self.location) / self.scale).atan() + 0.5
+        let d = self.location - x;
+        // z < -1: 0.5 + atan(z) / pi cancels, and z = (x - loc) / scale can overflow
+        if d > self.scale {
+            (self.scale / d).atan() / f64_consts::PI
+        } else {
+            (1.0 / f64_consts::PI) * ((x - self.location) / self.scale).atan() + 0.5
+        }
     }
 
     /// Calculates the survival function for the
@@ -149,7 +155,12 @@ impl ContinuousCDF<f64, f64> for Cauchy {
     /// note that this is identical to the cdf except for
     /// the negative argument to the arctan function
     fn sf(&self, x: f64) -> f64 {
-        (1.0 / f64_consts::PI) * ((self.location - x) / self.scale).atan() + 0.5
+        let d = x - self.location;
+        if d > self.scale {
+            (self.scale / d).atan() / f64_consts::PI
+        } else {
+            (1.0 / f64_consts::PI) * ((self.location - x) / self.scale).atan() + 0.5
+        }
     }
 
     /// Calculates the inverse cumulative distribution function for the
@@ -284,6 +295,7 @@ impl Continuous<f64, f64> for Cauchy {
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
+    use crate::prec;
     crate::distribution::internal::testing_boiler!(location: f64, scale: f64; Cauchy; CauchyError);
 
     #[test]
@@ -468,12 +480,12 @@ mod tests {
         test_absolute(0.0, 0.1, 0.9682744825694465, 1e-16, sf(-1.0));
         test_exact(0.0, 0.1, 0.5, sf(0.0));
         test_absolute(0.0, 0.1, 0.03172551743055352, 1e-16, sf(1.0));
-        test_exact(0.0, 0.1, 0.006365349100972806, sf(5.0));
+        test_absolute(0.0, 0.1, 0.006365349100972796679298, 1e-16, sf(5.0));
         test_absolute(0.0, 1.0, 0.9371670418109989, 1e-16, sf(-5.0));
         test_exact(0.0, 1.0, 0.75, sf(-1.0));
         test_exact(0.0, 1.0, 0.5, sf(0.0));
         test_exact(0.0, 1.0, 0.25, sf(1.0));
-        test_exact(0.0, 1.0, 0.06283295818900114, sf(5.0));
+        test_absolute(0.0, 1.0, 0.06283295818900118381375, 1e-16, sf(5.0));
         test_exact(0.0, 10.0, 0.6475836176504333, sf(-5.0));
         test_exact(0.0, 10.0, 0.5317255174305535, sf(-1.0));
         test_exact(0.0, 10.0, 0.5, sf(0.0));
@@ -494,6 +506,29 @@ mod tests {
         test_exact(f64::INFINITY, 1.0, 1.0, sf(0.0));
         test_exact(f64::INFINITY, 1.0, 1.0, sf(1.0));
         test_exact(f64::INFINITY, 1.0, 1.0, sf(5.0));
+    }
+
+    #[test]
+    fn test_cdf_sf_tails() {
+        // cdf(-d) = sf(d) = atan2(scale, d) / pi, from mpmath at 50 digits on the exact f64 d
+        let cases = [
+            (100.0, 0.003182992764908255149119),
+            (1e12, 3.183098861837906715378e-13),
+            (1e16, 3.183098861837906715378e-17),
+            (1e300, 3.18309886183790654825e-301),
+        ];
+
+        let dist = create_ok(0.0, 1.0);
+        for (d, expected) in cases {
+            prec::assert_relative_eq!(dist.cdf(-d), expected, epsilon = 0.0, max_relative = 1e-15);
+            prec::assert_relative_eq!(dist.sf(d), expected, epsilon = 0.0, max_relative = 1e-15);
+        }
+
+        // 1e10 / 1e-300 overflows and the result is subnormal, so the tolerance is absolute
+        let cdf = |arg: f64| move |x: Cauchy| x.cdf(arg);
+        let sf = |arg: f64| move |x: Cauchy| x.sf(arg);
+        test_absolute(0.0, 1e-300, 3.183098861837906795143e-311, 1e-322, cdf(-1e10));
+        test_absolute(0.0, 1e-300, 3.183098861837906795143e-311, 1e-322, sf(1e10));
     }
 
     #[test]
