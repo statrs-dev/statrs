@@ -353,15 +353,15 @@ where
     /// - `k` is the dimension of the distribution.
     fn pdf(&self, x: &OVector<f64, D>) -> f64 {
         if self.freedom.is_infinite() {
-            use super::multivariate_normal::density_normalization_and_exponential;
-            let (pdf_const, exp_arg) = density_normalization_and_exponential(
+            use super::multivariate_normal::density_ln_normalization_and_exponential;
+            let (ln_pdf_const, exp_arg) = density_ln_normalization_and_exponential(
                 &self.location,
                 &self.scale,
                 &self.precision,
                 x,
             )
             .unwrap();
-            return pdf_const * exp_arg.exp();
+            return (ln_pdf_const + exp_arg).exp();
         }
 
         let dv = x - &self.location;
@@ -374,15 +374,15 @@ where
     /// student distribution at `x`. Equivalent to pdf(x).ln().
     fn ln_pdf(&self, x: &OVector<f64, D>) -> f64 {
         if self.freedom.is_infinite() {
-            use super::multivariate_normal::density_normalization_and_exponential;
-            let (pdf_const, exp_arg) = density_normalization_and_exponential(
+            use super::multivariate_normal::density_ln_normalization_and_exponential;
+            let (ln_pdf_const, exp_arg) = density_ln_normalization_and_exponential(
                 &self.location,
                 &self.scale,
                 &self.precision,
                 x,
             )
             .unwrap();
-            return pdf_const.ln() + exp_arg;
+            return ln_pdf_const + exp_arg;
         }
 
         let dv = x - &self.location;
