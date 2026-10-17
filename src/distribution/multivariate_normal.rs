@@ -1,14 +1,14 @@
 use crate::distribution::Continuous;
 use crate::statistics::{Max, MeanN, Min, Mode, VarianceN};
 use alloc::vec::Vec;
-use core::f64::consts::{E, PI};
+use core::f64::consts::PI;
 use nalgebra::{Cholesky, Const, DMatrix, DVector, Dim, DimMin, Dyn, OMatrix, OVector};
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
-/// Computes both the normalization and exponential argument in the normal
+/// Computes both the log normalization and exponential argument in the normal
 /// distribution, returning `None` on dimension mismatch.
-pub(super) fn density_normalization_and_exponential<D>(
+pub(super) fn density_ln_normalization_and_exponential<D>(
     mu: &OVector<f64, D>,
     cov: &OMatrix<f64, D, D>,
     precision: &OMatrix<f64, D, D>,
@@ -20,7 +20,7 @@ where
         nalgebra::allocator::Allocator<D> + nalgebra::allocator::Allocator<D, D>,
 {
     Some((
-        density_distribution_pdf_const(mu, cov)?,
+        density_distribution_ln_pdf_const(mu, cov)?,
         density_distribution_exponential(mu, precision, x)?,
     ))
 }
@@ -50,10 +50,13 @@ where
     Some(exp_term)
 }
 
-/// Computes the argument of the normalization term in the normal distribution,
+/// Computes the log normalization term in the normal distribution,
 /// returning `None` on dimension mismatch.
 #[inline]
-fn density_distribution_pdf_const<D>(mu: &OVector<f64, D>, cov: &OMatrix<f64, D, D>) -> Option<f64>
+fn density_distribution_ln_pdf_const<D>(
+    mu: &OVector<f64, D>,
+    cov: &OMatrix<f64, D, D>,
+) -> Option<f64>
 where
     D: DimMin<D, Output = D>,
     nalgebra::DefaultAllocator: nalgebra::allocator::Allocator<D>
@@ -63,12 +66,8 @@ where
     if cov.shape_generic().0 != mu.shape_generic().0 || !cov.is_square() {
         return None;
     }
-    let cov_det = cov.determinant();
-    Some(
-        ((2. * PI).powi(mu.nrows() as i32) * cov_det.abs())
-            .recip()
-            .sqrt(),
-    )
+    let cov_ln_det = cov.clone().cholesky()?.ln_determinant();
+    Some(-0.5 * (mu.nrows() as f64 * (2. * PI).ln() + cov_ln_det))
 }
 
 /// Implements the [Multivariate Normal](https://en.wikipedia.org/wiki/Multivariate_normal_distribution)
@@ -97,7 +96,7 @@ where
     mu: OVector<f64, D>,
     cov: OMatrix<f64, D, D>,
     precision: OMatrix<f64, D, D>,
-    pdf_const: f64,
+    ln_pdf_const: f64,
 }
 
 /// Represents the errors that can occur when creating a [`MultivariateNormal`].
@@ -297,7 +296,7 @@ where
         let precision = cholesky.inverse();
 
         MultivariateNormal {
-            pdf_const: density_distribution_pdf_const(&mean, &cov).unwrap(),
+            ln_pdf_const: -0.5 * (mean.nrows() as f64 * (2. * PI).ln() + cholesky.ln_determinant()),
             cov_chol_decomp: cholesky.unpack(),
             mu: mean,
             cov,
@@ -315,14 +314,7 @@ where
     ///
     /// where `Σ` is the covariance matrix and `det` is the determinant
     pub fn entropy(&self) -> Option<f64> {
-        Some(
-            0.5 * self
-                .variance()
-                .unwrap()
-                .scale(2. * PI * E)
-                .determinant()
-                .ln(),
-        )
+        Some(0.5 * self.mu.nrows() as f64 - self.ln_pdf_const)
     }
 
     /// Returns the Cholesky decomposition of the covariance matrix
@@ -515,17 +507,13 @@ where
     /// where `μ` is the mean, `inv(Σ)` is the precision matrix, `det(Σ)` is the determinant
     /// of the covariance matrix, and `k` is the dimension of the distribution
     fn pdf(&self, x: &OVector<f64, D>) -> f64 {
-        self.pdf_const
-            * density_distribution_exponential(&self.mu, &self.precision, x)
-                .unwrap()
-                .exp()
+        self.ln_pdf(x).exp()
     }
 
     /// Calculates the log probability density function for the multivariate
     /// normal distribution at `x`. Equivalent to pdf(x).ln().
     fn ln_pdf(&self, x: &OVector<f64, D>) -> f64 {
-        self.pdf_const.ln()
-            + density_distribution_exponential(&self.mu, &self.precision, x).unwrap()
+        self.ln_pdf_const + density_distribution_exponential(&self.mu, &self.precision, x).unwrap()
     }
 }
 
@@ -534,7 +522,7 @@ where
 mod tests  {
     use core::fmt::Debug;
     use crate::prec;
-    use nalgebra::{dmatrix, dvector, matrix, vector, DimMin, OMatrix, OVector};
+    use nalgebra::{dmatrix, dvector, matrix, vector, DMatrix, DVector, DimMin, OMatrix, OVector};
 
     use crate::{
         distribution::{Continuous, MultivariateNormal},
@@ -660,10 +648,11 @@ mod tests  {
             2.8378770664093453,
             entropy,
         );
-        test_case(
+        test_almost(
             dvector![0., 0.],
             dmatrix![1., 0.5; 0.5, 1.],
             2.694036030183455,
+            1e-15,
             entropy,
         );
         test_case(
@@ -672,6 +661,18 @@ mod tests  {
             f64::INFINITY,
             entropy,
         );
+    }
+
+    #[test]
+    fn test_high_dimension_density_and_entropy() {
+        let mean = DVector::zeros(400);
+        let mvn = try_create(mean.clone(), DMatrix::identity(400, 400));
+        prec::assert_relative_eq!(
+            mvn.pdf(&mean), 2.312204959487328e-160,
+            epsilon = 0.0, max_relative = 1e-13
+        );
+        prec::assert_abs_diff_eq!(mvn.ln_pdf(&mean), -367.5754132818691, epsilon = 1e-12);
+        prec::assert_abs_diff_eq!(mvn.entropy().unwrap(), 567.5754132818691, epsilon = 1e-12);
     }
 
     #[test]
