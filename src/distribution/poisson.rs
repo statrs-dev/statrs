@@ -206,18 +206,21 @@ impl Distribution<f64> for Poisson {
     ///
     /// # Formula
     ///
+    /// For `λ < 1000` the entropy is summed directly over the pmf
+    ///
+    /// ```text
+    /// -Σ p(k) * ln(p(k))
+    /// ```
+    ///
+    /// and for larger rates it uses the asymptotic expansion
+    ///
     /// ```text
     /// (1 / 2) * ln(2πeλ) - 1 / (12λ) - 1 / (24λ^2) - 19 / (360λ^3)
     /// ```
     ///
     /// where `λ` is the rate
     fn entropy(&self) -> Option<f64> {
-        Some(
-            0.5 * (2.0 * f64_consts::PI * f64_consts::E * self.lambda).ln()
-                - 1.0 / (12.0 * self.lambda)
-                - 1.0 / (24.0 * self.lambda * self.lambda)
-                - 19.0 / (360.0 * self.lambda * self.lambda * self.lambda),
-        )
+        Some(entropy(self.lambda))
     }
 
     /// Returns the skewness of the poisson distribution
@@ -232,6 +235,45 @@ impl Distribution<f64> for Poisson {
     fn skewness(&self) -> Option<f64> {
         Some(1.0 / self.lambda.sqrt())
     }
+}
+
+/// Rate from which [`entropy`] uses the asymptotic expansion. Its first
+/// omitted term is about `0.11 / λ^4`, around `1e-13` here, while rounding
+/// in the direct sum grows with the rate and is of the same order.
+const ENTROPY_SERIES_MIN_RATE: f64 = 1000.0;
+
+/// Entropy of a Poisson distribution with rate `lambda`.
+///
+/// The asymptotic expansion diverges as `lambda` approaches zero, so smaller
+/// rates are summed directly over the pmf.
+pub(super) fn entropy(lambda: f64) -> f64 {
+    if lambda < ENTROPY_SERIES_MIN_RATE {
+        entropy_by_summation(lambda)
+    } else {
+        entropy_series(lambda)
+    }
+}
+
+/// Sums `-p ln p` over every outcome whose pmf does not underflow.
+fn entropy_by_summation(lambda: f64) -> f64 {
+    // Outcomes more than 40 standard deviations from the mean have a pmf
+    // below `f64::MIN_POSITIVE`, so they contribute nothing.
+    let spread = 40.0 * lambda.sqrt() + 40.0;
+    let lower = (lambda - spread).max(0.0) as u64;
+    let upper = (lambda + spread).ceil() as u64;
+    let ln_lambda = lambda.ln();
+    (lower..=upper).fold(0.0, |acc, k| {
+        let ln_p = k as f64 * ln_lambda - lambda - factorial::ln_factorial(k);
+        let p = ln_p.exp();
+        if p == 0.0 { acc } else { acc - p * ln_p }
+    })
+}
+
+fn entropy_series(lambda: f64) -> f64 {
+    0.5 * (2.0 * f64_consts::PI * f64_consts::E * lambda).ln()
+        - 1.0 / (12.0 * lambda)
+        - 1.0 / (24.0 * lambda * lambda)
+        - 19.0 / (360.0 * lambda * lambda * lambda)
 }
 
 impl Median<f64> for Poisson {
@@ -345,6 +387,7 @@ pub fn sample_unchecked<R: ::rand::Rng + ?Sized>(rng: &mut R, lambda: f64) -> f6
 mod tests {
     use super::*;
     use crate::distribution::internal::density_util;
+    use crate::prec;
     testing_boiler!(lambda: f64; Poisson; PoissonError);
 
     #[test]
@@ -392,9 +435,17 @@ mod tests {
     #[test]
     fn test_entropy() {
         let entropy = |x: Poisson| x.entropy().unwrap();
-        test_absolute(1.5, 1.531959153102376331946, 1e-15, entropy);
-        test_absolute(5.4, 2.244941839577643504608, 1e-15, entropy);
-        test_exact(10.8, 2.600596429676975222694, entropy);
+        // References sum -P(k) ln P(k) for k up to 4000 in 256-bit arb ball arithmetic.
+        test_absolute(0.1, 0.3336769965012326325387, 1e-15, entropy);
+        test_absolute(1.5, 1.539404652817375537421, 1e-15, entropy);
+        test_absolute(5.4, 2.244575584280276927019, 1e-15, entropy);
+        test_absolute(10.8, 2.600583739996841398824, 1e-15, entropy);
+    }
+
+    #[test]
+    fn test_entropy_matches_series_at_switch() {
+        let rate = ENTROPY_SERIES_MIN_RATE;
+        prec::assert_abs_diff_eq!(entropy_by_summation(rate), entropy_series(rate), epsilon = 1e-11);
     }
 
     #[test]

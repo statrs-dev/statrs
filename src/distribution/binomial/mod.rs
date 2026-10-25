@@ -1,6 +1,7 @@
 use crate::distribution::{Discrete, DiscreteCDF};
 use crate::function::{beta, factorial};
 use crate::statistics::*;
+use core::f64::consts as f64_consts;
 #[cfg(not(feature = "std"))]
 use num_traits::Float as _;
 
@@ -185,6 +186,13 @@ impl Max<u64> for Binomial {
     }
 }
 
+/// Largest `n` for which [`Binomial::entropy`] sums over every outcome.
+const ENTROPY_EXACT_MAX_N: u64 = 1_000_000;
+
+/// Above `ENTROPY_EXACT_MAX_N`, the smaller of `np` and `n(1 - p)` below which
+/// the entropy follows the Poisson approximation rather than the normal one.
+const ENTROPY_POISSON_MAX_RATE: f64 = 10.0;
+
 impl Distribution<f64> for Binomial {
     /// Returns the mean of the binomial distribution
     ///
@@ -212,19 +220,43 @@ impl Distribution<f64> for Binomial {
     ///
     /// # Formula
     ///
+    /// For `n <= 1000000` the entropy is summed over every outcome
+    ///
     /// ```text
-    /// (1 / 2) * ln (2 * π * e * n * p * (1 - p))
+    /// -Σ p(k) * ln(p(k))
+    /// ```
+    ///
+    /// For larger `n`, with `λ = n * min(p, 1 - p)`, it is approximated by the
+    /// entropy of a Poisson distribution with rate `λ` when `λ < 10`, and
+    /// otherwise by the normal approximation with a skewness correction
+    ///
+    /// ```text
+    /// (1 / 2) * ln(2πe * n * p * (1 - p)) - (1 - 4p(1 - p)) / (12 * n * p * (1 - p))
     /// ```
     fn entropy(&self) -> Option<f64> {
-        let entr = if self.p == 0.0 || self.p == 1.0 {
-            0.0
-        } else {
-            (0..self.n + 1).fold(0.0, |acc, x| {
+        if self.p == 0.0 || self.p == 1.0 {
+            return Some(0.0);
+        }
+        if self.n <= ENTROPY_EXACT_MAX_N {
+            let entr = (0..=self.n).fold(0.0, |acc, x| {
                 let p = self.pmf(x);
                 if p == 0.0 { acc } else { acc - p * p.ln() }
-            })
-        };
-        Some(entr)
+            });
+            return Some(entr);
+        }
+
+        let n = self.n as f64;
+        let rate = n * self.p.min(1.0 - self.p);
+        if rate < ENTROPY_POISSON_MAX_RATE {
+            return Some(super::poisson::entropy(rate));
+        }
+        // `rate >= 10` keeps `np ± 3σ` inside `[0, n]` for both tails.
+        let pq = self.p * (1.0 - self.p);
+        let variance = n * pq;
+        Some(
+            0.5 * (2.0 * f64_consts::PI * f64_consts::E * variance).ln()
+                - (1.0 - 4.0 * pq) / (12.0 * variance),
+        )
     }
 
     /// Returns the skewness of the binomial distribution
@@ -467,6 +499,35 @@ mod tests {
 
         let large_dist = create_ok(p, 1000);
         assert!(large_dist.entropy().unwrap().is_finite());
+    }
+
+    #[test]
+    fn test_entropy_large_n() {
+        let entropy = |x: Binomial| x.entropy().unwrap();
+        // References sum -P(k) ln P(k) over every k in 0..=n, with no terms
+        // dropped, for the f64 value of p in 256-bit arb ball arithmetic.
+        test_absolute(0.5, 10_000_000, 8.7848391781238864931, 1e-12, entropy);
+        test_absolute(0.2, 2_000_000, 7.7569765768424600860, 1e-12, entropy);
+        test_absolute(1e-7, 20_000_000, 1.7048826093505606427, 1e-7, entropy);
+        test_absolute(4e-6, 2_000_000, 2.4474308984566899701, 1e-5, entropy);
+        test_absolute(1e-5, 2_000_000, 2.9125215274209364077, 2e-4, entropy);
+    }
+
+    #[test]
+    fn test_entropy_large_n_is_symmetric() {
+        // 2^-23 and 1 - 2^-23 are both exact, so the mirrored rate is too.
+        for (p, n) in [(2f64.powi(-23), 1 << 24), (0.2, 2_000_000)] {
+            let entropy = create_ok(p, n).entropy().unwrap();
+            let mirrored = create_ok(1.0 - p, n).entropy().unwrap();
+            prec::assert_relative_eq!(entropy, mirrored, epsilon = 1e-12);
+        }
+    }
+
+    #[test]
+    fn test_entropy_at_max_n() {
+        let entropy = create_ok(0.5, u64::MAX).entropy().unwrap();
+        // ln(2 * pi * e * n / 4) / 2; at p = 0.5 the next term is about -1 / (12 * n^2).
+        prec::assert_relative_eq!(entropy, 22.906501130562977334);
     }
 
     #[test]
