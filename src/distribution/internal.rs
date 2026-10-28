@@ -91,7 +91,15 @@ pub fn newton_raphson_quantile(
         } else {
             cdf(x) - target
         };
-        let newton = x - residual / pdf(x);
+        // An infinite density (an overflowed `pdf`) makes the step exactly zero
+        // whatever the residual, which would pass for convergence below; treat
+        // it like any other unusable step and bisect.
+        let density = pdf(x);
+        let newton = if density.is_finite() {
+            x - residual / density
+        } else {
+            f64::NAN
+        };
         // A full Newton step below the relative tolerance means we have
         // converged; accept it before the bracket bookkeeping below, which would
         // otherwise reject a converged step that has rounded onto the very
@@ -119,6 +127,11 @@ pub fn newton_raphson_quantile(
         } else {
             last_step = (high - low) / 2.0;
             x = low + last_step;
+            // With no usable Newton step (e.g. an infinite density all the
+            // way to the root), stop once bisection alone has converged.
+            if last_step <= accuracy * x {
+                return x;
+            }
         }
     }
     x

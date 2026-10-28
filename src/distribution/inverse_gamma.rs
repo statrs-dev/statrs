@@ -557,6 +557,19 @@ mod tests {
     }
 
     #[test]
+    fn test_inverse_cdf_infinite_pdf() {
+        // At shape 151, `pdf` overflows to infinity around the mode. That made
+        // the Newton step exactly zero, which was taken for convergence (#464).
+        // References from mpmath (dps=40).
+        let d = InverseGamma::new(151.0, 4.5).unwrap();
+        for &(p, expected) in &[(0.5, 0.029867230642447316029), (0.9, 0.033214831003158766248)] {
+            let q = d.inverse_cdf(p);
+            let relerr = ((q - expected) / expected).abs();
+            assert!(relerr <= 1e-12, "inverse_cdf({p}) = {q}, want {expected} (relerr {relerr:e})");
+        }
+    }
+
+    #[test]
     fn test_inverse_cdf_deep_lower_tail() {
         // A Newton step on `exp(-rate/x)` only advances `rate/x` by one however
         // far the root is, so without the bisection-progress guard the search
