@@ -114,6 +114,29 @@ impl Weibull {
     pub fn scale(&self) -> f64 {
         self.scale
     }
+
+    /// Computes `(x / λ)^k` for `x >= 0`, where `k` is the shape and `λ` is
+    /// the scale
+    fn scaled_pow(&self, x: f64) -> f64 {
+        let x_pow_shape = x.powf(self.shape);
+        if x_pow_shape.is_normal() && self.scale_pow_shape_inv.is_normal() {
+            x_pow_shape * self.scale_pow_shape_inv
+        } else {
+            // A factor over- or underflowed, which makes the product 0 * inf
+            // or loses precision even when `(x / λ)^k` is representable
+            (x / self.scale).powf(self.shape)
+        }
+    }
+
+    /// Computes `ln(x / λ)` for `x >= 0`, where `λ` is the scale
+    fn ln_scaled(&self, x: f64) -> f64 {
+        let ratio = x / self.scale;
+        if ratio.is_normal() {
+            ratio.ln()
+        } else {
+            x.ln() - self.scale.ln()
+        }
+    }
 }
 
 impl core::fmt::Display for Weibull {
@@ -146,7 +169,7 @@ impl ContinuousCDF<f64, f64> for Weibull {
         if x < 0.0 {
             0.0
         } else {
-            -(-x.powf(self.shape) * self.scale_pow_shape_inv).exp_m1()
+            -(-self.scaled_pow(x)).exp_m1()
         }
     }
 
@@ -164,7 +187,7 @@ impl ContinuousCDF<f64, f64> for Weibull {
         if x < 0.0 {
             1.0
         } else {
-            (-x.powf(self.shape) * self.scale_pow_shape_inv).exp()
+            (-self.scaled_pow(x)).exp()
         }
     }
 
@@ -183,7 +206,15 @@ impl ContinuousCDF<f64, f64> for Weibull {
             panic!("x must be in [0, 1]");
         }
 
-        (-((-p).ln_1p() / self.scale_pow_shape_inv)).powf(1.0 / self.shape)
+        let ln_sf_neg = -(-p).ln_1p();
+        let pow = ln_sf_neg.powf(1.0 / self.shape);
+        if pow.is_normal() {
+            self.scale * pow
+        } else {
+            // For a small shape, the power over- or underflows even when the
+            // quantile doesn't
+            (self.scale.ln() + ln_sf_neg.ln() / self.shape).exp()
+        }
     }
 }
 
@@ -344,10 +375,15 @@ impl Continuous<f64, f64> for Weibull {
         } else if x.is_infinite() {
             0.0
         } else {
-            self.shape
-                * (x / self.scale).powf(self.shape - 1.0)
-                * (-(x.powf(self.shape)) * self.scale_pow_shape_inv).exp()
-                / self.scale
+            let density =
+                self.shape * (x / self.scale).powf(self.shape - 1.0) * (-self.scaled_pow(x)).exp()
+                    / self.scale;
+            if density.is_nan() {
+                // (x / λ)^(k - 1) overflowed while e^-((x / λ)^k) underflowed
+                self.ln_pdf(x).exp()
+            } else {
+                density
+            }
         }
     }
 
@@ -369,9 +405,12 @@ impl Continuous<f64, f64> for Weibull {
         } else if x.is_infinite() {
             f64::NEG_INFINITY
         } else {
-            self.shape.ln() + (self.shape - 1.0) * (x / self.scale).ln()
-                - x.powf(self.shape) * self.scale_pow_shape_inv
-                - self.scale.ln()
+            let scaled_pow = self.scaled_pow(x);
+            if scaled_pow.is_infinite() {
+                // (x / λ)^k outgrows (k - 1) ln(x / λ), which may overflow too
+                return f64::NEG_INFINITY;
+            }
+            self.shape.ln() + (self.shape - 1.0) * self.ln_scaled(x) - scaled_pow - self.scale.ln()
         }
     }
 }
@@ -562,5 +601,45 @@ mod tests {
     #[test]
     fn test_continuous() {
         density_util::check_continuous_distribution(&create_ok(1.0, 0.2), 0.0, 10.0);
+    }
+
+    #[test]
+    fn test_large_shape() {
+        // x^k underflows and λ^-k overflows, but (x / λ)^k is representable
+        test_relative(2000.0, 0.5, 7.5673529115220250874e-191, |x| x.pdf(0.4));
+        test_absolute(2000.0, 0.5, -437.76990943700316314, 1e-12, |x| x.ln_pdf(0.4));
+        test_relative(2000.0, 0.5, 1.5134705823044051015e-194, |x| x.cdf(0.4));
+        test_exact(2000.0, 0.5, 1.0, |x| x.sf(0.4));
+        test_relative(2000.0, 0.5, 1471.5177646857692864, |x| x.pdf(0.5));
+        test_relative(2000.0, 0.5, 0.6321205588285576784, |x| x.cdf(0.5));
+        test_relative(2000.0, 0.5, 0.5, |x| x.inverse_cdf(x.cdf(0.5)));
+        // (x / λ)^(k - 1) overflows and e^-((x / λ)^k) underflows
+        test_exact(2000.0, 0.5, 0.0, |x| x.pdf(1.0));
+        test_exact(2000.0, 0.5, f64::NEG_INFINITY, |x| x.ln_pdf(1.0));
+        test_exact(1e6, 0.99, 0.0, |x| x.pdf(0.4));
+        test_absolute(1e6, 0.99, -906225.66421936372109, 1e-7, |x| x.ln_pdf(0.4));
+        test_relative(1e6, 0.99, 0.6321205588285576784, |x| x.cdf(0.99));
+        // (k - 1) ln(x / λ) and (x / λ)^k both overflow
+        test_exact(1e308, 1.0, f64::NEG_INFINITY, |x| x.ln_pdf(10.0));
+        test_exact(1e308, 1.0, 0.0, |x| x.pdf(10.0));
+        // For a small shape, (-ln(1 - p))^(1 / k) over- or underflows. The
+        // quantile is ill-conditioned there (the power of 1 / k = 1000 scales
+        // any rounding error by 1000), hence the looser tolerance
+        test_absolute(0.001, 1e-300, 1.6431934665169928941e62, 1e50, |x| x.inverse_cdf(0.9));
+        test_absolute(0.001, 1e300, 1.8732754995027181255e-148, 1e-160, |x| x.inverse_cdf(0.3));
+
+        for shape in [1e-3, 0.5, 1.0, 2.0, 1500.0, 2000.0, 1e6, 1e308] {
+            for scale in [1e-300, 1e-3, 0.5, 0.99, 1.0, 1e3, 1e300] {
+                let d = create_ok(shape, scale);
+                for x in [0.0, 1e-300, 1e-3, 0.4, 0.99, 1.0, 1e3, 1e300] {
+                    assert!(!d.pdf(x).is_nan(), "pdf({x}) is NaN for {d}");
+                    assert!(!d.ln_pdf(x).is_nan(), "ln_pdf({x}) is NaN for {d}");
+                    assert!((d.cdf(x) + d.sf(x) - 1.0).abs() < 1e-15, "cdf({x}) + sf({x}) for {d}");
+                }
+                for p in [0.0, 1e-300, 0.3, 0.9, 1.0] {
+                    assert!(!d.inverse_cdf(p).is_nan(), "inverse_cdf({p}) is NaN for {d}");
+                }
+            }
+        }
     }
 }
