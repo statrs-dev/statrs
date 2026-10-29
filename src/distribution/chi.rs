@@ -119,12 +119,17 @@ impl ContinuousCDF<f64, f64> for Chi {
     /// where `k` is the degrees of freedom and `P` is
     /// the regularized lower incomplete Gamma function
     fn cdf(&self, x: f64) -> f64 {
-        if x == f64::INFINITY {
-            1.0
-        } else if x <= 0.0 {
+        let k = self.freedom() as f64;
+        let u = x * x / 2.0;
+        if x <= 0.0 {
             0.0
+        } else if u == f64::INFINITY {
+            1.0
+        } else if u < f64::MIN_POSITIVE {
+            // x * x / 2 has lost precision; use the leading term (x^2 / 2)^(k/2) / Gamma(k/2 + 1)
+            (k * x.ln() - k / 2.0 * f64_consts::LN_2 - gamma::ln_gamma(k / 2.0 + 1.0)).exp()
         } else {
-            gamma::gamma_lr(self.freedom() as f64 / 2.0, x * x / 2.0)
+            gamma::gamma_lr(k / 2.0, u)
         }
     }
 
@@ -140,12 +145,13 @@ impl ContinuousCDF<f64, f64> for Chi {
     /// where `k` is the degrees of freedom and `P` is
     /// the regularized upper incomplete Gamma function
     fn sf(&self, x: f64) -> f64 {
-        if x == f64::INFINITY {
-            0.0
-        } else if x <= 0.0 {
+        let u = x * x / 2.0;
+        if x <= 0.0 {
             1.0
+        } else if u == f64::INFINITY {
+            0.0
         } else {
-            gamma::gamma_ur(self.freedom() as f64 / 2.0, x * x / 2.0)
+            gamma::gamma_ur(self.freedom() as f64 / 2.0, u)
         }
     }
 
@@ -503,6 +509,14 @@ mod tests {
         test_exact(2, 1.0, cdf(f64::INFINITY));
         test_exact(2, 0.0, cdf(0.0));
         test_exact(2, 1.0, cdf(f64::INFINITY));
+        // x * x / 2 underflows or overflows; for k = 1, cdf(x) = erf(x / sqrt(2)) ~ x * sqrt(2 / pi)
+        for x in [1e-160, 1e-200] {
+            let expected = x * (2.0 / f64_consts::PI).sqrt();
+            crate::prec::assert_relative_eq!(create_ok(1).cdf(x), expected, epsilon = 0.0, max_relative = 1e-12);
+        }
+        test_exact(3, 0.0, cdf(1e-200));
+        test_exact(1, 1.0, cdf(1e160));
+        test_exact(3, 1.0, cdf(f64::MAX));
     }
 
     #[test]
@@ -520,18 +534,23 @@ mod tests {
         test_exact(2, 0.0, sf(f64::INFINITY));
         test_exact(2, 1.0, sf(0.0));
         test_exact(2, 0.0, sf(f64::INFINITY));
+        test_exact(1, 1.0, sf(1e-200));
+        test_exact(1, 0.0, sf(1e160));
+        test_exact(3, 0.0, sf(f64::MAX));
     }
 
     #[test]
     fn test_neg_cdf() {
         let cdf = |arg: f64| move |x: Chi| x.cdf(arg);
         test_exact(1, 0.0, cdf(-1.0));
+        test_exact(1, 0.0, cdf(f64::NEG_INFINITY));
     }
 
     #[test]
     fn test_neg_sf() {
         let sf = |arg: f64| move |x: Chi| x.sf(arg);
         test_exact(1, 1.0, sf(-1.0));
+        test_exact(1, 1.0, sf(f64::NEG_INFINITY));
     }
 
     #[test]

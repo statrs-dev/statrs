@@ -14,7 +14,7 @@ pub enum GammaFuncError {
     /// `a` is infinite, zero or less than zero.
     AInvalid,
 
-    /// `x` is infinite, zero or less than zero.
+    /// `x` is infinite or less than zero.
     XInvalid,
 }
 
@@ -22,7 +22,7 @@ impl core::fmt::Display for GammaFuncError {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
             GammaFuncError::AInvalid => write!(f, "a is infinite, zero or less than zero"),
-            GammaFuncError::XInvalid => write!(f, "x is infinite, zero or less than zero"),
+            GammaFuncError::XInvalid => write!(f, "x is infinite or less than zero"),
         }
     }
 }
@@ -113,7 +113,7 @@ pub fn gamma(x: f64) -> f64 {
 ///
 /// # Panics
 ///
-/// if `a` or `x` are not in `(0, +inf)`
+/// if `a` is not in `(0, +inf)` or `x` is not in `[0, +inf)`
 pub fn gamma_ui(a: f64, x: f64) -> f64 {
     checked_gamma_ui(a, x).unwrap()
 }
@@ -125,7 +125,7 @@ pub fn gamma_ui(a: f64, x: f64) -> f64 {
 ///
 /// # Errors
 ///
-/// if `a` or `x` are not in `(0, +inf)`
+/// if `a` is not in `(0, +inf)` or `x` is not in `[0, +inf)`
 pub fn checked_gamma_ui(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     checked_gamma_ur(a, x).map(|x| x * gamma(a))
 }
@@ -138,7 +138,7 @@ pub fn checked_gamma_ui(a: f64, x: f64) -> Result<f64, GammaFuncError> {
 ///
 /// # Panics
 ///
-/// if `a` or `x` are not in `(0, +inf)`
+/// if `a` is not in `(0, +inf)` or `x` is not in `[0, +inf)`
 pub fn gamma_li(a: f64, x: f64) -> f64 {
     checked_gamma_li(a, x).unwrap()
 }
@@ -151,9 +151,10 @@ pub fn gamma_li(a: f64, x: f64) -> f64 {
 ///
 /// # Errors
 ///
-/// if `a` or `x` are not in `(0, +inf)`
+/// if `a` is not in `(0, +inf)` or `x` is not in `[0, +inf)`
 pub fn checked_gamma_li(a: f64, x: f64) -> Result<f64, GammaFuncError> {
-    checked_gamma_lr(a, x).map(|x| x * gamma(a))
+    // gamma(a) can overflow, and 0 * inf is NaN
+    checked_gamma_lr(a, x).map(|p| if x == 0.0 { 0.0 } else { p * gamma(a) })
 }
 
 /// Computes the upper incomplete regularized gamma function
@@ -167,7 +168,7 @@ pub fn checked_gamma_li(a: f64, x: f64) -> Result<f64, GammaFuncError> {
 ///
 /// # Panics
 ///
-/// if `a` or `x` are not in `(0, +inf)`
+/// if `a` is not in `(0, +inf)` or `x` is not in `[0, +inf)`
 pub fn gamma_ur(a: f64, x: f64) -> f64 {
     checked_gamma_ur(a, x).unwrap()
 }
@@ -183,7 +184,7 @@ pub fn gamma_ur(a: f64, x: f64) -> f64 {
 ///
 /// # Errors
 ///
-/// if `a` or `x` are not in `(0, +inf)`
+/// if `a` is not in `(0, +inf)` or `x` is not in `[0, +inf)`
 pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     if a.is_nan() || x.is_nan() {
         return Ok(f64::NAN);
@@ -191,7 +192,7 @@ pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     if a <= 0.0 || a == f64::INFINITY {
         return Err(GammaFuncError::AInvalid);
     }
-    if x <= 0.0 || x == f64::INFINITY {
+    if x < 0.0 || x == f64::INFINITY {
         return Err(GammaFuncError::XInvalid);
     }
 
@@ -261,7 +262,7 @@ pub fn checked_gamma_ur(a: f64, x: f64) -> Result<f64, GammaFuncError> {
 ///
 /// # Panics
 ///
-/// if `a` or `x` are not in `(0, +inf)`
+/// if `a` is not in `(0, +inf)` or `x` is not in `[0, +inf)`
 pub fn gamma_lr(a: f64, x: f64) -> f64 {
     checked_gamma_lr(a, x).unwrap()
 }
@@ -277,7 +278,7 @@ pub fn gamma_lr(a: f64, x: f64) -> f64 {
 ///
 /// # Errors
 ///
-/// if `a` or `x` are not in `(0, +inf)`
+/// if `a` is not in `(0, +inf)` or `x` is not in `[0, +inf)`
 pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     if a.is_nan() || x.is_nan() {
         return Ok(f64::NAN);
@@ -285,7 +286,7 @@ pub fn checked_gamma_lr(a: f64, x: f64) -> Result<f64, GammaFuncError> {
     if a <= 0.0 || a == f64::INFINITY {
         return Err(GammaFuncError::AInvalid);
     }
-    if x <= 0.0 || x == f64::INFINITY {
+    if x < 0.0 || x == f64::INFINITY {
         return Err(GammaFuncError::XInvalid);
     }
 
@@ -913,6 +914,16 @@ mod tests {
     #[test]
     fn test_checked_gamma_lr_x_upper_bound() {
         assert!(super::checked_gamma_lr(1.0, f64::INFINITY).is_err());
+    }
+
+    #[test]
+    fn test_incomplete_gamma_at_x_zero() {
+        assert_eq!(gamma_lr(2.5, 0.0), 0.0);
+        assert_eq!(gamma_ur(2.5, 0.0), 1.0);
+        assert_eq!(super::checked_gamma_lr(0.5, 0.0), Ok(0.0));
+        assert_eq!(super::checked_gamma_ur(0.5, 0.0), Ok(1.0));
+        assert_eq!(gamma_li(172.0, 0.0), 0.0);
+        assert_eq!(super::checked_gamma_li(172.0, 0.0), Ok(0.0));
     }
 
     #[test]

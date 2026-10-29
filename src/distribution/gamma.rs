@@ -152,7 +152,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
             1.0
         } else if self.rate.is_infinite() {
             0.0
-        } else if x.is_infinite() {
+        } else if x.is_infinite() || (x * self.rate).is_infinite() {
             1.0
         } else {
             gamma::gamma_lr(self.shape, x * self.rate)
@@ -177,7 +177,7 @@ impl ContinuousCDF<f64, f64> for Gamma {
             0.0
         } else if self.rate.is_infinite() {
             1.0
-        } else if x.is_infinite() {
+        } else if x.is_infinite() || (x * self.rate).is_infinite() {
             0.0
         } else {
             gamma::gamma_ur(self.shape, x * self.rate)
@@ -743,6 +743,14 @@ mod tests {
     #[test]
     fn test_cdf_at_zero() {
         test_relative(1.0, 0.1, 0.0, |x| x.cdf(0.0));
+    }
+
+    #[test]
+    fn test_cdf_sf_when_x_times_rate_overflows_or_underflows() {
+        test_exact(2.5, 1.5, 1.0, |g| g.cdf(f64::MAX));
+        test_exact(2.5, 1.5, 0.0, |g| g.sf(f64::MAX));
+        test_exact(1.0, 0.5, 0.0, |g| g.cdf(5e-324));
+        test_exact(1.0, 0.5, 1.0, |g| g.sf(5e-324));
     }
 
     #[test]
