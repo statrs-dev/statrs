@@ -106,6 +106,23 @@ impl Cauchy {
     }
 }
 
+impl Cauchy {
+    /// for `d = x - x_0`, returns `(γ / d, γ / d^2, ln |d|)` without letting
+    /// `d` itself overflow when `x` and `x_0` are finite
+    fn tail_parts(&self, x: f64) -> (f64, f64, f64) {
+        let d = x - self.location;
+        if d.is_finite() || !x.is_finite() {
+            let r = self.scale / d;
+            (r, r / d, d.abs().ln())
+        } else {
+            // |d| > f64::MAX, so work with h = d / 2
+            let h = 0.5 * x - 0.5 * self.location;
+            let r = 0.5 * self.scale / h;
+            (r, 0.5 * (r / h), h.abs().ln() + f64_consts::LN_2)
+        }
+    }
+}
+
 impl core::fmt::Display for Cauchy {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Cauchy({}, {})", self.location, self.scale)
@@ -256,9 +273,24 @@ impl Continuous<f64, f64> for Cauchy {
     ///
     /// where `x_0` is the location and `γ` is the scale
     fn pdf(&self, x: f64) -> f64 {
-        1.0 / (f64_consts::PI
-            * self.scale
-            * (1.0 + ((x - self.location) / self.scale) * ((x - self.location) / self.scale)))
+        let z = (x - self.location) / self.scale;
+        let d = f64_consts::PI * self.scale * (1.0 + z * z);
+        if d.is_finite() {
+            return 1.0 / d;
+        }
+        // the denominator overflowed while the density itself may still be
+        // representable (gh #472)
+        let (r, r_over_d, _) = self.tail_parts(x);
+        if r.abs() >= 1.0 {
+            // |x - x_0| <= γ: z is small, so only 1 / (πγ) can overflow, and
+            // then the density really is that large
+            let z = 1.0 / r;
+            f64_consts::FRAC_1_PI / self.scale / (1.0 + z * z)
+        } else {
+            // γ / (π (x - x_0)^2) / (1 + r^2); this never forms z, z^2 or
+            // 1 / γ, which can overflow when the density does not
+            f64_consts::FRAC_1_PI * r_over_d / (1.0 + r * r)
+        }
     }
 
     /// Calculates the log probability density function for the cauchy
@@ -272,10 +304,20 @@ impl Continuous<f64, f64> for Cauchy {
     ///
     /// where `x_0` is the location and `γ` is the scale
     fn ln_pdf(&self, x: f64) -> f64 {
-        -(f64_consts::PI
-            * self.scale
-            * (1.0 + ((x - self.location) / self.scale) * ((x - self.location) / self.scale)))
-            .ln()
+        let z = (x - self.location) / self.scale;
+        let d = f64_consts::PI * self.scale * (1.0 + z * z);
+        if d.is_finite() {
+            return -d.ln();
+        }
+        // the product overflowed (gh #472); sum the logs instead
+        let (r, _, ln_abs_d) = self.tail_parts(x);
+        if r.abs() >= 1.0 {
+            let z = 1.0 / r;
+            -f64_consts::PI.ln() - self.scale.ln() - (z * z).ln_1p()
+        } else {
+            // ln(γ / (π d^2) / (1 + r^2)), without forming d^2 or z
+            -f64_consts::PI.ln() + self.scale.ln() - 2.0 * ln_abs_d - (r * r).ln_1p()
+        }
     }
 }
 
@@ -525,5 +567,39 @@ mod tests {
     fn test_continuous() {
         density_util::check_continuous_distribution(&create_ok(-1.2, 3.4), -1500.0, 1500.0);
         density_util::check_continuous_distribution(&create_ok(-4.5, 6.7), -5000.0, 5000.0);
+    }
+
+    #[test]
+    fn test_pdf_far_tail_and_huge_scale() {
+        // gh #472: the density is representable here but used to come back as 0
+        let d = create_ok(0.0, 1.0);
+        let got = d.pdf(7.6e153);
+        assert!((got - 5.5109052317138284e-309).abs() <= 1e-15 * 5.5109052317138284e-309, "{got:e}");
+        assert!(d.pdf(1e160) > 0.0);
+        approx::assert_relative_eq!(d.ln_pdf(1e160), -(core::f64::consts::PI.ln()) - 2.0 * 1e160f64.ln(), max_relative = 1e-15);
+        approx::assert_relative_eq!(d.ln_pdf(1e300), -(core::f64::consts::PI.ln()) - 2.0 * 1e300f64.ln(), max_relative = 1e-15);
+        let wide = create_ok(0.0, 1e308);
+        approx::assert_relative_eq!(wide.pdf(0.0), core::f64::consts::FRAC_1_PI / 1e308, max_relative = 1e-15);
+        approx::assert_relative_eq!(wide.ln_pdf(0.0), -(core::f64::consts::PI.ln()) - 1e308f64.ln(), max_relative = 1e-15);
+    }
+
+    #[test]
+    fn test_pdf_tail_without_overflowing_intermediates() {
+        use core::f64::consts::{FRAC_1_PI, PI};
+        // z = (x - x_0) / γ overflows, but γ / (π x^2) is a (subnormal) number
+        let tiny = create_ok(0.0, 1e-300);
+        let want = FRAC_1_PI * 1e-300 / 1e18;
+        approx::assert_relative_eq!(tiny.pdf(1e9), want, max_relative = 1e-6);
+        approx::assert_relative_eq!(tiny.ln_pdf(1e9), -PI.ln() + 1e-300f64.ln() - 2.0 * 1e9f64.ln(), max_relative = 1e-15);
+        // x - x_0 overflows, though z = 2e308 / 1e308 = 2
+        let wide = create_ok(-1e308, 1e308);
+        approx::assert_relative_eq!(wide.pdf(1e308), FRAC_1_PI / 1e308 / 5.0, max_relative = 1e-14);
+        approx::assert_relative_eq!(wide.ln_pdf(1e308), -PI.ln() - 1e308f64.ln() - 5f64.ln(), max_relative = 1e-14);
+        // 1 / γ overflows for a subnormal γ, but the density is about 1 / π
+        let sub = create_ok(0.0, 1e-310);
+        approx::assert_relative_eq!(sub.pdf(1e-155), FRAC_1_PI, max_relative = 1e-9);
+        approx::assert_relative_eq!(sub.ln_pdf(1e-155), -PI.ln(), max_relative = 1e-9);
+        assert_eq!(tiny.pdf(f64::INFINITY), 0.0);
+        assert_eq!(tiny.ln_pdf(f64::NEG_INFINITY), f64::NEG_INFINITY);
     }
 }
