@@ -166,7 +166,16 @@ impl ContinuousCDF<f64, f64> for Cauchy {
         if !(0.0..=1.0).contains(&x) {
             panic!("x must be in [0, 1]");
         } else {
-            self.location + self.scale * (f64_consts::PI * (x - 0.5)).tan()
+            // tan(pi (x - 1/2)) = -1 / tan(pi x); using x (or 1 - x, which
+            // is exact for x >= 1/2) avoids the rounding of x - 1/2 that made
+            // every lower quantile below 2^-55 collapse to one value (gh #471)
+            if x == 0.5 {
+                self.location
+            } else if x < 0.5 {
+                self.location - self.scale / (f64_consts::PI * x).tan()
+            } else {
+                self.location + self.scale / (f64_consts::PI * (1.0 - x)).tan()
+            }
         }
     }
 }
@@ -525,5 +534,20 @@ mod tests {
     fn test_continuous() {
         density_util::check_continuous_distribution(&create_ok(-1.2, 3.4), -1500.0, 1500.0);
         density_util::check_continuous_distribution(&create_ok(-4.5, 6.7), -5000.0, 5000.0);
+    }
+
+    #[test]
+    fn test_inverse_cdf_lower_tail() {
+        // gh #471: the lower tail used to saturate at -1.63e16 below p = 2^-55
+        let d = create_ok(0.0, 1.0);
+        for p in [1e-15f64, 2f64.powi(-55), 1e-100, 1e-300] {
+            approx::assert_relative_eq!(d.inverse_cdf(p), -1.0 / (core::f64::consts::PI * p), max_relative = 1e-14);
+        }
+        assert_ne!(d.inverse_cdf(2f64.powi(-56)), d.inverse_cdf(2f64.powi(-60)));
+        assert_eq!(d.inverse_cdf(0.0), f64::NEG_INFINITY);
+        assert_eq!(d.inverse_cdf(1.0), f64::INFINITY);
+        assert_eq!(d.inverse_cdf(0.5), 0.0);
+        approx::assert_relative_eq!(d.inverse_cdf(1e-3), -318.30883898555044, max_relative = 1e-14);
+        approx::assert_relative_eq!(d.inverse_cdf(1.0 - 1e-3), 318.30883898555044, max_relative = 1e-12);
     }
 }
