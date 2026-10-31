@@ -171,10 +171,18 @@ impl ContinuousCDF<f64, f64> for Cauchy {
             // every lower quantile below 2^-55 collapse to one value (gh #471)
             if x == 0.5 {
                 self.location
+            } else if x == 0.0 {
+                f64::NEG_INFINITY
             } else if x < 1e-9 {
                 // tan(pi x) = pi x to double precision here; dividing by x
-                // directly keeps a subnormal x from rounding pi x
-                self.location - self.scale * f64_consts::FRAC_1_PI / x
+                // directly keeps a subnormal x from rounding pi x; a
+                // subnormal scale is divided first so it does not underflow
+                let q = if self.scale < f64::MIN_POSITIVE {
+                    self.scale / x * f64_consts::FRAC_1_PI
+                } else {
+                    self.scale * f64_consts::FRAC_1_PI / x
+                };
+                self.location - q
             } else if x < 0.5 {
                 self.location - self.scale / (f64_consts::PI * x).tan()
             } else {
@@ -553,6 +561,18 @@ mod tests {
         assert_eq!(d.inverse_cdf(0.5), 0.0);
         approx::assert_relative_eq!(d.inverse_cdf(1e-3), -318.30883898555044, max_relative = 1e-14);
         approx::assert_relative_eq!(d.inverse_cdf(1.0 - 1e-3), 318.30883898555044, max_relative = 1e-12);
+    }
+
+    #[test]
+    fn test_inverse_cdf_subnormal_scale() {
+        let d = create_ok(0.0, f64::from_bits(1));
+        approx::assert_relative_eq!(
+            d.inverse_cdf(1e-12),
+            -f64::from_bits(1) / (core::f64::consts::PI * 1e-12),
+            max_relative = 1e-3
+        );
+        assert!(d.inverse_cdf(1e-12) < 0.0);
+        assert_eq!(d.inverse_cdf(0.0), f64::NEG_INFINITY);
     }
 
     #[test]
