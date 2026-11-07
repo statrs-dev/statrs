@@ -2,16 +2,23 @@ use crate::distribution::ContinuousCDF;
 use crate::statistics::*;
 
 /// Implements the [Dirac Delta](https://en.wikipedia.org/wiki/Dirac_delta_function#As_a_distribution)
-/// distribution
+/// distribution.
+///
+/// All probability mass lies at a single value. Its cumulative distribution
+/// function jumps there, so it has no ordinary probability density function.
+/// Use [`ContinuousCDF`] to query the probability on either side of the jump.
 ///
 /// # Examples
 ///
 /// ```
-/// use statrs::distribution::{Dirac, Continuous};
+/// use statrs::distribution::{ContinuousCDF, Dirac};
 /// use statrs::statistics::Distribution;
 ///
 /// let n = Dirac::new(3.0).unwrap();
 /// assert_eq!(n.mean().unwrap(), 3.0);
+/// assert_eq!(n.cdf(2.0), 0.0);
+/// assert_eq!(n.cdf(3.0), 1.0);
+/// assert_eq!(n.sf(3.0), 0.0);
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Dirac(f64);
@@ -91,18 +98,12 @@ impl ::rand::distr::Distribution<f64> for Dirac {
 }
 
 impl ContinuousCDF<f64, f64> for Dirac {
-    /// Calculates the cumulative distribution function for the
-    /// dirac distribution at `x`
-    ///
-    /// Where the value is 1 if x > `v`, 0 otherwise.
+    /// Returns 0 below the point mass and 1 at or above it.
     fn cdf(&self, x: f64) -> f64 {
         if x < self.0 { 0.0 } else { 1.0 }
     }
 
-    /// Calculates the survival function for the
-    /// dirac distribution at `x`
-    ///
-    /// Where the value is 0 if x > `v`, 1 otherwise.
+    /// Returns 1 below the point mass and 0 at or above it.
     fn sf(&self, x: f64) -> f64 {
         if x < self.0 { 1.0 } else { 0.0 }
     }
