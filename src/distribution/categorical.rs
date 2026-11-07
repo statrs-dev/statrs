@@ -117,17 +117,11 @@ impl Categorical {
 
     /// Returns the first index `i` such that `norm_cdf[i] >= x`.
     ///
-    /// Used by both `inverse_cdf` and the `rand` sampler, which query
-    /// the same sorted `norm_cdf` data but have different domain
-    /// requirements on `x` (see call sites).
+    /// This is the lower bound needed by `inverse_cdf`, including when
+    /// zero-probability categories repeat a cumulative probability.
     fn locate(&self, x: f64) -> u64 {
-        match self
-            .norm_cdf
-            .binary_search_by(|v| v.partial_cmp(&x).unwrap())
-        {
-            Ok(idx) => idx as u64,
-            Err(idx) => idx as u64,
-        }
+        self.norm_cdf
+            .partition_point(|v| v.partial_cmp(&x).unwrap().is_lt()) as u64
     }
 }
 
@@ -142,7 +136,10 @@ impl core::fmt::Display for Categorical {
 impl ::rand::distr::Distribution<usize> for Categorical {
     fn sample<R: ::rand::Rng + ?Sized>(&self, rng: &mut R) -> usize {
         let draw = ::rand::RngExt::random::<f64>(rng);
-        self.locate(draw) as usize
+        // Sampling uses F(i) > draw, unlike the quantile's F(i) >= x.
+        // Skip repeated boundaries so zero-mass categories cannot be drawn.
+        self.norm_cdf
+            .partition_point(|v| v.partial_cmp(&draw).unwrap().is_le())
     }
 }
 
@@ -191,7 +188,7 @@ impl DiscreteCDF<u64, f64> for Categorical {
     /// i
     /// ```
     ///
-    /// where `i` is the first index such that `x < f(i)`
+    /// where `i` is the first index such that `x <= f(i)`
     /// and `f(x)` is defined as `p_x + f(x - 1)` and `f(0) = p_0` where
     /// `p_x` is the `x`th probability mass
     fn inverse_cdf(&self, x: f64) -> u64 {
@@ -514,6 +511,157 @@ mod tests {
         test_exact(&[4.0, 2.5, 2.5, 1.0], 0, inverse_cdf(0.2));
         test_exact(&[4.0, 2.5, 2.5, 1.0], 1, inverse_cdf(0.5));
         test_exact(&[4.0, 2.5, 2.5, 1.0], 3, inverse_cdf(0.95));
+    }
+
+    #[test]
+    fn test_inverse_cdf_zero_mass_boundaries() {
+        let cat = Categorical::new(&[0.25, 0.25, 0.0, 0.0, 0.5]).unwrap();
+        let below = f64::from_bits(0.5f64.to_bits() - 1);
+        let above = f64::from_bits(0.5f64.to_bits() + 1);
+        assert_eq!(cat.inverse_cdf(below), 1);
+        assert_eq!(cat.inverse_cdf(0.5), 1);
+        assert_eq!(cat.inverse_cdf(above), 4);
+        assert_eq!(cat.median(), 1.0);
+
+        let leading = Categorical::new(&[0.0, 0.0, 0.5, 0.0, 0.5, 0.0]).unwrap();
+        assert_eq!(leading.inverse_cdf(f64::from_bits(1)), 2);
+        assert_eq!(leading.inverse_cdf(0.5), 2);
+        assert_eq!(leading.inverse_cdf(above), 4);
+        let trailing = Categorical::new(&[1.0, 0.0, 0.0]).unwrap();
+        assert_eq!(trailing.inverse_cdf(0.5), 0);
+        assert_eq!(trailing.inverse_cdf(f64::from_bits(1.0f64.to_bits() - 1)), 0);
+    }
+
+    #[test]
+    fn test_inverse_cdf_integer_mass_oracle() {
+        // Every nonzero four-category mass vector with entries in {0, 1, 2}.
+        for encoded in 1..81 {
+            let mut code = encoded;
+            let mut mass = [0.0; 4];
+            for value in &mut mass {
+                *value = (code % 3) as f64;
+                code /= 3;
+            }
+            let total: f64 = mass.iter().sum();
+            let cat = Categorical::new(&mass).unwrap();
+            let mut probabilities = alloc::vec![f64::from_bits(1), 0.25, 0.5, 0.75,
+                f64::from_bits(1.0f64.to_bits() - 1)];
+            let mut cumulative = 0.0;
+            for value in mass {
+                cumulative += value;
+                let boundary = cumulative / total;
+                if boundary > 0.0 && boundary < 1.0 {
+                    probabilities.extend_from_slice(&[
+                        f64::from_bits(boundary.to_bits() - 1), boundary,
+                        f64::from_bits(boundary.to_bits() + 1),
+                    ]);
+                }
+            }
+            for p in probabilities {
+                if p <= 0.0 || p >= 1.0 { continue; }
+                let mut prefix = 0.0;
+                let expected = mass.iter().position(|value| {
+                    prefix += value;
+                    prefix / total >= p
+                }).unwrap();
+                let actual = cat.inverse_cdf(p);
+                assert_eq!(actual, expected as u64, "mass={mass:?}, p={p:?}");
+                assert!(cat.pmf(actual) > 0.0);
+            }
+        }
+    }
+
+    #[cfg(feature = "rand")]
+    #[test]
+    fn test_sample_zero_mass_boundaries() {
+        // Fixed words drive exact StandardUniform f64 draws, not frequencies.
+        struct FixedWord(u64);
+        impl ::rand::TryRng for FixedWord {
+            type Error = core::convert::Infallible;
+            fn try_next_u32(&mut self) -> Result<u32, Self::Error> { Ok(self.0 as u32) }
+            fn try_next_u64(&mut self) -> Result<u64, Self::Error> { Ok(self.0) }
+            fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
+                for chunk in dst.chunks_mut(8) {
+                    chunk.copy_from_slice(&self.0.to_le_bytes()[..chunk.len()]);
+                }
+                Ok(())
+            }
+        }
+        let draws = [
+            (0, 0.0),
+            (1 << 62, 0.25),
+            ((1 << 63) - 2048, f64::from_bits(0.5f64.to_bits() - 2)),
+            (1 << 63, 0.5),
+            ((1 << 63) + 2048, f64::from_bits(0.5f64.to_bits() + 1)),
+            (u64::MAX, f64::from_bits(1.0f64.to_bits() - 1)),
+        ];
+        let masses: &[&[f64]] = &[
+            &[0.0, 0.0, 1.0, 0.0, 0.0],
+            &[0.25, 0.25, 0.0, 0.0, 0.5],
+            &[1.0, 0.0, 0.0],
+        ];
+        for mass in masses {
+            let cat = Categorical::new(mass).unwrap();
+            let total: f64 = mass.iter().sum();
+            for (word, draw) in draws {
+                assert_eq!(::rand::RngExt::random::<f64>(&mut FixedWord(word)), draw);
+                let mut prefix = 0.0;
+                let expected = mass.iter().position(|value| {
+                    prefix += value;
+                    prefix / total > draw
+                }).unwrap();
+                let usize_sample = <Categorical as ::rand::distr::Distribution<usize>>::sample(
+                    &cat, &mut FixedWord(word));
+                let u64_sample = <Categorical as ::rand::distr::Distribution<u64>>::sample(
+                    &cat, &mut FixedWord(word));
+                let f64_sample = <Categorical as ::rand::distr::Distribution<f64>>::sample(
+                    &cat, &mut FixedWord(word));
+                assert_eq!(usize_sample, expected, "mass={mass:?}, draw={draw:?}");
+                assert_eq!(u64_sample, expected as u64);
+                assert_eq!(f64_sample, expected as f64);
+                assert!(cat.pmf(u64_sample) > 0.0);
+            }
+        }
+    }
+
+    #[cfg(feature = "rand")]
+    #[test]
+    fn test_sample_seeded_away_from_boundaries() {
+        use ::rand::{RngExt, SeedableRng};
+        let cat = Categorical::new(&[0.25, 0.25, 0.0, 0.0, 0.5]).unwrap();
+        let mut draws = ::rand::rngs::StdRng::seed_from_u64(459);
+        let mut samples = ::rand::rngs::StdRng::seed_from_u64(459);
+        let mut checked = 0;
+        for _ in 0..128 {
+            let draw = draws.random::<f64>();
+            let actual = <Categorical as ::rand::distr::Distribution<usize>>::sample(
+                &cat, &mut samples);
+            if !cat.norm_cdf.contains(&draw) {
+                let previous = cat.norm_cdf.binary_search_by(|v| v.partial_cmp(&draw).unwrap())
+                    .unwrap_or_else(|i| i);
+                assert_eq!(actual, previous);
+                checked += 1;
+            }
+        }
+        assert!(checked > 0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_inverse_cdf_input_nan() {
+        Categorical::new(&[1.0, 1.0]).unwrap().inverse_cdf(f64::NAN);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_inverse_cdf_input_below_zero() {
+        Categorical::new(&[1.0, 1.0]).unwrap().inverse_cdf(-0.1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_inverse_cdf_input_above_one() {
+        Categorical::new(&[1.0, 1.0]).unwrap().inverse_cdf(1.1);
     }
 
     #[test]
